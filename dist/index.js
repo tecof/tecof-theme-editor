@@ -156,7 +156,6 @@ var TecofEditor = ({
   config,
   accessToken,
   onSave,
-  onPublish,
   onChange,
   overrides,
   plugins: extraPlugins,
@@ -178,7 +177,9 @@ var TecofEditor = ({
       setLoading(true);
       const res = await apiClient.getPage(pageId);
       if (cancelled) return;
-      setInitialData(res.success && res.data?.puckData ? res.data.puckData : EMPTY_PAGE);
+      const data = res.success && res.data?.puckData ? res.data.puckData : EMPTY_PAGE;
+      setInitialData(data);
+      puckDataRef.current = data;
       setLoading(false);
     };
     load();
@@ -186,9 +187,11 @@ var TecofEditor = ({
       cancelled = true;
     };
   }, [pageId, apiClient]);
-  const handlePublish = react.useCallback(
+  const handleSaveDraft = react.useCallback(
     async (data) => {
-      const puckData = data;
+      const currentData = data || puckDataRef.current;
+      if (!currentData) return;
+      const puckData = currentData;
       setSaving(true);
       setSaveStatus("idle");
       const res = await apiClient.savePage(pageId, puckData, void 0, accessToken);
@@ -196,31 +199,36 @@ var TecofEditor = ({
         setSaveStatus("success");
         setTimeout(() => setSaveStatus("idle"), 3e3);
         onSave?.(puckData);
-        onPublish?.(puckData);
         if (isEmbedded) window.parent.postMessage({ type: "puck:saved" }, "*");
       } else {
         setSaveStatus("error");
+        if (isEmbedded) window.parent.postMessage({ type: "puck:saveError", message: res.message }, "*");
       }
       setSaving(false);
     },
-    [pageId, apiClient, isEmbedded, onSave, onPublish, accessToken]
+    [pageId, apiClient, isEmbedded, onSave, accessToken]
   );
   const handleChange = react.useCallback(
     (data) => {
+      puckDataRef.current = data;
       const puckData = data;
-      puckDataRef.current = puckData;
       onChange?.(puckData);
-      if (isEmbedded) window.parent.postMessage({ type: "puck:save" }, "*");
+      if (isEmbedded) window.parent.postMessage({ type: "puck:changed" }, "*");
     },
     [onChange, isEmbedded]
+  );
+  const handlePuckPublish = react.useCallback(
+    (data) => {
+      handleSaveDraft(data);
+    },
+    [handleSaveDraft]
   );
   react.useEffect(() => {
     if (!isEmbedded) return;
     const onMessage = (e) => {
       switch (e.data?.type) {
-        case "puck:publish": {
-          const btn = document.querySelector('[data-testid="puck-publish"]');
-          btn ? btn.click() : puckDataRef.current && handlePublish(puckDataRef.current);
+        case "puck:save": {
+          handleSaveDraft();
           break;
         }
         case "puck:undo":
@@ -243,7 +251,36 @@ var TecofEditor = ({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [isEmbedded, handlePublish]);
+  }, [isEmbedded, handleSaveDraft]);
+  const lastSelectedRef = react.useRef(null);
+  const handleItemSelect = react.useCallback(
+    (appState) => {
+      if (!isEmbedded) return;
+      const selector = appState?.ui?.itemSelector;
+      const selectorKey = selector ? JSON.stringify(selector) : null;
+      if (selectorKey !== lastSelectedRef.current) {
+        lastSelectedRef.current = selectorKey;
+        if (selector) {
+          const zone = selector.zone || "default-zone";
+          const index = selector.index;
+          let item = null;
+          if (zone === "default-zone" || !zone) {
+            item = appState?.data?.content?.[index];
+          } else {
+            item = appState?.data?.zones?.[zone]?.[index];
+          }
+          window.parent.postMessage({
+            type: "puck:itemSelected",
+            selector,
+            item: item ? { type: item.type, id: item.props?.id } : null
+          }, "*");
+        } else {
+          window.parent.postMessage({ type: "puck:itemDeselected" }, "*");
+        }
+      }
+    },
+    [isEmbedded]
+  );
   if (loading || !initialData) {
     return /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.loading, className, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { style: editorStyles.loadingInner, children: [
       /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.spinner }),
@@ -262,8 +299,17 @@ var TecofEditor = ({
         plugins,
         config,
         data: initialData,
-        onPublish: handlePublish,
-        onChange: handleChange,
+        onPublish: handlePuckPublish,
+        onChange: (data) => {
+          handleChange(data);
+          setTimeout(() => {
+            try {
+              const puckState = document.querySelector("[data-puck-component]")?.__puckAppState;
+              if (puckState) handleItemSelect(puckState);
+            } catch {
+            }
+          }, 50);
+        },
         overrides: mergedOverrides
       }
     ),

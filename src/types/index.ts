@@ -113,10 +113,8 @@ export interface TecofEditorProps {
   config: any;
   /** Access token for save operations (sent as Authorization header) */
   accessToken?: string;
-  /** Called after successful save */
+  /** Called after successful draft save */
   onSave?: (data: PuckPageData) => void;
-  /** Called after successful publish */
-  onPublish?: (data: PuckPageData) => void;
   /** Called on every editor change */
   onChange?: (data: PuckPageData) => void;
   /** Puck UI overrides */
