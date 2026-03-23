@@ -141,41 +141,45 @@ export const TecofEditor = ({
     return () => window.removeEventListener('message', onMessage);
   }, [isEmbedded, handleSaveDraft]);
 
-  /* ── Track item selection and notify parent ── */
-  const lastSelectedRef = useRef<string | null>(null);
-  const handleItemSelect = useCallback(
-    (appState: any) => {
-      if (!isEmbedded) return;
-      const selector = appState?.ui?.itemSelector;
-      const selectorKey = selector ? JSON.stringify(selector) : null;
+  /* ── Track item selection via click delegation ── */
+  useEffect(() => {
+    if (!isEmbedded) return;
 
-      if (selectorKey !== lastSelectedRef.current) {
-        lastSelectedRef.current = selectorKey;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Walk up to find closest puck component
+      const puckComponent = target.closest('[data-puck-component]') as HTMLElement;
 
-        if (selector) {
-          // Find the selected item from content
-          const zone = selector.zone || 'default-zone';
-          const index = selector.index;
-          let item = null;
+      if (puckComponent) {
+        const componentType = puckComponent.getAttribute('data-puck-component');
+        const draggableId = puckComponent.closest('[data-rfd-draggable-id]')?.getAttribute('data-rfd-draggable-id');
 
-          if (zone === 'default-zone' || !zone) {
-            item = appState?.data?.content?.[index];
-          } else {
-            item = appState?.data?.zones?.[zone]?.[index];
+        window.parent.postMessage({
+          type: 'puck:itemSelected',
+          item: {
+            type: componentType,
+            id: draggableId || null
           }
-
-          window.parent.postMessage({
-            type: 'puck:itemSelected',
-            selector,
-            item: item ? { type: item.type, id: item.props?.id } : null
-          }, '*');
-        } else {
-          window.parent.postMessage({ type: 'puck:itemDeselected' }, '*');
-        }
+        }, '*');
       }
-    },
-    [isEmbedded]
-  );
+    };
+
+    // Detect deselection: click on empty area
+    const handleDeselect = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-puck-component]')) {
+        window.parent.postMessage({ type: 'puck:itemDeselected' }, '*');
+      }
+    };
+
+    document.addEventListener('click', handleClick, true);
+    document.addEventListener('click', handleDeselect, false);
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('click', handleDeselect, false);
+    };
+  }, [isEmbedded]);
 
   /* ── Loading ── */
   if (loading || !initialData) {
@@ -204,17 +208,7 @@ export const TecofEditor = ({
         config={config as Config}
         data={initialData}
         onPublish={handlePuckPublish}
-        onChange={(data: Data) => {
-          handleChange(data);
-          // Puck appState extraction via internal state
-          // We use a setTimeout to let Puck update its state first
-          setTimeout(() => {
-            try {
-              const puckState = (document.querySelector('[data-puck-component]') as any)?.__puckAppState;
-              if (puckState) handleItemSelect(puckState);
-            } catch { /* ignore */ }
-          }, 50);
-        }}
+        onChange={handleChange}
         overrides={mergedOverrides}
       />
       {saving && (

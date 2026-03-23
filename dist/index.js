@@ -252,35 +252,36 @@ var TecofEditor = ({
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [isEmbedded, handleSaveDraft]);
-  const lastSelectedRef = react.useRef(null);
-  const handleItemSelect = react.useCallback(
-    (appState) => {
-      if (!isEmbedded) return;
-      const selector = appState?.ui?.itemSelector;
-      const selectorKey = selector ? JSON.stringify(selector) : null;
-      if (selectorKey !== lastSelectedRef.current) {
-        lastSelectedRef.current = selectorKey;
-        if (selector) {
-          const zone = selector.zone || "default-zone";
-          const index = selector.index;
-          let item = null;
-          if (zone === "default-zone" || !zone) {
-            item = appState?.data?.content?.[index];
-          } else {
-            item = appState?.data?.zones?.[zone]?.[index];
+  react.useEffect(() => {
+    if (!isEmbedded) return;
+    const handleClick = (e) => {
+      const target = e.target;
+      const puckComponent = target.closest("[data-puck-component]");
+      if (puckComponent) {
+        const componentType = puckComponent.getAttribute("data-puck-component");
+        const draggableId = puckComponent.closest("[data-rfd-draggable-id]")?.getAttribute("data-rfd-draggable-id");
+        window.parent.postMessage({
+          type: "puck:itemSelected",
+          item: {
+            type: componentType,
+            id: draggableId || null
           }
-          window.parent.postMessage({
-            type: "puck:itemSelected",
-            selector,
-            item: item ? { type: item.type, id: item.props?.id } : null
-          }, "*");
-        } else {
-          window.parent.postMessage({ type: "puck:itemDeselected" }, "*");
-        }
+        }, "*");
       }
-    },
-    [isEmbedded]
-  );
+    };
+    const handleDeselect = (e) => {
+      const target = e.target;
+      if (!target.closest("[data-puck-component]")) {
+        window.parent.postMessage({ type: "puck:itemDeselected" }, "*");
+      }
+    };
+    document.addEventListener("click", handleClick, true);
+    document.addEventListener("click", handleDeselect, false);
+    return () => {
+      document.removeEventListener("click", handleClick, true);
+      document.removeEventListener("click", handleDeselect, false);
+    };
+  }, [isEmbedded]);
   if (loading || !initialData) {
     return /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.loading, className, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { style: editorStyles.loadingInner, children: [
       /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.spinner }),
@@ -300,16 +301,7 @@ var TecofEditor = ({
         config,
         data: initialData,
         onPublish: handlePuckPublish,
-        onChange: (data) => {
-          handleChange(data);
-          setTimeout(() => {
-            try {
-              const puckState = document.querySelector("[data-puck-component]")?.__puckAppState;
-              if (puckState) handleItemSelect(puckState);
-            } catch {
-            }
-          }, 50);
-        },
+        onChange: handleChange,
         overrides: mergedOverrides
       }
     ),
