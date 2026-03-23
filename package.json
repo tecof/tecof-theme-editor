@@ -1,0 +1,48 @@
+{
+    "name": "@tecof/theme-editor",
+    "version": "0.0.1",
+    "description": "React theme editor library for Tecof projects",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./puck.css": "./dist/puck.css"
+    },
+    "files": [
+        "dist"
+    ],
+    "sideEffects": [
+        "*.css"
+    ],
+    "scripts": {
+        "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
+        "build": "tsup src/index.ts --dts --format esm,cjs",
+        "lint": "eslint .",
+        "test": "vitest",
+        "storybook": "storybook dev -p 6006",
+        "build-storybook": "storybook build",
+        "changeset": "changeset",
+        "release": "changeset publish"
+    },
+    "peerDependencies": {
+        "@puckeditor/core": "^0.x",
+        "react": "^18 || ^19",
+        "react-dom": "^18 || ^19"
+    },
+    "devDependencies": {
+        "@puckeditor/core": "^0.21.1",
+        "@storybook/react-vite": "^8.0.0",
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "eslint": "^9.0.0",
+        "prettier": "^3.0.0",
+        "tsup": "^8.0.0",
+        "typescript": "^5.0.0",
+        "vitest": "^3.0.0"
+    }
+}
