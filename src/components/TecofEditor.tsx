@@ -18,6 +18,7 @@ const EMPTY_PAGE: PuckPageData = { content: [], root: { props: {} }, zones: {} }
 export const TecofEditor = ({
   pageId,
   config,
+  accessToken,
   onSave,
   onPublish,
   onChange,
@@ -59,7 +60,7 @@ export const TecofEditor = ({
       setSaving(true);
       setSaveStatus('idle');
 
-      const res = await apiClient.savePage(pageId, puckData);
+      const res = await apiClient.savePage(pageId, puckData, undefined, accessToken);
 
       if (res.success) {
         setSaveStatus('success');
@@ -73,7 +74,7 @@ export const TecofEditor = ({
 
       setSaving(false);
     },
-    [pageId, apiClient, isEmbedded, onSave, onPublish]
+    [pageId, apiClient, isEmbedded, onSave, onPublish, accessToken]
   );
 
   /* ── Change ── */

@@ -111,6 +111,8 @@ export interface TecofEditorProps {
   pageId: string;
   /** Puck component configuration (Config from @puckeditor/core) */
   config: any;
+  /** Access token for save operations (sent as Authorization header) */
+  accessToken?: string;
   /** Called after successful save */
   onSave?: (data: PuckPageData) => void;
   /** Called after successful publish */

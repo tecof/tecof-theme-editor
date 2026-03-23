@@ -39,11 +39,14 @@ var TecofApiClient = class {
   /**
    * Save a page by ID
    */
-  async savePage(pageId, puckData, title) {
+  async savePage(pageId, puckData, title, accessToken) {
     try {
       const res = await fetch(`${this.apiUrl}/api/store/editor/${pageId}`, {
         method: "PUT",
-        headers: this.headers,
+        headers: {
+          ...this.headers,
+          ...accessToken && { Authorization: accessToken }
+        },
         body: JSON.stringify({ puckData, ...title && { title } })
       });
       return await res.json();
@@ -51,6 +54,24 @@ var TecofApiClient = class {
       return {
         success: false,
         message: error instanceof Error ? error.message : "Failed to save page"
+      };
+    }
+  }
+  /**
+   * Fetch a published page by slug + locale (for rendering)
+   */
+  async getPublishedPage(slug, locale) {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/render`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify({ slug, ...locale && { locale } })
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to fetch published page"
       };
     }
   }
@@ -133,6 +154,7 @@ var EMPTY_PAGE = { content: [], root: { props: {} }, zones: {} };
 var TecofEditor = ({
   pageId,
   config,
+  accessToken,
   onSave,
   onPublish,
   onChange,
@@ -169,7 +191,7 @@ var TecofEditor = ({
       const puckData = data;
       setSaving(true);
       setSaveStatus("idle");
-      const res = await apiClient.savePage(pageId, puckData);
+      const res = await apiClient.savePage(pageId, puckData, void 0, accessToken);
       if (res.success) {
         setSaveStatus("success");
         setTimeout(() => setSaveStatus("idle"), 3e3);
@@ -181,7 +203,7 @@ var TecofEditor = ({
       }
       setSaving(false);
     },
-    [pageId, apiClient, isEmbedded, onSave, onPublish]
+    [pageId, apiClient, isEmbedded, onSave, onPublish, accessToken]
   );
   const handleChange = react.useCallback(
     (data) => {

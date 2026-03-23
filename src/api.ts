@@ -50,12 +50,16 @@ export class TecofApiClient {
   async savePage(
     pageId: string,
     puckData: PuckPageData,
-    title?: string
+    title?: string,
+    accessToken?: string
   ): Promise<ApiResponse<PageApiData>> {
     try {
       const res = await fetch(`${this.apiUrl}/api/store/editor/${pageId}`, {
         method: 'PUT',
-        headers: this.headers,
+        headers: {
+          ...this.headers,
+          ...(accessToken && { Authorization: accessToken }),
+        },
         body: JSON.stringify({ puckData, ...(title && { title }) }),
       });
       return await res.json();
@@ -63,6 +67,28 @@ export class TecofApiClient {
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to save page',
+      };
+    }
+  }
+
+  /**
+   * Fetch a published page by slug + locale (for rendering)
+   */
+  async getPublishedPage(
+    slug: string,
+    locale?: string
+  ): Promise<ApiResponse<PageApiData>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/render`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({ slug, ...(locale && { locale }) }),
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch published page',
       };
     }
   }

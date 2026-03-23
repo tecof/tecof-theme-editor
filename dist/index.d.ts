@@ -87,6 +87,8 @@ interface TecofEditorProps {
     pageId: string;
     /** Puck component configuration (Config from @puckeditor/core) */
     config: any;
+    /** Access token for save operations (sent as Authorization header) */
+    accessToken?: string;
     /** Called after successful save */
     onSave?: (data: PuckPageData) => void;
     /** Called after successful publish */
@@ -129,7 +131,11 @@ declare class TecofApiClient {
     /**
      * Save a page by ID
      */
-    savePage(pageId: string, puckData: PuckPageData, title?: string): Promise<ApiResponse<PageApiData>>;
+    savePage(pageId: string, puckData: PuckPageData, title?: string, accessToken?: string): Promise<ApiResponse<PageApiData>>;
+    /**
+     * Fetch a published page by slug + locale (for rendering)
+     */
+    getPublishedPage(slug: string, locale?: string): Promise<ApiResponse<PageApiData>>;
 }
 
 interface TecofContextValue {
@@ -149,7 +155,7 @@ declare function useTecof(): TecofContextValue;
  *
  * Requires `<TecofProvider>` ancestor for API client.
  */
-declare const TecofEditor: ({ pageId, config, onSave, onPublish, onChange, overrides, plugins: extraPlugins, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
+declare const TecofEditor: ({ pageId, config, accessToken, onSave, onPublish, onChange, overrides, plugins: extraPlugins, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
 /**
  * TecofRender — Puck page renderer.
