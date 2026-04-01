@@ -1,7 +1,25 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "description": "React theme editor library for Tecof projects",
+    "keywords": [
+        "react",
+        "tecof",
+        "puck",
+        "editor",
+        "cms",
+        "theme"
+    ],
+    "author": "Ahmet Aksungur <ahmet@tecof.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tecof/tecof-theme-editor"
+    },
+    "bugs": {
+        "url": "https://github.com/tecof/tecof-theme-editor/issues"
+    },
+    "homepage": "https://github.com/tecof/tecof-theme-editor#readme",
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
