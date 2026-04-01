@@ -170,6 +170,45 @@ import {
 | `lighten(hex, amount)` | Rengi açar |
 | `darken(hex, amount)` | Rengi koyulaştırır |
 
+## Custom Fields (Özel Alanlar)
+
+Kütüphane içinde Tecof platformuna özel olarak hazırlanmış gelişmiş Puck alanları (`fields`) bulunmaktadır:
+
+| Alan Adı | Özellikler |
+|----------|------------|
+| **`LanguageField`** | Çok dilli, sekmeli düz metin girişi. Uygulama ayarlarından tanımlı dilleri otomatik çeker. |
+| **`EditorField`** | Çok dilli, zengin metin editörü (TipTap tabanlı). Bold, italic, link, liste gibi temel araç çubuğuna sahiptir. |
+| **`UploadField`** | FilePond ve Vaul Drawer tabanlı medya yöneticisi. Yeni görsel yükleme ve sunucudaki eski medyaları seçme yeteneğine sahiptir. |
+| **`CodeEditorField`** | Monaco Editor tabanlı kod editörü. HTML, CSS, JSON gibi özel kod alanları eklemek için kullanılır. |
+
+**Örnek Kullanım:**
+
+```tsx
+import { 
+  createLanguageField, 
+  createEditorField, 
+  createUploadField, 
+  createCodeEditorField 
+} from "@tecof/theme-editor";
+
+const myComponent = {
+  fields: {
+    title: createLanguageField({ label: "Başlık" }),
+    content: createEditorField({ label: "İçerik" }),
+    images: createUploadField({ 
+      label: "Görseller", 
+      allowMultiple: true, 
+      maxFiles: 5 
+    }),
+    customHtml: createCodeEditorField({ 
+      label: "Özel Kod", 
+      defaultLanguage: "html" 
+    })
+  },
+  // ...
+};
+```
+
 ## iframe postMessage API
 
 `TecofEditor` iframe içinde çalıştığında parent ile iletişim kurar:
