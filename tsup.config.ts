@@ -7,6 +7,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom', '@puckeditor/core'],
+  external: ['react', 'react-dom', '@puckeditor/core', /^@tiptap\//],
   treeshake: true,
+  injectStyle: true,
 });

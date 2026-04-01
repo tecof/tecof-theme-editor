@@ -135,3 +135,38 @@ export interface TecofRenderProps {
   /** Additional class name */
   className?: string;
 }
+
+/* ─── Merchant Info ─── */
+
+export interface MerchantInfoData {
+  /** Available language codes (e.g. ["tr", "en", "de"]) */
+  languages: string[];
+  /** Default language code (e.g. "tr") */
+  defaultLanguage: string;
+}
+
+/* ─── Language Field Value ─── */
+
+export interface LanguageFieldValue {
+  code: string;
+  value: string;
+}
+
+/* ─── Uploaded File ─── */
+
+export interface UploadedFile {
+  _id: string;
+  name: string;
+  size: number;
+  type: string;
+  mimeType?: string;
+  meta?: {
+    width?: number;
+    height?: number;
+    webp?: string;
+    thumbnail?: string;
+    medium?: string;
+    large?: string;
+    [key: string]: any;
+  };
+}

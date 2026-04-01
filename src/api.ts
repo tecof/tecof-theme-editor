@@ -1,4 +1,4 @@
-import type { ApiResponse, PuckPageData, PageApiData } from './types';
+import type { ApiResponse, PuckPageData, PageApiData, MerchantInfoData } from './types';
 
 /**
  * Tecof API Client — handles communication with the Tecof backend
@@ -7,6 +7,7 @@ import type { ApiResponse, PuckPageData, PageApiData } from './types';
  * Endpoints:
  *  - GET  /api/store/editor/:id   → get page by ID
  *  - PUT  /api/store/editor/:id   → save page by ID
+ *  - GET  /api/store/merchant-info → get merchant language config
  */
 export class TecofApiClient {
   private apiUrl: string;
@@ -91,6 +92,77 @@ export class TecofApiClient {
         message: error instanceof Error ? error.message : 'Failed to fetch published page',
       };
     }
+  }
+
+  /**
+   * Fetch merchant language config (for editor fields)
+   */
+  async getMerchantInfo(): Promise<ApiResponse<MerchantInfoData>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/merchant-info`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch merchant info',
+      };
+    }
+  }
+
+  /**
+   * Upload files via secretKey auth (for editor fields)
+   * Returns array of file records: [{ _id, name, size, type, meta }]
+   */
+  async uploadFile(file: File, folder?: string): Promise<ApiResponse<any[]>> {
+    try {
+      const formData = new FormData();
+      formData.append('files', file, file.name);
+
+      const url = folder
+        ? `${this.apiUrl}/api/store/upload?folder=${encodeURIComponent(folder)}`
+        : `${this.apiUrl}/api/store/upload`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'x-secret-key': this.secretKey,
+          Accept: 'application/json',
+          // Do NOT set Content-Type — browser sets multipart boundary automatically
+        },
+        body: formData,
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+      };
+    }
+  }
+
+  /**
+   * Fetch previously uploaded files (for media library selector)
+   */
+  async getUploads(page = 1, limit = 50): Promise<ApiResponse<any[]>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/uploads?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch uploads',
+      };
+    }
+  }
+
+  /** CDN base URL (derived from apiUrl) */
+  get cdnUrl(): string {
+    return this.apiUrl;
   }
 }
 
