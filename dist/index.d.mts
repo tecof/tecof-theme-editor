@@ -136,6 +136,12 @@ interface UploadedFile {
         [key: string]: any;
     };
 }
+interface LinkFieldValue {
+    url: string;
+    label?: string;
+    target?: '_self' | '_blank';
+    type?: 'page' | 'custom';
+}
 
 /**
  * Tecof API Client — handles communication with the Tecof backend
@@ -176,6 +182,19 @@ declare class TecofApiClient {
      * Fetch previously uploaded files (for media library selector)
      */
     getUploads(page?: number, limit?: number): Promise<ApiResponse<any[]>>;
+    /**
+     * Fetch merchant pages list (for LinkField page selector)
+     * Returns pages with: _id, slug, title, status, metaTitle
+     */
+    getPages(): Promise<ApiResponse<any[]>>;
+    /**
+     * Translate text to multiple languages (for LanguageField)
+     * Returns [{code, value}] for each locale
+     */
+    translate(text: string, sourceLang: string, locales: string[], isHtml?: boolean): Promise<ApiResponse<{
+        code: string;
+        value: string;
+    }[]>>;
     /** CDN base URL (derived from apiUrl) */
     get cdnUrl(): string;
 }
@@ -215,6 +234,45 @@ declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, ove
  */
 declare const TecofRender: ({ data, config, className }: TecofRenderProps) => react_jsx_runtime.JSX.Element | null;
 
+type PictureSize = 'thumbnail' | 'medium' | 'large' | 'full';
+interface TecofPictureProps {
+    /** The uploaded file data from UploadField */
+    data: UploadedFile | null | undefined;
+    /** Alt text for accessibility */
+    alt?: string | null;
+    /** Image size variant */
+    size?: PictureSize;
+    /** Loading strategy */
+    loading?: 'lazy' | 'eager';
+    /** Fill the parent container (position: absolute, 100%) */
+    fill?: boolean;
+    /** Container style overrides */
+    style?: React.CSSProperties;
+    /** Image style overrides */
+    imgStyle?: React.CSSProperties;
+    /** Container className */
+    className?: string;
+    /** Image className */
+    imgClassName?: string;
+    /** Image width (auto-detected from meta if available) */
+    width?: number;
+    /** Image height (auto-detected from meta if available) */
+    height?: number;
+    /** Whether to use a blur placeholder while loading */
+    usePlaceholder?: boolean;
+    /** Custom blur data URL */
+    blurDataURL?: string;
+    /** Fancybox lightbox support */
+    fancybox?: boolean;
+    /** Fancybox group name */
+    fancyboxName?: string;
+    /** Custom Image component (e.g. Next.js Image). If not provided, uses standard <img> */
+    ImageComponent?: React.ComponentType<any>;
+    /** Extra props to pass to the Image component (e.g. quality, priority, placeholder) */
+    imageProps?: Record<string, any>;
+}
+declare const TecofPicture: react.MemoExoticComponent<({ data, alt, size, loading, fill, style, imgStyle, className, imgClassName, width, height, usePlaceholder, blurDataURL, fancybox, fancyboxName, ImageComponent, imageProps, }: TecofPictureProps) => react_jsx_runtime.JSX.Element | null>;
+
 interface LanguageFieldProps {
     field: any;
     name: string;
@@ -230,8 +288,10 @@ interface LanguageFieldOptions {
     textareaRows?: number;
     /** Placeholder text */
     placeholder?: string;
+    /** Whether the content is HTML (for translation) */
+    isHtml?: boolean;
 }
-declare const LanguageField: ({ value, onChange, readOnly, isTextarea, textareaRows, placeholder, }: LanguageFieldProps & LanguageFieldOptions) => react_jsx_runtime.JSX.Element | null;
+declare const LanguageField: ({ value, onChange, readOnly, isTextarea, textareaRows, placeholder, isHtml, }: LanguageFieldProps & LanguageFieldOptions) => react_jsx_runtime.JSX.Element | null;
 declare const createLanguageField: (options?: LanguageFieldOptions & {
     label?: string;
 }) => {
@@ -303,10 +363,29 @@ interface UploadFieldOptions {
     maxFiles?: number;
     acceptedTypes?: string[];
     maxFileSize?: string;
+    maxTotalFileSize?: string;
     folder?: string;
     label?: string;
+    /** Show uploaded files list with view/download buttons */
+    showUploadedFiles?: boolean;
+    /** Preview height for images in FilePond */
+    imagePreviewHeight?: number;
+    /** Allow reorder in FilePond */
+    allowReorder?: boolean;
+    /** Enable image compression before upload */
+    imageCompressionEnabled?: boolean;
+    /** Image compression options */
+    imageCompressionOptions?: {
+        maxSizeMB?: number;
+        maxWidthOrHeight?: number;
+        useWebWorker?: boolean;
+        fileType?: string;
+    };
 }
-declare const UploadField: react.ForwardRefExoticComponent<UploadFieldProps & UploadFieldOptions & react.RefAttributes<any>>;
+declare const UploadField: {
+    ({ value: rawValue, onChange, allowMultiple, maxFiles, acceptedTypes, maxFileSize, maxTotalFileSize, folder, readOnly, showUploadedFiles, imagePreviewHeight, allowReorder, imageCompressionEnabled, imageCompressionOptions, }: UploadFieldProps & UploadFieldOptions): react_jsx_runtime.JSX.Element;
+    displayName: string;
+};
 declare const createUploadField: (options?: UploadFieldOptions) => {
     type: "custom";
     label: string | undefined;
@@ -362,6 +441,31 @@ declare const createCodeEditorField: (options?: CodeEditorFieldOptions) => {
     render: ({ value, onChange, readOnly, field, name, id }: CodeEditorFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
+interface LinkFieldProps {
+    field: any;
+    name: string;
+    id: string;
+    value: LinkFieldValue | null;
+    onChange: (value: LinkFieldValue | null) => void;
+    readOnly?: boolean;
+}
+interface LinkFieldOptions {
+    label?: string;
+    /** Show target selector (_self / _blank) */
+    showTarget?: boolean;
+    /** Placeholder for URL input */
+    placeholder?: string;
+}
+declare const LinkField: {
+    ({ value, onChange, readOnly, showTarget, placeholder, }: LinkFieldProps & LinkFieldOptions): react_jsx_runtime.JSX.Element;
+    displayName: string;
+};
+declare const createLinkField: (options?: LinkFieldOptions) => {
+    type: "custom";
+    label: string | undefined;
+    render: ({ value, onChange, readOnly, field, name, id }: LinkFieldProps) => react_jsx_runtime.JSX.Element;
+};
+
 declare function hexToHsl(hex: string): HSL;
 declare function hslToHex(h: number, s: number, l: number): string;
 declare function lighten(hex: string, amount: number): string;
@@ -370,4 +474,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CodeEditorField, EditorField, type HSL, LanguageField, type LanguageFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createEditorField, createLanguageField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, CodeEditorField, EditorField, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

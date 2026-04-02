@@ -10,4 +10,7 @@ export type { UploadFieldProps, UploadFieldOptions } from './UploadField';
 export { CodeEditorField, createCodeEditorField } from './CodeEditorField';
 export type { CodeEditorFieldProps, CodeEditorFieldOptions } from './CodeEditorField';
 
+export { LinkField, createLinkField } from './LinkField';
+export type { LinkFieldProps, LinkFieldOptions } from './LinkField';
+
 export { useLanguages } from './useLanguages';

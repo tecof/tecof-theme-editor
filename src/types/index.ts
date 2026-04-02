@@ -170,3 +170,12 @@ export interface UploadedFile {
     [key: string]: any;
   };
 }
+
+/* ─── Link Field ─── */
+
+export interface LinkFieldValue {
+  url: string;
+  label?: string;
+  target?: '_self' | '_blank';
+  type?: 'page' | 'custom';
+}

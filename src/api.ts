@@ -160,6 +160,50 @@ export class TecofApiClient {
     }
   }
 
+  /**
+   * Fetch merchant pages list (for LinkField page selector)
+   * Returns pages with: _id, slug, title, status, metaTitle
+   */
+  async getPages(): Promise<ApiResponse<any[]>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/pages`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch pages',
+      };
+    }
+  }
+
+  /**
+   * Translate text to multiple languages (for LanguageField)
+   * Returns [{code, value}] for each locale
+   */
+  async translate(
+    text: string,
+    sourceLang: string,
+    locales: string[],
+    isHtml = false
+  ): Promise<ApiResponse<{ code: string; value: string }[]>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/translate`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({ text, sourceLang, locales, isHtml }),
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Translation failed',
+      };
+    }
+  }
+
   /** CDN base URL (derived from apiUrl) */
   get cdnUrl(): string {
     return this.apiUrl;

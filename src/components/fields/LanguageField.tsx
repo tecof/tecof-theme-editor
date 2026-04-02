@@ -1,19 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useLanguages } from './useLanguages';
+import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
-
-/* ─── Language Flag Map (ISO 639-1 → Emoji) ─── */
-
-export const FLAG_MAP: Record<string, string> = {
-  tr: '🇹🇷', en: '🇬🇧', de: '🇩🇪', fr: '🇫🇷', es: '🇪🇸',
-  it: '🇮🇹', pt: '🇵🇹', nl: '🇳🇱', ru: '🇷🇺', ar: '🇸🇦',
-  zh: '🇨🇳', ja: '🇯🇵', ko: '🇰🇷', pl: '🇵🇱', sv: '🇸🇪',
-  no: '🇳🇴', da: '🇩🇰', fi: '🇫🇮', el: '🇬🇷', cs: '🇨🇿',
-  ro: '🇷🇴', hu: '🇭🇺', bg: '🇧🇬', uk: '🇺🇦', he: '🇮🇱',
-  hi: '🇮🇳', th: '🇹🇭', vi: '🇻🇳', id: '🇮🇩', ms: '🇲🇾',
-};
-
-export const getFlag = (code: string) => FLAG_MAP[code] || '🌐';
+import { Languages, Copy, Loader2 } from 'lucide-react';
 
 /* ─── Shared Styles ─── */
 
@@ -70,7 +59,9 @@ export const fieldStyles = {
     lineHeight: '1.5',
     color: '#18181b',
     background: '#ffffff',
-    border: '1px solid #e4e4e7',
+    borderWidth: '1px',
+    borderStyle: 'solid',
+    borderColor: '#e4e4e7',
     borderRadius: '8px',
     outline: 'none',
     transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
@@ -109,6 +100,47 @@ export const fieldStyles = {
     borderRadius: '6px',
     textAlign: 'center' as const,
   },
+  // Action bar
+  actionBar: {
+    display: 'flex',
+    gap: '4px',
+    marginTop: '6px',
+  },
+  actionBtn: {
+    display: 'flex',
+    alignItems: 'center' as const,
+    gap: '4px',
+    padding: '4px 8px',
+    fontSize: '11px',
+    fontWeight: 500,
+    color: '#71717a',
+    background: '#f4f4f5',
+    border: '1px solid #e4e4e7',
+    borderRadius: '6px',
+    cursor: 'pointer' as const,
+    transition: 'all 0.15s ease',
+    whiteSpace: 'nowrap' as const,
+  },
+  actionBtnDisabled: {
+    opacity: 0.5,
+    cursor: 'not-allowed' as const,
+  },
+  statusMsg: {
+    fontSize: '11px',
+    padding: '4px 8px',
+    borderRadius: '6px',
+    display: 'flex',
+    alignItems: 'center' as const,
+    gap: '4px',
+  },
+  statusSuccess: {
+    color: '#16a34a',
+    background: '#f0fdf4',
+  },
+  statusError: {
+    color: '#dc2626',
+    background: '#fef2f2',
+  },
 } as const;
 
 /* ─── Shared Tab Bar Component ─── */
@@ -135,7 +167,6 @@ export const LanguageTabBar = ({
           onClick={() => onTabChange(code)}
           title={code.toUpperCase()}
         >
-          <span style={{ fontSize: '14px' }}>{getFlag(code)}</span>
           <span>{code.toUpperCase()}</span>
           {code === defaultLanguage && (
             <span style={fieldStyles.defaultBadge}>DEFAULT</span>
@@ -174,6 +205,8 @@ export interface LanguageFieldOptions {
   textareaRows?: number;
   /** Placeholder text */
   placeholder?: string;
+  /** Whether the content is HTML (for translation) */
+  isHtml?: boolean;
 }
 
 /* ─── Component ─── */
@@ -185,9 +218,13 @@ export const LanguageField = ({
   isTextarea = false,
   textareaRows = 3,
   placeholder = '',
+  isHtml = false,
 }: LanguageFieldProps & LanguageFieldOptions) => {
   const { merchantInfo, loading, error, activeTab, setActiveTab } = useLanguages();
+  const { apiClient } = useTecof();
   const [focusedInput, setFocusedInput] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
@@ -211,11 +248,69 @@ export const LanguageField = ({
     onChange(updated);
   }, [values, onChange]);
 
+  // Get current active tab's text
+  const getCurrentText = useCallback(() => {
+    return values.find(v => v.code === activeTab)?.value || '';
+  }, [values, activeTab]);
+
+  // ── Fast Fill: copy active text to ALL languages ──
+  const handleFastFill = useCallback(() => {
+    const text = getCurrentText();
+    if (!text) return;
+
+    if (!merchantInfo) return;
+    const updated = merchantInfo.languages.map(code => ({
+      code,
+      value: text,
+    }));
+    onChange(updated);
+    setStatusMsg({ text: 'Tüm dillere kopyalandı', type: 'success' });
+    setTimeout(() => setStatusMsg(null), 2000);
+  }, [getCurrentText, merchantInfo, onChange]);
+
+  // ── Translate: translate active text to ALL other languages ──
+  const handleTranslate = useCallback(async () => {
+    const text = getCurrentText();
+    if (!text || !merchantInfo) return;
+
+    const otherLocales = merchantInfo.languages.filter(l => l !== activeTab);
+    if (otherLocales.length === 0) return;
+
+    setTranslating(true);
+    setStatusMsg(null);
+
+    try {
+      const res = await apiClient.translate(text, activeTab, otherLocales, isHtml);
+      if (res.success && Array.isArray(res.data)) {
+        const updated = [...values];
+        for (const t of res.data) {
+          const idx = updated.findIndex(v => v.code === t.code);
+          if (idx >= 0) {
+            updated[idx] = { ...updated[idx], value: t.value };
+          } else {
+            updated.push({ code: t.code, value: t.value });
+          }
+        }
+        onChange(updated);
+        setStatusMsg({ text: 'Çeviri tamamlandı', type: 'success' });
+      } else {
+        setStatusMsg({ text: res.message || 'Çeviri hatası', type: 'error' });
+      }
+    } catch (err: any) {
+      setStatusMsg({ text: err.message || 'Çeviri hatası', type: 'error' });
+    } finally {
+      setTranslating(false);
+      setTimeout(() => setStatusMsg(null), 3000);
+    }
+  }, [getCurrentText, merchantInfo, activeTab, values, onChange, apiClient, isHtml]);
+
   if (loading) return <FieldLoading />;
   if (error && !merchantInfo) return <div style={fieldStyles.error}>{error}</div>;
   if (!merchantInfo) return null;
 
   const { languages, defaultLanguage } = merchantInfo;
+  const hasText = !!getCurrentText();
+  const hasMultipleLanguages = languages.length > 1;
 
   return (
     <div style={fieldStyles.container}>
@@ -264,6 +359,50 @@ export const LanguageField = ({
           </div>
         );
       })}
+
+      {/* Action Bar: Fast Fill + Translate */}
+      {!readOnly && hasMultipleLanguages && (
+        <div style={fieldStyles.actionBar}>
+          <button
+            type="button"
+            style={{
+              ...fieldStyles.actionBtn,
+              ...((!hasText) ? fieldStyles.actionBtnDisabled : {}),
+            }}
+            onClick={handleFastFill}
+            disabled={!hasText}
+            title="Aktif sekmedeki metni tüm dillere kopyala"
+          >
+            <Copy size={12} /> Hızlı Doldur
+          </button>
+          <button
+            type="button"
+            style={{
+              ...fieldStyles.actionBtn,
+              ...((!hasText || translating) ? fieldStyles.actionBtnDisabled : {}),
+            }}
+            onClick={handleTranslate}
+            disabled={!hasText || translating}
+            title="Aktif sekmedeki metni diğer dillere çevir"
+          >
+            {translating ? (
+              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <Languages size={12} />
+            )}
+            {translating ? 'Çevriliyor...' : 'Çevir'}
+          </button>
+
+          {statusMsg && (
+            <span style={{
+              ...fieldStyles.statusMsg,
+              ...(statusMsg.type === 'success' ? fieldStyles.statusSuccess : fieldStyles.statusError),
+            }}>
+              {statusMsg.text}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

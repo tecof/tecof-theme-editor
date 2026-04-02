@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "description": "React theme editor library for Tecof projects",
     "keywords": [
         "react",
@@ -29,7 +29,8 @@
             "import": "./dist/index.js",
             "require": "./dist/index.cjs"
         },
-        "./puck.css": "./dist/puck.css"
+        "./puck.css": "./dist/puck.css",
+        "./styles.css": "./dist/styles.css"
     },
     "files": [
         "dist"
@@ -39,7 +40,7 @@
     ],
     "scripts": {
         "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
-        "build": "tsup src/index.ts --dts --format esm,cjs",
+        "build": "tsup src/index.ts --dts --format esm,cjs && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css > dist/styles.css",
         "lint": "eslint .",
         "test": "vitest",
         "storybook": "storybook dev -p 6006",
@@ -58,12 +59,17 @@
         "@storybook/react-vite": "^8.0.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
+        "browser-image-compression": "^2.0.2",
         "eslint": "^9.0.0",
         "filepond": "^4.32.12",
         "filepond-plugin-file-validate-size": "^2.2.8",
         "filepond-plugin-file-validate-type": "^1.2.9",
+        "filepond-plugin-image-crop": "^2.0.6",
+        "filepond-plugin-image-edit": "^1.6.3",
         "filepond-plugin-image-exif-orientation": "^1.0.11",
         "filepond-plugin-image-preview": "^4.6.12",
+        "filepond-plugin-image-resize": "^2.0.10",
+        "filepond-plugin-image-transform": "^3.8.7",
         "lucide-react": "^1.7.0",
         "prettier": "^3.0.0",
         "react-filepond": "^7.1.3",

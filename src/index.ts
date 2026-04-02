@@ -2,12 +2,14 @@
 export { TecofProvider, useTecof } from './components/TecofProvider';
 export { TecofEditor } from './components/TecofEditor';
 export { TecofRender } from './components/TecofRender';
+export { TecofPicture } from './components/TecofPicture';
 
 /* ─── Custom Puck Fields ─── */
 export { LanguageField, createLanguageField } from './components/fields';
 export { EditorField, createEditorField } from './components/fields';
 export { UploadField, createUploadField } from './components/fields';
 export { CodeEditorField, createCodeEditorField } from './components/fields';
+export { LinkField, createLinkField } from './components/fields';
 
 /* ─── API Client ─── */
 export { TecofApiClient } from './api';
@@ -40,4 +42,6 @@ export type {
   MerchantInfoData,
   LanguageFieldValue,
   UploadedFile,
+  LinkFieldValue,
 } from './types';
+export type { TecofPictureProps } from './components/TecofPicture';
