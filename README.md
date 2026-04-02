@@ -1,6 +1,10 @@
 # @tecof/theme-editor
 
-Tecof platform için Puck CMS tabanlı sayfa editörü ve render kütüphanesi. API client, context provider ve Puck wrapper bileşenleri içerir.
+Tecof platform için Puck CMS tabanlı **sayfa editörü**, **render motoru** ve **gelişmiş alan bileşenleri** kütüphanesi.
+
+> API Client, Context Provider, Puck wrapper bileşenleri, çok dilli alan yöneticileri, medya yöneticisi, link seçici, resim görüntüleyici ve tema araçları içerir.
+
+---
 
 ## Kurulum
 
@@ -10,143 +14,312 @@ npm install @tecof/theme-editor @puckeditor/core react react-dom
 
 ## Hızlı Başlangıç
 
-### 1. Puck Config Oluştur
+### 1. TecofProvider ile Sarma
 
 ```tsx
-// puck-config.tsx
-import type { Config } from "@puckeditor/core";
-import { Header } from "./components/puck/Header";
-import { HeroSection } from "./components/puck/Hero";
-import { Footer } from "./components/puck/Footer";
+import { TecofProvider } from "@tecof/theme-editor";
 
-export const puckConfig: Config = {
-  components: {
-    Header,
-    HeroSection,
-    Footer,
-  },
-};
+<TecofProvider
+  apiUrl="https://api.example.com"
+  secretKey="your-merchant-secret-key"
+  config={puckConfig}
+>
+  {children}
+</TecofProvider>
 ```
 
 ### 2. Editör Sayfası
 
 ```tsx
-// app/editor/[slug]/page.tsx
 "use client";
-
-import { TecofProvider, TecofEditor } from "@tecof/theme-editor";
-import "@tecof/theme-editor/styles.css";
-import "@puckeditor/core/puck.css";
+import { TecofEditor } from "@tecof/theme-editor";
 import { puckConfig } from "@/puck-config";
 
-export default function EditorPage() {
-  return (
-    <TecofProvider
-      apiUrl="https://api.example.com"
-      accessToken="your-merchant-token"
-      config={puckConfig}
-    >
-      <TecofEditor
-        slug="home"
-        onSave={(data) => console.log("Saved:", data)}
-      />
-    </TecofProvider>
-  );
+export default function EditorPage({ params }) {
+  return <TecofEditor pageId={params.id} />;
 }
 ```
 
 ### 3. Public Sayfa (Render)
 
 ```tsx
-// app/[slug]/page.tsx
-import { TecofProvider, TecofRender } from "@tecof/theme-editor";
-import { puckConfig } from "@/puck-config";
+import { TecofRender } from "@tecof/theme-editor";
 
-export default function PublicPage() {
-  return (
-    <TecofProvider
-      apiUrl="https://api.example.com"
-      accessToken="your-merchant-token"
-      config={puckConfig}
-    >
-      <TecofRender slug="home" />
-    </TecofProvider>
-  );
-}
-```
+// Slug ile otomatik fetch
+<TecofRender slug="home" />
 
-Direkt data ile de render edebilirsiniz:
-
-```tsx
+// Direkt data ile
 <TecofRender data={puckData} />
 ```
 
-## API
+---
+
+## Bileşenler
 
 ### `<TecofProvider />`
 
-Tüm Tecof bileşenlerini sarar, API client ve Puck config context'i sağlar.
+Tüm Tecof bileşenlerini sarar, API client ve config context'i sağlar.
 
 | Prop | Tip | Açıklama |
 |------|-----|----------|
 | `apiUrl` | `string` | Backend API base URL |
-| `accessToken` | `string` | Merchant access token |
+| `secretKey` | `string` | Merchant secret key |
 | `config` | `Config` | Puck component configuration |
 | `children` | `ReactNode` | Alt bileşenler |
 
 ### `<TecofEditor />`
 
-Puck `<Puck>` wrapper — sayfa editörü. Otomatik fetch/save ve iframe postMessage desteği.
+Puck wrapper — sayfa editörü. Otomatik fetch/save ve iframe postMessage desteği.
 
 | Prop | Tip | Açıklama |
 |------|-----|----------|
-| `slug` | `string` | Düzenlenecek sayfa slug'ı |
+| `pageId` | `string` | Düzenlenecek sayfa ID'si |
 | `onSave` | `(data) => void` | Kayıt sonrası callback |
 | `onPublish` | `(data) => void` | Yayınlama sonrası callback |
 | `onChange` | `(data) => void` | Her değişiklikte callback |
 | `overrides` | `object` | Puck UI override'ları |
-| `plugins` | `any[]` | Ek Puck plugin'leri |
-| `className` | `string` | CSS class |
 
 ### `<TecofRender />`
 
-Puck `<Render>` wrapper — yayınlanmış sayfaları render eder.
+Yayınlanmış sayfaları render eder.
 
 | Prop | Tip | Açıklama |
 |------|-----|----------|
 | `slug` | `string` | Sayfa slug'ı (otomatik fetch) |
 | `data` | `PuckPageData` | Direkt puck data (fetch yapmaz) |
-| `fallback` | `ReactNode` | Yükleme sırasında gösterilecek bileşen |
-| `className` | `string` | CSS class |
+| `fallback` | `ReactNode` | Yükleme sırasında gösterilen bileşen |
 
-### `useTecof()`
+### `<TecofPicture />`
 
-Provider context'ine erişim hook'u:
+Akıllı medya bileşeni — görsel/video otomatik algılama, responsive boyutlar, fancybox desteği.
 
 ```tsx
-const { apiClient, config, accessToken, apiUrl } = useTecof();
+import { TecofPicture } from "@tecof/theme-editor";
+import Image from "next/image";
+
+// Basit kullanım
+<TecofPicture data={file} alt="Hero" />
+
+// Fill modu
+<TecofPicture data={file} fill />
+
+// Next.js Image ile
+<TecofPicture
+  data={file}
+  ImageComponent={Image}
+  imageProps={{ quality: 85, priority: true }}
+/>
+
+// Fancybox lightbox
+<TecofPicture data={file} fancybox fancyboxName="gallery" />
 ```
 
-### `TecofApiClient`
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `data` | `UploadedFile` | Yüklenen dosya verisi |
+| `alt` | `string` | Alt metin |
+| `size` | `thumbnail \| medium \| large \| full` | Responsive boyut |
+| `fill` | `boolean` | Parent'ı kaplar |
+| `ImageComponent` | `ComponentType` | Özel image bileşeni (örn: Next.js Image) |
+| `imageProps` | `Record<string,any>` | ImageComponent'e ek prop'lar |
+| `fancybox` | `boolean` | Fancybox lightbox desteği |
 
-Standalone API client:
+---
+
+## Custom Fields (Puck Alanları)
+
+Tüm alanlar `createXField()` factory fonksiyonları ile Puck config'e entegre edilir.
+
+### LanguageField — Çok Dilli Metin
+
+Sekmeli çok dilli metin girişi. Merchant ayarlarından dilleri otomatik çeker.
+
+```tsx
+import { createLanguageField } from "@tecof/theme-editor";
+
+fields: {
+  title: createLanguageField({ label: "Başlık" }),
+  description: createLanguageField({
+    label: "Açıklama",
+    isTextarea: true,
+    textareaRows: 4,
+  }),
+  htmlContent: createLanguageField({
+    label: "HTML İçerik",
+    isHtml: true,
+  }),
+}
+```
+
+**Özellikler:**
+- 🌐 Otomatik dil algılama (merchant ayarlarından)
+- 📋 **Hızlı Doldur** — Aktif sekmedeki metni tüm dillere kopyalar
+- 🔄 **Çevir** — Aktif metni API üzerinden diğer dillere otomatik çevirir (DeepL / Google / OpenAI / Ollama)
+- `isHtml` desteği — HTML taglarını koruyarak çeviri yapar
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `isTextarea` | `boolean` | `false` | Textarea modu |
+| `textareaRows` | `number` | `3` | Textarea satır sayısı |
+| `placeholder` | `string` | `''` | Placeholder metni |
+| `isHtml` | `boolean` | `false` | HTML içerik çevirisi |
+
+---
+
+### EditorField — Zengin Metin Editörü
+
+TipTap tabanlı, çok dilli WYSIWYG editörü.
+
+```tsx
+fields: {
+  content: createEditorField({ label: "İçerik" }),
+}
+```
+
+**Özellikler:** Bold, italic, link, liste, heading ve daha fazlası.
+
+---
+
+### UploadField — Gelişmiş Medya Yöneticisi
+
+FilePond tabanlı dosya yükleme + Vaul Drawer medya kütüphanesi + Doka görseldüzenleyici.
+
+```tsx
+fields: {
+  images: createUploadField({
+    label: "Görseller",
+    allowMultiple: true,
+    maxFiles: 10,
+    maxFileSize: "50MB",
+    showUploadedFiles: true,
+  }),
+  document: createUploadField({
+    label: "Doküman",
+    allowMultiple: false,
+    acceptedTypes: ["application/pdf"],
+  }),
+}
+```
+
+**Özellikler:**
+- 📁 **Medya Seç** — Vaul drawer ile sunucudaki mevcut dosyaları seçin
+- 📤 **Yeni Yükle** — FilePond ile sürükle-bırak dosya yükleme
+- 🖼️ **Doka Görsel Düzenleyici** — Kırp, döndür, parlaklık, kontrast, markup, çıkartma
+- 🗜️ **Resim Sıkıştırma** — Otomatik WebP dönüşümü (browser-image-compression)
+- 📄 24+ dosya türü desteği (görseller, PDF, Office, CSV, video)
+- 👁️ Dosya önizleme, indirme ve kaldırma butonları
+- 🇹🇷 Tamamen Türkçe etiketler (FilePond + Doka)
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `allowMultiple` | `boolean` | `true` | Çoklu dosya |
+| `maxFiles` | `number` | `100` | Maksimum dosya sayısı |
+| `maxFileSize` | `string` | `100MB` | Tek dosya limiti |
+| `maxTotalFileSize` | `string` | `200MB` | Toplam limit |
+| `acceptedTypes` | `string[]` | `[all]` | İzin verilen MIME türleri |
+| `showUploadedFiles` | `boolean` | `false` | Başlık göster |
+| `imageCompressionEnabled` | `boolean` | `true` | Sıkıştırma aktif |
+| `allowReorder` | `boolean` | `true` | Sürükle-bırak sıralama |
+
+---
+
+### LinkField — Sayfa / URL Seçici
+
+Mevcut sayfalardan seçim veya manuel URL girişi.
+
+```tsx
+fields: {
+  link: createLinkField({ label: "Bağlantı" }),
+  ctaLink: createLinkField({
+    label: "CTA Link",
+    showTarget: true,
+    placeholder: "https://example.com",
+  }),
+}
+```
+
+**Özellikler:**
+- 📄 **Sayfa Seç** — Vaul drawer ile merchant sayfalarını listeler, aranabilir
+- 🔗 **Manuel Link** — URL + etiket + hedef (aynı/yeni sekme) girişi
+- 🟢 Durum göstergesi (yayınlanmış / değiştirilmiş / taslak)
+- 🏷️ Tip badge'i (Sayfa / Link)
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `showTarget` | `boolean` | `true` | Hedef sekme seçici |
+| `placeholder` | `string` | `https://...` | URL placeholder |
+
+**Değer Tipi (`LinkFieldValue`):**
+```ts
+{
+  url: string;       // "/about" veya "https://..."
+  label?: string;    // "Hakkımızda"
+  target?: "_self" | "_blank";
+  type?: "page" | "custom";
+}
+```
+
+---
+
+### CodeEditorField — Kod Editörü
+
+Monaco Editor tabanlı syntax-highlighted kod editörü.
+
+```tsx
+fields: {
+  customHtml: createCodeEditorField({
+    label: "Özel Kod",
+    defaultLanguage: "html",
+  }),
+  jsonConfig: createCodeEditorField({
+    label: "Config",
+    defaultLanguage: "json",
+  }),
+}
+```
+
+---
+
+## API Client
 
 ```tsx
 import { TecofApiClient } from "@tecof/theme-editor";
 
-const client = new TecofApiClient("https://api.example.com", "token");
-
-// Sayfa draft'ını getir
-const page = await client.getPage("home");
-
-// Sayfa kaydet
-await client.savePage("home", puckData);
-
-// Yayınlanmış sayfayı getir
-const published = await client.getPublishedPage("about");
+const client = new TecofApiClient("https://api.example.com", "secret-key");
 ```
 
-### Utility Fonksiyonları
+| Metot | Açıklama |
+|-------|----------|
+| `getPage(id)` | Sayfa draft'ını getir |
+| `savePage(id, data)` | Sayfa kaydet |
+| `getPublishedPage(slug, locale?)` | Yayınlanmış sayfayı getir |
+| `getMerchantInfo()` | Dil ayarlarını getir |
+| `uploadFile(file, folder?)` | Dosya yükle |
+| `getUploads(page, limit)` | Yüklenen dosyaları listele |
+| `getPages()` | Merchant sayfalarını listele |
+| `translate(text, sourceLang, locales, isHtml?)` | Metni birden çok dile çevir |
+| `cdnUrl` | CDN base URL |
+
+---
+
+## Backend API Endpoints
+
+Kütüphane aşağıdaki endpoint'leri kullanır (`x-secret-key` header ile):
+
+| Method | Endpoint | Açıklama |
+|--------|----------|----------|
+| `GET` | `/api/store/editor/:id` | Sayfa draft'ını getir |
+| `PUT` | `/api/store/editor/:id` | Sayfa kaydet |
+| `POST` | `/api/store/render` | Yayınlanmış sayfayı getir (slug + locale) |
+| `GET` | `/api/store/merchant-info` | Merchant dil ayarları |
+| `POST` | `/api/store/upload` | Dosya yükle |
+| `GET` | `/api/store/uploads` | Yüklenen dosyaları listele |
+| `GET` | `/api/store/pages` | Merchant sayfalarını listele |
+| `POST` | `/api/store/translate` | Metni çok dile çevir |
+
+---
+
+## Utility Fonksiyonları
 
 ```tsx
 import {
@@ -162,7 +335,7 @@ import {
 
 | Fonksiyon | Açıklama |
 |-----------|----------|
-| `getDefaultTheme()` | Varsayılan tema config'i döner |
+| `getDefaultTheme()` | Varsayılan tema config'i |
 | `generateCSSVariables(theme)` | ThemeConfig → CSS custom properties |
 | `mergeTheme(base, overrides)` | Tema config deep-merge |
 | `hexToHsl(hex)` | Hex → HSL dönüşümü |
@@ -170,44 +343,7 @@ import {
 | `lighten(hex, amount)` | Rengi açar |
 | `darken(hex, amount)` | Rengi koyulaştırır |
 
-## Custom Fields (Özel Alanlar)
-
-Kütüphane içinde Tecof platformuna özel olarak hazırlanmış gelişmiş Puck alanları (`fields`) bulunmaktadır:
-
-| Alan Adı | Özellikler |
-|----------|------------|
-| **`LanguageField`** | Çok dilli, sekmeli düz metin girişi. Uygulama ayarlarından tanımlı dilleri otomatik çeker. |
-| **`EditorField`** | Çok dilli, zengin metin editörü (TipTap tabanlı). Bold, italic, link, liste gibi temel araç çubuğuna sahiptir. |
-| **`UploadField`** | FilePond ve Vaul Drawer tabanlı medya yöneticisi. Yeni görsel yükleme ve sunucudaki eski medyaları seçme yeteneğine sahiptir. |
-| **`CodeEditorField`** | Monaco Editor tabanlı kod editörü. HTML, CSS, JSON gibi özel kod alanları eklemek için kullanılır. |
-
-**Örnek Kullanım:**
-
-```tsx
-import { 
-  createLanguageField, 
-  createEditorField, 
-  createUploadField, 
-  createCodeEditorField 
-} from "@tecof/theme-editor";
-
-const myComponent = {
-  fields: {
-    title: createLanguageField({ label: "Başlık" }),
-    content: createEditorField({ label: "İçerik" }),
-    images: createUploadField({ 
-      label: "Görseller", 
-      allowMultiple: true, 
-      maxFiles: 5 
-    }),
-    customHtml: createCodeEditorField({ 
-      label: "Özel Kod", 
-      defaultLanguage: "html" 
-    })
-  },
-  // ...
-};
-```
+---
 
 ## iframe postMessage API
 
@@ -215,10 +351,10 @@ const myComponent = {
 
 ```ts
 // Parent → Editor
-iframe.postMessage({ type: "puck:publish" }, "*");   // Kaydet
-iframe.postMessage({ type: "puck:undo" }, "*");      // Geri al
-iframe.postMessage({ type: "puck:redo" }, "*");      // Yinele
-iframe.postMessage({ type: "puck:viewport", width: "375px" }, "*"); // Viewport
+iframe.postMessage({ type: "puck:publish" }, "*");
+iframe.postMessage({ type: "puck:undo" }, "*");
+iframe.postMessage({ type: "puck:redo" }, "*");
+iframe.postMessage({ type: "puck:viewport", width: "375px" }, "*");
 
 // Editor → Parent
 window.addEventListener("message", (e) => {
@@ -227,25 +363,31 @@ window.addEventListener("message", (e) => {
 });
 ```
 
-## Backend API Endpoints
+---
 
-Kütüphane aşağıdaki endpoint'leri kullanır (`Authorization` header ile):
+## CSS
 
-| Method | Endpoint | Açıklama |
-|--------|----------|----------|
-| `GET` | `/api/store/page/:slug` | Sayfa draft'ını getir |
-| `PUT` | `/api/store/page/:slug` | Sayfa draft'ını kaydet |
-| `GET` | `/api/store/published/:slug` | Yayınlanmış sayfayı getir |
+Editör alanlarının çalışması için CSS dosyasını dahil edin:
+
+```tsx
+// Editor layout'unda
+import "@tecof/theme-editor/dist/styles.css";
+```
+
+İçerik: FilePond + Image Preview + Image Edit + Doka Editor stilleri.
+
+---
 
 ## Geliştirme
 
 ```bash
-npm run dev        # Watch mode
-npm run build      # Production build
+npm run dev        # Watch mode (tsup)
+npm run build      # Production build + CSS bundle
 npm run lint       # ESLint
 npm run test       # Vitest
+npm run storybook  # Storybook
 ```
 
 ## Lisans
 
-MIT
+MIT © Tecof
