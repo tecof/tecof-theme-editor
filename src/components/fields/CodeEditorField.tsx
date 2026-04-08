@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import React, { forwardRef, useRef } from 'react';
+import React, { forwardRef, useCallback, useRef } from 'react';
 import { FieldLabel } from '@puckeditor/core';
 import Editor from '@monaco-editor/react';
 
@@ -41,10 +41,18 @@ export const CodeEditorField = forwardRef<any, CodeEditorFieldProps & CodeEditor
   theme = 'vs-dark',
 }, ref) => {
   const editorRef = useRef<any>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
 
-  const handleEditorDidMount = (editor: any) => {
+  const handleEditorDidMount = useCallback((editor: any) => {
     editorRef.current = editor;
-  };
+
+    // Listen directly on the Monaco model for maximum reliability
+    editor.onDidChangeModelContent(() => {
+      const newValue = editor.getValue();
+      onChangeRef.current(newValue);
+    });
+  }, []);
 
   return (
     <div ref={ref} className="tecof-code-editor-container">
@@ -54,8 +62,7 @@ export const CodeEditorField = forwardRef<any, CodeEditorFieldProps & CodeEditor
         width="100%"
         height={height}
         defaultLanguage={defaultLanguage}
-        value={value || ''}
-        onChange={(val) => onChange(val || '')}
+        defaultValue={value || ''}
         options={{
           readOnly,
           minimap: { enabled: false },

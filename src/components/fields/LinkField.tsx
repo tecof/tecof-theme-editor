@@ -1,8 +1,10 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { FieldLabel } from '@puckeditor/core';
 import { useTecof } from '../TecofProvider';
-import type { LinkFieldValue } from '../../types';
+import type { LinkFieldValue, LocalizedLinkFieldValue } from '../../types';
+import { LanguageTabBar, FieldLoading } from './LanguageField';
+import { useLanguages } from './useLanguages';
 
 // Vaul and Icons
 import { Drawer } from 'vaul';
@@ -25,8 +27,8 @@ export interface LinkFieldProps {
   field: any;
   name: string;
   id: string;
-  value: LinkFieldValue | null;
-  onChange: (value: LinkFieldValue | null) => void;
+  value: LocalizedLinkFieldValue[] | null;
+  onChange: (value: LocalizedLinkFieldValue[] | null) => void;
   readOnly?: boolean;
 }
 
@@ -53,6 +55,7 @@ export const LinkField = ({
   placeholder = 'https://...',
 }: LinkFieldProps & LinkFieldOptions) => {
   const { apiClient } = useTecof();
+  const { merchantInfo, loading: langLoading, error: langError, activeTab, setActiveTab } = useLanguages();
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -65,6 +68,37 @@ export const LinkField = ({
   const [manualUrl, setManualUrl] = useState('');
   const [manualLabel, setManualLabel] = useState('');
   const [manualTarget, setManualTarget] = useState<'_self' | '_blank'>('_self');
+
+  /* ── Tab Management ── */
+
+  const values = useMemo<LocalizedLinkFieldValue[]>(() => {
+    if (!merchantInfo) return value || [];
+    const current = value || [];
+    return merchantInfo.languages.map(code => {
+      const existing = current.find(v => v.code === code);
+      return existing || { code, value: { url: '' } };
+    });
+  }, [value, merchantInfo]);
+
+  const activeValueItem = values.find(v => v.code === activeTab);
+  const activeValue = activeValueItem?.value || { url: '' };
+
+  const updateActiveValue = useCallback((newLinkVal: LinkFieldValue | null) => {
+    const updated = [...values];
+    const idx = updated.findIndex(v => v.code === activeTab);
+    
+    if (idx >= 0) {
+      if (newLinkVal) {
+        updated[idx] = { ...updated[idx], value: newLinkVal };
+      } else {
+        // Clear
+        updated[idx] = { ...updated[idx], value: { url: '' } };
+      }
+    } else if (newLinkVal) {
+      updated.push({ code: activeTab, value: newLinkVal });
+    }
+    onChange(updated);
+  }, [values, activeTab, onChange]);
 
   /* ── Fetch Pages ── */
 
@@ -91,20 +125,20 @@ export const LinkField = ({
   /* ── Select Page ── */
 
   const handleSelectPage = useCallback((page: any) => {
-    onChange({
+    updateActiveValue({
       url: `/${page.slug}`,
       label: page.title || page.slug,
       target: '_self',
       type: 'page',
     });
     setDrawerOpen(false);
-  }, [onChange]);
+  }, [updateActiveValue]);
 
   /* ── Confirm Manual ── */
 
   const handleConfirmManual = useCallback(() => {
     if (!manualUrl.trim()) return;
-    onChange({
+    updateActiveValue({
       url: manualUrl.trim(),
       label: manualLabel.trim() || manualUrl.trim(),
       target: manualTarget,
@@ -113,44 +147,59 @@ export const LinkField = ({
     setShowManual(false);
     setManualUrl('');
     setManualLabel('');
-  }, [manualUrl, manualLabel, manualTarget, onChange]);
+  }, [manualUrl, manualLabel, manualTarget, updateActiveValue]);
 
   /* ── Clear ── */
 
   const handleClear = useCallback(() => {
-    onChange(null);
-  }, [onChange]);
+    updateActiveValue(null);
+  }, [updateActiveValue]);
 
   /* ── Open Manual with existing value ── */
 
   const handleEditManual = useCallback(() => {
-    if (value) {
-      setManualUrl(value.url || '');
-      setManualLabel(value.label || '');
-      setManualTarget(value.target || '_self');
+    if (activeValue && activeValue.url) {
+      setManualUrl(activeValue.url || '');
+      setManualLabel(activeValue.label || '');
+      setManualTarget(activeValue.target || '_self');
+    } else {
+      setManualUrl('');
+      setManualLabel('');
+      setManualTarget('_self');
     }
     setShowManual(true);
-  }, [value]);
+  }, [activeValue]);
 
-  const hasValue = value && value.url;
+  const hasValue = activeValue && activeValue.url && activeValue.url !== '';
 
   return (
     <div className="tecof-link-container">
+
+      {merchantInfo && merchantInfo.languages.length > 1 && (
+        <LanguageTabBar
+          languages={merchantInfo.languages}
+          defaultLanguage={merchantInfo.defaultLanguage}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      )}
+      
+      {langLoading && <FieldLoading />}
 
       {/* Current Value Display */}
       {hasValue && (
         <div className="tecof-link-value-box">
           <div className="tecof-link-value-icon">
-            {value.type === 'page' ? <FileText size={16} /> : <Globe size={16} />}
+            {activeValue.type === 'page' ? <FileText size={16} /> : <Globe size={16} />}
           </div>
           <div className="tecof-link-value-info">
-            <p className="tecof-link-value-label">{value.label || value.url}</p>
-            <p className="tecof-link-value-url">{value.url}</p>
+            <p className="tecof-link-value-label">{activeValue.label || activeValue.url}</p>
+            <p className="tecof-link-value-url">{activeValue.url}</p>
           </div>
-          <span className={`tecof-link-value-badge ${value.type === 'page' ? 'tecof-link-badge-page' : 'tecof-link-badge-custom'}`}>
-            {value.type === 'page' ? 'Sayfa' : 'Link'}
+          <span className={`tecof-link-value-badge ${activeValue.type === 'page' ? 'tecof-link-badge-page' : 'tecof-link-badge-custom'}`}>
+            {activeValue.type === 'page' ? 'Sayfa' : 'Link'}
           </span>
-          {value.target === '_blank' && (
+          {activeValue.target === '_blank' && (
             <ExternalLink size={14} color="#a1a1aa" />
           )}
           {!readOnly && (
@@ -261,7 +310,7 @@ export const LinkField = ({
             ) : (
               <div className="tecof-link-page-list">
                 {filteredPages.map((page) => {
-                  const selected = value?.url === `/${page.slug}`;
+                  const selected = activeValue?.url === `/${page.slug}`;
                   return (
                     <div
                       key={page._id}
@@ -306,7 +355,7 @@ export const createLinkField = (options: LinkFieldOptions = {}) => {
           field={field}
           name={name}
           id={id}
-          value={value || { url: '' }}
+          value={value || []}
           onChange={onChange}
           readOnly={readOnly}
           {...fieldOptions}

@@ -23473,9 +23473,15 @@ var CodeEditorField = React__default.forwardRef(({
   theme = "vs-dark"
 }, ref) => {
   const editorRef = React__default.useRef(null);
-  const handleEditorDidMount = (editor2) => {
+  const onChangeRef = React__default.useRef(onChange);
+  onChangeRef.current = onChange;
+  const handleEditorDidMount = React__default.useCallback((editor2) => {
     editorRef.current = editor2;
-  };
+    editor2.onDidChangeModelContent(() => {
+      const newValue = editor2.getValue();
+      onChangeRef.current(newValue);
+    });
+  }, []);
   return /* @__PURE__ */ jsxRuntime.jsx("div", { ref, className: "tecof-code-editor-container", children: /* @__PURE__ */ jsxRuntime.jsx(
     Ft,
     {
@@ -23484,8 +23490,7 @@ var CodeEditorField = React__default.forwardRef(({
       width: "100%",
       height,
       defaultLanguage,
-      value: value || "",
-      onChange: (val) => onChange(val || ""),
+      defaultValue: value || "",
       options: {
         readOnly,
         minimap: { enabled: false },
@@ -23527,6 +23532,7 @@ var LinkField = ({
   placeholder = "https://..."
 }) => {
   const { apiClient } = useTecof();
+  const { merchantInfo, loading: langLoading, activeTab, setActiveTab } = useLanguages();
   const [drawerOpen, setDrawerOpen] = React__default.useState(false);
   const [pages, setPages] = React__default.useState([]);
   const [loading, setLoading] = React__default.useState(false);
@@ -23535,6 +23541,30 @@ var LinkField = ({
   const [manualUrl, setManualUrl] = React__default.useState("");
   const [manualLabel, setManualLabel] = React__default.useState("");
   const [manualTarget, setManualTarget] = React__default.useState("_self");
+  const values = React__default.useMemo(() => {
+    if (!merchantInfo) return value || [];
+    const current = value || [];
+    return merchantInfo.languages.map((code) => {
+      const existing = current.find((v2) => v2.code === code);
+      return existing || { code, value: { url: "" } };
+    });
+  }, [value, merchantInfo]);
+  const activeValueItem = values.find((v2) => v2.code === activeTab);
+  const activeValue = activeValueItem?.value || { url: "" };
+  const updateActiveValue = React__default.useCallback((newLinkVal) => {
+    const updated = [...values];
+    const idx = updated.findIndex((v2) => v2.code === activeTab);
+    if (idx >= 0) {
+      if (newLinkVal) {
+        updated[idx] = { ...updated[idx], value: newLinkVal };
+      } else {
+        updated[idx] = { ...updated[idx], value: { url: "" } };
+      }
+    } else if (newLinkVal) {
+      updated.push({ code: activeTab, value: newLinkVal });
+    }
+    onChange(updated);
+  }, [values, activeTab, onChange]);
   React__default.useEffect(() => {
     if (!drawerOpen) return;
     setLoading(true);
@@ -23549,17 +23579,17 @@ var LinkField = ({
     (p) => p.slug?.toLowerCase().includes(search.toLowerCase()) || p.title?.toLowerCase().includes(search.toLowerCase())
   ) : pages;
   const handleSelectPage = React__default.useCallback((page) => {
-    onChange({
+    updateActiveValue({
       url: `/${page.slug}`,
       label: page.title || page.slug,
       target: "_self",
       type: "page"
     });
     setDrawerOpen(false);
-  }, [onChange]);
+  }, [updateActiveValue]);
   const handleConfirmManual = React__default.useCallback(() => {
     if (!manualUrl.trim()) return;
-    onChange({
+    updateActiveValue({
       url: manualUrl.trim(),
       label: manualLabel.trim() || manualUrl.trim(),
       target: manualTarget,
@@ -23568,28 +23598,42 @@ var LinkField = ({
     setShowManual(false);
     setManualUrl("");
     setManualLabel("");
-  }, [manualUrl, manualLabel, manualTarget, onChange]);
+  }, [manualUrl, manualLabel, manualTarget, updateActiveValue]);
   const handleClear = React__default.useCallback(() => {
-    onChange(null);
-  }, [onChange]);
+    updateActiveValue(null);
+  }, [updateActiveValue]);
   const handleEditManual = React__default.useCallback(() => {
-    if (value) {
-      setManualUrl(value.url || "");
-      setManualLabel(value.label || "");
-      setManualTarget(value.target || "_self");
+    if (activeValue && activeValue.url) {
+      setManualUrl(activeValue.url || "");
+      setManualLabel(activeValue.label || "");
+      setManualTarget(activeValue.target || "_self");
+    } else {
+      setManualUrl("");
+      setManualLabel("");
+      setManualTarget("_self");
     }
     setShowManual(true);
-  }, [value]);
-  const hasValue = value && value.url;
+  }, [activeValue]);
+  const hasValue = activeValue && activeValue.url && activeValue.url !== "";
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-container", children: [
+    merchantInfo && merchantInfo.languages.length > 1 && /* @__PURE__ */ jsxRuntime.jsx(
+      LanguageTabBar,
+      {
+        languages: merchantInfo.languages,
+        defaultLanguage: merchantInfo.defaultLanguage,
+        activeTab,
+        onTabChange: setActiveTab
+      }
+    ),
+    langLoading && /* @__PURE__ */ jsxRuntime.jsx(FieldLoading, {}),
     hasValue && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-box", children: [
-      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-value-icon", children: value.type === "page" ? /* @__PURE__ */ jsxRuntime.jsx(FileText, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(Globe, { size: 16 }) }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-value-icon", children: activeValue.type === "page" ? /* @__PURE__ */ jsxRuntime.jsx(FileText, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(Globe, { size: 16 }) }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-info", children: [
-        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-value-label", children: value.label || value.url }),
-        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-value-url", children: value.url })
+        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-value-label", children: activeValue.label || activeValue.url }),
+        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-value-url", children: activeValue.url })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsx("span", { className: `tecof-link-value-badge ${value.type === "page" ? "tecof-link-badge-page" : "tecof-link-badge-custom"}`, children: value.type === "page" ? "Sayfa" : "Link" }),
-      value.target === "_blank" && /* @__PURE__ */ jsxRuntime.jsx(ExternalLink, { size: 14, color: "#a1a1aa" }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: `tecof-link-value-badge ${activeValue.type === "page" ? "tecof-link-badge-page" : "tecof-link-badge-custom"}`, children: activeValue.type === "page" ? "Sayfa" : "Link" }),
+      activeValue.target === "_blank" && /* @__PURE__ */ jsxRuntime.jsx(ExternalLink, { size: 14, color: "#a1a1aa" }),
       !readOnly && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
         /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-link-action-btn-small", onClick: handleEditManual, title: "D\xFCzenle", children: /* @__PURE__ */ jsxRuntime.jsx(Pencil, { size: 14 }) }),
         /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-link-action-btn-small", onClick: handleClear, title: "Kald\u0131r", children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 14 }) })
@@ -23675,7 +23719,7 @@ var LinkField = ({
           )
         ] }),
         loading ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-text-center tecof-p-40 tecof-text-muted", children: "Y\xFCkleniyor..." }) : filteredPages.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-text-center tecof-p-40 tecof-text-muted", children: search ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz sayfa yok" }) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-page-list", children: filteredPages.map((page) => {
-          const selected = value?.url === `/${page.slug}`;
+          const selected = activeValue?.url === `/${page.slug}`;
           return /* @__PURE__ */ jsxRuntime.jsxs(
             "div",
             {
@@ -23714,7 +23758,7 @@ var createLinkField = (options = {}) => {
         field,
         name: name3,
         id,
-        value: value || { url: "" },
+        value: value || [],
         onChange,
         readOnly,
         ...fieldOptions

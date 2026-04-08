@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.12",
+    "version": "0.0.14",
     "description": "React theme editor library for Tecof projects",
     "keywords": [
         "react",
@@ -41,6 +41,7 @@
     ],
     "scripts": {
         "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
+        "dev:preview": "vite --config playground/vite.config.ts",
         "build": "tsup src/index.ts --dts --format esm,cjs && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
         "lint": "eslint .",
         "test": "vitest",
@@ -60,6 +61,7 @@
         "@storybook/react-vite": "^8.0.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.7.0",
         "browser-image-compression": "^2.0.2",
         "eslint": "^9.0.0",
         "filepond": "^4.32.12",

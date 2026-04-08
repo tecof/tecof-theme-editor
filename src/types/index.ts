@@ -181,3 +181,8 @@ export interface LinkFieldValue {
   target?: '_self' | '_blank';
   type?: 'page' | 'custom';
 }
+
+export interface LocalizedLinkFieldValue {
+  code: string;
+  value: LinkFieldValue;
+}

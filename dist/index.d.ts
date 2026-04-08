@@ -144,6 +144,10 @@ interface LinkFieldValue {
     target?: '_self' | '_blank';
     type?: 'page' | 'custom';
 }
+interface LocalizedLinkFieldValue {
+    code: string;
+    value: LinkFieldValue;
+}
 
 /**
  * Tecof API Client — handles communication with the Tecof backend
@@ -475,8 +479,8 @@ interface LinkFieldProps {
     field: any;
     name: string;
     id: string;
-    value: LinkFieldValue | null;
-    onChange: (value: LinkFieldValue | null) => void;
+    value: LocalizedLinkFieldValue[] | null;
+    onChange: (value: LocalizedLinkFieldValue[] | null) => void;
     readOnly?: boolean;
 }
 interface LinkFieldOptions {
