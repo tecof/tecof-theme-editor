@@ -173,26 +173,9 @@ const FileItemRenderer = ({
         </div>
       </div>
       <div className="tecof-upload-file-actions">
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="tecof-upload-action-btn"
-          title="Görüntüle"
-        >
-          <Eye size={15} />
-        </a>
-        <a
-          href={fileUrl}
-          download
-          className="tecof-upload-action-btn"
-          title="İndir"
-        >
-          <Download size={15} />
-        </a>
         {!readOnly && onRemove && (
           <button type="button" className="tecof-upload-action-btn tecof-upload-action-btn-danger" onClick={onRemove} title="Kaldır">
-            <Trash2 size={14} />
+            <Trash2 size={13} />
           </button>
         )}
       </div>
