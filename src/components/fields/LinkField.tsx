@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { FieldLabel } from '@puckeditor/core';
 import { useTecof } from '../TecofProvider';
 import type { LinkFieldValue } from '../../types';
 
@@ -227,6 +228,8 @@ export const LinkField = ({
         <Drawer.Portal>
           <Drawer.Overlay className="tecof-link-drawer-overlay" />
           <Drawer.Content className="tecof-link-drawer-content">
+            <Drawer.Title className="tecof-sr-only">Bağlantı Sayfası Seçici</Drawer.Title>
+            <Drawer.Description className="tecof-sr-only">Sayfa listesinden seçim yapın veya arama yapın</Drawer.Description>
             <div className="tecof-link-drawer-header">
               <h2 className="tecof-link-drawer-title">Sayfa Seç</h2>
               <button className="tecof-link-drawer-close-btn" onClick={() => setDrawerOpen(false)}>
@@ -298,15 +301,17 @@ export const createLinkField = (options: LinkFieldOptions = {}) => {
     labelIcon,
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: LinkFieldProps) => (
-      <LinkField
-        field={field}
-        name={name}
-        id={id}
-        value={value || null}
-        onChange={onChange}
-        readOnly={readOnly}
-        {...fieldOptions}
-      />
+      <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
+        <LinkField
+          field={field}
+          name={name}
+          id={id}
+          value={value || { url: '' }}
+          onChange={onChange}
+          readOnly={readOnly}
+          {...fieldOptions}
+        />
+      </FieldLabel>
     ),
   };
 };

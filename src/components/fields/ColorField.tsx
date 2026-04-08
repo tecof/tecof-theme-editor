@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { FieldLabel } from '@puckeditor/core';
 import { Pipette, X, RotateCcw } from 'lucide-react';
 
 /* ─── Preset Palettes ─── */
@@ -320,15 +321,17 @@ export const createColorField = (options: ColorFieldOptions = {}) => {
     labelIcon,
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: ColorFieldProps) => (
-      <ColorField
-        field={field}
-        name={name}
-        id={id}
-        value={value || ''}
-        onChange={onChange}
-        readOnly={readOnly}
-        {...fieldOptions}
-      />
+      <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
+        <ColorField
+          field={field}
+          name={name}
+          id={id}
+          value={value || ''}
+          onChange={onChange}
+          readOnly={readOnly}
+          {...fieldOptions}
+        />
+      </FieldLabel>
     ),
   };
 };

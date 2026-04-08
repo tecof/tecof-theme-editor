@@ -17,6 +17,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Code from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
+import { FieldLabel } from '@puckeditor/core';
 import { useLanguages } from './useLanguages';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
 import type { LanguageFieldValue } from '../../types';
@@ -382,15 +383,17 @@ export const createEditorField = (
     labelIcon,
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: EditorFieldProps) => (
-      <EditorField
-        field={field}
-        name={name}
-        id={id}
-        value={value || []}
-        onChange={onChange}
-        readOnly={readOnly}
-        {...fieldOptions}
-      />
+      <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
+        <EditorField
+          field={field}
+          name={name}
+          id={id}
+          value={value || []}
+          onChange={onChange}
+          readOnly={readOnly}
+          {...fieldOptions}
+        />
+      </FieldLabel>
     ),
   };
 };

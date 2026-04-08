@@ -64,9 +64,10 @@ var ReactDOM__namespace = /*#__PURE__*/_interopNamespace(ReactDOM);
 
 // src/api.ts
 var TecofApiClient = class {
-  constructor(apiUrl, secretKey) {
+  constructor(apiUrl, secretKey, customCdnUrl) {
     this.apiUrl = apiUrl.replace(/\/+$/, "");
     this.secretKey = secretKey;
+    this.customCdnUrl = customCdnUrl ? customCdnUrl.replace(/\/+$/, "") : void 0;
   }
   get headers() {
     return {
@@ -227,20 +228,21 @@ var TecofApiClient = class {
       };
     }
   }
-  /** CDN base URL (derived from apiUrl) */
+  /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl() {
-    return this.apiUrl;
+    return this.customCdnUrl || this.apiUrl;
   }
 };
 var TecofContext = React__default.createContext(null);
-var TecofProvider = ({ apiUrl, secretKey, children }) => {
+var TecofProvider = ({ apiUrl, secretKey, cdnUrl, children }) => {
   const value = React__default.useMemo(
     () => ({
-      apiClient: new TecofApiClient(apiUrl, secretKey),
+      apiClient: new TecofApiClient(apiUrl, secretKey, cdnUrl),
       secretKey,
-      apiUrl
+      apiUrl,
+      cdnUrl
     }),
-    [apiUrl, secretKey]
+    [apiUrl, secretKey, cdnUrl]
   );
   return /* @__PURE__ */ jsxRuntime.jsx(TecofContext.Provider, { value, children });
 };
@@ -1045,7 +1047,7 @@ var createLanguageField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(core.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
       LanguageField,
       {
         field,
@@ -1056,7 +1058,7 @@ var createLanguageField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    )
+    ) })
   };
 };
 var createExtensions = () => [
@@ -1335,7 +1337,7 @@ var createEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(core.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
       EditorField,
       {
         field,
@@ -1346,7 +1348,7 @@ var createEditorField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    )
+    ) })
   };
 };
 
@@ -20810,6 +20812,8 @@ var Root = Dialog;
 var Portal2 = DialogPortal;
 var Overlay = DialogOverlay;
 var Content = DialogContent;
+var Title = DialogTitle;
+var Description = DialogDescription;
 function __insertCSS(code) {
   if (typeof document == "undefined") return;
   let head = document.head || document.getElementsByTagName("head")[0];
@@ -22271,7 +22275,10 @@ var Drawer = {
   Root: Root2,
   Content: Content2,
   Overlay: Overlay2,
-  Portal: Portal3};
+  Portal: Portal3,
+  Title,
+  Description
+};
 registerPlugin(
   filepond_plugin_file_validate_size_esm_default,
   filepond_plugin_file_validate_type_esm_default,
@@ -22714,6 +22721,8 @@ var UploadField = ({
     }, children: /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Portal, { children: [
       /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
       /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { className: "tecof-upload-drawer-content", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(Drawer.Title, { className: "tecof-sr-only", children: "Medya Y\xF6neticisi" }),
+        /* @__PURE__ */ jsxRuntime.jsx(Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in veya yeni dosya y\xFCkleyin" }),
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-drawer-handle" }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-inner", children: [
           /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header", children: [
@@ -22807,7 +22816,7 @@ var createUploadField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(core.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
       UploadField,
       {
         field,
@@ -22818,7 +22827,7 @@ var createUploadField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    )
+    ) })
   };
 };
 
@@ -23496,7 +23505,7 @@ var createCodeEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(core.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
       CodeEditorField,
       {
         field,
@@ -23507,7 +23516,7 @@ var createCodeEditorField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    )
+    ) })
   };
 };
 var LinkField = ({
@@ -23646,6 +23655,8 @@ var LinkField = ({
     /* @__PURE__ */ jsxRuntime.jsx(Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Portal, { children: [
       /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { className: "tecof-link-drawer-overlay" }),
       /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { className: "tecof-link-drawer-content", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(Drawer.Title, { className: "tecof-sr-only", children: "Ba\u011Flant\u0131 Sayfas\u0131 Se\xE7ici" }),
+        /* @__PURE__ */ jsxRuntime.jsx(Drawer.Description, { className: "tecof-sr-only", children: "Sayfa listesinden se\xE7im yap\u0131n veya arama yap\u0131n" }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-drawer-header", children: [
           /* @__PURE__ */ jsxRuntime.jsx("h2", { className: "tecof-link-drawer-title", children: "Sayfa Se\xE7" }),
           /* @__PURE__ */ jsxRuntime.jsx("button", { className: "tecof-link-drawer-close-btn", onClick: () => setDrawerOpen(false), children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 16 }) })
@@ -23697,18 +23708,18 @@ var createLinkField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(core.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
       LinkField,
       {
         field,
         name: name3,
         id,
-        value: value || null,
+        value: value || { url: "" },
         onChange,
         readOnly,
         ...fieldOptions
       }
-    )
+    ) })
   };
 };
 var PRESET_COLORS = [
@@ -23972,7 +23983,7 @@ var createColorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(core.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
       ColorField,
       {
         field,
@@ -23983,7 +23994,7 @@ var createColorField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    )
+    ) })
   };
 };
 

@@ -12,11 +12,13 @@ import type { ApiResponse, PuckPageData, PageApiData, MerchantInfoData } from '.
 export class TecofApiClient {
   private apiUrl: string;
   private secretKey: string;
+  private customCdnUrl?: string;
 
-  constructor(apiUrl: string, secretKey: string) {
+  constructor(apiUrl: string, secretKey: string, customCdnUrl?: string) {
     // Remove trailing slash
     this.apiUrl = apiUrl.replace(/\/+$/, '');
     this.secretKey = secretKey;
+    this.customCdnUrl = customCdnUrl ? customCdnUrl.replace(/\/+$/, '') : undefined;
   }
 
   private get headers(): Record<string, string> {
@@ -204,9 +206,9 @@ export class TecofApiClient {
     }
   }
 
-  /** CDN base URL (derived from apiUrl) */
+  /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl(): string {
-    return this.apiUrl;
+    return this.customCdnUrl || this.apiUrl;
   }
 }
 

@@ -8,20 +8,22 @@ interface TecofContextValue {
   apiClient: TecofApiClient;
   secretKey: string;
   apiUrl: string;
+  cdnUrl?: string;
 }
 
 const TecofContext = createContext<TecofContextValue | null>(null);
 
 /* ─── Provider ─── */
 
-export const TecofProvider = ({ apiUrl, secretKey, children }: TecofProviderProps) => {
+export const TecofProvider = ({ apiUrl, secretKey, cdnUrl, children }: TecofProviderProps) => {
   const value = useMemo<TecofContextValue>(
     () => ({
-      apiClient: new TecofApiClient(apiUrl, secretKey),
+      apiClient: new TecofApiClient(apiUrl, secretKey, cdnUrl),
       secretKey,
       apiUrl,
+      cdnUrl,
     }),
-    [apiUrl, secretKey]
+    [apiUrl, secretKey, cdnUrl]
   );
 
   return <TecofContext.Provider value={value}>{children}</TecofContext.Provider>;

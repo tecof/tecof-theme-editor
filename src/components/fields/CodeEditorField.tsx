@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import React, { forwardRef, useRef } from 'react';
+import { FieldLabel } from '@puckeditor/core';
 import Editor from '@monaco-editor/react';
 
 /* ─── Props ─── */
@@ -105,15 +106,17 @@ export const createCodeEditorField = (options: CodeEditorFieldOptions = {}) => {
     labelIcon,
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: CodeEditorFieldProps) => (
-      <CodeEditorField
-        field={field}
-        name={name}
-        id={id}
-        value={value || ''}
-        onChange={onChange}
-        readOnly={readOnly}
-        {...fieldOptions}
-      />
+      <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
+        <CodeEditorField
+          field={field}
+          name={name}
+          id={id}
+          value={value || ''}
+          onChange={onChange}
+          readOnly={readOnly}
+          {...fieldOptions}
+        />
+      </FieldLabel>
     ),
   };
 };

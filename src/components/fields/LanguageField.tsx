@@ -4,6 +4,7 @@ import { useLanguages } from './useLanguages';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import { Languages, Copy, Loader2 } from 'lucide-react';
+import { FieldLabel } from '@puckeditor/core';
 
 /* ─── Shared Tab Bar Component ─── */
 
@@ -268,15 +269,17 @@ export const createLanguageField = (
     labelIcon,
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: LanguageFieldProps) => (
-      <LanguageField
-        field={field}
-        name={name}
-        id={id}
-        value={value || []}
-        onChange={onChange}
-        readOnly={readOnly}
-        {...fieldOptions}
-      />
+      <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
+        <LanguageField
+          field={field}
+          name={name}
+          id={id}
+          value={value || []}
+          onChange={onChange}
+          readOnly={readOnly}
+          {...fieldOptions}
+        />
+      </FieldLabel>
     ),
   };
 };

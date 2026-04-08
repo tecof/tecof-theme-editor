@@ -157,7 +157,8 @@ interface LinkFieldValue {
 declare class TecofApiClient {
     private apiUrl;
     private secretKey;
-    constructor(apiUrl: string, secretKey: string);
+    private customCdnUrl?;
+    constructor(apiUrl: string, secretKey: string, customCdnUrl?: string);
     private get headers();
     /**
      * Fetch a page by ID (for the editor)
@@ -197,7 +198,7 @@ declare class TecofApiClient {
         code: string;
         value: string;
     }[]>>;
-    /** CDN base URL (derived from apiUrl) */
+    /** CDN base URL (defaults to apiUrl if not set) */
     get cdnUrl(): string;
 }
 
@@ -205,8 +206,9 @@ interface TecofContextValue {
     apiClient: TecofApiClient;
     secretKey: string;
     apiUrl: string;
+    cdnUrl?: string;
 }
-declare const TecofProvider: ({ apiUrl, secretKey, children }: TecofProviderProps) => react_jsx_runtime.JSX.Element;
+declare const TecofProvider: ({ apiUrl, secretKey, cdnUrl, children }: TecofProviderProps) => react_jsx_runtime.JSX.Element;
 declare function useTecof(): TecofContextValue;
 
 /**

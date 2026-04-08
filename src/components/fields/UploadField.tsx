@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
+import { FieldLabel } from '@puckeditor/core';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
 import type { UploadedFile } from '../../types';
@@ -617,6 +618,8 @@ export const UploadField = ({
         <Drawer.Portal>
           <Drawer.Overlay className="tecof-upload-drawer-overlay" />
           <Drawer.Content className="tecof-upload-drawer-content">
+            <Drawer.Title className="tecof-sr-only">Medya Yöneticisi</Drawer.Title>
+            <Drawer.Description className="tecof-sr-only">Sunucudaki dosyalardan birini seçin veya yeni dosya yükleyin</Drawer.Description>
             {/* Drag Handle */}
             <div className="tecof-upload-drawer-handle" />
 
@@ -742,15 +745,17 @@ export const createUploadField = (options: UploadFieldOptions = {}) => {
     labelIcon,
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: UploadFieldProps) => (
-      <UploadField
-        field={field}
-        name={name}
-        id={id}
-        value={value || []}
-        onChange={onChange}
-        readOnly={readOnly}
-        {...fieldOptions}
-      />
+      <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
+        <UploadField
+          field={field}
+          name={name}
+          id={id}
+          value={value || []}
+          onChange={onChange}
+          readOnly={readOnly}
+          {...fieldOptions}
+        />
+      </FieldLabel>
     ),
   };
 };
