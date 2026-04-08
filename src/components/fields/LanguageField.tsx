@@ -1,147 +1,9 @@
+import type { ReactElement } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import { useLanguages } from './useLanguages';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import { Languages, Copy, Loader2 } from 'lucide-react';
-
-/* ─── Shared Styles ─── */
-
-export const fieldStyles = {
-  container: {
-    width: '100%',
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-  },
-  tabBar: {
-    display: 'flex',
-    gap: '2px',
-    marginBottom: '8px',
-    borderRadius: '8px',
-    background: '#f4f4f5',
-    padding: '3px',
-    overflow: 'hidden' as const,
-  },
-  tab: (isActive: boolean, isDefault: boolean) => ({
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: '4px',
-    padding: '6px 8px',
-    fontSize: '12px',
-    fontWeight: isActive ? 600 : 400,
-    color: isActive ? '#18181b' : '#71717a',
-    background: isActive ? '#ffffff' : 'transparent',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer' as const,
-    transition: 'all 0.15s ease',
-    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-    position: 'relative' as const,
-    outline: 'none',
-  }),
-  defaultBadge: {
-    fontSize: '8px',
-    fontWeight: 700 as const,
-    color: '#ffffff',
-    background: '#3b82f6',
-    borderRadius: '3px',
-    padding: '1px 4px',
-    lineHeight: '12px',
-    letterSpacing: '0.3px',
-  },
-  inputWrapper: {
-    position: 'relative' as const,
-  },
-  input: {
-    width: '100%',
-    padding: '8px 12px',
-    fontSize: '14px',
-    lineHeight: '1.5',
-    color: '#18181b',
-    background: '#ffffff',
-    borderWidth: '1px',
-    borderStyle: 'solid',
-    borderColor: '#e4e4e7',
-    borderRadius: '8px',
-    outline: 'none',
-    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-    boxSizing: 'border-box' as const,
-  },
-  inputFocused: {
-    borderColor: '#3b82f6',
-    boxShadow: '0 0 0 3px rgba(59,130,246,0.1)',
-  },
-  textarea: {
-    resize: 'vertical' as const,
-    minHeight: '80px',
-  },
-  loading: {
-    display: 'flex',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    padding: '12px',
-    fontSize: '12px',
-    color: '#71717a',
-  },
-  loadingDot: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '50%',
-    background: '#a1a1aa',
-    margin: '0 2px',
-    display: 'inline-block',
-  },
-  error: {
-    padding: '8px 12px',
-    fontSize: '12px',
-    color: '#ef4444',
-    background: '#fef2f2',
-    borderRadius: '6px',
-    textAlign: 'center' as const,
-  },
-  // Action bar
-  actionBar: {
-    display: 'flex',
-    gap: '4px',
-    marginTop: '6px',
-  },
-  actionBtn: {
-    display: 'flex',
-    alignItems: 'center' as const,
-    gap: '4px',
-    padding: '4px 8px',
-    fontSize: '11px',
-    fontWeight: 500,
-    color: '#71717a',
-    background: '#f4f4f5',
-    border: '1px solid #e4e4e7',
-    borderRadius: '6px',
-    cursor: 'pointer' as const,
-    transition: 'all 0.15s ease',
-    whiteSpace: 'nowrap' as const,
-  },
-  actionBtnDisabled: {
-    opacity: 0.5,
-    cursor: 'not-allowed' as const,
-  },
-  statusMsg: {
-    fontSize: '11px',
-    padding: '4px 8px',
-    borderRadius: '6px',
-    display: 'flex',
-    alignItems: 'center' as const,
-    gap: '4px',
-  },
-  statusSuccess: {
-    color: '#16a34a',
-    background: '#f0fdf4',
-  },
-  statusError: {
-    color: '#dc2626',
-    background: '#fef2f2',
-  },
-} as const;
 
 /* ─── Shared Tab Bar Component ─── */
 
@@ -158,18 +20,18 @@ export const LanguageTabBar = ({
 }) => {
   if (languages.length <= 1) return null;
   return (
-    <div style={fieldStyles.tabBar}>
+    <div className="tecof-lang-tab-bar">
       {languages.map(code => (
         <button
           key={code}
           type="button"
-          style={fieldStyles.tab(activeTab === code, code === defaultLanguage)}
+          className={`tecof-lang-tab ${activeTab === code ? 'active' : ''}`}
           onClick={() => onTabChange(code)}
           title={code.toUpperCase()}
         >
           <span>{code.toUpperCase()}</span>
           {code === defaultLanguage && (
-            <span style={fieldStyles.defaultBadge}>DEFAULT</span>
+            <span className="tecof-lang-default-badge">DEFAULT</span>
           )}
         </button>
       ))}
@@ -180,10 +42,10 @@ export const LanguageTabBar = ({
 /* ─── Loading Indicator ─── */
 
 export const FieldLoading = () => (
-  <div style={fieldStyles.loading}>
-    <span style={{ ...fieldStyles.loadingDot, animation: 'tecof-pulse 1.2s ease-in-out infinite' }} />
-    <span style={{ ...fieldStyles.loadingDot, animation: 'tecof-pulse 1.2s ease-in-out 0.2s infinite' }} />
-    <span style={{ ...fieldStyles.loadingDot, animation: 'tecof-pulse 1.2s ease-in-out 0.4s infinite' }} />
+  <div className="tecof-lang-loading">
+    <span className="tecof-lang-loading-dot" />
+    <span className="tecof-lang-loading-dot" />
+    <span className="tecof-lang-loading-dot" />
   </div>
 );
 
@@ -199,6 +61,12 @@ export interface LanguageFieldProps {
 }
 
 export interface LanguageFieldOptions {
+  /** Field label displayed in the Puck sidebar */
+  label?: string;
+  /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+  labelIcon?: ReactElement;
+  /** Whether this field is visible in the sidebar */
+  visible?: boolean;
   /** Whether to render as textarea instead of input */
   isTextarea?: boolean;
   /** Number of rows for textarea mode */
@@ -222,7 +90,6 @@ export const LanguageField = ({
 }: LanguageFieldProps & LanguageFieldOptions) => {
   const { merchantInfo, loading, error, activeTab, setActiveTab } = useLanguages();
   const { apiClient } = useTecof();
-  const [focusedInput, setFocusedInput] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -305,7 +172,7 @@ export const LanguageField = ({
   }, [getCurrentText, merchantInfo, activeTab, values, onChange, apiClient, isHtml]);
 
   if (loading) return <FieldLoading />;
-  if (error && !merchantInfo) return <div style={fieldStyles.error}>{error}</div>;
+  if (error && !merchantInfo) return <div className="tecof-lang-error">{error}</div>;
   if (!merchantInfo) return null;
 
   const { languages, defaultLanguage } = merchantInfo;
@@ -313,7 +180,7 @@ export const LanguageField = ({
   const hasMultipleLanguages = languages.length > 1;
 
   return (
-    <div style={fieldStyles.container}>
+    <div className="tecof-lang-container">
       <LanguageTabBar
         languages={languages}
         defaultLanguage={defaultLanguage}
@@ -325,35 +192,25 @@ export const LanguageField = ({
         if (activeTab !== code) return null;
         const currentValue = values.find(v => v.code === code)?.value || '';
 
-        const inputStyle = {
-          ...fieldStyles.input,
-          ...(isTextarea ? fieldStyles.textarea : {}),
-          ...(focusedInput ? fieldStyles.inputFocused : {}),
-        };
-
         return (
-          <div key={code} style={fieldStyles.inputWrapper}>
+          <div key={code} className="tecof-lang-input-wrapper">
             {isTextarea ? (
               <textarea
                 value={currentValue}
                 onChange={e => handleChange(code, e.target.value)}
-                onFocus={() => setFocusedInput(true)}
-                onBlur={() => setFocusedInput(false)}
                 rows={textareaRows}
                 placeholder={placeholder || `${code.toUpperCase()} text...`}
                 disabled={readOnly}
-                style={inputStyle}
+                className="tecof-lang-input tecof-lang-textarea"
               />
             ) : (
               <input
                 type="text"
                 value={currentValue}
                 onChange={e => handleChange(code, e.target.value)}
-                onFocus={() => setFocusedInput(true)}
-                onBlur={() => setFocusedInput(false)}
                 placeholder={placeholder || `${code.toUpperCase()} text...`}
                 disabled={readOnly}
-                style={inputStyle}
+                className="tecof-lang-input"
               />
             )}
           </div>
@@ -362,13 +219,10 @@ export const LanguageField = ({
 
       {/* Action Bar: Fast Fill + Translate */}
       {!readOnly && hasMultipleLanguages && (
-        <div style={fieldStyles.actionBar}>
+        <div className="tecof-lang-action-bar">
           <button
             type="button"
-            style={{
-              ...fieldStyles.actionBtn,
-              ...((!hasText) ? fieldStyles.actionBtnDisabled : {}),
-            }}
+            className="tecof-lang-action-btn"
             onClick={handleFastFill}
             disabled={!hasText}
             title="Aktif sekmedeki metni tüm dillere kopyala"
@@ -377,16 +231,13 @@ export const LanguageField = ({
           </button>
           <button
             type="button"
-            style={{
-              ...fieldStyles.actionBtn,
-              ...((!hasText || translating) ? fieldStyles.actionBtnDisabled : {}),
-            }}
+            className="tecof-lang-action-btn"
             onClick={handleTranslate}
             disabled={!hasText || translating}
             title="Aktif sekmedeki metni diğer dillere çevir"
           >
             {translating ? (
-              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={12} className="tecof-spin" />
             ) : (
               <Languages size={12} />
             )}
@@ -394,10 +245,7 @@ export const LanguageField = ({
           </button>
 
           {statusMsg && (
-            <span style={{
-              ...fieldStyles.statusMsg,
-              ...(statusMsg.type === 'success' ? fieldStyles.statusSuccess : fieldStyles.statusError),
-            }}>
+            <span className={`tecof-lang-status-msg ${statusMsg.type === 'success' ? 'success' : 'error'}`}>
               {statusMsg.text}
             </span>
           )}
@@ -410,13 +258,15 @@ export const LanguageField = ({
 /* ─── Factory Function (Puck Custom Field) ─── */
 
 export const createLanguageField = (
-  options: LanguageFieldOptions & { label?: string } = {}
+  options: LanguageFieldOptions = {}
 ) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
 
   return {
     type: 'custom' as const,
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name, id }: LanguageFieldProps) => (
       <LanguageField
         field={field}

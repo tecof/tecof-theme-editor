@@ -280,6 +280,77 @@ fields: {
 
 ---
 
+### ColorField — Renk Seçici
+
+Yerel renk seçici, HEX giriş, hazır palet ve opsiyonel opaklık kaydırıcısı.
+
+```tsx
+import { createColorField } from "@tecof/theme-editor";
+
+fields: {
+  bgColor: createColorField({ label: "Arka Plan Rengi" }),
+  textColor: createColorField({
+    label: "Metin Rengi",
+    showOpacity: true,
+    defaultColor: "#18181b",
+  }),
+  accentColor: createColorField({
+    label: "Vurgu Rengi",
+    showPresets: false,
+  }),
+}
+```
+
+**Özellikler:**
+- 🎨 **Yerel Renk Seçici** — Sistem renk picker'ı ile kolay seçim
+- 🔤 **HEX Giriş** — Monospace font ile doğrudan HEX kodu yazma
+- 🎯 **Hazır Palet** — 9×n grid ile hızlı renk seçimi (tamamen özelleştirilebilir)
+- 🔲 **Opaklık** — Opsiyonel alpha/opaklık kaydırıcısı (8-digit hex)
+- ↩️ **Sıfırla** — Varsayılan renge geri dönme butonu
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `showOpacity` | `boolean` | `false` | Opaklık kaydırıcısı |
+| `showPresets` | `boolean` | `true` | Hazır renk paleti göster |
+| `presetColors` | `string[]` | `[built-in]` | Özel hazır renk listesi |
+| `defaultColor` | `string` | `''` | Varsayılan/sıfırlama rengi |
+| `placeholder` | `string` | `#000000` | HEX giriş placeholder |
+| `showReset` | `boolean` | `true` | Sıfırlama butonu göster |
+
+---
+
+### Ortak Alan Seçenekleri (BaseField)
+
+Tüm `create*Field()` factory fonksiyonları aşağıdaki ortak seçenekleri destekler:
+
+| Option | Tip | Açıklama |
+|--------|-----|----------|
+| `label` | `string` | Puck sidebar'da görünen alan etiketi |
+| `labelIcon` | `ReactElement` | Etiketin yanında gösterilen ikon (ör: Lucide) |
+| `visible` | `boolean` | Alanın sidebar'da görünür olup olmadığı |
+
+```tsx
+import { Globe, Image, Palette } from "lucide-react";
+
+fields: {
+  title: createLanguageField({
+    label: "Başlık",
+    labelIcon: <Globe size={16} />,
+  }),
+  bgColor: createColorField({
+    label: "Arka Plan",
+    labelIcon: <Palette size={16} />,
+  }),
+  logo: createUploadField({
+    label: "Logo",
+    labelIcon: <Image size={16} />,
+    visible: true,
+  }),
+}
+```
+
+---
+
 ## API Client
 
 ```tsx
@@ -365,16 +436,18 @@ window.addEventListener("message", (e) => {
 
 ---
 
-## CSS
+## CSS ve Tema Yapısı
 
-Editör alanlarının çalışması için CSS dosyasını dahil edin:
+Kütüphane %100 oranında izole bir CSS altyapısı sunar. Önceden kullanılan inline "CSS-in-JS" tarzı sabit tasarımlar kaldırılmış, field modüllerine ait tüm UI stilleri (EditorField, LinkField, UploadField vs.) merkezi `dist/styles.css` içerisine taşınmıştır.
+
+Tasarım çakışmalarını önlemek için kütüphanenin sunduğu tüm CSS sınıfları sadece `.tecof-[component]-[element]` (örnek: `.tecof-upload-file-list`) ön ekini kullanır. `:root` altındaki renk değişkenlerinden (örn: `--tecof-primary-500`) beslenir.
+
+Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
 
 ```tsx
-// Editor layout'unda
+// Ana Layout / Editor bileşenine yakın
 import "@tecof/theme-editor/dist/styles.css";
 ```
-
-İçerik: FilePond + Image Preview + Image Edit + Doka Editor stilleri.
 
 ---
 

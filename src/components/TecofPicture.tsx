@@ -36,35 +36,6 @@ const getSizes = (size: PictureSize): string => {
   }
 };
 
-/* ─── Styles ─── */
-
-const styles = {
-  picture: {
-    position: 'relative' as const,
-    display: 'block',
-    overflow: 'hidden' as const,
-  },
-  img: {
-    display: 'block',
-    width: '100%',
-    height: 'auto',
-    objectFit: 'cover' as const,
-  },
-  imgFill: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover' as const,
-  },
-  video: {
-    display: 'block',
-    width: '100%',
-    height: 'auto',
-    objectFit: 'cover' as const,
-  },
-};
 
 /* ─── Blur SVG Placeholder ─── */
 
@@ -144,8 +115,6 @@ export const TecofPicture = memo(({
   const imgHeight = height || data?.meta?.height || 500;
   const sizes = getSizes(size);
 
-  /* ── Video Renderer ── */
-
   const renderVideo = () => (
     <video
       src={fileURL}
@@ -153,17 +122,16 @@ export const TecofPicture = memo(({
       loop
       muted
       playsInline
-      style={{ ...styles.video, ...imgStyle }}
-      className={imgClassName}
+      className={`tecof-picture-video ${imgClassName || ''}`.trim()}
+      style={imgStyle}
     />
   );
 
   /* ── Image Renderer ── */
 
   const renderImg = () => {
-    const imageStyle = fill
-      ? { ...styles.imgFill, ...imgStyle }
-      : { ...styles.img, ...imgStyle };
+    const baseImgClass = fill ? 'tecof-picture-img-fill' : 'tecof-picture-img';
+    const computedImgClass = `${baseImgClass} ${imgClassName || ''}`.trim();
 
     const altText = alt || data?.name || 'Image';
 
@@ -172,7 +140,8 @@ export const TecofPicture = memo(({
       alt: altText,
       loading,
       sizes,
-      className: imgClassName,
+      className: computedImgClass,
+      style: imgStyle,
     };
 
     // If ImageComponent is provided (e.g. Next.js Image), use it
@@ -182,7 +151,6 @@ export const TecofPicture = memo(({
           {...commonProps}
           width={fill ? undefined : imgWidth}
           height={fill ? undefined : imgHeight}
-          style={imageStyle}
           {...(fill ? { fill: true } : {})}
           {...imageProps}
         />
@@ -195,18 +163,13 @@ export const TecofPicture = memo(({
         {...commonProps}
         width={fill ? undefined : imgWidth}
         height={fill ? undefined : imgHeight}
-        style={imageStyle}
       />
     );
   };
 
   /* ── Container ── */
 
-  const containerStyle: React.CSSProperties = {
-    ...styles.picture,
-    ...(fill ? { width: '100%', height: '100%' } : {}),
-    ...style,
-  };
+  const containerClassName = `tecof-picture-wrapper ${fill ? 'fill' : ''} ${className || ''}`.trim();
 
   /* ── Fancybox Wrapper ── */
 
@@ -217,7 +180,7 @@ export const TecofPicture = memo(({
         href={fileURL}
         style={{ display: 'block', textDecoration: 'none' }}
       >
-        <div style={containerStyle} className={className}>
+        <div style={style} className={containerClassName}>
           {isVideoType ? renderVideo() : renderImg()}
         </div>
       </a>
@@ -228,7 +191,7 @@ export const TecofPicture = memo(({
 
   if (isVideoType) {
     return (
-      <div style={containerStyle} className={className}>
+      <div style={style} className={containerClassName}>
         {renderVideo()}
       </div>
     );
@@ -236,7 +199,7 @@ export const TecofPicture = memo(({
 
   if (isImageType) {
     return (
-      <div style={containerStyle} className={className}>
+      <div style={style} className={containerClassName}>
         {renderImg()}
       </div>
     );

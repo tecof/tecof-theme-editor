@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import React, { forwardRef, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 
@@ -13,24 +14,16 @@ export interface CodeEditorFieldProps {
 }
 
 export interface CodeEditorFieldOptions {
+  /** Field label displayed in the Puck sidebar */
   label?: string;
+  /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+  labelIcon?: ReactElement;
+  /** Whether this field is visible in the sidebar */
+  visible?: boolean;
   defaultLanguage?: string;
   height?: string;
   theme?: string;
 }
-
-/* ─── Styles ─── */
-
-const s = {
-  container: {
-    width: '100%',
-    fontFamily: "'Inter', system-ui, sans-serif",
-    border: '1px solid #e4e4e7',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    background: '#ffffff',
-  },
-} as const;
 
 /* ─── Component ─── */
 
@@ -53,7 +46,7 @@ export const CodeEditorField = forwardRef<any, CodeEditorFieldProps & CodeEditor
   };
 
   return (
-    <div ref={ref} style={s.container}>
+    <div ref={ref} className="tecof-code-editor-container">
       <Editor
         onMount={handleEditorDidMount}
         theme={theme}
@@ -104,11 +97,13 @@ CodeEditorField.displayName = 'CodeEditorField';
  * ```
  */
 export const createCodeEditorField = (options: CodeEditorFieldOptions = {}) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
 
   return {
     type: 'custom' as const,
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name, id }: CodeEditorFieldProps) => (
       <CodeEditorField
         field={field}

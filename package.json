@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "description": "React theme editor library for Tecof projects",
     "keywords": [
         "react",
@@ -40,7 +40,7 @@
     ],
     "scripts": {
         "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
-        "build": "tsup src/index.ts --dts --format esm,cjs && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css > dist/styles.css",
+        "build": "tsup src/index.ts --dts --format esm,cjs && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
         "lint": "eslint .",
         "test": "vitest",
         "storybook": "storybook dev -p 6006",

@@ -251,61 +251,6 @@ function useTecof() {
   }
   return ctx;
 }
-
-// src/components/styles.ts
-var editorStyles = {
-  wrapper: {
-    position: "relative",
-    width: "100%",
-    height: "100%"
-  },
-  loading: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "100vh",
-    background: "#fafafa"
-  },
-  loadingInner: {
-    textAlign: "center"
-  },
-  loadingText: {
-    fontSize: "14px",
-    color: "#71717a",
-    fontFamily: "'Inter', system-ui, sans-serif"
-  },
-  saveIndicator: {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    padding: "8px 16px",
-    background: "#18181b",
-    color: "#ffffff",
-    fontSize: "13px",
-    fontWeight: 500,
-    borderRadius: "8px",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-    zIndex: 9999,
-    fontFamily: "'Inter', system-ui, sans-serif"
-  },
-  spinner: {
-    width: "40px",
-    height: "40px",
-    border: "3px solid #e4e4e7",
-    borderTopColor: "#18181b",
-    borderRadius: "50%",
-    margin: "0 auto 12px",
-    animation: "tecof-spin 0.7s linear infinite"
-  }
-};
-var keyframesInjected = false;
-var injectKeyframes = () => {
-  if (keyframesInjected || typeof document === "undefined") return;
-  const style = document.createElement("style");
-  style.textContent = `@keyframes tecof-spin { to { transform: rotate(360deg); } }`;
-  document.head.appendChild(style);
-  keyframesInjected = true;
-};
 var EMPTY_PAGE = { content: [], root: { props: {} }, zones: {} };
 var TecofEditor = ({
   pageId,
@@ -324,9 +269,6 @@ var TecofEditor = ({
   const [saveStatus, setSaveStatus] = React__default.useState("idle");
   const puckDataRef = React__default.useRef(null);
   const isEmbedded = typeof window !== "undefined" && window.parent !== window;
-  React__default.useEffect(() => {
-    injectKeyframes();
-  }, []);
   React__default.useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -439,9 +381,9 @@ var TecofEditor = ({
     };
   }, [isEmbedded]);
   if (loading || !initialData) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.loading, className, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { style: editorStyles.loadingInner, children: [
-      /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.spinner }),
-      /* @__PURE__ */ jsxRuntime.jsx("p", { style: editorStyles.loadingText, children: "Loading editor..." })
+    return /* @__PURE__ */ jsxRuntime.jsx("div", { className: `tecof-editor-loading ${className || ""}`.trim(), children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-editor-loading-inner", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-spinner" }),
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-editor-loading-text", children: "Loading editor..." })
     ] }) });
   }
   const plugins = [
@@ -449,7 +391,7 @@ var TecofEditor = ({
     ...extraPlugins || []
   ];
   const mergedOverrides = { header: () => /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, {}), ...overrides || {} };
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: editorStyles.wrapper, className, children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-editor-wrapper ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsxRuntime.jsx(
       core.Puck,
       {
@@ -461,7 +403,7 @@ var TecofEditor = ({
         overrides: mergedOverrides
       }
     ),
-    saving && /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorStyles.saveIndicator, children: saveStatus === "error" ? "Save failed" : "Saving..." })
+    saving && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-save-indicator", children: saveStatus === "error" ? "Save failed" : "Saving..." })
   ] });
 };
 var TecofRender = ({ data: data3, config: config3, className }) => {
@@ -490,33 +432,6 @@ var getSizes = (size) => {
       return "(max-width: 720px) 100vw, 720px";
     default:
       return "100vw";
-  }
-};
-var styles = {
-  picture: {
-    position: "relative",
-    display: "block",
-    overflow: "hidden"
-  },
-  img: {
-    display: "block",
-    width: "100%",
-    height: "auto",
-    objectFit: "cover"
-  },
-  imgFill: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover"
-  },
-  video: {
-    display: "block",
-    width: "100%",
-    height: "auto",
-    objectFit: "cover"
   }
 };
 var DEFAULT_BLUR_DATA_URL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmM2Y0ZjYiLz48L3N2Zz4=";
@@ -556,19 +471,21 @@ var TecofPicture = React__default.memo(({
       loop: true,
       muted: true,
       playsInline: true,
-      style: { ...styles.video, ...imgStyle },
-      className: imgClassName
+      className: `tecof-picture-video ${imgClassName || ""}`.trim(),
+      style: imgStyle
     }
   );
   const renderImg = () => {
-    const imageStyle = fill ? { ...styles.imgFill, ...imgStyle } : { ...styles.img, ...imgStyle };
+    const baseImgClass = fill ? "tecof-picture-img-fill" : "tecof-picture-img";
+    const computedImgClass = `${baseImgClass} ${imgClassName || ""}`.trim();
     const altText = alt || data3?.name || "Image";
     const commonProps = {
       src: fileURL,
       alt: altText,
       loading,
       sizes,
-      className: imgClassName
+      className: computedImgClass,
+      style: imgStyle
     };
     if (ImageComponent) {
       return /* @__PURE__ */ jsxRuntime.jsx(
@@ -577,7 +494,6 @@ var TecofPicture = React__default.memo(({
           ...commonProps,
           width: fill ? void 0 : imgWidth,
           height: fill ? void 0 : imgHeight,
-          style: imageStyle,
           ...fill ? { fill: true } : {},
           ...imageProps
         }
@@ -588,16 +504,11 @@ var TecofPicture = React__default.memo(({
       {
         ...commonProps,
         width: fill ? void 0 : imgWidth,
-        height: fill ? void 0 : imgHeight,
-        style: imageStyle
+        height: fill ? void 0 : imgHeight
       }
     );
   };
-  const containerStyle = {
-    ...styles.picture,
-    ...fill ? { width: "100%", height: "100%" } : {},
-    ...style
-  };
+  const containerClassName = `tecof-picture-wrapper ${fill ? "fill" : ""} ${className || ""}`.trim();
   if (fancybox && (isImageType2 || isVideoType)) {
     return /* @__PURE__ */ jsxRuntime.jsx(
       "a",
@@ -605,15 +516,15 @@ var TecofPicture = React__default.memo(({
         "data-fancybox": fancyboxName,
         href: fileURL,
         style: { display: "block", textDecoration: "none" },
-        children: /* @__PURE__ */ jsxRuntime.jsx("div", { style: containerStyle, className, children: isVideoType ? renderVideo() : renderImg() })
+        children: /* @__PURE__ */ jsxRuntime.jsx("div", { style, className: containerClassName, children: isVideoType ? renderVideo() : renderImg() })
       }
     );
   }
   if (isVideoType) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { style: containerStyle, className, children: renderVideo() });
+    return /* @__PURE__ */ jsxRuntime.jsx("div", { style, className: containerClassName, children: renderVideo() });
   }
   if (isImageType2) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { style: containerStyle, className, children: renderImg() });
+    return /* @__PURE__ */ jsxRuntime.jsx("div", { style, className: containerClassName, children: renderImg() });
   }
   return null;
 });
@@ -756,35 +667,39 @@ var createLucideIcon = (iconName, iconNode) => {
   return Component;
 };
 
+// node_modules/lucide-react/dist/esm/icons/check.js
+var __iconNode = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+var Check = createLucideIcon("check", __iconNode);
+
 // node_modules/lucide-react/dist/esm/icons/chevron-right.js
-var __iconNode = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-var ChevronRight = createLucideIcon("chevron-right", __iconNode);
+var __iconNode2 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+var ChevronRight = createLucideIcon("chevron-right", __iconNode2);
 
 // node_modules/lucide-react/dist/esm/icons/copy.js
-var __iconNode2 = [
+var __iconNode3 = [
   ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
   ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
 ];
-var Copy = createLucideIcon("copy", __iconNode2);
+var Copy = createLucideIcon("copy", __iconNode3);
 
 // node_modules/lucide-react/dist/esm/icons/download.js
-var __iconNode3 = [
+var __iconNode4 = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-var Download = createLucideIcon("download", __iconNode3);
+var Download = createLucideIcon("download", __iconNode4);
 
 // node_modules/lucide-react/dist/esm/icons/external-link.js
-var __iconNode4 = [
+var __iconNode5 = [
   ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
   ["path", { d: "M10 14 21 3", key: "gplh6r" }],
   ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ];
-var ExternalLink = createLucideIcon("external-link", __iconNode4);
+var ExternalLink = createLucideIcon("external-link", __iconNode5);
 
 // node_modules/lucide-react/dist/esm/icons/eye.js
-var __iconNode5 = [
+var __iconNode6 = [
   [
     "path",
     {
@@ -794,10 +709,10 @@ var __iconNode5 = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-var Eye = createLucideIcon("eye", __iconNode5);
+var Eye = createLucideIcon("eye", __iconNode6);
 
 // node_modules/lucide-react/dist/esm/icons/file-text.js
-var __iconNode6 = [
+var __iconNode7 = [
   [
     "path",
     {
@@ -810,10 +725,10 @@ var __iconNode6 = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-var FileText = createLucideIcon("file-text", __iconNode6);
+var FileText = createLucideIcon("file-text", __iconNode7);
 
 // node_modules/lucide-react/dist/esm/icons/file.js
-var __iconNode7 = [
+var __iconNode8 = [
   [
     "path",
     {
@@ -823,10 +738,10 @@ var __iconNode7 = [
   ],
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
 ];
-var File2 = createLucideIcon("file", __iconNode7);
+var File2 = createLucideIcon("file", __iconNode8);
 
 // node_modules/lucide-react/dist/esm/icons/folder-open.js
-var __iconNode8 = [
+var __iconNode9 = [
   [
     "path",
     {
@@ -835,26 +750,36 @@ var __iconNode8 = [
     }
   ]
 ];
-var FolderOpen = createLucideIcon("folder-open", __iconNode8);
+var FolderOpen = createLucideIcon("folder-open", __iconNode9);
 
 // node_modules/lucide-react/dist/esm/icons/globe.js
-var __iconNode9 = [
+var __iconNode10 = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-var Globe = createLucideIcon("globe", __iconNode9);
+var Globe = createLucideIcon("globe", __iconNode10);
+
+// node_modules/lucide-react/dist/esm/icons/image-plus.js
+var __iconNode11 = [
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
+];
+var ImagePlus = createLucideIcon("image-plus", __iconNode11);
 
 // node_modules/lucide-react/dist/esm/icons/image.js
-var __iconNode10 = [
+var __iconNode12 = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
 ];
-var Image2 = createLucideIcon("image", __iconNode10);
+var Image2 = createLucideIcon("image", __iconNode12);
 
 // node_modules/lucide-react/dist/esm/icons/languages.js
-var __iconNode11 = [
+var __iconNode13 = [
   ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
   ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
   ["path", { d: "M2 5h12", key: "or177f" }],
@@ -862,21 +787,21 @@ var __iconNode11 = [
   ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
   ["path", { d: "M14 18h6", key: "1m8k6r" }]
 ];
-var Languages = createLucideIcon("languages", __iconNode11);
+var Languages = createLucideIcon("languages", __iconNode13);
 
 // node_modules/lucide-react/dist/esm/icons/link.js
-var __iconNode12 = [
+var __iconNode14 = [
   ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
   ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
 ];
-var Link = createLucideIcon("link", __iconNode12);
+var Link = createLucideIcon("link", __iconNode14);
 
 // node_modules/lucide-react/dist/esm/icons/loader-circle.js
-var __iconNode13 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-var LoaderCircle = createLucideIcon("loader-circle", __iconNode13);
+var __iconNode15 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+var LoaderCircle = createLucideIcon("loader-circle", __iconNode15);
 
 // node_modules/lucide-react/dist/esm/icons/pencil.js
-var __iconNode14 = [
+var __iconNode16 = [
   [
     "path",
     {
@@ -886,174 +811,55 @@ var __iconNode14 = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-var Pencil = createLucideIcon("pencil", __iconNode14);
+var Pencil = createLucideIcon("pencil", __iconNode16);
 
 // node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
-var __iconNode15 = [
+var __iconNode17 = [
   ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
   ["path", { d: "M16 16h5v5", key: "ccwih5" }]
 ];
-var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode15);
+var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode17);
+
+// node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
+var __iconNode18 = [
+  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
+];
+var RotateCcw = createLucideIcon("rotate-ccw", __iconNode18);
 
 // node_modules/lucide-react/dist/esm/icons/search.js
-var __iconNode16 = [
+var __iconNode19 = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-var Search = createLucideIcon("search", __iconNode16);
+var Search = createLucideIcon("search", __iconNode19);
+
+// node_modules/lucide-react/dist/esm/icons/trash-2.js
+var __iconNode20 = [
+  ["path", { d: "M10 11v6", key: "nco0om" }],
+  ["path", { d: "M14 11v6", key: "outv1u" }],
+  ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
+];
+var Trash2 = createLucideIcon("trash-2", __iconNode20);
 
 // node_modules/lucide-react/dist/esm/icons/upload.js
-var __iconNode17 = [
+var __iconNode21 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-var Upload = createLucideIcon("upload", __iconNode17);
+var Upload = createLucideIcon("upload", __iconNode21);
 
 // node_modules/lucide-react/dist/esm/icons/x.js
-var __iconNode18 = [
+var __iconNode22 = [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ];
-var X = createLucideIcon("x", __iconNode18);
-var fieldStyles = {
-  container: {
-    width: "100%",
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
-  },
-  tabBar: {
-    display: "flex",
-    gap: "2px",
-    marginBottom: "8px",
-    borderRadius: "8px",
-    background: "#f4f4f5",
-    padding: "3px",
-    overflow: "hidden"
-  },
-  tab: (isActive, isDefault) => ({
-    flex: 1,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "4px",
-    padding: "6px 8px",
-    fontSize: "12px",
-    fontWeight: isActive ? 600 : 400,
-    color: isActive ? "#18181b" : "#71717a",
-    background: isActive ? "#ffffff" : "transparent",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-    boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-    position: "relative",
-    outline: "none"
-  }),
-  defaultBadge: {
-    fontSize: "8px",
-    fontWeight: 700,
-    color: "#ffffff",
-    background: "#3b82f6",
-    borderRadius: "3px",
-    padding: "1px 4px",
-    lineHeight: "12px",
-    letterSpacing: "0.3px"
-  },
-  inputWrapper: {
-    position: "relative"
-  },
-  input: {
-    width: "100%",
-    padding: "8px 12px",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    color: "#18181b",
-    background: "#ffffff",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "#e4e4e7",
-    borderRadius: "8px",
-    outline: "none",
-    transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-    fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-    boxSizing: "border-box"
-  },
-  inputFocused: {
-    borderColor: "#3b82f6",
-    boxShadow: "0 0 0 3px rgba(59,130,246,0.1)"
-  },
-  textarea: {
-    resize: "vertical",
-    minHeight: "80px"
-  },
-  loading: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "12px",
-    fontSize: "12px",
-    color: "#71717a"
-  },
-  loadingDot: {
-    width: "6px",
-    height: "6px",
-    borderRadius: "50%",
-    background: "#a1a1aa",
-    margin: "0 2px",
-    display: "inline-block"
-  },
-  error: {
-    padding: "8px 12px",
-    fontSize: "12px",
-    color: "#ef4444",
-    background: "#fef2f2",
-    borderRadius: "6px",
-    textAlign: "center"
-  },
-  // Action bar
-  actionBar: {
-    display: "flex",
-    gap: "4px",
-    marginTop: "6px"
-  },
-  actionBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    padding: "4px 8px",
-    fontSize: "11px",
-    fontWeight: 500,
-    color: "#71717a",
-    background: "#f4f4f5",
-    border: "1px solid #e4e4e7",
-    borderRadius: "6px",
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-    whiteSpace: "nowrap"
-  },
-  actionBtnDisabled: {
-    opacity: 0.5,
-    cursor: "not-allowed"
-  },
-  statusMsg: {
-    fontSize: "11px",
-    padding: "4px 8px",
-    borderRadius: "6px",
-    display: "flex",
-    alignItems: "center",
-    gap: "4px"
-  },
-  statusSuccess: {
-    color: "#16a34a",
-    background: "#f0fdf4"
-  },
-  statusError: {
-    color: "#dc2626",
-    background: "#fef2f2"
-  }
-};
+var X = createLucideIcon("x", __iconNode22);
 var LanguageTabBar = ({
   languages,
   defaultLanguage,
@@ -1061,25 +867,25 @@ var LanguageTabBar = ({
   onTabChange
 }) => {
   if (languages.length <= 1) return null;
-  return /* @__PURE__ */ jsxRuntime.jsx("div", { style: fieldStyles.tabBar, children: languages.map((code) => /* @__PURE__ */ jsxRuntime.jsxs(
+  return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-tab-bar", children: languages.map((code) => /* @__PURE__ */ jsxRuntime.jsxs(
     "button",
     {
       type: "button",
-      style: fieldStyles.tab(activeTab === code, code === defaultLanguage),
+      className: `tecof-lang-tab ${activeTab === code ? "active" : ""}`,
       onClick: () => onTabChange(code),
       title: code.toUpperCase(),
       children: [
         /* @__PURE__ */ jsxRuntime.jsx("span", { children: code.toUpperCase() }),
-        code === defaultLanguage && /* @__PURE__ */ jsxRuntime.jsx("span", { style: fieldStyles.defaultBadge, children: "DEFAULT" })
+        code === defaultLanguage && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-lang-default-badge", children: "DEFAULT" })
       ]
     },
     code
   )) });
 };
-var FieldLoading = () => /* @__PURE__ */ jsxRuntime.jsxs("div", { style: fieldStyles.loading, children: [
-  /* @__PURE__ */ jsxRuntime.jsx("span", { style: { ...fieldStyles.loadingDot, animation: "tecof-pulse 1.2s ease-in-out infinite" } }),
-  /* @__PURE__ */ jsxRuntime.jsx("span", { style: { ...fieldStyles.loadingDot, animation: "tecof-pulse 1.2s ease-in-out 0.2s infinite" } }),
-  /* @__PURE__ */ jsxRuntime.jsx("span", { style: { ...fieldStyles.loadingDot, animation: "tecof-pulse 1.2s ease-in-out 0.4s infinite" } })
+var FieldLoading = () => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-loading", children: [
+  /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-lang-loading-dot" }),
+  /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-lang-loading-dot" }),
+  /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-lang-loading-dot" })
 ] });
 var LanguageField = ({
   value,
@@ -1092,7 +898,6 @@ var LanguageField = ({
 }) => {
   const { merchantInfo, loading, error: error2, activeTab, setActiveTab } = useLanguages();
   const { apiClient } = useTecof();
-  const [focusedInput, setFocusedInput] = React__default.useState(false);
   const [translating, setTranslating] = React__default.useState(false);
   const [statusMsg, setStatusMsg] = React__default.useState(null);
   const values = React__default.useMemo(() => {
@@ -1160,12 +965,12 @@ var LanguageField = ({
     }
   }, [getCurrentText, merchantInfo, activeTab, values, onChange, apiClient, isHtml]);
   if (loading) return /* @__PURE__ */ jsxRuntime.jsx(FieldLoading, {});
-  if (error2 && !merchantInfo) return /* @__PURE__ */ jsxRuntime.jsx("div", { style: fieldStyles.error, children: error2 });
+  if (error2 && !merchantInfo) return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-error", children: error2 });
   if (!merchantInfo) return null;
   const { languages, defaultLanguage } = merchantInfo;
   const hasText = !!getCurrentText();
   const hasMultipleLanguages = languages.length > 1;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: fieldStyles.container, children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-container", children: [
     /* @__PURE__ */ jsxRuntime.jsx(
       LanguageTabBar,
       {
@@ -1178,22 +983,15 @@ var LanguageField = ({
     languages.map((code) => {
       if (activeTab !== code) return null;
       const currentValue = values.find((v2) => v2.code === code)?.value || "";
-      const inputStyle = {
-        ...fieldStyles.input,
-        ...isTextarea ? fieldStyles.textarea : {},
-        ...focusedInput ? fieldStyles.inputFocused : {}
-      };
-      return /* @__PURE__ */ jsxRuntime.jsx("div", { style: fieldStyles.inputWrapper, children: isTextarea ? /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-input-wrapper", children: isTextarea ? /* @__PURE__ */ jsxRuntime.jsx(
         "textarea",
         {
           value: currentValue,
           onChange: (e3) => handleChange(code, e3.target.value),
-          onFocus: () => setFocusedInput(true),
-          onBlur: () => setFocusedInput(false),
           rows: textareaRows,
           placeholder: placeholder || `${code.toUpperCase()} text...`,
           disabled: readOnly,
-          style: inputStyle
+          className: "tecof-lang-input tecof-lang-textarea"
         }
       ) : /* @__PURE__ */ jsxRuntime.jsx(
         "input",
@@ -1201,23 +999,18 @@ var LanguageField = ({
           type: "text",
           value: currentValue,
           onChange: (e3) => handleChange(code, e3.target.value),
-          onFocus: () => setFocusedInput(true),
-          onBlur: () => setFocusedInput(false),
           placeholder: placeholder || `${code.toUpperCase()} text...`,
           disabled: readOnly,
-          style: inputStyle
+          className: "tecof-lang-input"
         }
       ) }, code);
     }),
-    !readOnly && hasMultipleLanguages && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: fieldStyles.actionBar, children: [
+    !readOnly && hasMultipleLanguages && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-action-bar", children: [
       /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
         {
           type: "button",
-          style: {
-            ...fieldStyles.actionBtn,
-            ...!hasText ? fieldStyles.actionBtnDisabled : {}
-          },
+          className: "tecof-lang-action-btn",
           onClick: handleFastFill,
           disabled: !hasText,
           title: "Aktif sekmedeki metni t\xFCm dillere kopyala",
@@ -1231,31 +1024,27 @@ var LanguageField = ({
         "button",
         {
           type: "button",
-          style: {
-            ...fieldStyles.actionBtn,
-            ...!hasText || translating ? fieldStyles.actionBtnDisabled : {}
-          },
+          className: "tecof-lang-action-btn",
           onClick: handleTranslate,
           disabled: !hasText || translating,
           title: "Aktif sekmedeki metni di\u011Fer dillere \xE7evir",
           children: [
-            translating ? /* @__PURE__ */ jsxRuntime.jsx(LoaderCircle, { size: 12, style: { animation: "spin 1s linear infinite" } }) : /* @__PURE__ */ jsxRuntime.jsx(Languages, { size: 12 }),
+            translating ? /* @__PURE__ */ jsxRuntime.jsx(LoaderCircle, { size: 12, className: "tecof-spin" }) : /* @__PURE__ */ jsxRuntime.jsx(Languages, { size: 12 }),
             translating ? "\xC7evriliyor..." : "\xC7evir"
           ]
         }
       ),
-      statusMsg && /* @__PURE__ */ jsxRuntime.jsx("span", { style: {
-        ...fieldStyles.statusMsg,
-        ...statusMsg.type === "success" ? fieldStyles.statusSuccess : fieldStyles.statusError
-      }, children: statusMsg.text })
+      statusMsg && /* @__PURE__ */ jsxRuntime.jsx("span", { className: `tecof-lang-status-msg ${statusMsg.type === "success" ? "success" : "error"}`, children: statusMsg.text })
     ] })
   ] });
 };
 var createLanguageField = (options = {}) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
       LanguageField,
       {
@@ -1291,48 +1080,6 @@ var createExtensions = () => [
   TextAlign__default.default.configure({ types: ["heading", "paragraph"] }),
   Link2__default.default.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } })
 ];
-var editorFieldStyles = {
-  editorWrapper: {
-    border: "1px solid #e4e4e7",
-    borderRadius: "8px",
-    overflow: "hidden",
-    background: "#ffffff",
-    transition: "border-color 0.15s ease, box-shadow 0.15s ease"
-  },
-  toolbar: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "1px",
-    padding: "4px 6px",
-    borderBottom: "1px solid #e4e4e7",
-    background: "#fafafa"
-  },
-  toolbarBtn: (isActive) => ({
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "28px",
-    height: "28px",
-    padding: "0",
-    fontSize: "13px",
-    fontWeight: isActive ? 700 : 400,
-    color: isActive ? "#3b82f6" : "#52525b",
-    background: isActive ? "#eff6ff" : "transparent",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    transition: "all 0.1s ease",
-    outline: "none",
-    lineHeight: 1
-  }),
-  divider: {
-    width: "1px",
-    height: "20px",
-    background: "#e4e4e7",
-    margin: "4px 3px",
-    alignSelf: "center"
-  }
-};
 var ToolbarBtn = ({
   onClick,
   isActive = false,
@@ -1342,7 +1089,7 @@ var ToolbarBtn = ({
   "button",
   {
     type: "button",
-    style: editorFieldStyles.toolbarBtn(isActive),
+    className: `tecof-editor-toolbar-btn ${isActive ? "active" : ""}`,
     onClick,
     title,
     onMouseDown: (e3) => e3.preventDefault(),
@@ -1351,7 +1098,7 @@ var ToolbarBtn = ({
 );
 var EditorToolbar = ({ editor: editor2 }) => {
   if (!editor2) return null;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: editorFieldStyles.toolbar, children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-editor-toolbar", children: [
     /* @__PURE__ */ jsxRuntime.jsx(
       ToolbarBtn,
       {
@@ -1376,7 +1123,7 @@ var EditorToolbar = ({ editor: editor2 }) => {
         onClick: () => editor2.chain().focus().toggleUnderline().run(),
         isActive: editor2.isActive("underline"),
         title: "Underline",
-        children: /* @__PURE__ */ jsxRuntime.jsx("span", { style: { textDecoration: "underline" }, children: "U" })
+        children: /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-underline", children: "U" })
       }
     ),
     /* @__PURE__ */ jsxRuntime.jsx(
@@ -1385,10 +1132,10 @@ var EditorToolbar = ({ editor: editor2 }) => {
         onClick: () => editor2.chain().focus().toggleStrike().run(),
         isActive: editor2.isActive("strike"),
         title: "Strikethrough",
-        children: /* @__PURE__ */ jsxRuntime.jsx("span", { style: { textDecoration: "line-through" }, children: "S" })
+        children: /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-line-through", children: "S" })
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorFieldStyles.divider }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-divider" }),
     /* @__PURE__ */ jsxRuntime.jsx(
       ToolbarBtn,
       {
@@ -1407,7 +1154,7 @@ var EditorToolbar = ({ editor: editor2 }) => {
         children: "H3"
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorFieldStyles.divider }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-divider" }),
     /* @__PURE__ */ jsxRuntime.jsx(
       ToolbarBtn,
       {
@@ -1426,7 +1173,7 @@ var EditorToolbar = ({ editor: editor2 }) => {
         children: "1."
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorFieldStyles.divider }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-divider" }),
     /* @__PURE__ */ jsxRuntime.jsx(
       ToolbarBtn,
       {
@@ -1454,7 +1201,7 @@ var EditorToolbar = ({ editor: editor2 }) => {
         children: "\u2630"
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorFieldStyles.divider }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-divider" }),
     /* @__PURE__ */ jsxRuntime.jsx(
       ToolbarBtn,
       {
@@ -1482,7 +1229,7 @@ var EditorToolbar = ({ editor: editor2 }) => {
         children: "\u275D"
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorFieldStyles.divider }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-divider" }),
     /* @__PURE__ */ jsxRuntime.jsx(ToolbarBtn, { onClick: () => editor2.chain().focus().undo().run(), title: "Undo", children: "\u21A9" }),
     /* @__PURE__ */ jsxRuntime.jsx(ToolbarBtn, { onClick: () => editor2.chain().focus().redo().run(), title: "Redo", children: "\u21AA" })
   ] });
@@ -1529,60 +1276,12 @@ var TipTapInstance = ({
     /* @__PURE__ */ jsxRuntime.jsx(react.EditorContent, { editor: editor2 })
   ] });
 };
-var editorStylesInjected = false;
-var injectEditorStyles = () => {
-  if (editorStylesInjected || typeof document === "undefined") return;
-  const style = document.createElement("style");
-  style.textContent = `
-    .tecof-editor-field .tiptap {
-      padding: 10px 14px;
-      min-height: 120px;
-      outline: none;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #18181b;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    .tecof-editor-field .tiptap p { margin: 0 0 0.5em 0; }
-    .tecof-editor-field .tiptap h2 { font-size: 1.4em; font-weight: 600; margin: 0.8em 0 0.4em; }
-    .tecof-editor-field .tiptap h3 { font-size: 1.2em; font-weight: 600; margin: 0.6em 0 0.3em; }
-    .tecof-editor-field .tiptap h4 { font-size: 1.1em; font-weight: 600; margin: 0.5em 0 0.25em; }
-    .tecof-editor-field .tiptap ul,
-    .tecof-editor-field .tiptap ol { padding-left: 1.4em; margin: 0.4em 0; }
-    .tecof-editor-field .tiptap li { margin: 0.1em 0; }
-    .tecof-editor-field .tiptap blockquote {
-      border-left: 3px solid #e4e4e7;
-      padding-left: 12px;
-      margin: 0.6em 0;
-      color: #71717a;
-      font-style: italic;
-    }
-    .tecof-editor-field .tiptap a { color: #3b82f6; text-decoration: underline; }
-    .tecof-editor-field .tiptap code {
-      background: #f4f4f5; padding: 2px 4px; border-radius: 3px;
-      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.9em;
-    }
-    .tecof-editor-field .tiptap pre {
-      background: #18181b; color: #e4e4e7; padding: 12px 16px;
-      border-radius: 6px; font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 13px; overflow-x: auto;
-    }
-    .tecof-editor-field .tiptap hr {
-      border: none; border-top: 1px solid #e4e4e7; margin: 1em 0;
-    }
-  `;
-  document.head.appendChild(style);
-  editorStylesInjected = true;
-};
 var EditorField = ({
   value,
   onChange,
   readOnly
 }) => {
   const { merchantInfo, loading, error: error2, activeTab, setActiveTab } = useLanguages();
-  React__default.useEffect(() => {
-    injectEditorStyles();
-  }, []);
   const values = React__default.useMemo(() => {
     if (!merchantInfo) return value || [];
     const current = value || [];
@@ -1602,10 +1301,10 @@ var EditorField = ({
     onChange(updated);
   }, [values, onChange]);
   if (loading) return /* @__PURE__ */ jsxRuntime.jsx(FieldLoading, {});
-  if (error2 && !merchantInfo) return /* @__PURE__ */ jsxRuntime.jsx("div", { style: fieldStyles.error, children: error2 });
+  if (error2 && !merchantInfo) return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-error", children: error2 });
   if (!merchantInfo) return null;
   const { languages, defaultLanguage } = merchantInfo;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: fieldStyles.container, className: "tecof-editor-field", children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-container tecof-editor-field", children: [
     /* @__PURE__ */ jsxRuntime.jsx(
       LanguageTabBar,
       {
@@ -1618,7 +1317,7 @@ var EditorField = ({
     languages.map((code) => {
       if (activeTab !== code) return null;
       const currentValue = values.find((v2) => v2.code === code)?.value || "";
-      return /* @__PURE__ */ jsxRuntime.jsx("div", { style: editorFieldStyles.editorWrapper, children: /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-editor-wrapper", children: /* @__PURE__ */ jsxRuntime.jsx(
         TipTapInstance,
         {
           content: currentValue,
@@ -1630,10 +1329,12 @@ var EditorField = ({
   ] });
 };
 var createEditorField = (options = {}) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
       EditorField,
       {
@@ -2088,7 +1789,7 @@ var defaults = {
   originX: 0,
   originY: 0
 };
-var styles2 = ({ mixinConfig, viewProps, viewInternalAPI, viewExternalAPI, view }) => {
+var styles = ({ mixinConfig, viewProps, viewInternalAPI, viewExternalAPI, view }) => {
   const initialProps = { ...viewProps };
   const currentProps = {};
   addGetSet(mixinConfig, [viewInternalAPI, viewExternalAPI], viewProps);
@@ -2140,9 +1841,9 @@ var applyStyles = (element, {
   height
 }) => {
   let transforms2 = "";
-  let styles4 = "";
+  let styles3 = "";
   if (isDefined(originX) || isDefined(originY)) {
-    styles4 += `transform-origin: ${originX || 0}px ${originY || 0}px;`;
+    styles3 += `transform-origin: ${originX || 0}px ${originY || 0}px;`;
   }
   if (isDefined(perspective2)) {
     transforms2 += `perspective(${perspective2}px) `;
@@ -2163,31 +1864,31 @@ var applyStyles = (element, {
     transforms2 += `rotateY(${rotateY2}rad) `;
   }
   if (transforms2.length) {
-    styles4 += `transform:${transforms2};`;
+    styles3 += `transform:${transforms2};`;
   }
   if (isDefined(opacity)) {
-    styles4 += `opacity:${opacity};`;
+    styles3 += `opacity:${opacity};`;
     if (opacity === 0) {
-      styles4 += `visibility:hidden;`;
+      styles3 += `visibility:hidden;`;
     }
     if (opacity < 1) {
-      styles4 += `pointer-events:none;`;
+      styles3 += `pointer-events:none;`;
     }
   }
   if (isDefined(height)) {
-    styles4 += `height:${height}px;`;
+    styles3 += `height:${height}px;`;
   }
   if (isDefined(width)) {
-    styles4 += `width:${width}px;`;
+    styles3 += `width:${width}px;`;
   }
   const elementCurrentStyle = element.elementCurrentStyle || "";
-  if (styles4.length !== elementCurrentStyle.length || styles4 !== elementCurrentStyle) {
-    element.style.cssText = styles4;
-    element.elementCurrentStyle = styles4;
+  if (styles3.length !== elementCurrentStyle.length || styles3 !== elementCurrentStyle) {
+    element.style.cssText = styles3;
+    element.elementCurrentStyle = styles3;
   }
 };
 var Mixins = {
-  styles: styles2,
+  styles,
   listeners,
   animations,
   apis
@@ -11403,17 +11104,17 @@ var canvasApplyMarkup = (canvas, markup) => new Promise((resolve) => {
   );
   chain(drawers).then(() => resolve(canvas));
 });
-var applyMarkupStyles = (ctx, styles4) => {
+var applyMarkupStyles = (ctx, styles3) => {
   ctx.beginPath();
-  ctx.lineCap = styles4["stroke-linecap"];
-  ctx.lineJoin = styles4["stroke-linejoin"];
-  ctx.lineWidth = styles4["stroke-width"];
-  if (styles4["stroke-dasharray"].length) {
-    ctx.setLineDash(styles4["stroke-dasharray"].split(","));
+  ctx.lineCap = styles3["stroke-linecap"];
+  ctx.lineJoin = styles3["stroke-linejoin"];
+  ctx.lineWidth = styles3["stroke-width"];
+  if (styles3["stroke-dasharray"].length) {
+    ctx.setLineDash(styles3["stroke-dasharray"].split(","));
   }
-  ctx.fillStyle = styles4["fill"];
-  ctx.strokeStyle = styles4["stroke"];
-  ctx.globalAlpha = styles4.opacity || 1;
+  ctx.fillStyle = styles3["fill"];
+  ctx.strokeStyle = styles3["stroke"];
+  ctx.globalAlpha = styles3.opacity || 1;
 };
 var drawMarkupStyles = (ctx) => {
   ctx.fill();
@@ -11422,16 +11123,16 @@ var drawMarkupStyles = (ctx) => {
 };
 var drawRect = (ctx, size, markup) => {
   const rect = getMarkupRect2(markup, size);
-  const styles4 = getMarkupStyles2(markup, size);
-  applyMarkupStyles(ctx, styles4);
+  const styles3 = getMarkupStyles2(markup, size);
+  applyMarkupStyles(ctx, styles3);
   ctx.rect(rect.x, rect.y, rect.width, rect.height);
   drawMarkupStyles(ctx);
   return true;
 };
 var drawEllipse = (ctx, size, markup) => {
   const rect = getMarkupRect2(markup, size);
-  const styles4 = getMarkupStyles2(markup, size);
-  applyMarkupStyles(ctx, styles4);
+  const styles3 = getMarkupStyles2(markup, size);
+  applyMarkupStyles(ctx, styles3);
   const x = rect.x, y = rect.y, w = rect.width, h2 = rect.height, kappa = 0.5522848, ox = w / 2 * kappa, oy = h2 / 2 * kappa, xe2 = x + w, ye2 = y + h2, xm = x + w / 2, ym = y + h2 / 2;
   ctx.moveTo(x, ym);
   ctx.bezierCurveTo(x, ym - oy, xm - ox, y, xm, y);
@@ -11443,8 +11144,8 @@ var drawEllipse = (ctx, size, markup) => {
 };
 var drawImage = (ctx, size, markup, done) => {
   const rect = getMarkupRect2(markup, size);
-  const styles4 = getMarkupStyles2(markup, size);
-  applyMarkupStyles(ctx, styles4);
+  const styles3 = getMarkupStyles2(markup, size);
+  applyMarkupStyles(ctx, styles3);
   const image2 = new Image();
   const isCrossOriginImage = new URL(markup.src, window.location.href).origin !== window.location.origin;
   if (isCrossOriginImage) image2.crossOrigin = "";
@@ -11483,8 +11184,8 @@ var drawImage = (ctx, size, markup, done) => {
 };
 var drawText = (ctx, size, markup) => {
   const rect = getMarkupRect2(markup, size);
-  const styles4 = getMarkupStyles2(markup, size);
-  applyMarkupStyles(ctx, styles4);
+  const styles3 = getMarkupStyles2(markup, size);
+  applyMarkupStyles(ctx, styles3);
   const fontSize = getMarkupValue2(markup.fontSize, size);
   const fontFamily = markup.fontFamily || "sans-serif";
   const fontWeight = markup.fontWeight || "normal";
@@ -11496,8 +11197,8 @@ var drawText = (ctx, size, markup) => {
   return true;
 };
 var drawPath = (ctx, size, markup) => {
-  const styles4 = getMarkupStyles2(markup, size);
-  applyMarkupStyles(ctx, styles4);
+  const styles3 = getMarkupStyles2(markup, size);
+  applyMarkupStyles(ctx, styles3);
   ctx.beginPath();
   const points = markup.points.map((point) => ({
     x: getMarkupValue2(point.x, size, 1, "width"),
@@ -11513,8 +11214,8 @@ var drawPath = (ctx, size, markup) => {
 };
 var drawLine = (ctx, size, markup) => {
   const rect = getMarkupRect2(markup, size);
-  const styles4 = getMarkupStyles2(markup, size);
-  applyMarkupStyles(ctx, styles4);
+  const styles3 = getMarkupStyles2(markup, size);
+  applyMarkupStyles(ctx, styles3);
   ctx.beginPath();
   const origin = {
     x: rect.x,
@@ -12264,7 +11965,7 @@ var isObject2 = function(e3) {
 };
 var createStore2 = function(e3) {
   var t2 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : [], r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], n = _objectSpread({}, e3), i2 = [], o2 = [], a2 = function(e4, t3, r3) {
-    r3 ? o2.push({ type: e4, data: t3 }) : (s5[e4] && s5[e4](t3), i2.push({ type: e4, data: t3 }));
+    r3 ? o2.push({ type: e4, data: t3 }) : (s2[e4] && s2[e4](t3), i2.push({ type: e4, data: t3 }));
   }, c2 = function(e4) {
     for (var t3, r3 = arguments.length, n2 = new Array(r3 > 1 ? r3 - 1 : 0), i3 = 1; i3 < r3; i3++) n2[i3 - 1] = arguments[i3];
     return u[e4] ? (t3 = u)[e4].apply(t3, n2) : null;
@@ -12283,9 +11984,9 @@ var createStore2 = function(e3) {
   t2.forEach(function(e4) {
     u = _objectSpread({}, e4(n), u);
   });
-  var s5 = {};
+  var s2 = {};
   return r2.forEach(function(e4) {
-    s5 = _objectSpread({}, e4(a2, c2, n), s5);
+    s2 = _objectSpread({}, e4(a2, c2, n), s2);
   }), l3;
 };
 var defineProperty2 = function(e3, t2, r2) {
@@ -12358,13 +12059,13 @@ var thereYet2 = function(e3, t2, r2) {
   return Math.abs(e3 - t2) < n && Math.abs(r2) < n;
 };
 var spring2 = function() {
-  var e3 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, t2 = e3.stiffness, r2 = void 0 === t2 ? 0.5 : t2, n = e3.damping, i2 = void 0 === n ? 0.75 : n, o2 = e3.mass, a2 = void 0 === o2 ? 10 : o2, c2 = e3.delay, l3 = void 0 === c2 ? 0 : c2, u = null, s5 = null, d = 0, p = false, f2 = null, h2 = createObject2({ interpolate: function(e4) {
+  var e3 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, t2 = e3.stiffness, r2 = void 0 === t2 ? 0.5 : t2, n = e3.damping, i2 = void 0 === n ? 0.75 : n, o2 = e3.mass, a2 = void 0 === o2 ? 10 : o2, c2 = e3.delay, l3 = void 0 === c2 ? 0 : c2, u = null, s2 = null, d = 0, p = false, f2 = null, h2 = createObject2({ interpolate: function(e4) {
     if (null === f2 && (f2 = e4), !(e4 - l3 < f2 || p)) {
-      if (!isNumber2(u) || !isNumber2(s5)) return p = true, void (d = 0);
-      thereYet2(s5 += d += -(s5 - u) * r2 / a2, u, d *= i2) ? (s5 = u, d = 0, p = true, h2.onupdate(s5), h2.oncomplete(s5)) : h2.onupdate(s5);
+      if (!isNumber2(u) || !isNumber2(s2)) return p = true, void (d = 0);
+      thereYet2(s2 += d += -(s2 - u) * r2 / a2, u, d *= i2) ? (s2 = u, d = 0, p = true, h2.onupdate(s2), h2.oncomplete(s2)) : h2.onupdate(s2);
     }
   }, target: { set: function(e4) {
-    if (isNumber2(e4) && !isNumber2(s5) && (s5 = e4, f2 = null), null === u && (u = e4, s5 = e4, f2 = null), p && (f2 = null), s5 === (u = e4) || void 0 === u) return p = true, d = 0, f2 = null, h2.onupdate(s5), void h2.oncomplete(s5);
+    if (isNumber2(e4) && !isNumber2(s2) && (s2 = e4, f2 = null), null === u && (u = e4, s2 = e4, f2 = null), p && (f2 = null), s2 === (u = e4) || void 0 === u) return p = true, d = 0, f2 = null, h2.onupdate(s2), void h2.oncomplete(s2);
     p = false;
   }, get: function() {
     return u;
@@ -12373,7 +12074,7 @@ var spring2 = function() {
   } }, onupdate: function() {
   }, oncomplete: function() {
   }, position: { get: function() {
-    return s5;
+    return s2;
   } } });
   return h2;
 };
@@ -12381,15 +12082,15 @@ var easeInOutQuad2 = function(e3) {
   return e3 < 0.5 ? 2 * e3 * e3 : (4 - 2 * e3) * e3 - 1;
 };
 var tween2 = function() {
-  var e3, t2, r2 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, n = r2.duration, i2 = void 0 === n ? 500 : n, o2 = r2.easing, a2 = void 0 === o2 ? easeInOutQuad2 : o2, c2 = r2.delay, l3 = void 0 === c2 ? 0 : c2, u = null, s5 = true, d = false, p = null, f2 = createObject2({ interpolate: function(r3) {
-    s5 || null === p || (null === u && (u = r3), r3 - u < l3 || ((e3 = r3 - u - l3) < i2 ? (t2 = e3 / i2, f2.onupdate((e3 >= 0 ? a2(d ? 1 - t2 : t2) : 0) * p)) : (e3 = 1, t2 = d ? 0 : 1, f2.onupdate(t2 * p), f2.oncomplete(t2 * p), s5 = true)));
+  var e3, t2, r2 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, n = r2.duration, i2 = void 0 === n ? 500 : n, o2 = r2.easing, a2 = void 0 === o2 ? easeInOutQuad2 : o2, c2 = r2.delay, l3 = void 0 === c2 ? 0 : c2, u = null, s2 = true, d = false, p = null, f2 = createObject2({ interpolate: function(r3) {
+    s2 || null === p || (null === u && (u = r3), r3 - u < l3 || ((e3 = r3 - u - l3) < i2 ? (t2 = e3 / i2, f2.onupdate((e3 >= 0 ? a2(d ? 1 - t2 : t2) : 0) * p)) : (e3 = 1, t2 = d ? 0 : 1, f2.onupdate(t2 * p), f2.oncomplete(t2 * p), s2 = true)));
   }, target: { get: function() {
     return d ? 0 : p;
   }, set: function(e4) {
     if (null === p) return p = e4, f2.onupdate(e4), void f2.oncomplete(e4);
-    e4 < p ? (p = 1, d = true) : (d = false, p = e4), s5 = false, u = null;
+    e4 < p ? (p = 1, d = true) : (d = false, p = e4), s2 = false, u = null;
   } }, resting: { get: function() {
-    return s5;
+    return s2;
   } }, onupdate: function() {
   }, oncomplete: function() {
   } });
@@ -12463,7 +12164,7 @@ var apis2 = function(e3) {
   addGetSet2(t2, n, r2);
 };
 var defaults2 = { opacity: 1, scaleX: 1, scaleY: 1, translateX: 0, translateY: 0, rotateX: 0, rotateY: 0, rotateZ: 0, originX: 0, originY: 0 };
-var styles3 = function(e3) {
+var styles2 = function(e3) {
   var t2 = e3.mixinConfig, r2 = e3.viewProps, n = e3.viewInternalAPI, i2 = e3.viewExternalAPI, o2 = e3.view, a2 = _objectSpread({}, r2), c2 = {};
   addGetSet2(t2, [n, i2], r2);
   var l3 = function() {
@@ -12482,12 +12183,12 @@ var propsHaveChanged2 = function(e3, t2) {
   return false;
 };
 var applyStyles2 = function(e3, t2) {
-  var r2 = t2.opacity, n = t2.perspective, i2 = t2.translateX, o2 = t2.translateY, a2 = t2.scaleX, c2 = t2.scaleY, l3 = t2.rotateX, u = t2.rotateY, s5 = t2.rotateZ, d = t2.originX, p = t2.originY, f2 = t2.width, h2 = t2.height, g = "", m = "";
-  null == d && null == p || (m += "transform-origin: ".concat(d || 0, "px ").concat(p || 0, "px;")), null != n && (g += "perspective(".concat(n, "px) ")), null == i2 && null == o2 || (g += "translate3d(".concat(i2 || 0, "px, ").concat(o2 || 0, "px, 0) ")), null == a2 && null == c2 || (g += "scale3d(".concat(null != a2 ? a2 : 1, ", ").concat(null != c2 ? c2 : 1, ", 1) ")), null != s5 && (g += "rotateZ(".concat(s5, "rad) ")), null != l3 && (g += "rotateX(".concat(l3, "rad) ")), null != u && (g += "rotateY(".concat(u, "rad) ")), "" != g && (m += "transform:".concat(g, ";")), null != r2 && (m += "opacity:".concat(r2, ";"), r2 < 1 && (m += "pointer-events:none;"), 0 === r2 && "BUTTON" === e3.nodeName && (m += "visibility:hidden;")), null != f2 && (m += "width:".concat(f2, "px;")), null != h2 && (m += "height:".concat(h2, "px;"));
+  var r2 = t2.opacity, n = t2.perspective, i2 = t2.translateX, o2 = t2.translateY, a2 = t2.scaleX, c2 = t2.scaleY, l3 = t2.rotateX, u = t2.rotateY, s2 = t2.rotateZ, d = t2.originX, p = t2.originY, f2 = t2.width, h2 = t2.height, g = "", m = "";
+  null == d && null == p || (m += "transform-origin: ".concat(d || 0, "px ").concat(p || 0, "px;")), null != n && (g += "perspective(".concat(n, "px) ")), null == i2 && null == o2 || (g += "translate3d(".concat(i2 || 0, "px, ").concat(o2 || 0, "px, 0) ")), null == a2 && null == c2 || (g += "scale3d(".concat(null != a2 ? a2 : 1, ", ").concat(null != c2 ? c2 : 1, ", 1) ")), null != s2 && (g += "rotateZ(".concat(s2, "rad) ")), null != l3 && (g += "rotateX(".concat(l3, "rad) ")), null != u && (g += "rotateY(".concat(u, "rad) ")), "" != g && (m += "transform:".concat(g, ";")), null != r2 && (m += "opacity:".concat(r2, ";"), r2 < 1 && (m += "pointer-events:none;"), 0 === r2 && "BUTTON" === e3.nodeName && (m += "visibility:hidden;")), null != f2 && (m += "width:".concat(f2, "px;")), null != h2 && (m += "height:".concat(h2, "px;"));
   var v2 = e3.elementCurrentStyle || "";
   m.length === v2.length && m === v2 || (e3.style.cssText = m, e3.elementCurrentStyle = m);
 };
-var Mixins2 = { styles: styles3, listeners: listeners2, animations: animations2, apis: apis2 };
+var Mixins2 = { styles: styles2, listeners: listeners2, animations: animations2, apis: apis2 };
 var updateRect4 = function() {
   var e3 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, t2 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {};
   return t2.layoutCalculated || (e3.paddingTop = parseInt(r2.paddingTop, 10) || 0, e3.marginTop = parseInt(r2.marginTop, 10) || 0, e3.marginRight = parseInt(r2.marginRight, 10) || 0, e3.marginBottom = parseInt(r2.marginBottom, 10) || 0, e3.marginLeft = parseInt(r2.marginLeft, 10) || 0, t2.layoutCalculated = true), e3.left = t2.offsetLeft || 0, e3.top = t2.offsetTop || 0, e3.width = t2.offsetWidth || 0, e3.height = t2.offsetHeight || 0, e3.right = e3.left + e3.width, e3.bottom = e3.top + e3.height, e3.scrollTop = t2.scrollTop, e3.hidden = null === t2.offsetParent && "fixed" !== r2.position, e3;
@@ -12504,7 +12205,7 @@ var getChildCount2 = "children" in testElement2 ? function(e3) {
 };
 var createView2 = function() {
   var e3 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, t2 = e3.tag, r2 = void 0 === t2 ? "div" : t2, n = e3.name, i2 = void 0 === n ? null : n, o2 = e3.attributes, a2 = void 0 === o2 ? {} : o2, c2 = e3.read, l3 = void 0 === c2 ? function() {
-  } : c2, u = e3.write, s5 = void 0 === u ? function() {
+  } : c2, u = e3.write, s2 = void 0 === u ? function() {
   } : u, d = e3.create, p = void 0 === d ? function() {
   } : d, f2 = e3.destroy, h2 = void 0 === f2 ? function() {
   } : f2, g = e3.filterFrameActionsForChild, m = void 0 === g ? function(e4, t3) {
@@ -12515,7 +12216,7 @@ var createView2 = function() {
     return true;
   } : _2, w = e3.ignoreRect, A = void 0 !== w && w, I = e3.ignoreRectUpdate, S2 = void 0 !== I && I, C2 = e3.mixins, O = void 0 === C2 ? [] : C2;
   return function(e4) {
-    var t3 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, n2 = createElement6(r2, i2 ? "doka--".concat(i2) : null, a2), o3 = window.getComputedStyle(n2, null), c3 = updateRect4(), u2 = null, d2 = false, f3 = [], g2 = [], v3 = {}, E2 = {}, _3 = [s5], w2 = [l3], I2 = [h2], C3 = function() {
+    var t3 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, n2 = createElement6(r2, i2 ? "doka--".concat(i2) : null, a2), o3 = window.getComputedStyle(n2, null), c3 = updateRect4(), u2 = null, d2 = false, f3 = [], g2 = [], v3 = {}, E2 = {}, _3 = [s2], w2 = [l3], I2 = [h2], C3 = function() {
       return n2;
     }, x = function() {
       return [].concat(f3);
@@ -12597,7 +12298,7 @@ var createPainter2 = function(e3, t2) {
   var r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : 60, n = "__framePainter";
   if (window[n]) return window[n].readers.push(e3), void window[n].writers.push(t2);
   window[n] = { readers: [e3], writers: [t2] };
-  var i2 = window[n], o2 = 1e3 / r2, a2 = null, c2 = null, l3 = null, u = null, s5 = function() {
+  var i2 = window[n], o2 = 1e3 / r2, a2 = null, c2 = null, l3 = null, u = null, s2 = function() {
     document.hidden ? (l3 = function() {
       return window.setTimeout(function() {
         return d(performance.now());
@@ -12611,7 +12312,7 @@ var createPainter2 = function(e3, t2) {
     });
   };
   document.addEventListener("visibilitychange", function() {
-    u && u(), s5(), d(performance.now());
+    u && u(), s2(), d(performance.now());
   });
   var d = function e4(t3) {
     c2 = l3(e4), a2 || (a2 = t3);
@@ -12622,7 +12323,7 @@ var createPainter2 = function(e3, t2) {
       return e5(t3);
     }));
   };
-  return s5(), d(performance.now()), { pause: function() {
+  return s2(), d(performance.now()), { pause: function() {
     u(c2);
   } };
 };
@@ -12903,8 +12604,8 @@ var rotateRectCorners = function(e3, t2, r2) {
   return 0 === t2 ? { tl: e3.tl, tr: e3.tr, br: e3.br, bl: e3.bl } : { tl: vectorRotate3(e3.tl, t2, r2), tr: vectorRotate3(e3.tr, t2, r2), br: vectorRotate3(e3.br, t2, r2), bl: vectorRotate3(e3.bl, t2, r2) };
 };
 var rectRotate = function(e3, t2, r2) {
-  var n = rotateRectCorners(rectCorners(e3), t2, r2), i2 = n.tl, o2 = n.tr, a2 = n.br, c2 = n.bl, l3 = Math.min(i2.x, o2.x, a2.x, c2.x), u = Math.min(i2.y, o2.y, a2.y, c2.y), s5 = Math.max(i2.x, o2.x, a2.x, c2.x), d = Math.max(i2.y, o2.y, a2.y, c2.y);
-  return createRect(l3, u, s5 - l3, d - u);
+  var n = rotateRectCorners(rectCorners(e3), t2, r2), i2 = n.tl, o2 = n.tr, a2 = n.br, c2 = n.bl, l3 = Math.min(i2.x, o2.x, a2.x, c2.x), u = Math.min(i2.y, o2.y, a2.y, c2.y), s2 = Math.max(i2.x, o2.x, a2.x, c2.x), d = Math.max(i2.y, o2.y, a2.y, c2.y);
+  return createRect(l3, u, s2 - l3, d - u);
 };
 var rectScale = function(e3, t2, r2) {
   return createRect(t2 * (e3.x - r2.x) + r2.x, t2 * (e3.y - r2.y) + r2.y, t2 * e3.width, t2 * e3.height);
@@ -12999,8 +12700,8 @@ var getAxisAlignedCropRect = function(e3, t2, r2, n) {
   return createRect(Math.min(a2.x, c2.x, l3.x), Math.min(a2.y, c2.y, l3.y), Math.max(a2.x, c2.x, l3.x) - Math.min(a2.x, c2.x, l3.x), Math.max(a2.y, c2.y, l3.y) - Math.min(a2.y, c2.y, l3.y));
 };
 var getCropFromView = function(e3, t2, r2) {
-  var n = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], i2 = r2.origin, o2 = r2.translation, a2 = getAxisAlignedImageRect(e3, r2), c2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), l3 = getAxisAlignedCropRect(i2, o2, c2, t2), u = rectCenter(l3), s5 = t2.height / t2.width, d = { x: (u.x - a2.x) / a2.width, y: (u.y - a2.y) / a2.height }, p = d.y > 0.5 ? 1 - d.y : d.y, f2 = 2 * (d.x > 0.5 ? 1 - d.x : d.x) * a2.width, h2 = 2 * p * a2.height;
-  return { center: d, zoom: n ? Math.min(f2 / l3.width, h2 / l3.height) : Math.min(a2.width / l3.width, a2.height / l3.height), rotation: r2.rotation, aspectRatio: s5, scaleToFit: n };
+  var n = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], i2 = r2.origin, o2 = r2.translation, a2 = getAxisAlignedImageRect(e3, r2), c2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), l3 = getAxisAlignedCropRect(i2, o2, c2, t2), u = rectCenter(l3), s2 = t2.height / t2.width, d = { x: (u.x - a2.x) / a2.width, y: (u.y - a2.y) / a2.height }, p = d.y > 0.5 ? 1 - d.y : d.y, f2 = 2 * (d.x > 0.5 ? 1 - d.x : d.x) * a2.width, h2 = 2 * p * a2.height;
+  return { center: d, zoom: n ? Math.min(f2 / l3.width, h2 / l3.height) : Math.min(a2.width / l3.width, a2.height / l3.height), rotation: r2.rotation, aspectRatio: s2, scaleToFit: n };
 };
 var getCropFromStateRounded = function(e3, t2) {
   var r2 = getCropFromState(e3, t2);
@@ -13190,8 +12891,8 @@ var getCurrentImageSize = function(e3, t2) {
   return limitSize({ width: r2, height: n }, e3.options.sizeMin, e3.options.sizeMax, i2);
 };
 var getCurrentCropSize2 = function(e3) {
-  var t2 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, r2 = !(arguments.length > 2 && void 0 !== arguments[2]) || arguments[2], n = t2.zoom, i2 = t2.rotation, o2 = t2.center, a2 = t2.aspectRatio, c2 = calculateCanvasSize3(e3, a2, n); ({ x: 0.5 * c2.width, y: 0.5 * c2.height }); var u = { width: c2.width, height: c2.height}, s5 = n * getImageRectZoomFactor3(e3, getCenteredCropRect3(u, a2), i2, r2 ? o2 : { x: 0.5, y: 0.5 });
-  return { widthFloat: c2.width / s5, heightFloat: c2.height / s5, width: Math.round(c2.width / s5), height: Math.round(c2.height / s5) };
+  var t2 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, r2 = !(arguments.length > 2 && void 0 !== arguments[2]) || arguments[2], n = t2.zoom, i2 = t2.rotation, o2 = t2.center, a2 = t2.aspectRatio, c2 = calculateCanvasSize3(e3, a2, n); ({ x: 0.5 * c2.width, y: 0.5 * c2.height }); var u = { width: c2.width, height: c2.height}, s2 = n * getImageRectZoomFactor3(e3, getCenteredCropRect3(u, a2), i2, r2 ? o2 : { x: 0.5, y: 0.5 });
+  return { widthFloat: c2.width / s2, heightFloat: c2.height / s2, width: Math.round(c2.width / s2), height: Math.round(c2.height / s2) };
 };
 var canZoom = function(e3, t2) {
   var r2 = rectCenter(t2), n = rectCenter(e3);
@@ -13199,10 +12900,10 @@ var canZoom = function(e3, t2) {
 };
 var getCropView = function(e3) {
   if (!e3.stage || !e3.image) return null;
-  var t2 = e3.crop.draft.rectangle || { free: e3.crop.rectangle, limited: e3.crop.rectangle }, r2 = e3.crop.draft.transforms || e3.crop.transforms, n = r2.origin, i2 = r2.translation, o2 = r2.scale, a2 = r2.interaction, c2 = e3.crop.rotation, l3 = e3.crop.flip, u = !(!e3.crop.draft.rectangle && !e3.crop.draft.transforms), s5 = u || e3.instantUpdate, d = canZoom(t2.limited, e3.stage), p = e3.crop.isDirty || u, f2 = e3.crop.isRotating, h2 = void 0 === e3.crop.limitToImageBounds || e3.crop.limitToImageBounds, g = { width: e3.image.naturalWidth, height: e3.image.naturalHeight }, m = getColorMatrixFromMatrices(e3.colorMatrices), v2 = getCropFromState(e3.image, { rectangle: t2.limited, transforms: { origin: n, translation: i2, scale: o2, rotation: c2.main + c2.sub }, flip: l3, limitToImageBounds: e3.crop.limitToImageBounds }), y = { props: v2, crop: getCurrentCropSize2(g, v2, e3.crop.limitToImageBounds), image: getCurrentImageSize(e3, t2.limited) }, E = y.image, T = y.crop, _2 = T.width, R = T.height, w = T.widthFloat / T.heightFloat;
+  var t2 = e3.crop.draft.rectangle || { free: e3.crop.rectangle, limited: e3.crop.rectangle }, r2 = e3.crop.draft.transforms || e3.crop.transforms, n = r2.origin, i2 = r2.translation, o2 = r2.scale, a2 = r2.interaction, c2 = e3.crop.rotation, l3 = e3.crop.flip, u = !(!e3.crop.draft.rectangle && !e3.crop.draft.transforms), s2 = u || e3.instantUpdate, d = canZoom(t2.limited, e3.stage), p = e3.crop.isDirty || u, f2 = e3.crop.isRotating, h2 = void 0 === e3.crop.limitToImageBounds || e3.crop.limitToImageBounds, g = { width: e3.image.naturalWidth, height: e3.image.naturalHeight }, m = getColorMatrixFromMatrices(e3.colorMatrices), v2 = getCropFromState(e3.image, { rectangle: t2.limited, transforms: { origin: n, translation: i2, scale: o2, rotation: c2.main + c2.sub }, flip: l3, limitToImageBounds: e3.crop.limitToImageBounds }), y = { props: v2, crop: getCurrentCropSize2(g, v2, e3.crop.limitToImageBounds), image: getCurrentImageSize(e3, t2.limited) }, E = y.image, T = y.crop, _2 = T.width, R = T.height, w = T.widthFloat / T.heightFloat;
   E.width && E.height ? (_2 = E.width, R = E.height) : E.width && !E.height ? (_2 = E.width, R = E.width / w) : E.height && !E.width && (R = E.height, _2 = E.height * w), y.currentWidth = Math.round(_2), y.currentHeight = Math.round(R);
   var A = { x: 0, y: 0 }, I = 0, S2 = 0;
-  if (s5 && a2) {
+  if (s2 && a2) {
     if (a2.translation) {
       var C2 = a2.translation.x - i2.x, O = a2.translation.y - i2.y;
       A.x = 100 * Math.sign(C2) * Math.log10(1 + Math.abs(C2) / 100), A.y = 100 * Math.sign(O) * Math.log10(1 + Math.abs(O) / 100);
@@ -13220,7 +12921,7 @@ var getCropView = function(e3) {
   return forin2(P, function(e4) {
     var t3 = P[e4] - G[e4];
     M[e4] = G[e4] + 5 * Math.sign(t3) * Math.log10(1 + Math.abs(t3) / 5);
-  }), { canRecenter: d, canReset: p, isDraft: s5, isRotating: f2, isLimitedToImageBounds: h2, cropRect: { x: M.left, y: M.top, width: M.right - M.left, height: M.bottom - M.top }, origin: n, translation: i2, translationBand: A, scale: o2, scaleBand: I, rotation: c2, rotationBand: S2, flip: l3, interaction: a2, cropStatus: y, colorMatrix: m, markup: e3.markup, previewSize: { width: e3.image.width, height: e3.image.height } };
+  }), { canRecenter: d, canReset: p, isDraft: s2, isRotating: f2, isLimitedToImageBounds: h2, cropRect: { x: M.left, y: M.top, width: M.right - M.left, height: M.bottom - M.top }, origin: n, translation: i2, translationBand: A, scale: o2, scaleBand: I, rotation: c2, rotationBand: S2, flip: l3, interaction: a2, cropStatus: y, colorMatrix: m, markup: e3.markup, previewSize: { width: e3.image.width, height: e3.image.height } };
 };
 var isImage5 = function(e3) {
   return /^image/.test(e3);
@@ -13263,15 +12964,15 @@ var getBitmap2 = function(e3, t2, r2) {
   return c2.drawImage(e3, 0, 0, i2, o2), n;
 };
 var imageToImageData2 = function(e3, t2) {
-  var r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {}, n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : {}, i2 = n.canvasMemoryLimit, o2 = n.background, a2 = void 0 === o2 ? null : o2, c2 = r2.zoom || 1, l3 = getBitmap2(e3, t2, r2.flip), u = { width: l3.width, height: l3.height }, s5 = r2.aspectRatio || u.height / u.width, d = calculateCanvasSize3(u, s5, c2);
+  var r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {}, n = arguments.length > 3 && void 0 !== arguments[3] ? arguments[3] : {}, i2 = n.canvasMemoryLimit, o2 = n.background, a2 = void 0 === o2 ? null : o2, c2 = r2.zoom || 1, l3 = getBitmap2(e3, t2, r2.flip), u = { width: l3.width, height: l3.height }, s2 = r2.aspectRatio || u.height / u.width, d = calculateCanvasSize3(u, s2, c2);
   if (i2) {
     var p = d.width * d.height;
     if (p > i2) {
       var f2 = Math.sqrt(i2) / Math.sqrt(p);
-      u.width = Math.floor(u.width * f2), u.height = Math.floor(u.height * f2), d = calculateCanvasSize3(u, s5, c2);
+      u.width = Math.floor(u.width * f2), u.height = Math.floor(u.height * f2), d = calculateCanvasSize3(u, s2, c2);
     }
   }
-  var h2 = document.createElement("canvas"), g = { x: 0.5 * d.width, y: 0.5 * d.height }, m = { width: d.width, height: d.height}, v2 = void 0 === r2.scaleToFit || r2.scaleToFit, y = c2 * getImageRectZoomFactor3(u, getCenteredCropRect3(m, s5), r2.rotation, v2 ? r2.center : { x: 0.5, y: 0.5 });
+  var h2 = document.createElement("canvas"), g = { x: 0.5 * d.width, y: 0.5 * d.height }, m = { width: d.width, height: d.height}, v2 = void 0 === r2.scaleToFit || r2.scaleToFit, y = c2 * getImageRectZoomFactor3(u, getCenteredCropRect3(m, s2), r2.rotation, v2 ? r2.center : { x: 0.5, y: 0.5 });
   h2.width = Math.round(d.width / y), h2.height = Math.round(d.height / y), g.x /= y, g.y /= y;
   var E = g.x - u.width * (r2.center ? r2.center.x : 0.5), T = g.y - u.height * (r2.center ? r2.center.y : 0.5), _2 = h2.getContext("2d");
   a2 && (_2.fillStyle = a2, _2.fillRect(0, 0, h2.width, h2.height)), _2.translate(g.x, g.y), _2.rotate(r2.rotation || 0), _2.drawImage(l3, E - g.x, T - g.y, u.width, u.height);
@@ -13365,13 +13066,13 @@ var updateLine3 = function(e3, t2, r2, n) {
   var i2 = e3.childNodes[0], o2 = e3.childNodes[1], a2 = e3.childNodes[2], c2 = e3.childNodes[3], l3 = e3.rect, u = { x: e3.rect.x + e3.rect.width, y: e3.rect.y + e3.rect.height };
   if (setAttributes3(i2, { x1: l3.x, y1: l3.y, x2: u.x, y2: u.y }), setAttributes3(c2, { x1: l3.x, y1: l3.y, x2: u.x, y2: u.y }), t2.lineDecoration) {
     o2.style.display = "none", a2.style.display = "none";
-    var s5 = vectorNormalize$1({ x: u.x - l3.x, y: u.y - l3.y }), d = getMarkupValue3(0.05, r2, n);
+    var s2 = vectorNormalize$1({ x: u.x - l3.x, y: u.y - l3.y }), d = getMarkupValue3(0.05, r2, n);
     if (-1 !== t2.lineDecoration.indexOf("arrow-begin")) {
-      var p = vectorMultiply$1(s5, d), f2 = vectorAdd$1(l3, p), h2 = vectorRotate$1(l3, 2, f2), g = vectorRotate$1(l3, -2, f2);
+      var p = vectorMultiply$1(s2, d), f2 = vectorAdd$1(l3, p), h2 = vectorRotate$1(l3, 2, f2), g = vectorRotate$1(l3, -2, f2);
       setAttributes3(o2, { style: "display:block;", d: "M".concat(h2.x, ",").concat(h2.y, " L").concat(l3.x, ",").concat(l3.y, " L").concat(g.x, ",").concat(g.y) });
     }
     if (-1 !== t2.lineDecoration.indexOf("arrow-end")) {
-      var m = vectorMultiply$1(s5, -d), v2 = vectorAdd$1(u, m), y = vectorRotate$1(u, 2, v2), E = vectorRotate$1(u, -2, v2);
+      var m = vectorMultiply$1(s2, -d), v2 = vectorAdd$1(u, m), y = vectorRotate$1(u, 2, v2), E = vectorRotate$1(u, -2, v2);
       setAttributes3(a2, { style: "display:block;", d: "M".concat(y.x, ",").concat(y.y, " L").concat(u.x, ",").concat(u.y, " L").concat(E.x, ",").concat(E.y) });
     }
   }
@@ -13431,7 +13132,7 @@ var cropSVG2 = function(e3, t2, r2, n) {
       document.body.appendChild(n2);
       var l3 = o3.getBBox();
       n2.parentNode.removeChild(n2);
-      var u = n2.querySelector("title"), s5 = o3.getAttribute("viewBox") || "", d = o3.getAttribute("width") || "", p = o3.getAttribute("height") || "", f2 = parseFloat(d) || null, h2 = parseFloat(p) || null, g = (d.match(/[a-z]+/) || [])[0] || "", m = (p.match(/[a-z]+/) || [])[0] || "", v2 = s5.split(" ").map(parseFloat), y = v2.length ? { x: v2[0], y: v2[1], width: v2[2], height: v2[3] } : l3, E = null != f2 ? f2 : y.width, T = null != h2 ? h2 : y.height;
+      var u = n2.querySelector("title"), s2 = o3.getAttribute("viewBox") || "", d = o3.getAttribute("width") || "", p = o3.getAttribute("height") || "", f2 = parseFloat(d) || null, h2 = parseFloat(p) || null, g = (d.match(/[a-z]+/) || [])[0] || "", m = (p.match(/[a-z]+/) || [])[0] || "", v2 = s2.split(" ").map(parseFloat), y = v2.length ? { x: v2[0], y: v2[1], width: v2[2], height: v2[3] } : l3, E = null != f2 ? f2 : y.width, T = null != h2 ? h2 : y.height;
       o3.style.overflow = "visible", o3.setAttribute("width", E), o3.setAttribute("height", T);
       var _2 = "";
       if (r2 && r2.length) {
@@ -13457,15 +13158,15 @@ var objectToImageData2 = function(e3) {
 };
 var TransformWorker2 = function() {
   var e3 = { resize: function(e4, t3) {
-    var r3 = t3.mode, n2 = void 0 === r3 ? "contain" : r3, i3 = t3.upscale, a3 = void 0 !== i3 && i3, u = t3.width, s5 = t3.height, d = t3.matrix;
-    if (d = !d || c2(d) ? null : d, !u && !s5) return l3(e4, d);
-    null === u ? u = s5 : null === s5 && (s5 = u);
+    var r3 = t3.mode, n2 = void 0 === r3 ? "contain" : r3, i3 = t3.upscale, a3 = void 0 !== i3 && i3, u = t3.width, s2 = t3.height, d = t3.matrix;
+    if (d = !d || c2(d) ? null : d, !u && !s2) return l3(e4, d);
+    null === u ? u = s2 : null === s2 && (s2 = u);
     if ("force" !== n2) {
-      var p = u / e4.width, f2 = s5 / e4.height, h2 = 1;
+      var p = u / e4.width, f2 = s2 / e4.height, h2 = 1;
       if ("cover" === n2 ? h2 = Math.max(p, f2) : "contain" === n2 && (h2 = Math.min(p, f2)), h2 > 1 && false === a3) return l3(e4, d);
-      u = e4.width * h2, s5 = e4.height * h2;
+      u = e4.width * h2, s2 = e4.height * h2;
     }
-    for (var g = e4.width, m = e4.height, v2 = Math.round(u), y = Math.round(s5), E = e4.data, T = new Uint8ClampedArray(v2 * y * 4), _2 = g / v2, R = m / y, w = Math.ceil(0.5 * _2), A = Math.ceil(0.5 * R), I = 0; I < y; I++) for (var S2 = 0; S2 < v2; S2++) {
+    for (var g = e4.width, m = e4.height, v2 = Math.round(u), y = Math.round(s2), E = e4.data, T = new Uint8ClampedArray(v2 * y * 4), _2 = g / v2, R = m / y, w = Math.ceil(0.5 * _2), A = Math.ceil(0.5 * R), I = 0; I < y; I++) for (var S2 = 0; S2 < v2; S2++) {
       for (var C2 = 4 * (S2 + I * v2), O = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = (I + 0.5) * R, D2 = Math.floor(I * R); D2 < (I + 1) * R; D2++) for (var U = Math.abs(k2 - (D2 + 0.5)) / A, B = (S2 + 0.5) * _2, V = U * U, N = Math.floor(S2 * _2); N < (S2 + 1) * _2; N++) {
         var F = Math.abs(B - (N + 0.5)) / w, z = Math.sqrt(V + F * F);
         if (z >= -1 && z <= 1 && (O = 2 * z * z * z - 3 * z * z + 1) > 0) {
@@ -13501,7 +13202,7 @@ var TransformWorker2 = function() {
   };
   var r2 = 1, n = 1, i2 = 1;
   function o2(e4, t3, o3) {
-    var a3 = t3[e4] / 255, c3 = t3[e4 + 1] / 255, l4 = t3[e4 + 2] / 255, u = t3[e4 + 3] / 255, s5 = a3 * o3[0] + c3 * o3[1] + l4 * o3[2] + u * o3[3] + o3[4], d = a3 * o3[5] + c3 * o3[6] + l4 * o3[7] + u * o3[8] + o3[9], p = a3 * o3[10] + c3 * o3[11] + l4 * o3[12] + u * o3[13] + o3[14], f2 = a3 * o3[15] + c3 * o3[16] + l4 * o3[17] + u * o3[18] + o3[19], h2 = Math.max(0, s5 * f2) + r2 * (1 - f2), g = Math.max(0, d * f2) + n * (1 - f2), m = Math.max(0, p * f2) + i2 * (1 - f2);
+    var a3 = t3[e4] / 255, c3 = t3[e4 + 1] / 255, l4 = t3[e4 + 2] / 255, u = t3[e4 + 3] / 255, s2 = a3 * o3[0] + c3 * o3[1] + l4 * o3[2] + u * o3[3] + o3[4], d = a3 * o3[5] + c3 * o3[6] + l4 * o3[7] + u * o3[8] + o3[9], p = a3 * o3[10] + c3 * o3[11] + l4 * o3[12] + u * o3[13] + o3[14], f2 = a3 * o3[15] + c3 * o3[16] + l4 * o3[17] + u * o3[18] + o3[19], h2 = Math.max(0, s2 * f2) + r2 * (1 - f2), g = Math.max(0, d * f2) + n * (1 - f2), m = Math.max(0, p * f2) + i2 * (1 - f2);
     t3[e4] = 255 * Math.max(0, Math.min(1, h2)), t3[e4 + 1] = 255 * Math.max(0, Math.min(1, g)), t3[e4 + 2] = 255 * Math.max(0, Math.min(1, m));
   }
   var a2 = self.JSON.stringify([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]);
@@ -13510,7 +13211,7 @@ var TransformWorker2 = function() {
   }
   function l3(e4, t3) {
     if (!t3 || c2(t3)) return e4;
-    for (var o3 = e4.data, a3 = o3.length, l4 = t3[0], u = t3[1], s5 = t3[2], d = t3[3], p = t3[4], f2 = t3[5], h2 = t3[6], g = t3[7], m = t3[8], v2 = t3[9], y = t3[10], E = t3[11], T = t3[12], _2 = t3[13], R = t3[14], w = t3[15], A = t3[16], I = t3[17], S2 = t3[18], C2 = t3[19], O = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = 0, D2 = 0, U = 0, B = 0, V = 0; O < a3; O += 4) P = (x = o3[O] / 255) * l4 + (b = o3[O + 1] / 255) * u + (M = o3[O + 2] / 255) * s5 + (L = o3[O + 3] / 255) * d + p, G = x * f2 + b * h2 + M * g + L * m + v2, k2 = x * y + b * E + M * T + L * _2 + R, D2 = x * w + b * A + M * I + L * S2 + C2, U = Math.max(0, P * D2) + r2 * (1 - D2), B = Math.max(0, G * D2) + n * (1 - D2), V = Math.max(0, k2 * D2) + i2 * (1 - D2), o3[O] = 255 * Math.max(0, Math.min(1, U)), o3[O + 1] = 255 * Math.max(0, Math.min(1, B)), o3[O + 2] = 255 * Math.max(0, Math.min(1, V));
+    for (var o3 = e4.data, a3 = o3.length, l4 = t3[0], u = t3[1], s2 = t3[2], d = t3[3], p = t3[4], f2 = t3[5], h2 = t3[6], g = t3[7], m = t3[8], v2 = t3[9], y = t3[10], E = t3[11], T = t3[12], _2 = t3[13], R = t3[14], w = t3[15], A = t3[16], I = t3[17], S2 = t3[18], C2 = t3[19], O = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = 0, D2 = 0, U = 0, B = 0, V = 0; O < a3; O += 4) P = (x = o3[O] / 255) * l4 + (b = o3[O + 1] / 255) * u + (M = o3[O + 2] / 255) * s2 + (L = o3[O + 3] / 255) * d + p, G = x * f2 + b * h2 + M * g + L * m + v2, k2 = x * y + b * E + M * T + L * _2 + R, D2 = x * w + b * A + M * I + L * S2 + C2, U = Math.max(0, P * D2) + r2 * (1 - D2), B = Math.max(0, G * D2) + n * (1 - D2), V = Math.max(0, k2 * D2) + i2 * (1 - D2), o3[O] = 255 * Math.max(0, Math.min(1, U)), o3[O + 1] = 255 * Math.max(0, Math.min(1, B)), o3[O + 2] = 255 * Math.max(0, Math.min(1, V));
     return e4;
   }
 };
@@ -13614,8 +13315,8 @@ var drawRect2 = function(e3, t2, r2) {
 var drawEllipse2 = function(e3, t2, r2) {
   var n = getMarkupRect3(r2, t2), i2 = getMarkupStyles3(r2, t2);
   applyMarkupStyles2(e3, i2);
-  var o2 = n.x, a2 = n.y, c2 = n.width, l3 = n.height, u = c2 / 2 * 0.5522848, s5 = l3 / 2 * 0.5522848, d = o2 + c2, p = a2 + l3, f2 = o2 + c2 / 2, h2 = a2 + l3 / 2;
-  return e3.moveTo(o2, h2), e3.bezierCurveTo(o2, h2 - s5, f2 - u, a2, f2, a2), e3.bezierCurveTo(f2 + u, a2, d, h2 - s5, d, h2), e3.bezierCurveTo(d, h2 + s5, f2 + u, p, f2, p), e3.bezierCurveTo(f2 - u, p, o2, h2 + s5, o2, h2), drawMarkupStyles2(e3), true;
+  var o2 = n.x, a2 = n.y, c2 = n.width, l3 = n.height, u = c2 / 2 * 0.5522848, s2 = l3 / 2 * 0.5522848, d = o2 + c2, p = a2 + l3, f2 = o2 + c2 / 2, h2 = a2 + l3 / 2;
+  return e3.moveTo(o2, h2), e3.bezierCurveTo(o2, h2 - s2, f2 - u, a2, f2, a2), e3.bezierCurveTo(f2 + u, a2, d, h2 - s2, d, h2), e3.bezierCurveTo(d, h2 + s2, f2 + u, p, f2, p), e3.bezierCurveTo(f2 - u, p, o2, h2 + s2, o2, h2), drawMarkupStyles2(e3), true;
 };
 var drawImage2 = function(e3, t2, r2, n) {
   var i2 = getMarkupRect3(r2, t2), o2 = getMarkupStyles3(r2, t2);
@@ -13623,8 +13324,8 @@ var drawImage2 = function(e3, t2, r2, n) {
   var a2 = new Image();
   new URL(r2.src, window.location.href).origin !== window.location.origin && (a2.crossOrigin = ""), a2.onload = function() {
     if ("cover" === r2.fit) {
-      var t3 = i2.width / i2.height, c2 = t3 > 1 ? a2.width : a2.height * t3, l3 = t3 > 1 ? a2.width / t3 : a2.height, u = 0.5 * a2.width - 0.5 * c2, s5 = 0.5 * a2.height - 0.5 * l3;
-      e3.drawImage(a2, u, s5, c2, l3, i2.x, i2.y, i2.width, i2.height);
+      var t3 = i2.width / i2.height, c2 = t3 > 1 ? a2.width : a2.height * t3, l3 = t3 > 1 ? a2.width / t3 : a2.height, u = 0.5 * a2.width - 0.5 * c2, s2 = 0.5 * a2.height - 0.5 * l3;
+      e3.drawImage(a2, u, s2, c2, l3, i2.x, i2.y, i2.width, i2.height);
     } else if ("contain" === r2.fit) {
       var d = Math.min(i2.width / a2.width, i2.height / a2.height), p = d * a2.width, f2 = d * a2.height, h2 = i2.x + 0.5 * i2.width - 0.5 * p, g = i2.y + 0.5 * i2.height - 0.5 * f2;
       e3.drawImage(a2, 0, 0, a2.width, a2.height, h2, g, p, f2);
@@ -13655,7 +13356,7 @@ var drawLine2 = function(e3, t2, r2) {
   e3.moveTo(o2.x, o2.y), e3.lineTo(a2.x, a2.y);
   var c2 = vectorNormalize$1({ x: a2.x - o2.x, y: a2.y - o2.y }), l3 = 0.04 * Math.min(t2.width, t2.height);
   if (-1 !== r2.lineDecoration.indexOf("arrow-begin")) {
-    var u = vectorMultiply$1(c2, l3), s5 = vectorAdd$1(o2, u), d = vectorRotate$1(o2, 2, s5), p = vectorRotate$1(o2, -2, s5);
+    var u = vectorMultiply$1(c2, l3), s2 = vectorAdd$1(o2, u), d = vectorRotate$1(o2, 2, s2), p = vectorRotate$1(o2, -2, s2);
     e3.moveTo(d.x, d.y), e3.lineTo(o2.x, o2.y), e3.lineTo(p.x, p.y);
   }
   if (-1 !== r2.lineDecoration.indexOf("arrow-end")) {
@@ -13673,8 +13374,8 @@ var transformImage2 = function(e3, t2) {
   var r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {};
   return new Promise(function(n, i2) {
     if (!e3 || !isImage5(e3.type)) return i2({ status: "not an image file", file: e3 });
-    var o2 = r2.stripImageHead, a2 = r2.beforeCreateBlob, c2 = r2.afterCreateBlob, l3 = r2.canvasMemoryLimit, u = t2.crop, s5 = t2.size, d = t2.filter, p = t2.markup, f2 = t2.output, h2 = t2.image && t2.image.orientation ? Math.max(1, Math.min(8, t2.image.orientation)) : null, g = f2 && f2.quality, m = null === g ? null : g / 100, v2 = f2 && f2.type || null, y = f2 && f2.background || null, E = [];
-    !s5 || "number" != typeof s5.width && "number" != typeof s5.height || E.push({ type: "resize", data: s5 }), d && 20 === d.length && E.push({ type: "filter", data: d });
+    var o2 = r2.stripImageHead, a2 = r2.beforeCreateBlob, c2 = r2.afterCreateBlob, l3 = r2.canvasMemoryLimit, u = t2.crop, s2 = t2.size, d = t2.filter, p = t2.markup, f2 = t2.output, h2 = t2.image && t2.image.orientation ? Math.max(1, Math.min(8, t2.image.orientation)) : null, g = f2 && f2.quality, m = null === g ? null : g / 100, v2 = f2 && f2.type || null, y = f2 && f2.background || null, E = [];
+    !s2 || "number" != typeof s2.width && "number" != typeof s2.height || E.push({ type: "resize", data: s2 }), d && 20 === d.length && E.push({ type: "filter", data: d });
     var T = function(e4) {
       var t3 = c2 ? c2(e4) : e4;
       Promise.resolve(t3).then(n);
@@ -13732,40 +13433,40 @@ var getImageOrientation2 = function(e3) {
 };
 var Direction = { HORIZONTAL: 1, VERTICAL: 2 };
 var getImageTransformsFromCrop = function(e3, t2, r2) {
-  var n = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], i2 = e3.center, o2 = e3.zoom, a2 = e3.aspectRatio, c2 = rectCenter(t2), l3 = { x: c2.x - r2.width * i2.x, y: c2.y - r2.height * i2.y }, u = 2 * Math.PI + e3.rotation % (2 * Math.PI), s5 = o2 * getImageRectZoomFactor3(r2, getCenteredCropRect3(t2, a2 || r2.height / r2.width), u, n ? i2 : { x: 0.5, y: 0.5 });
-  return { origin: { x: i2.x * r2.width, y: i2.y * r2.height }, translation: l3, scale: s5, rotation: e3.rotation };
+  var n = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3], i2 = e3.center, o2 = e3.zoom, a2 = e3.aspectRatio, c2 = rectCenter(t2), l3 = { x: c2.x - r2.width * i2.x, y: c2.y - r2.height * i2.y }, u = 2 * Math.PI + e3.rotation % (2 * Math.PI), s2 = o2 * getImageRectZoomFactor3(r2, getCenteredCropRect3(t2, a2 || r2.height / r2.width), u, n ? i2 : { x: 0.5, y: 0.5 });
+  return { origin: { x: i2.x * r2.width, y: i2.y * r2.height }, translation: l3, scale: s2, rotation: e3.rotation };
 };
 var copyImageTransforms = function(e3) {
   return { origin: _objectSpread({}, e3.origin), translation: _objectSpread({}, e3.translation), rotation: e3.rotation, scale: e3.scale };
 };
 var limitImageTransformsToCropRect = function(e3, t2, r2, n) {
-  var i2 = r2.translation, o2 = r2.scale, a2 = r2.rotation, c2 = r2.origin, l3 = { origin: _objectSpread({}, c2), translation: _objectSpread({}, i2), scale: o2, rotation: 2 * Math.PI + a2 % (2 * Math.PI) }, u = e3.height / e3.width, s5 = getAxisAlignedCropRect(c2, i2, l3.rotation, t2), d = rectCenter(s5), p = rectBounds(s5), f2 = getAxisAlignedImageRect(e3, r2), h2 = rectCenter(f2), g = { x: f2.x, y: f2.y }, m = { x: h2.x, y: h2.y }, v2 = d.x, y = d.y, E = { x: g.x, y: g.y, width: f2.width, height: f2.height };
-  if (!rectFitsInRect(s5, f2)) {
+  var i2 = r2.translation, o2 = r2.scale, a2 = r2.rotation, c2 = r2.origin, l3 = { origin: _objectSpread({}, c2), translation: _objectSpread({}, i2), scale: o2, rotation: 2 * Math.PI + a2 % (2 * Math.PI) }, u = e3.height / e3.width, s2 = getAxisAlignedCropRect(c2, i2, l3.rotation, t2), d = rectCenter(s2), p = rectBounds(s2), f2 = getAxisAlignedImageRect(e3, r2), h2 = rectCenter(f2), g = { x: f2.x, y: f2.y }, m = { x: h2.x, y: h2.y }, v2 = d.x, y = d.y, E = { x: g.x, y: g.y, width: f2.width, height: f2.height };
+  if (!rectFitsInRect(s2, f2)) {
     if ("moving" === n) {
-      E.y > s5.y ? E.y = s5.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s5.x ? E.x = s5.x : E.x + E.width < p.right && (E.x = p.right - E.width);
+      E.y > s2.y ? E.y = s2.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s2.x ? E.x = s2.x : E.x + E.width < p.right && (E.x = p.right - E.width);
       var T = getAxisAlignedImageRect(e3, _objectSpread({}, r2, { scale: l3.scale })), _2 = rectCenter(T);
-      m.x = _2.x, m.y = _2.y, g.x = T.x, g.y = T.y, E.x = m.x - 0.5 * E.width, E.y = m.y - 0.5 * E.height, E.y > s5.y ? E.y = s5.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s5.x ? E.x = s5.x : E.x + E.width < p.right && (E.x = p.right - E.width);
+      m.x = _2.x, m.y = _2.y, g.x = T.x, g.y = T.y, E.x = m.x - 0.5 * E.width, E.y = m.y - 0.5 * E.height, E.y > s2.y ? E.y = s2.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s2.x ? E.x = s2.x : E.x + E.width < p.right && (E.x = p.right - E.width);
       var R = { x: E.x - g.x, y: E.y - g.y }, w = { x: R.x * Math.cos(l3.rotation) - R.y * Math.sin(l3.rotation), y: R.x * Math.sin(l3.rotation) + R.y * Math.cos(l3.rotation) };
       l3.translation.x += w.x, l3.translation.y += w.y;
     } else if ("resizing" === n) {
-      f2.width < s5.width && (E.width = s5.width, E.height = E.width * u, E.height < s5.height && (E.height = s5.height, E.width = E.height / u)), f2.height < s5.height && (E.height = s5.height, E.width = E.height / u, E.width < s5.width && (E.width = s5.width, E.height = E.width * u)), E.x = m.x - 0.5 * E.width, E.y = m.y - 0.5 * E.height, E.y > s5.y ? E.y = s5.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s5.x ? E.x = s5.x : E.x + E.width < p.right && (E.x = p.right - E.width), l3.scale = getImageRectZoomFactor3(e3, t2, l3.rotation, { x: (v2 - E.x) / E.width, y: (y - E.y) / E.height });
+      f2.width < s2.width && (E.width = s2.width, E.height = E.width * u, E.height < s2.height && (E.height = s2.height, E.width = E.height / u)), f2.height < s2.height && (E.height = s2.height, E.width = E.height / u, E.width < s2.width && (E.width = s2.width, E.height = E.width * u)), E.x = m.x - 0.5 * E.width, E.y = m.y - 0.5 * E.height, E.y > s2.y ? E.y = s2.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s2.x ? E.x = s2.x : E.x + E.width < p.right && (E.x = p.right - E.width), l3.scale = getImageRectZoomFactor3(e3, t2, l3.rotation, { x: (v2 - E.x) / E.width, y: (y - E.y) / E.height });
       var A = getAxisAlignedImageRect(e3, _objectSpread({}, r2, { scale: l3.scale })), I = rectCenter(A);
-      m.x = I.x, m.y = I.y, g.x = A.x, g.y = A.y, E.x = m.x - 0.5 * E.width, E.y = m.y - 0.5 * E.height, E.y > s5.y ? E.y = s5.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s5.x ? E.x = s5.x : E.x + E.width < p.right && (E.x = p.right - E.width);
+      m.x = I.x, m.y = I.y, g.x = A.x, g.y = A.y, E.x = m.x - 0.5 * E.width, E.y = m.y - 0.5 * E.height, E.y > s2.y ? E.y = s2.y : E.y + E.height < p.bottom && (E.y = p.bottom - E.height), E.x > s2.x ? E.x = s2.x : E.x + E.width < p.right && (E.x = p.right - E.width);
       var S2 = { x: E.x - g.x, y: E.y - g.y }, C2 = { x: S2.x * Math.cos(l3.rotation) - S2.y * Math.sin(l3.rotation), y: S2.x * Math.sin(l3.rotation) + S2.y * Math.cos(l3.rotation) };
       l3.translation.x += C2.x, l3.translation.y += C2.y;
     } else if ("rotating" === n) {
       var O = false;
-      if (E.y > s5.y) {
-        var x = E.y - s5.y;
-        E.y = s5.y, E.height += 2 * x, O = true;
+      if (E.y > s2.y) {
+        var x = E.y - s2.y;
+        E.y = s2.y, E.height += 2 * x, O = true;
       }
       if (E.y + E.height < p.bottom) {
         var b = p.bottom - (E.y + E.height);
         E.y = p.bottom - E.height, E.height += 2 * b, O = true;
       }
-      if (E.x > s5.x) {
-        var M = E.x - s5.x;
-        E.x = s5.x, E.width += 2 * M, O = true;
+      if (E.x > s2.x) {
+        var M = E.x - s2.x;
+        E.x = s2.x, E.width += 2 * M, O = true;
       }
       if (E.x + E.width < p.right) {
         var L = p.right - (E.x + E.width);
@@ -13777,7 +13478,7 @@ var limitImageTransformsToCropRect = function(e3, t2, r2, n) {
   return _objectSpread({}, l3, { rotation: r2.rotation });
 };
 var getTransformOrigin = function(e3, t2, r2) {
-  var n = r2.origin, i2 = r2.translation, o2 = r2.scale, a2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), c2 = { x: n.x + i2.x, y: n.y + i2.y }, l3 = getAxisAlignedCropRect(n, i2, a2, t2), u = getAxisAlignedImageRect(e3, r2), s5 = rectCorners(u), d = rectCenter(u), p = vectorRotate3(s5.tl, a2, c2), f2 = vectorRotate3(s5.br, a2, c2), h2 = p.x + 0.5 * (f2.x - p.x), g = p.y + 0.5 * (f2.y - p.y), m = rectTranslate(u, { x: h2 - d.x, y: g - d.y }), v2 = rectTranslate(l3, { x: h2 - d.x, y: g - d.y }), y = rectCenter(v2), E = { x: m.x, y: m.y }, T = m.width, _2 = m.height, R = (y.x - E.x) / T, w = (y.y - E.y) / _2, A = { x: R * e3.width, y: w * e3.height }, I = 1 - o2, S2 = A.x * I, C2 = A.y * I, O = { x: E.x + T * R, y: E.y + _2 * w }, x = vectorRotate3(E, a2, { x: E.x + 0.5 * T, y: E.y + 0.5 * _2 }), b = vectorRotate3(E, a2, O), M = x.x - b.x, L = x.y - b.y;
+  var n = r2.origin, i2 = r2.translation, o2 = r2.scale, a2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), c2 = { x: n.x + i2.x, y: n.y + i2.y }, l3 = getAxisAlignedCropRect(n, i2, a2, t2), u = getAxisAlignedImageRect(e3, r2), s2 = rectCorners(u), d = rectCenter(u), p = vectorRotate3(s2.tl, a2, c2), f2 = vectorRotate3(s2.br, a2, c2), h2 = p.x + 0.5 * (f2.x - p.x), g = p.y + 0.5 * (f2.y - p.y), m = rectTranslate(u, { x: h2 - d.x, y: g - d.y }), v2 = rectTranslate(l3, { x: h2 - d.x, y: g - d.y }), y = rectCenter(v2), E = { x: m.x, y: m.y }, T = m.width, _2 = m.height, R = (y.x - E.x) / T, w = (y.y - E.y) / _2, A = { x: R * e3.width, y: w * e3.height }, I = 1 - o2, S2 = A.x * I, C2 = A.y * I, O = { x: E.x + T * R, y: E.y + _2 * w }, x = vectorRotate3(E, a2, { x: E.x + 0.5 * T, y: E.y + 0.5 * _2 }), b = vectorRotate3(E, a2, O), M = x.x - b.x, L = x.y - b.y;
   return { origin: roundVector(A), translation: roundVector({ x: E.x - S2 + M, y: E.y - C2 + L }) };
 };
 var EdgeMap = { n: function(e3) {
@@ -13793,9 +13494,9 @@ var getEdgeCenterCoordinates = function(e3, t2) {
   return EdgeMap[e3](t2);
 };
 var getImageTransformsFromRect = function(e3, t2, r2) {
-  var n = r2.origin, i2 = r2.translation, o2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), a2 = getAxisAlignedImageRect(e3, r2), c2 = { x: n.x + i2.x, y: n.y + i2.y }, l3 = getAxisAlignedCropRect(n, i2, o2, t2), u = rectBounds(l3), s5 = rectBounds(a2), d = a2;
-  if (u.top < s5.top || u.right > s5.right || u.bottom > s5.bottom || u.left < s5.left) {
-    var p = _objectSpread({}, s5);
+  var n = r2.origin, i2 = r2.translation, o2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), a2 = getAxisAlignedImageRect(e3, r2), c2 = { x: n.x + i2.x, y: n.y + i2.y }, l3 = getAxisAlignedCropRect(n, i2, o2, t2), u = rectBounds(l3), s2 = rectBounds(a2), d = a2;
+  if (u.top < s2.top || u.right > s2.right || u.bottom > s2.bottom || u.left < s2.left) {
+    var p = _objectSpread({}, s2);
     if (u.top <= p.top) {
       var f2 = p.bottom - p.top, h2 = p.right - p.left, g = Math.max(1, l3.height / f2), m = f2 * g, v2 = h2 * g - h2;
       p.bottom = u.top + m, p.top = u.top, p.left -= 0.5 * v2, p.right += 0.5 * v2;
@@ -13814,24 +13515,24 @@ var getImageTransformsFromRect = function(e3, t2, r2) {
     }
     d = createRect(p.left, p.top, p.right - p.left, p.bottom - p.top);
   }
-  var P = rectCorners(d), G = rectCenter(d), k2 = vectorRotate3(P.tl, o2, c2), D2 = vectorRotate3(P.br, o2, c2), U = k2.x + 0.5 * (D2.x - k2.x), B = k2.y + 0.5 * (D2.y - k2.y), V = rectTranslate(d, { x: U - G.x, y: B - G.y }), N = rectTranslate(l3, { x: U - G.x, y: B - G.y }), F = rectCenter(N), z = { x: V.x, y: V.y }, W2 = V.width, q = V.height, H2 = (F.x - z.x) / W2, Y2 = (F.y - z.y) / q, j = W2 / e3.width, X2 = { x: H2 * e3.width, y: Y2 * e3.height }, Z2 = 1 - j, $2 = X2.x * Z2, K2 = X2.y * Z2, Q = { x: z.x + W2 * H2, y: z.y + q * Y2 }, J = vectorRotate3(z, o2, { x: z.x + 0.5 * W2, y: z.y + 0.5 * q }), ee2 = vectorRotate3(z, o2, Q), te2 = J.x - ee2.x, re2 = J.y - ee2.y;
-  return { origin: X2, translation: { x: z.x - $2 + te2, y: z.y - K2 + re2 }, scale: j, rotation: r2.rotation };
+  var P = rectCorners(d), G = rectCenter(d), k2 = vectorRotate3(P.tl, o2, c2), D2 = vectorRotate3(P.br, o2, c2), U = k2.x + 0.5 * (D2.x - k2.x), B = k2.y + 0.5 * (D2.y - k2.y), V = rectTranslate(d, { x: U - G.x, y: B - G.y }), N = rectTranslate(l3, { x: U - G.x, y: B - G.y }), F = rectCenter(N), z = { x: V.x, y: V.y }, W2 = V.width, q = V.height, H2 = (F.x - z.x) / W2, Y2 = (F.y - z.y) / q, j = W2 / e3.width, X3 = { x: H2 * e3.width, y: Y2 * e3.height }, Z2 = 1 - j, $2 = X3.x * Z2, K2 = X3.y * Z2, Q = { x: z.x + W2 * H2, y: z.y + q * Y2 }, J = vectorRotate3(z, o2, { x: z.x + 0.5 * W2, y: z.y + 0.5 * q }), ee2 = vectorRotate3(z, o2, Q), te2 = J.x - ee2.x, re2 = J.y - ee2.y;
+  return { origin: X3, translation: { x: z.x - $2 + te2, y: z.y - K2 + re2 }, scale: j, rotation: r2.rotation };
 };
 var getEdgeTargetRect = function(e3, t2, r2, n, i2, o2, a2, c2, l3) {
-  var u = o2.left, s5 = o2.right, d = o2.top, p = o2.bottom, f2 = s5 - u, h2 = p - d, g = i2.left, m = i2.right, v2 = i2.top, y = i2.bottom;
+  var u = o2.left, s2 = o2.right, d = o2.top, p = o2.bottom, f2 = s2 - u, h2 = p - d, g = i2.left, m = i2.right, v2 = i2.top, y = i2.bottom;
   if (r2 === Direction.VERTICAL) {
     if (v2 = e3.y > 0 ? n.y : Math.min(n.y, Math.max(t2.y, d)), y = e3.y > 0 ? Math.max(n.y, Math.min(t2.y, p)) : n.y, a2) {
       var E = (y - v2) / a2;
       g = n.x - 0.5 * E, m = n.x + 0.5 * E;
     }
-  } else if (g = e3.x > 0 ? n.x : Math.min(n.x, Math.max(t2.x, u)), m = e3.x > 0 ? Math.max(n.x, Math.min(t2.x, s5)) : n.x, a2) {
+  } else if (g = e3.x > 0 ? n.x : Math.min(n.x, Math.max(t2.x, u)), m = e3.x > 0 ? Math.max(n.x, Math.min(t2.x, s2)) : n.x, a2) {
     var T = (m - g) * a2;
     v2 = n.y - 0.5 * T, y = n.y + 0.5 * T;
   }
   var _2, R, w, A, I = c2.width, S2 = c2.height;
   if (r2 === Direction.VERTICAL ? (_2 = n.x - 0.5 * I, R = n.x + 0.5 * I, e3.y < 0 ? (w = n.y - S2, A = n.y) : e3.y > 0 && (w = n.y, A = n.y + S2)) : (w = n.y - 0.5 * S2, A = n.y + 0.5 * S2, e3.x < 0 ? (_2 = n.x - I, R = n.x) : e3.x > 0 && (_2 = n.x, R = n.x + I)), a2) if (r2 === Direction.VERTICAL) {
     var C2 = Math.min((y - v2) / a2, f2), O = C2 * a2;
-    g < u && (m = (g = u) + C2), m > s5 && (g = (m = s5) - C2), n.x = g + 0.5 * C2, e3.y < 0 ? v2 = n.y - O : e3.y > 0 && (y = n.y + O);
+    g < u && (m = (g = u) + C2), m > s2 && (g = (m = s2) - C2), n.x = g + 0.5 * C2, e3.y < 0 ? v2 = n.y - O : e3.y > 0 && (y = n.y + O);
   } else {
     var x = Math.min((m - g) * a2, h2), b = x / a2;
     v2 < d && (y = (v2 = d) + x), y > p && (v2 = (y = p) - x), n.y = v2 + 0.5 * x, e3.x < 0 ? g = n.x - b : e3.x > 0 && (m = n.x + b);
@@ -13845,15 +13546,15 @@ var getEdgeTargetRect = function(e3, t2, r2, n, i2, o2, a2, c2, l3) {
   };
   m < R && (m = R, g = R - I, a2 && L()), g > _2 && (g = _2, m = _2 + I, a2 && L()), v2 > w && (v2 = w, y = w + S2, a2 && P()), y < A && (y = A, v2 = A - S2, a2 && P());
   var G = l3.width, k2 = l3.height;
-  if (a2 && (a2 < 1 ? G = k2 / a2 : k2 = G * a2), m - g > G && (e3.x < 0 ? g = n.x - G : m = n.x + G), y - v2 > k2 && (e3.y < 0 ? v2 = n.y - k2 : y = n.y + k2), m - g == 0 && (e3.x > 0 ? m = n.x + 2 : g = n.x - 2), y - v2 == 0 && (e3.y > 0 ? y = n.y + 2 : v2 = n.y - 2), Math.round(g) < u || Math.round(m) > s5 || Math.round(v2) < d || Math.round(y) > p) {
-    var D2 = p - d, U = s5 - u;
+  if (a2 && (a2 < 1 ? G = k2 / a2 : k2 = G * a2), m - g > G && (e3.x < 0 ? g = n.x - G : m = n.x + G), y - v2 > k2 && (e3.y < 0 ? v2 = n.y - k2 : y = n.y + k2), m - g == 0 && (e3.x > 0 ? m = n.x + 2 : g = n.x - 2), y - v2 == 0 && (e3.y > 0 ? y = n.y + 2 : v2 = n.y - 2), Math.round(g) < u || Math.round(m) > s2 || Math.round(v2) < d || Math.round(y) > p) {
+    var D2 = p - d, U = s2 - u;
     if (g < u) {
       g = u;
       var B = Math.min(m - g, U);
       m = g + B;
     }
-    if (m > s5) {
-      m = s5;
+    if (m > s2) {
+      m = s2;
       var V = Math.min(m - g, U);
       g = m - V;
     }
@@ -13884,7 +13585,7 @@ var getCornerCoordinates = function(e3, t2) {
   return CornerMap[e3](t2);
 };
 var getCornerTargetRect = function(e3, t2, r2, n, i2, o2, a2) {
-  var c2 = rectBounds(n), l3 = c2.left, u = c2.right, s5 = c2.top, d = c2.bottom, p = vectorLimit({ x: t2.x, y: t2.y }, n), f2 = e3.x > 0 ? r2.x : Math.min(p.x, r2.x), h2 = e3.x > 0 ? Math.max(r2.x, p.x) : r2.x, g = e3.y > 0 ? r2.y : Math.min(p.y, r2.y), m = e3.y > 0 ? Math.max(r2.y, p.y) : r2.y;
+  var c2 = rectBounds(n), l3 = c2.left, u = c2.right, s2 = c2.top, d = c2.bottom, p = vectorLimit({ x: t2.x, y: t2.y }, n), f2 = e3.x > 0 ? r2.x : Math.min(p.x, r2.x), h2 = e3.x > 0 ? Math.max(r2.x, p.x) : r2.x, g = e3.y > 0 ? r2.y : Math.min(p.y, r2.y), m = e3.y > 0 ? Math.max(r2.y, p.y) : r2.y;
   if (i2) {
     var v2 = p.x - r2.x;
     e3.x > 0 ? h2 = Math.max(r2.x, r2.x + e3.x * v2) : f2 = Math.min(r2.x, r2.x - e3.x * v2), e3.y > 0 ? m = Math.max(r2.y, r2.y + e3.x * v2 * i2) : g = Math.min(r2.y, r2.y - e3.x * v2 * i2);
@@ -13897,8 +13598,8 @@ var getCornerTargetRect = function(e3, t2, r2, n, i2, o2, a2) {
     var _2 = a2.width, R = a2.height;
     i2 && (i2 < 1 ? _2 = R / i2 : R = _2 * i2), h2 - f2 > _2 && (e3.x < 0 ? f2 = r2.x - _2 : h2 = r2.x + _2), m - g > R && (e3.y < 0 ? g = r2.y - R : m = r2.y + R);
   }
-  if (h2 - f2 == 0 && (e3.x > 0 ? h2 = r2.x + 2 : f2 = r2.x - 2), m - g == 0 && (e3.y > 0 ? m = r2.y + 2 : g = r2.y - 2), Math.round(f2) < l3 || Math.round(h2) > u || Math.round(g) < s5 || Math.round(m) > d) {
-    var w = d - s5, A = u - l3;
+  if (h2 - f2 == 0 && (e3.x > 0 ? h2 = r2.x + 2 : f2 = r2.x - 2), m - g == 0 && (e3.y > 0 ? m = r2.y + 2 : g = r2.y - 2), Math.round(f2) < l3 || Math.round(h2) > u || Math.round(g) < s2 || Math.round(m) > d) {
+    var w = d - s2, A = u - l3;
     if (f2 < l3) {
       f2 = l3;
       var I = Math.min(h2 - f2, A);
@@ -13909,8 +13610,8 @@ var getCornerTargetRect = function(e3, t2, r2, n, i2, o2, a2) {
       var S2 = Math.min(h2 - f2, A);
       f2 = h2 - S2, i2 && (e3.y > 0 && (m = r2.y + S2 * i2), e3.y < 0 && (g = r2.y - S2 * i2));
     }
-    if (g < s5) {
-      g = s5;
+    if (g < s2) {
+      g = s2;
       var C2 = Math.min(m - g, w);
       m = g + C2, i2 && (e3.x > 0 && (h2 = r2.x + C2 / i2), e3.x < 0 && (f2 = r2.x - C2 / i2));
     }
@@ -13966,8 +13667,8 @@ var getBaseCropInstructions = function(e3, t2) {
   var a2 = n.width, c2 = n.height;
   if (a2 && c2) o2.aspectRatio = c2 / a2;
   else if (t2.instructions.size) {
-    var l3 = t2.instructions.size, u = l3.width, s5 = l3.height;
-    u && s5 && (o2.aspectRatio = s5 / u);
+    var l3 = t2.instructions.size, u = l3.width, s2 = l3.height;
+    u && s2 && (o2.aspectRatio = s2 / u);
   }
   return o2;
 };
@@ -14010,10 +13711,10 @@ var getUniqueId$2 = function() {
 var prepareMarkup3 = function(e3) {
   var t2 = _slicedToArray(e3, 2), r2 = t2[0], n = t2[1], i2 = false !== n.allowSelect, o2 = false !== n.allowMove, a2 = false !== n.allowResize, c2 = false !== n.allowInput, l3 = false !== n.allowDestroy, u = void 0 === n.allowEdit || n.allowEdit;
   (true === n.allowResize || true === n.allowMove || true === n.allowInput || n.allowEdit) && (i2 = true), false === n.allowMove && (a2 = false), true === n.allowResize && (o2 = true);
-  var s5 = n.points ? {} : MARKUP_RECT3.reduce(function(e4, t3) {
+  var s2 = n.points ? {} : MARKUP_RECT3.reduce(function(e4, t3) {
     return e4[t3] = toOptionalFraction3(n[t3]), e4;
   }, {});
-  return n.points && (a2 = false), [r2, _objectSpread({ zIndex: 0, id: getUniqueId$2() }, n, s5, { isDestroyed: false, isSelected: false, isDirty: true, allowDestroy: l3, allowSelect: i2, allowMove: o2, allowResize: a2, allowInput: c2, allowEdit: u })];
+  return n.points && (a2 = false), [r2, _objectSpread({ zIndex: 0, id: getUniqueId$2() }, n, s2, { isDestroyed: false, isSelected: false, isDirty: true, allowDestroy: l3, allowSelect: i2, allowMove: o2, allowResize: a2, allowInput: c2, allowEdit: u })];
 };
 var getFilenameFromHeader = function(e3) {
   if (!e3) return null;
@@ -14071,8 +13772,8 @@ var getPreparedImageSize = function(e3, t2) {
   var r2 = t2("GET_UID"), n = t2("GET_CROP", r2, Date.now()), i2 = { width: n.cropStatus.currentWidth, height: n.cropStatus.currentHeight }, o2 = e3.mode, a2 = e3.width, c2 = e3.height, l3 = e3.upscale;
   if (!a2 && !c2) return i2;
   if (null === a2 ? a2 = c2 : null === c2 && (c2 = a2), "force" !== o2) {
-    var u = a2 / i2.width, s5 = c2 / i2.height, d = 1;
-    if ("cover" === o2 ? d = Math.max(u, s5) : "contain" === o2 && (d = Math.min(u, s5)), d > 1 && false === l3) return i2;
+    var u = a2 / i2.width, s2 = c2 / i2.height, d = 1;
+    if ("cover" === o2 ? d = Math.max(u, s2) : "contain" === o2 && (d = Math.min(u, s2)), d > 1 && false === l3) return i2;
     a2 = i2.width * d, c2 = i2.height * d;
   }
   return { width: Math.round(a2), height: Math.round(c2) };
@@ -14100,9 +13801,9 @@ var prepareOutput = function(e3, t2, r2) {
       return [e4[0], _objectSpread({}, e4[1])];
     })), colorMatrix: r2("GET_COLOR_MATRIX") };
     if (e3.data && (o2.data = l3), e3.file) {
-      var u = { beforeCreateBlob: r2("GET_BEFORE_CREATE_BLOB"), afterCreateBlob: r2("GET_AFTER_CREATE_BLOB"), stripImageHead: r2("GET_OUTPUT_STRIP_IMAGE_HEAD"), canvasMemoryLimit: r2("GET_OUTPUT_CANVAS_MEMORY_LIMIT") }, s5 = t2.file.data, d = _objectSpread({}, l3, { filter: l3.colorMatrix, markup: l3.markup });
-      transformImage2(s5, d, u).then(function(e4) {
-        o2.file = getFileFromBlob2(e4, renameFileToMatchMimeType2(s5.name, getValidOutputMimeType2(e4.type))), n(o2);
+      var u = { beforeCreateBlob: r2("GET_BEFORE_CREATE_BLOB"), afterCreateBlob: r2("GET_AFTER_CREATE_BLOB"), stripImageHead: r2("GET_OUTPUT_STRIP_IMAGE_HEAD"), canvasMemoryLimit: r2("GET_OUTPUT_CANVAS_MEMORY_LIMIT") }, s2 = t2.file.data, d = _objectSpread({}, l3, { filter: l3.colorMatrix, markup: l3.markup });
+      transformImage2(s2, d, u).then(function(e4) {
+        o2.file = getFileFromBlob2(e4, renameFileToMatchMimeType2(s2.name, getValidOutputMimeType2(e4.type))), n(o2);
       }).catch(i2);
     } else n(o2);
   });
@@ -14156,8 +13857,8 @@ var recenter = function(e3, t2) {
     e3.crop.aspectRatio && (l3.aspectRatio = e3.crop.aspectRatio);
     var u = t2("GET_STAGE_RECT", l3);
     e3.crop.transforms = getImageTransformsFromCrop(l3, u, e3.image, l3.scaleToFit), e3.crop.draft.transforms = null;
-    var s5 = e3.crop.aspectRatio || e3.crop.rectangle.height / e3.crop.rectangle.width;
-    e3.crop.rectangle = getCenteredCropRect3(u, s5), e3.crop.draft.rectangle = null, "stage" !== u.mode && (e3.crop.rectangle.x += u.x, e3.crop.rectangle.y += u.y), resetRotationScale(e3);
+    var s2 = e3.crop.aspectRatio || e3.crop.rectangle.height / e3.crop.rectangle.width;
+    e3.crop.rectangle = getCenteredCropRect3(u, s2), e3.crop.draft.rectangle = null, "stage" !== u.mode && (e3.crop.rectangle.x += u.x, e3.crop.rectangle.y += u.y), resetRotationScale(e3);
   }
 };
 var startCenterTimeout = function(e3, t2, r2) {
@@ -14182,8 +13883,8 @@ var getMinScale = function(e3, t2) {
   return Math.min(e3.width / t2.width, e3.height / t2.height);
 };
 var getRotateTransforms = function(e3, t2, r2, n, i2, o2, a2, c2) {
-  var l3 = _objectSpread({}, copyImageTransforms(r2), { rotation: n }), u = c2 ? limitImageTransformsToCropRect(e3, t2, l3, "rotating") : l3, s5 = getMinScale(t2, i2);
-  return roundFloat(u.scale, 5) > roundFloat(s5, 5) ? (a2 && (o2 += 2 * a2), _objectSpread({}, copyImageTransforms(r2), { rotation: o2, interaction: { rotation: u.rotation } })) : (u.scale = Math.min(s5, u.scale), u.interaction = { rotation: u.rotation }, u);
+  var l3 = _objectSpread({}, copyImageTransforms(r2), { rotation: n }), u = c2 ? limitImageTransformsToCropRect(e3, t2, l3, "rotating") : l3, s2 = getMinScale(t2, i2);
+  return roundFloat(u.scale, 5) > roundFloat(s2, 5) ? (a2 && (o2 += 2 * a2), _objectSpread({}, copyImageTransforms(r2), { rotation: o2, interaction: { rotation: u.rotation } })) : (u.scale = Math.min(s2, u.scale), u.interaction = { rotation: u.rotation }, u);
 };
 var getResizeTransforms = function(e3, t2, r2, n, i2, o2) {
   var a2 = Math.max(1e-10, n), c2 = _objectSpread({}, copyImageTransforms(r2), { scale: a2 }), l3 = o2 ? limitImageTransformsToCropRect(e3, t2, c2, "resizing") : c2, u = getMinScale(t2, i2);
@@ -14234,12 +13935,12 @@ var loadImageFromURL = function(e3) {
   }, l3.onload = function() {
     var t3 = l3.status >= 200 && l3.status < 300, r3 = l3.response;
     if (!t3 || !r3) return c2(l3);
-    var n2 = getResponseHeaderSilent(l3, "Content-Disposition"), i3 = n2 ? getFilenameFromHeader(n2) : getFilenameFromURL2(e3), a3 = getImageMimeType(l3.getResponseHeader("Content-Type"), i3), u = getResponseHeaderSilent(l3, "Content-Doka"), s5 = null;
+    var n2 = getResponseHeaderSilent(l3, "Content-Disposition"), i3 = n2 ? getFilenameFromHeader(n2) : getFilenameFromURL2(e3), a3 = getImageMimeType(l3.getResponseHeader("Content-Type"), i3), u = getResponseHeaderSilent(l3, "Content-Doka"), s2 = null;
     if (u) try {
-      s5 = JSON.parse(u);
+      s2 = JSON.parse(u);
     } catch (e4) {
     }
-    !isImage5(r3.type) && a3 && (r3 = r3.slice(0, r3.size, a3)), "name" in r3 || !i3 || (r3.name = i3), o2(r3, s5);
+    !isImage5(r3.type) && a3 && (r3 = r3.slice(0, r3.size, a3)), "name" in r3 || !i3 || (r3.name = i3), o2(r3, s2);
   }, l3.open("GET", e3), l3.responseType = "blob", l3.send();
 };
 var dataURIToBlob = function(e3) {
@@ -14307,9 +14008,9 @@ var actions2 = function(e3, t2, r2) {
   }, REQUEST_LOAD_IMAGE: function(t3) {
     var n = t3.source, i2 = t3.success, o2 = void 0 === i2 ? function() {
     } : i2, a2 = t3.failure, c2 = void 0 === a2 ? function(e4) {
-    } : a2, l3 = t3.options, u = t3.resolveOnConfirm, s5 = void 0 !== u && u;
+    } : a2, l3 = t3.options, u = t3.resolveOnConfirm, s2 = void 0 !== u && u;
     if (clearTimeout(r2.noImageTimeout), !n) return c2("no-image-source");
-    if (null !== r2.file) return r2.file.error ? (r2.file = null, void e3("REQUEST_LOAD_IMAGE", { source: n, success: o2, failure: c2, options: l3, resolveOnConfirm: s5 })) : void e3("REQUEST_ABORT_IMAGE", { source: n, success: o2, failure: c2, options: l3, resolveOnConfirm: s5 });
+    if (null !== r2.file) return r2.file.error ? (r2.file = null, void e3("REQUEST_LOAD_IMAGE", { source: n, success: o2, failure: c2, options: l3, resolveOnConfirm: s2 })) : void e3("REQUEST_ABORT_IMAGE", { source: n, success: o2, failure: c2, options: l3, resolveOnConfirm: s2 });
     resetState(r2), r2.file = { uid: getUniqueId3() }, e3("DID_REQUEST_LOAD_IMAGE", { source: n });
     var d = function(t4) {
       if (shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
@@ -14326,7 +14027,7 @@ var actions2 = function(e3, t2, r2) {
       if (shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
       var m = r2.options.beforeLoadImage, v2 = m ? m(n2) : n2;
       Promise.resolve(v2).then(function(t5) {
-        t5.name || (t5.name = getDateString2()), r2.file.orientation = -1, r2.file.data = t5, e3("LOAD_IMAGE", { success: o2, failure: c2, options: l3, resolveOnConfirm: s5 }, true), e3("KICK");
+        t5.name || (t5.name = getDateString2()), r2.file.orientation = -1, r2.file.data = t5, e3("LOAD_IMAGE", { success: o2, failure: c2, options: l3, resolveOnConfirm: s2 }, true), e3("KICK");
       }).catch(function(e4) {
         setTimeout(function() {
           d(e4);
@@ -14338,16 +14039,16 @@ var actions2 = function(e3, t2, r2) {
     if (shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
     var u = r2.file.data;
     Promise.all([getImageSize4(u), getImageOrientation2(u)]).then(function(n2) {
-      var a3 = _slicedToArray(n2, 2), u2 = a3[0], s5 = a3[1];
+      var a3 = _slicedToArray(n2, 2), u2 = a3[0], s2 = a3[1];
       if (shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
-      if (r2.file.orientation = t2("GET_OUTPUT_CORRECT_IMAGE_EXIF_ORIENTATION") && shouldCorrectImageExifOrientation2() ? s5 : -1, r2.file.orientation > -1) {
+      if (r2.file.orientation = t2("GET_OUTPUT_CORRECT_IMAGE_EXIF_ORIENTATION") && shouldCorrectImageExifOrientation2() ? s2 : -1, r2.file.orientation > -1) {
         var d = u2.width, p = u2.height;
-        s5 >= 5 && s5 <= 8 && (u2.width = p, u2.height = d);
+        s2 >= 5 && s2 <= 8 && (u2.width = p, u2.height = d);
       }
       var f2 = t2("GET_MIN_IMAGE_SIZE");
       if (u2.width < f2.width || u2.height < f2.height) return e3("DID_LOAD_IMAGE_ERROR", { error: { status: "IMAGE_MIN_SIZE_VALIDATION_ERROR", data: { size: u2, minImageSize: f2 } } }), resetState(r2), void o2();
       var h2 = scaleImageSize(u2, { width: t2("GET_MAX_IMAGE_PREVIEW_WIDTH"), height: t2("GET_MAX_IMAGE_PREVIEW_HEIGHT") });
-      if (r2.image = { x: 0, y: 0, width: h2.width, height: h2.height, naturalWidth: u2.width, naturalHeight: u2.height, aspectRatio: u2.height / u2.width, orientation: s5 }, c2.size && (c2.size.hasOwnProperty("mode") && c2.size.hasOwnProperty("upscale") ? (r2.options.outputWidth = c2.size.width, r2.options.outputHeight = c2.size.height, r2.options.outputFit = c2.size.mode, r2.options.upscale = c2.size.upscale) : (r2.size.width = c2.size.width, r2.size.height = c2.size.height, r2.size.aspectRatioLocked = true, r2.size.aspectRatioPrevious = false, r2.instructions.size = { width: c2.size.width, height: c2.size.height })), r2.instructions.crop = getBaseCropInstructions(t2, r2, c2.crop ? _objectSpread({}, c2.crop) : null, r2.size), r2.crop.limitToImageBounds = r2.options.cropLimitToImageBounds, false === r2.instructions.crop.scaleToFit && (r2.crop.limitToImageBounds = r2.instructions.crop.scaleToFit), void 0 === c2.filter) r2.options.filter ? "string" == typeof r2.options.filter ? r2.instructions.filter = r2.options.filter : r2.options.filter.id && (r2.instructions.filter = r2.options.filter.id) : r2.instructions.filter = void 0;
+      if (r2.image = { x: 0, y: 0, width: h2.width, height: h2.height, naturalWidth: u2.width, naturalHeight: u2.height, aspectRatio: u2.height / u2.width, orientation: s2 }, c2.size && (c2.size.hasOwnProperty("mode") && c2.size.hasOwnProperty("upscale") ? (r2.options.outputWidth = c2.size.width, r2.options.outputHeight = c2.size.height, r2.options.outputFit = c2.size.mode, r2.options.upscale = c2.size.upscale) : (r2.size.width = c2.size.width, r2.size.height = c2.size.height, r2.size.aspectRatioLocked = true, r2.size.aspectRatioPrevious = false, r2.instructions.size = { width: c2.size.width, height: c2.size.height })), r2.instructions.crop = getBaseCropInstructions(t2, r2, c2.crop ? _objectSpread({}, c2.crop) : null, r2.size), r2.crop.limitToImageBounds = r2.options.cropLimitToImageBounds, false === r2.instructions.crop.scaleToFit && (r2.crop.limitToImageBounds = r2.instructions.crop.scaleToFit), void 0 === c2.filter) r2.options.filter ? "string" == typeof r2.options.filter ? r2.instructions.filter = r2.options.filter : r2.options.filter.id && (r2.instructions.filter = r2.options.filter.id) : r2.instructions.filter = void 0;
       else {
         var g = c2.filter;
         r2.instructions.filter = null === g ? g : g.id || g.matrix || g;
@@ -14356,7 +14057,7 @@ var actions2 = function(e3, t2, r2) {
       r2.instructions.markup = m.concat(c2.markup || []), r2.instructions.color = Object.keys(COLOR_TOOLS).reduce(function(e4, t3) {
         var n3 = null;
         return r2.options.color && r2.options.color[t3] && (n3 = r2.options.color[t3].value), e4[t3] = c2.color && void 0 !== c2.color[t3] ? "number" == typeof c2.color[t3] ? c2.color[t3] : c2.color[t3].value : null === n3 ? r2.options["color".concat(capitalizeFirstLetter(t3))] : n3, e4;
-      }, {}), e3("DID_LOAD_IMAGE", { image: _objectSpread({ size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: s5 }, u2) }), r2.filePromise = { resolveOnConfirm: l3, success: i2, failure: o2 };
+      }, {}), e3("DID_LOAD_IMAGE", { image: _objectSpread({ size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: s2 }, u2) }), r2.filePromise = { resolveOnConfirm: l3, success: i2, failure: o2 };
     }).catch(function(t3) {
       if (shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
       e3("DID_LOAD_IMAGE_ERROR", { error: { status: "IMAGE_UNKNOWN_ERROR", data: t3 } }), resetState(r2), o2();
@@ -14375,8 +14076,8 @@ var actions2 = function(e3, t2, r2) {
     }
     if (c2) {
       if (reset(r2, t2, e3), e3("DID_SHOW_IMAGE", { image: { size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: r2.image.orientation, width: r2.image.naturalWidth, height: r2.image.naturalHeight } }), !r2.filePromise.resolveOnConfirm) {
-        var u = getCropFromStateRounded(r2.image, r2.crop), s5 = getOutputSize(t2);
-        r2.filePromise.success({ crop: u, image: { orientation: r2.file.orientation }, size: s5, output: { type: t2("GET_OUTPUT_TYPE"), quality: t2("GET_OUTPUT_QUALITY") } });
+        var u = getCropFromStateRounded(r2.image, r2.crop), s2 = getOutputSize(t2);
+        r2.filePromise.success({ crop: u, image: { orientation: r2.file.orientation }, size: s2, output: { type: t2("GET_OUTPUT_TYPE"), quality: t2("GET_OUTPUT_QUALITY") } });
       }
     } else r2.instantUpdate = !a2, recenter(r2, t2), setTimeout(function() {
       r2.instantUpdate = false;
@@ -14423,19 +14124,19 @@ var actions2 = function(e3, t2, r2) {
   }, CROP_RECT_DRAG_RELEASE: function() {
     confirmCropDraft(r2), startCenterTimeout(r2, t2, e3);
   }, CROP_RECT_EDGE_DRAG: function(e4) {
-    var n = e4.offset, i2 = e4.origin, o2 = e4.anchor, a2 = r2.image, c2 = r2.stage, l3 = /n|s/.test(i2) ? Direction.VERTICAL : Direction.HORIZONTAL, u = getEdgeCenterCoordinates(i2, r2.crop.rectangle), s5 = getEdgeCenterCoordinates(o2, r2.crop.rectangle), d = vectorLimit({ x: u.x + (l3 === Direction.HORIZONTAL ? n.x : 0), y: u.y + (l3 === Direction.VERTICAL ? n.y : 0) }, c2), p = t2("GET_MIN_CROP_SIZE"), f2 = t2("GET_MAX_CROP_SIZE");
+    var n = e4.offset, i2 = e4.origin, o2 = e4.anchor, a2 = r2.image, c2 = r2.stage, l3 = /n|s/.test(i2) ? Direction.VERTICAL : Direction.HORIZONTAL, u = getEdgeCenterCoordinates(i2, r2.crop.rectangle), s2 = getEdgeCenterCoordinates(o2, r2.crop.rectangle), d = vectorLimit({ x: u.x + (l3 === Direction.HORIZONTAL ? n.x : 0), y: u.y + (l3 === Direction.VERTICAL ? n.y : 0) }, c2), p = t2("GET_MIN_CROP_SIZE"), f2 = t2("GET_MAX_CROP_SIZE");
     p.width = roundFloat(p.width), p.height = roundFloat(p.height);
     var h2 = getMinScale(r2.crop.rectangle, t2("GET_MIN_PREVIEW_IMAGE_SIZE")) / (r2.crop.draft.transforms.scale || r2.crop.transforms.scale);
     f2.width = roundFloat(f2.width * h2), f2.height = roundFloat(f2.height * h2);
-    var g = { x: Math.sign(u.x - s5.x), y: Math.sign(u.y - s5.y) };
-    r2.crop.draft.rectangle = getEdgeTargetRect(g, d, l3, s5, rectBounds(r2.crop.rectangle), rectBounds(c2), r2.crop.aspectRatio, p, f2), r2.crop.limitToImageBounds && (r2.crop.draft.transforms = getImageTransformsFromRect(a2, r2.crop.draft.rectangle.limited, r2.crop.transforms));
+    var g = { x: Math.sign(u.x - s2.x), y: Math.sign(u.y - s2.y) };
+    r2.crop.draft.rectangle = getEdgeTargetRect(g, d, l3, s2, rectBounds(r2.crop.rectangle), rectBounds(c2), r2.crop.aspectRatio, p, f2), r2.crop.limitToImageBounds && (r2.crop.draft.transforms = getImageTransformsFromRect(a2, r2.crop.draft.rectangle.limited, r2.crop.transforms));
   }, CROP_RECT_CORNER_DRAG: function(e4) {
-    var n = e4.offset, i2 = e4.origin, o2 = e4.anchor, a2 = r2.image, c2 = r2.stage, l3 = getCornerCoordinates(i2, r2.crop.rectangle), u = getCornerCoordinates(o2, r2.crop.rectangle), s5 = { x: l3.x + n.x, y: l3.y + n.y }, d = t2("GET_MIN_CROP_SIZE"), p = t2("GET_MAX_CROP_SIZE");
+    var n = e4.offset, i2 = e4.origin, o2 = e4.anchor, a2 = r2.image, c2 = r2.stage, l3 = getCornerCoordinates(i2, r2.crop.rectangle), u = getCornerCoordinates(o2, r2.crop.rectangle), s2 = { x: l3.x + n.x, y: l3.y + n.y }, d = t2("GET_MIN_CROP_SIZE"), p = t2("GET_MAX_CROP_SIZE");
     d.width = roundFloat(d.width), d.height = roundFloat(d.height);
     var f2 = getMinScale(r2.crop.rectangle, t2("GET_MIN_PREVIEW_IMAGE_SIZE")) / (r2.crop.draft.transforms.scale || r2.crop.transforms.scale);
     p.width = roundFloat(p.width * f2), p.height = roundFloat(p.height * f2);
     var h2 = { x: Math.sign(l3.x - u.x), y: Math.sign(l3.y - u.y) };
-    r2.crop.draft.rectangle = getCornerTargetRect(h2, s5, u, c2, r2.crop.aspectRatio, d, p), r2.crop.limitToImageBounds && (r2.crop.draft.transforms = getImageTransformsFromRect(a2, r2.crop.draft.rectangle.limited, r2.crop.transforms));
+    r2.crop.draft.rectangle = getCornerTargetRect(h2, s2, u, c2, r2.crop.aspectRatio, d, p), r2.crop.limitToImageBounds && (r2.crop.draft.transforms = getImageTransformsFromRect(a2, r2.crop.draft.rectangle.limited, r2.crop.transforms));
   }, CROP_IMAGE_DRAG_GRAB: function() {
     return copyConfirmed(r2) || clearCenterTimeout(r2);
   }, CROP_IMAGE_DRAG_RELEASE: function() {
@@ -14496,13 +14197,13 @@ var actions2 = function(e3, t2, r2) {
       return { width: a2, height: c2, x: 0.5 + 0.5 * i2() - 0.5 * a2, y: 0.5 + 0.5 * i2() - 0.5 * c2 };
     }, u = function(e4) {
       return t2("GET_MARKUP_TOOL_VALUES")[e4];
-    }, s5 = function() {
+    }, s2 = function() {
       var e4 = u("shapeStyle"), t3 = u("color"), r4 = e4[0] || e4[1] ? null : t3;
       return { backgroundColor: r4, borderWidth: e4[0], borderStyle: e4[1] ? e4[1] : null, borderColor: null !== r4 ? null : t3 };
     }, d = { rect: function() {
-      return _objectSpread({}, l3(), s5());
+      return _objectSpread({}, l3(), s2());
     }, ellipse: function() {
-      return _objectSpread({}, l3(), s5());
+      return _objectSpread({}, l3(), s2());
     }, text: function() {
       return { x: 0.5 + 0.5 * i2() - 0.1, y: 0.5 + 0.5 * i2(), width: 0, height: 0, fontColor: u("color"), fontSize: u("fontSize"), fontFamily: u("fontFamily"), text: "Text" };
     }, line: function() {
@@ -14528,26 +14229,26 @@ var actions2 = function(e3, t2, r2) {
       return e5[1].id === t3;
     });
     if (a2) {
-      var c2 = a2[1], l3 = n.x / o2.width, u = n.y / o2.height, s5 = n.width / o2.width, d = n.height / o2.height, p = i2.x / o2.width, f2 = i2.y / o2.height;
-      c2.x = l3 + p, c2.y = u + f2, c2.width = s5, c2.height = d, c2.left = void 0, c2.top = void 0, c2.right = void 0, c2.bottom = void 0, c2.isDirty = true, r2.crop.isDirty = true;
+      var c2 = a2[1], l3 = n.x / o2.width, u = n.y / o2.height, s2 = n.width / o2.width, d = n.height / o2.height, p = i2.x / o2.width, f2 = i2.y / o2.height;
+      c2.x = l3 + p, c2.y = u + f2, c2.width = s2, c2.height = d, c2.left = void 0, c2.top = void 0, c2.right = void 0, c2.bottom = void 0, c2.isDirty = true, r2.crop.isDirty = true;
     }
   }, MARKUP_ELEMENT_RESIZE: function(e4) {
     var t3 = e4.id, n = e4.corner, i2 = e4.origin, o2 = e4.offset, a2 = e4.size, c2 = r2.markup.find(function(e5) {
       return e5[1].id === t3;
     });
     if (c2) {
-      var l3 = _slicedToArray(c2, 2), u = l3[0], s5 = l3[1], d = (i2.x + o2.x) / a2.width, p = (i2.y + o2.y) / a2.height;
-      if (/n/.test(n)) if ("line" === u) s5.height = s5.height - (p - s5.y), s5.y = p;
+      var l3 = _slicedToArray(c2, 2), u = l3[0], s2 = l3[1], d = (i2.x + o2.x) / a2.width, p = (i2.y + o2.y) / a2.height;
+      if (/n/.test(n)) if ("line" === u) s2.height = s2.height - (p - s2.y), s2.y = p;
       else {
-        var f2 = s5.y + s5.height;
-        p > f2 && (p = f2), s5.height = s5.height - (p - s5.y), s5.y = p;
+        var f2 = s2.y + s2.height;
+        p > f2 && (p = f2), s2.height = s2.height - (p - s2.y), s2.y = p;
       }
-      if (/w/.test(n)) if ("line" === u) s5.width = s5.width - (d - s5.x), s5.x = d;
+      if (/w/.test(n)) if ("line" === u) s2.width = s2.width - (d - s2.x), s2.x = d;
       else {
-        var h2 = s5.x + s5.width;
-        d > h2 && (d = h2), s5.width = s5.width - (d - s5.x), s5.x = d;
+        var h2 = s2.x + s2.width;
+        d > h2 && (d = h2), s2.width = s2.width - (d - s2.x), s2.x = d;
       }
-      /s/.test(n) && (s5.height = "line" === u ? p - s5.y : Math.max(0, p - s5.y)), /e/.test(n) && (s5.width = "line" === u ? d - s5.x : Math.max(0, d - s5.x)), s5.left = void 0, s5.top = void 0, s5.right = void 0, s5.bottom = void 0, s5.isDirty = true, r2.crop.isDirty = true;
+      /s/.test(n) && (s2.height = "line" === u ? p - s2.y : Math.max(0, p - s2.y)), /e/.test(n) && (s2.width = "line" === u ? d - s2.x : Math.max(0, d - s2.x)), s2.left = void 0, s2.top = void 0, s2.right = void 0, s2.bottom = void 0, s2.isDirty = true, r2.crop.isDirty = true;
     }
   }, MARKUP_DELETE: function(t3) {
     var n = t3.id, i2 = r2.markup.find(function(e4) {
@@ -14600,7 +14301,7 @@ var actions2 = function(e3, t2, r2) {
     return n["SET_COLOR_".concat(o2)] = function(n2) {
       var c2 = n2.value;
       if (c2 !== n2.prevValue) {
-        var l3 = _slicedToArray(t2("GET_COLOR_".concat(o2, "_RANGE")), 2), u = l3[0], s5 = l3[1], d = limit2(c2, u, s5);
+        var l3 = _slicedToArray(t2("GET_COLOR_".concat(o2, "_RANGE")), 2), u = l3[0], s2 = l3[1], d = limit2(c2, u, s2);
         r2.options["color".concat(a2)] = d, r2.instructions.color || (r2.instructions.color = {}), r2.instructions.color[i2] = d, e3("COLOR_SET_VALUE", { key: i2, value: d });
       }
     }, n;
@@ -14647,10 +14348,10 @@ var actions2 = function(e3, t2, r2) {
       return e4[t3] = i3 ? o3 : isNumber2(n.color[t3]) ? n.color[t3] : n.color[t3].value, e4;
     }, {}), n.crop && (r2.instructions.crop = getBaseCropInstructions(t2, r2, n.crop, r2.size), r2.crop.limitToImageBounds = r2.options.cropLimitToImageBounds, false === r2.instructions.crop.scaleToFit && (r2.crop.limitToImageBounds = r2.instructions.crop.scaleToFit), resetCrop(r2, t2));
   }, DID_SET_INITIAL_STATE: function(e4) {
-    var n = e4.value || {}, i2 = n.crop, o2 = n.filter, a2 = n.color, c2 = n.size, l3 = void 0 === c2 ? {} : c2, u = n.markup, s5 = void 0 === u ? [] : u, d = _objectSpread({ width: null, height: null }, l3), p = limitSize(d, t2("GET_SIZE_MIN"), t2("GET_SIZE_MAX"), null);
+    var n = e4.value || {}, i2 = n.crop, o2 = n.filter, a2 = n.color, c2 = n.size, l3 = void 0 === c2 ? {} : c2, u = n.markup, s2 = void 0 === u ? [] : u, d = _objectSpread({ width: null, height: null }, l3), p = limitSize(d, t2("GET_SIZE_MIN"), t2("GET_SIZE_MAX"), null);
     r2.instructions.size = _objectSpread({}, p), r2.instructions.crop = getBaseCropInstructions(t2, r2, i2), r2.crop.limitToImageBounds = r2.options.cropLimitToImageBounds, false === r2.instructions.crop.scaleToFit && (r2.crop.limitToImageBounds = r2.instructions.crop.scaleToFit), r2.instructions.filter = o2 || null, r2.instructions.color = Object.keys(COLOR_TOOLS).reduce(function(e5, t3) {
       return e5[t3] = void 0 === a2 || void 0 === a2[t3] ? r2.options["color".concat(capitalizeFirstLetter(t3))] : a2[t3], e5;
-    }, {}), r2.instructions.markup = s5, r2.crop.isDirty = true;
+    }, {}), r2.instructions.markup = s2, r2.crop.isDirty = true;
   }, GET_DATA: function(n) {
     var i2 = n.success, o2 = n.failure, a2 = n.file, c2 = n.data;
     if (!r2.file) return o2("no-image-source");
@@ -14665,7 +14366,7 @@ var actions2 = function(e3, t2, r2) {
     } : a2, l3 = n.failure, u = void 0 === l3 ? function() {
     } : l3;
     if (shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
-    var s5 = function(t3) {
+    var s2 = function(t3) {
       if (e3("DID_PREPARE_OUTPUT"), shouldAbortImageLoad(r2)) return e3("ABORT_IMAGE");
       c2(t3);
     };
@@ -14675,7 +14376,7 @@ var actions2 = function(e3, t2, r2) {
           e3("DID_MAKE_PROGRESS", { progress: t5 });
         };
       }) : t3;
-      Promise.resolve(i3).then(s5).catch(function(t4) {
+      Promise.resolve(i3).then(s2).catch(function(t4) {
         e3("DID_REQUEST_POSTPROCESS_OUTPUT_ERROR", { error: t4 });
       });
     }).catch(function(t3) {
@@ -14859,7 +14560,7 @@ var createDragger = function(e3, t2, r2, n) {
     return t3.apply(null, [e4, (function(e5) {
       return { x: e5.pageX - o2.x, y: e5.pageY - o2.y };
     })(e4)]);
-  }, s5 = function(r3) {
+  }, s2 = function(r3) {
     var n2 = 0 === a2.pointers.count();
     n2 && (a2.active = false, a2.cancel = false, a2.cancelled = false), (e3 === r3.target || contains(e3, r3.target)) && (n2 ? r3.isPrimary && (a2.pointers.push(r3), addEvent$1(document.documentElement, "up", p), r3.preventDefault(), i2.stopPropagation && (r3.stopPropagation(), r3.stopImmediatePropagation()), a2.active = true, o2.x = r3.pageX, o2.y = r3.pageY, addEvent$1(document.documentElement, "move", d), t2(r3)) : i2.cancelOnMultiple && (a2.cancel = true));
   }, d = function(e4) {
@@ -14867,12 +14568,12 @@ var createDragger = function(e3, t2, r2, n) {
   }, p = function e4(t3) {
     a2.pointers.pop(t3), 0 === a2.pointers.count() && (removeEvent$1(document.documentElement, "move", d), removeEvent$1(document.documentElement, "up", e4)), a2.active && (a2.cancelled || (t3.preventDefault(), i2.stopPropagation && t3.stopPropagation(), l3(t3, r2), l3(t3, n)));
   };
-  return addEvent$1(document.documentElement, "down", s5), { enable: function() {
-    a2.enabled || addEvent$1(document.documentElement, "down", s5), a2.enabled = true;
+  return addEvent$1(document.documentElement, "down", s2), { enable: function() {
+    a2.enabled || addEvent$1(document.documentElement, "down", s2), a2.enabled = true;
   }, disable: function() {
-    a2.enabled && removeEvent$1(document.documentElement, "down", s5), a2.enabled = false;
+    a2.enabled && removeEvent$1(document.documentElement, "down", s2), a2.enabled = false;
   }, destroy: function() {
-    removeEvent$1(document.documentElement, "up", p), removeEvent$1(document.documentElement, "move", d), removeEvent$1(document.documentElement, "down", s5);
+    removeEvent$1(document.documentElement, "up", p), removeEvent$1(document.documentElement, "move", d), removeEvent$1(document.documentElement, "down", s2);
   } };
 };
 var imageOverlaySpring = { type: "spring", stiffness: 0.4, damping: 0.65, mass: 7 };
@@ -14881,16 +14582,16 @@ var activateMarkupUtil = function(e3, t2, r2) {
   else if ("draw" === r2 && !e3.ref.drawInput) {
     var n = e3.ref, i2 = n.drawState, o2 = n.viewSize, a2 = 0, c2 = 0, l3 = {}, u = e3.query("GET_MARKUP_DRAW_DISTANCE");
     e3.ref.drawInput = createDragger(e3.element, function(r3) {
-      var n2 = e3.query("GET_MARKUP_TOOL_VALUES"), u2 = n2.lineStyle[0], s5 = n2.lineStyle[1];
-      i2.lineColor = n2.color, i2.lineWidth = u2, i2.lineStyle = s5;
+      var n2 = e3.query("GET_MARKUP_TOOL_VALUES"), u2 = n2.lineStyle[0], s2 = n2.lineStyle[1];
+      i2.lineColor = n2.color, i2.lineWidth = u2, i2.lineStyle = s2;
       var d = e3.query("GET_ROOT"), p = void 0 !== r3.offsetX ? r3.offsetX : r3.pageX - d.x - t2.stageOffsetX - window.pageXOffset, f2 = void 0 !== r3.offsetY ? r3.offsetY : r3.pageY - d.y - t2.stageOffsetY - window.pageYOffset;
       a2 = p - e3.markupX, c2 = f2 - e3.markupY, l3.x = 0, l3.y = 0, i2.points.push({ x: a2 / o2.width, y: c2 / o2.height });
     }, function(t3, r3) {
       if (e3.dispatch("KICK"), u) {
         var n2 = vectorDistance3(r3, l3);
         if (n2 > u) {
-          var s5 = vectorAngleBetween(l3, r3) + Math.PI / 2, d = u - n2;
-          l3.x += Math.sin(s5) * d, l3.y -= Math.cos(s5) * d, i2.points.push({ x: (a2 + l3.x) / o2.width, y: (c2 + l3.y) / o2.height });
+          var s2 = vectorAngleBetween(l3, r3) + Math.PI / 2, d = u - n2;
+          l3.x += Math.sin(s2) * d, l3.y -= Math.cos(s2) * d, i2.points.push({ x: (a2 + l3.x) / o2.width, y: (c2 + l3.y) / o2.height });
         }
       } else i2.points.push({ x: (a2 + r3.x) / o2.width, y: (c2 + r3.y) / o2.height });
     }, function(t3, r3) {
@@ -14965,14 +14666,14 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
   }), t2.ref.input = u, t2.ref.elements = [], t2.ref.viewSize = { width: 0, height: 0, scale: 0 }, t2.ref.resetSelected = function() {
     return t2.ref.selected = { id: null, type: null, settings: {} }, t2.ref.selected;
   }, t2.ref.resetSelected();
-  var s5 = function(e4) {
+  var s2 = function(e4) {
     return e4.id ? e4 : e4.parentNode;
   }, d = function() {
     t2.ref.resetSelected(), i2(null);
   };
   t2.ref.handleDeselect = function(e4) {
     var n2;
-    (t2.query("IS_ACTIVE_VIEW", "markup") || t2.query("IS_ACTIVE_VIEW", "sticker")) && (t2.ref.selected.id && e4.target !== t2.ref.removeButton.element && (n2 = e4.target, t2.ref.selected.id !== s5(n2).id && ((function(e5) {
+    (t2.query("IS_ACTIVE_VIEW", "markup") || t2.query("IS_ACTIVE_VIEW", "sticker")) && (t2.ref.selected.id && e4.target !== t2.ref.removeButton.element && (n2 = e4.target, t2.ref.selected.id !== s2(n2).id && ((function(e5) {
       return contains(t2.ref.manipulatorGroup, e5) || e5 === t2.ref.input;
     })(e4.target) || r2.isMarkupUtil(e4.target) || d())));
   }, addEvent$1(document.body, "down", t2.ref.handleDeselect), t2.ref.handleTextInput = function() {
@@ -15030,7 +14731,7 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
     if (i2) {
       var o2 = t2.query("GET_MARKUP_UTIL");
       t2.element.dataset.util = o2 || "";
-      var a2 = i2.markup, c2 = i2.cropStatus, l3 = r2.onSelect, u = r2.onDrag, s5 = t2.ref, d = s5.clip, p = s5.manipulatorGroup, f2 = s5.drawPath, h2 = s5.viewSize, g = s5.shapeOffsetGroup, m = s5.manipulators, v2 = s5.manipulatorPath, y = s5.manipulatorRect, E = s5.removeButton, T = s5.drawState, _2 = t2.query("GET_OUTPUT_WIDTH"), R = t2.query("GET_OUTPUT_HEIGHT"), w = c2.image, A = c2.crop, I = A.width, S2 = A.height, C2 = A.widthFloat / A.heightFloat;
+      var a2 = i2.markup, c2 = i2.cropStatus, l3 = r2.onSelect, u = r2.onDrag, s2 = t2.ref, d = s2.clip, p = s2.manipulatorGroup, f2 = s2.drawPath, h2 = s2.viewSize, g = s2.shapeOffsetGroup, m = s2.manipulators, v2 = s2.manipulatorPath, y = s2.manipulatorRect, E = s2.removeButton, T = s2.drawState, _2 = t2.query("GET_OUTPUT_WIDTH"), R = t2.query("GET_OUTPUT_HEIGHT"), w = c2.image, A = c2.crop, I = A.width, S2 = A.height, C2 = A.widthFloat / A.heightFloat;
       if (_2 || R) {
         var O = t2.query("GET_OUTPUT_FIT");
         _2 && !R && (R = _2), R && !_2 && (_2 = R);
@@ -15056,8 +14757,8 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
           });
           var j = t2.query("GET_MARKUP_FILTER");
           a2.filter(j).sort(sortMarkupByZIndex3).forEach(function(e4, n2) {
-            var i3 = _slicedToArray(e4, 2), o3 = i3[0], a3 = i3[1], c3 = a3.id, s6 = a3.isDestroyed, d2 = a3.isDirty, f3 = a3.isSelected, g2 = a3.allowSelect, T2 = a3.allowMove, _3 = a3.allowResize, R2 = a3.allowInput;
-            if (s6) {
+            var i3 = _slicedToArray(e4, 2), o3 = i3[0], a3 = i3[1], c3 = a3.id, s3 = a3.isDestroyed, d2 = a3.isDirty, f3 = a3.isSelected, g2 = a3.allowSelect, T2 = a3.allowMove, _3 = a3.allowResize, R2 = a3.allowInput;
+            if (s3) {
               var w2 = t2.ref.elements[c3];
               w2 && (w2.dragger && w2.dragger.destroy(), t2.ref.elements[c3] = null, w2.parentNode.removeChild(w2));
             } else {
@@ -15229,16 +14930,16 @@ var scale = function(e3, t2) {
   e3[0] = e3[0] * r2, e3[1] = e3[1] * r2, e3[2] = e3[2] * r2, e3[3] = e3[3] * r2, e3[4] = e3[4] * n, e3[5] = e3[5] * n, e3[6] = e3[6] * n, e3[7] = e3[7] * n, e3[8] = e3[8] * i2, e3[9] = e3[9] * i2, e3[10] = e3[10] * i2, e3[11] = e3[11] * i2;
 };
 var rotateX = function(e3, t2) {
-  var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[4], o2 = e3[5], a2 = e3[6], c2 = e3[7], l3 = e3[8], u = e3[9], s5 = e3[10], d = e3[11];
-  e3[4] = i2 * n + l3 * r2, e3[5] = o2 * n + u * r2, e3[6] = a2 * n + s5 * r2, e3[7] = c2 * n + d * r2, e3[8] = l3 * n - i2 * r2, e3[9] = u * n - o2 * r2, e3[10] = s5 * n - a2 * r2, e3[11] = d * n - c2 * r2;
+  var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[4], o2 = e3[5], a2 = e3[6], c2 = e3[7], l3 = e3[8], u = e3[9], s2 = e3[10], d = e3[11];
+  e3[4] = i2 * n + l3 * r2, e3[5] = o2 * n + u * r2, e3[6] = a2 * n + s2 * r2, e3[7] = c2 * n + d * r2, e3[8] = l3 * n - i2 * r2, e3[9] = u * n - o2 * r2, e3[10] = s2 * n - a2 * r2, e3[11] = d * n - c2 * r2;
 };
 var rotateY = function(e3, t2) {
-  var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[8], u = e3[9], s5 = e3[10], d = e3[11];
-  e3[0] = i2 * n - l3 * r2, e3[1] = o2 * n - u * r2, e3[2] = a2 * n - s5 * r2, e3[3] = c2 * n - d * r2, e3[8] = i2 * r2 + l3 * n, e3[9] = o2 * r2 + u * n, e3[10] = a2 * r2 + s5 * n, e3[11] = c2 * r2 + d * n;
+  var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[8], u = e3[9], s2 = e3[10], d = e3[11];
+  e3[0] = i2 * n - l3 * r2, e3[1] = o2 * n - u * r2, e3[2] = a2 * n - s2 * r2, e3[3] = c2 * n - d * r2, e3[8] = i2 * r2 + l3 * n, e3[9] = o2 * r2 + u * n, e3[10] = a2 * r2 + s2 * n, e3[11] = c2 * r2 + d * n;
 };
 var rotateZ = function(e3, t2) {
-  var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[4], u = e3[5], s5 = e3[6], d = e3[7];
-  e3[0] = i2 * n + l3 * r2, e3[1] = o2 * n + u * r2, e3[2] = a2 * n + s5 * r2, e3[3] = c2 * n + d * r2, e3[4] = l3 * n - i2 * r2, e3[5] = u * n - o2 * r2, e3[6] = s5 * n - a2 * r2, e3[7] = d * n - c2 * r2;
+  var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[4], u = e3[5], s2 = e3[6], d = e3[7];
+  e3[0] = i2 * n + l3 * r2, e3[1] = o2 * n + u * r2, e3[2] = a2 * n + s2 * r2, e3[3] = c2 * n + d * r2, e3[4] = l3 * n - i2 * r2, e3[5] = u * n - o2 * r2, e3[6] = s2 * n - a2 * r2, e3[7] = d * n - c2 * r2;
 };
 var mat4 = { create: create2, perspective, translate, scale, rotateX, rotateY, rotateZ };
 var degToRad = function(e3) {
@@ -15253,21 +14954,21 @@ var setup = function(e3, t2, r2) {
   var n = { width: 0, height: 0 }, i2 = { x: 0, y: 0 }, o2 = null, a2 = degToRad(30), c2 = Math.tan(a2 / 2), l3 = { antialias: false, alpha: false }, u = e3.getContext("webgl", l3) || e3.getContext("experimental-webgl", l3);
   if (!u) return null;
   u.enable(u.BLEND), u.blendFunc(u.SRC_ALPHA, u.ONE_MINUS_SRC_ALPHA);
-  var s5 = createProgram(u, simpleVertexShader, backgroundFragmentShader), d = u.getUniformLocation(s5, "uColorStart"), p = u.getUniformLocation(s5, "uColorEnd"), f2 = u.getUniformLocation(s5, "uViewportSize"), h2 = u.getAttribLocation(s5, "aPosition"), g = u.getUniformLocation(s5, "uOverlayLeftTop"), m = u.getUniformLocation(s5, "uOverlayRightBottom"), v2 = u.getUniformLocation(s5, "uColorCanvasBackground"), y = u.createBuffer(), E = new Float32Array([1, -1, 1, 1, -1, -1, -1, 1]);
+  var s2 = createProgram(u, simpleVertexShader, backgroundFragmentShader), d = u.getUniformLocation(s2, "uColorStart"), p = u.getUniformLocation(s2, "uColorEnd"), f2 = u.getUniformLocation(s2, "uViewportSize"), h2 = u.getAttribLocation(s2, "aPosition"), g = u.getUniformLocation(s2, "uOverlayLeftTop"), m = u.getUniformLocation(s2, "uOverlayRightBottom"), v2 = u.getUniformLocation(s2, "uColorCanvasBackground"), y = u.createBuffer(), E = new Float32Array([1, -1, 1, 1, -1, -1, -1, 1]);
   u.bindBuffer(u.ARRAY_BUFFER, y), u.bufferData(u.ARRAY_BUFFER, E, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var T = createProgram(u, simpleVertexShader, outlineFragmentShader), _2 = u.getAttribLocation(T, "aPosition"), R = u.getUniformLocation(T, "uOutlineWidth"), w = u.getUniformLocation(T, "uOutlineColor"), A = u.getUniformLocation(T, "uOverlayLeftTop"), I = u.getUniformLocation(T, "uOverlayRightBottom"), S2 = u.createBuffer(), C2 = new Float32Array([1, -1, 1, 1, -1, -1, -1, 1]);
   u.bindBuffer(u.ARRAY_BUFFER, S2), u.bufferData(u.ARRAY_BUFFER, C2, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var O = createProgram(u, imageVertexShader, imageFragmentShader);
   u.useProgram(O);
-  var x = u.getUniformLocation(O, "uMatrix"), b = u.getUniformLocation(O, "uTexture"), M = u.getUniformLocation(O, "uTextureSize"), L = u.getUniformLocation(O, "uOverlayColor"), P = u.getUniformLocation(O, "uOverlayLeftTop"), G = u.getUniformLocation(O, "uOverlayRightBottom"), k2 = u.getUniformLocation(O, "uColorOpacity"), D2 = u.getUniformLocation(O, "uColorOffset"), U = u.getUniformLocation(O, "uColorMatrix"), B = u.getAttribLocation(O, "aPosition"), V = u.getAttribLocation(O, "aTexCoord"), N = createTexture(u, b, M, 0, t2), F = t2.width * r2, z = t2.height * r2, W2 = -0.5 * F, q = 0.5 * z, H2 = 0.5 * F, Y2 = -0.5 * z, j = new Float32Array([W2, q, W2, Y2, H2, q, H2, Y2]), X2 = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), Z2 = j.length / 2, $2 = u.createBuffer();
+  var x = u.getUniformLocation(O, "uMatrix"), b = u.getUniformLocation(O, "uTexture"), M = u.getUniformLocation(O, "uTextureSize"), L = u.getUniformLocation(O, "uOverlayColor"), P = u.getUniformLocation(O, "uOverlayLeftTop"), G = u.getUniformLocation(O, "uOverlayRightBottom"), k2 = u.getUniformLocation(O, "uColorOpacity"), D2 = u.getUniformLocation(O, "uColorOffset"), U = u.getUniformLocation(O, "uColorMatrix"), B = u.getAttribLocation(O, "aPosition"), V = u.getAttribLocation(O, "aTexCoord"), N = createTexture(u, b, M, 0, t2), F = t2.width * r2, z = t2.height * r2, W2 = -0.5 * F, q = 0.5 * z, H2 = 0.5 * F, Y2 = -0.5 * z, j = new Float32Array([W2, q, W2, Y2, H2, q, H2, Y2]), X3 = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), Z2 = j.length / 2, $2 = u.createBuffer();
   u.bindBuffer(u.ARRAY_BUFFER, $2), u.bufferData(u.ARRAY_BUFFER, j, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var K2 = u.createBuffer();
-  u.bindBuffer(u.ARRAY_BUFFER, K2), u.bufferData(u.ARRAY_BUFFER, X2, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
+  u.bindBuffer(u.ARRAY_BUFFER, K2), u.bufferData(u.ARRAY_BUFFER, X3, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var Q = 0, J = 0, ee2 = { release: function() {
     e3.width = 1, e3.height = 1;
   }, resize: function(t3, a3) {
     e3.width = t3 * r2, e3.height = a3 * r2, e3.style.width = "".concat(t3, "px"), e3.style.height = "".concat(a3, "px"), n.width = t3 * r2, n.height = a3 * r2, i2.x = 0.5 * n.width, i2.y = 0.5 * n.height, o2 = n.width / n.height, u.viewport(0, 0, u.canvas.width, u.canvas.height);
-  }, update: function(e4, l4, E2, C3, b2, M2, F2, z2, W3, q2, H3, Y3, j2, X3, te2, re2, ne2, ie2, oe2) {
+  }, update: function(e4, l4, E2, C3, b2, M2, F2, z2, W3, q2, H3, Y3, j2, X4, te2, re2, ne2, ie2, oe2) {
     var ae2 = H3 ? H3.height * r2 : n.height;
     Q = t2.width * r2, J = t2.height * r2, e4 *= r2, l4 *= r2, E2 *= r2, C3 *= r2;
     var ce = J / 2 / c2 * (n.height / ae2) * -1;
@@ -15275,9 +14976,9 @@ var setup = function(e3, t2, r2) {
     var le2 = 0.5 * Q, ue2 = 0.5 * J;
     e4 -= le2, l4 -= ue2;
     var se2 = z2, de2 = -(i2.x - le2) + E2, pe = i2.y - ue2 - C3, fe2 = mat4.create();
-    mat4.perspective(fe2, a2, o2, 1, 2 * -ce), mat4.translate(fe2, [de2, pe, ce]), mat4.translate(fe2, [e4, -l4, 0]), mat4.scale(fe2, [se2, se2, se2]), mat4.rotateZ(fe2, -F2), mat4.translate(fe2, [-e4, l4, 0]), mat4.rotateY(fe2, M2), mat4.rotateX(fe2, b2), u.clearColor(X3[0], X3[1], X3[2], 1), u.clear(u.COLOR_BUFFER_BIT);
+    mat4.perspective(fe2, a2, o2, 1, 2 * -ce), mat4.translate(fe2, [de2, pe, ce]), mat4.translate(fe2, [e4, -l4, 0]), mat4.scale(fe2, [se2, se2, se2]), mat4.rotateZ(fe2, -F2), mat4.translate(fe2, [-e4, l4, 0]), mat4.rotateY(fe2, M2), mat4.rotateX(fe2, b2), u.clearColor(X4[0], X4[1], X4[2], 1), u.clear(u.COLOR_BUFFER_BIT);
     var he2 = Y3.x * r2, ge2 = Y3.y * r2, me2 = Y3.width * r2, ve2 = Y3.height * r2, ye2 = he2, Ee2 = ye2 + me2, Te2 = n.height - ge2, _e2 = n.height - (ge2 + ve2);
-    u.useProgram(s5), u.uniform3fv(d, te2), u.uniform3fv(p, re2), u.uniform4fv(v2, oe2.map(function(e5, t3) {
+    u.useProgram(s2), u.uniform3fv(d, te2), u.uniform3fv(p, re2), u.uniform4fv(v2, oe2.map(function(e5, t3) {
       return t3 < 3 ? e5 / 255 : e5;
     })), u.uniform2f(f2, n.width, n.height), u.uniform2f(g, ye2, Te2), u.uniform2f(m, Ee2, _e2), u.bindBuffer(u.ARRAY_BUFFER, y), u.vertexAttribPointer(h2, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(h2), u.drawArrays(u.TRIANGLE_STRIP, 0, 4), u.useProgram(O), u.bindFramebuffer(u.FRAMEBUFFER, null), u.bindTexture(u.TEXTURE_2D, N), u.bindBuffer(u.ARRAY_BUFFER, $2), u.vertexAttribPointer(B, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(B), u.bindBuffer(u.ARRAY_BUFFER, K2), u.vertexAttribPointer(V, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(V), u.uniformMatrix4fv(x, false, fe2), u.uniform2f(P, ye2, Te2), u.uniform2f(G, Ee2, _e2), u.uniform4fv(L, j2), u.uniform1f(k2, q2), u.uniform4f(D2, W3[4], W3[9], W3[14], W3[19]), u.uniformMatrix4fv(U, false, [].concat(_toConsumableArray(W3.slice(0, 4)), _toConsumableArray(W3.slice(5, 9)), _toConsumableArray(W3.slice(10, 14)), _toConsumableArray(W3.slice(15, 19)))), u.drawArrays(u.TRIANGLE_STRIP, 0, Z2), u.useProgram(T), u.uniform1f(R, ne2), u.uniform4fv(w, ie2), u.uniform2f(A, ye2, Te2), u.uniform2f(I, Ee2, _e2), u.bindBuffer(u.ARRAY_BUFFER, S2), u.vertexAttribPointer(_2, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(_2), u.drawArrays(u.TRIANGLE_STRIP, 0, 4), ee2.onupdate(u);
   }, onupdate: function() {
@@ -15393,13 +15094,13 @@ var imageGL = createView2({ name: "image-gl", ignoreRect: true, ignoreRectUpdate
     e4 && t2.dispatch("CROP_IMAGE_DRAG_RELEASE");
   });
   var o2 = t2.query("GET_FILE"), a2 = URL.createObjectURL(o2.data), c2 = function(e4) {
-    var r3 = scaleImageSize(e4, { width: t2.query("GET_MAX_IMAGE_PREVIEW_WIDTH"), height: t2.query("GET_MAX_IMAGE_PREVIEW_HEIGHT") }), n2 = createPreviewImage2(e4, r3.width, r3.height, o2.orientation), i3 = Math.max(1, 0.75 * window.devicePixelRatio), a3 = n2.height / n2.width, c3 = 96 * i3, l4 = createPreviewImage2(n2, a3 > 1 ? c3 : c3 / a3, a3 > 1 ? c3 * a3 : c3), u2 = n2.getContext("2d").getImageData(0, 0, n2.width, n2.height), s5 = l4.getContext("2d").getImageData(0, 0, l4.width, l4.height);
+    var r3 = scaleImageSize(e4, { width: t2.query("GET_MAX_IMAGE_PREVIEW_WIDTH"), height: t2.query("GET_MAX_IMAGE_PREVIEW_HEIGHT") }), n2 = createPreviewImage2(e4, r3.width, r3.height, o2.orientation), i3 = Math.max(1, 0.75 * window.devicePixelRatio), a3 = n2.height / n2.width, c3 = 96 * i3, l4 = createPreviewImage2(n2, a3 > 1 ? c3 : c3 / a3, a3 > 1 ? c3 * a3 : c3), u2 = n2.getContext("2d").getImageData(0, 0, n2.width, n2.height), s2 = l4.getContext("2d").getImageData(0, 0, l4.width, l4.height);
     canvasRelease2(n2), canvasRelease2(l4), t2.ref.gl = setup(t2.ref.canvas, u2, i3);
     var d = t2.query("GET_OUTPUT_CANVAS_SYNC_TARGET");
     d && (t2.ref.gl.onupdate = function() {
       var e5 = t2.ref.overlaySpring.getRect();
       d.getContext("2d").drawImage(t2.ref.canvas, e5.x * i3, e5.y * i3, e5.width * i3, e5.height * i3, 0, 0, d.width, d.height);
-    }), t2.ref.gl ? (t2.dispatch("DID_RECEIVE_IMAGE_DATA", { previewData: u2, thumbData: s5 }), t2.dispatch("DID_PRESENT_IMAGE")) : t2.dispatch("MISSING_WEBGL");
+    }), t2.ref.gl ? (t2.dispatch("DID_RECEIVE_IMAGE_DATA", { previewData: u2, thumbData: s2 }), t2.dispatch("DID_PRESENT_IMAGE")) : t2.dispatch("MISSING_WEBGL");
   }, l3 = function() {
     loadImage$2(a2).then(c2);
   };
@@ -15436,7 +15137,7 @@ var imageGL = createView2({ name: "image-gl", ignoreRect: true, ignoreRectUpdate
 } }, function(e3) {
   var t2 = e3.root, r2 = e3.props, n = (e3.actions, e3.timestamp);
   if (t2.ref.gl && r2.width && r2.height) {
-    var i2 = t2.ref, o2 = i2.gl, a2 = i2.previousWidth, c2 = i2.previousHeight, l3 = i2.shouldZoom, u = i2.stageSpring, s5 = i2.overlaySpring, d = i2.backgroundColorSpring, p = i2.backgroundColorCenterSpring;
+    var i2 = t2.ref, o2 = i2.gl, a2 = i2.previousWidth, c2 = i2.previousHeight, l3 = i2.shouldZoom, u = i2.stageSpring, s2 = i2.overlaySpring, d = i2.backgroundColorSpring, p = i2.backgroundColorCenterSpring;
     r2.width === a2 && r2.height === c2 || (t2.ref.gl.resize(r2.width, r2.height), t2.ref.previousWidth = r2.width, t2.ref.previousHeight = r2.height), r2.left === t2.ref.previousLeft && r2.top === t2.ref.previousTop || (t2.ref.canvas.style.transform = "translate(".concat(-r2.left, "px, ").concat(-r2.top, "px)"), t2.ref.previousLeft = r2.left, t2.ref.previousTop = r2.top), l3 && !t2.ref.didZoom && (t2.introScale = null, t2.introScale = 1.15, t2.introScale = 1, t2.ref.didZoom = true), d.setTarget(t2.ref.backgroundColor), d.interpolate(n);
     var f2 = d.isStable();
     p.setTarget(t2.ref.backgroundColorCenter), p.interpolate(n);
@@ -15445,11 +15146,11 @@ var imageGL = createView2({ name: "image-gl", ignoreRect: true, ignoreRectUpdate
     var g = r2.colorMatrix || IdentityMatrix, m = t2.ref.colorMatrixSpring.map(function(e4, r3) {
       return e4.target = g[r3], e4.interpolate(n), t2.ref.colorMatrixPositions[r3];
     }), v2 = 20 === t2.ref.colorMatrixStableCount;
-    r2.isDraft && s5.setTarget(null), s5.setTarget(r2.overlay), s5.interpolate(n);
-    var y = s5.isStable();
+    r2.isDraft && s2.setTarget(null), s2.setTarget(r2.overlay), s2.interpolate(n);
+    var y = s2.isStable();
     r2.isDraft && u.setTarget(null), u.setTarget(r2.stage), u.interpolate(n);
     var E = u.isStable();
-    return o2.update(t2.xOrigin, t2.yOrigin, t2.xTranslation + r2.left, t2.yTranslation + r2.top, t2.xRotation, t2.yRotation, t2.zRotation, t2.scale * t2.introScale, m, t2.ref.isPreview ? 1 : t2.colorOpacity, u.getRect(), s5.getRect(), [1, 1, 1, 1 - t2.overlayOpacity], d.getColor(), p.getColor(), d.getColor(), t2.outlineWidth, t2.ref.outlineColor, t2.query("GET_BACKGROUND_COLOR")), y && E && v2 && f2 && h2;
+    return o2.update(t2.xOrigin, t2.yOrigin, t2.xTranslation + r2.left, t2.yTranslation + r2.top, t2.xRotation, t2.yRotation, t2.zRotation, t2.scale * t2.introScale, m, t2.ref.isPreview ? 1 : t2.colorOpacity, u.getRect(), s2.getRect(), [1, 1, 1, 1 - t2.overlayOpacity], d.getColor(), p.getColor(), d.getColor(), t2.outlineWidth, t2.ref.outlineColor, t2.query("GET_BACKGROUND_COLOR")), y && E && v2 && f2 && h2;
   }
 }) });
 var image = createView2({ name: "image", ignoreRect: true, mixins: { apis: ["offsetTop"] }, create: function(e3) {
@@ -15474,7 +15175,7 @@ var image = createView2({ name: "image", ignoreRect: true, mixins: { apis: ["off
 } }, function(e3) {
   var t2 = e3.root, r2 = e3.props, n = e3.timestamp, i2 = t2.ref.imageGL, o2 = t2.ref.markup, a2 = t2.query("GET_CROP", r2.id, n);
   if (a2) {
-    var c2 = a2.isDraft, l3 = a2.cropRect, u = a2.cropStatus, s5 = a2.origin, d = a2.translation, p = a2.translationBand, f2 = a2.scale, h2 = a2.scaleBand, g = a2.rotation, m = a2.rotationBand, v2 = a2.flip, y = a2.colorMatrix, E = t2.query("GET_ROOT"), T = t2.query("GET_STAGE"), _2 = T.x, R = T.y;
+    var c2 = a2.isDraft, l3 = a2.cropRect, u = a2.cropStatus, s2 = a2.origin, d = a2.translation, p = a2.translationBand, f2 = a2.scale, h2 = a2.scaleBand, g = a2.rotation, m = a2.rotationBand, v2 = a2.flip, y = a2.colorMatrix, E = t2.query("GET_ROOT"), T = t2.query("GET_STAGE"), _2 = T.x, R = T.y;
     c2 && (i2.scale = null, i2.zRotation = null, i2.xTranslation = null, i2.yTranslation = null, i2.xOrigin = null, i2.yOrigin = null), i2.colorMatrix = y;
     var w = t2.query("IS_ACTIVE_VIEW", "crop"), A = t2.query("IS_ACTIVE_VIEW", "markup") || t2.query("IS_ACTIVE_VIEW", "sticker"), I = w ? 0.75 : 0.95, S2 = _objectSpread({}, l3), C2 = 1, O = w ? 1 : 5;
     if (t2.query("IS_ACTIVE_VIEW", "resize")) {
@@ -15484,7 +15185,7 @@ var image = createView2({ name: "image", ignoreRect: true, mixins: { apis: ["off
       S2.x = S2.x + (0.5 * l3.width - 0.5 * M), S2.y = S2.y + (0.5 * l3.height - 0.5 * L), S2.width = M, S2.height = L;
     }
     var P = t2.ref.isModal ? 0 : E.left, G = t2.ref.isModal ? 0 : E.top, k2 = t2.ref.isModal ? 0 : E.width - t2.rect.element.width, D2 = t2.ref.isModal ? 0 : E.height - t2.rect.element.height - r2.offsetTop, U = (f2 + h2) * C2;
-    i2.isDraft = c2, i2.overlayOpacity = I, i2.xOrigin = s5.x, i2.yOrigin = s5.y, i2.xTranslation = d.x + p.x + _2, i2.yTranslation = d.y + p.y + R, i2.left = P, i2.top = G + r2.offsetTop, i2.width = t2.rect.element.width + k2, i2.height = t2.rect.element.height + D2 + r2.offsetTop, i2.scale = U, i2.xRotation = v2.vertical ? Math.PI : 0, i2.yRotation = v2.horizontal ? Math.PI : 0, i2.zRotation = g.main + g.sub + m, i2.stage = { x: T.x + P, y: T.y + G + r2.offsetTop, width: T.width, height: T.height }, i2.overlay = { x: S2.x + _2 + P, y: S2.y + R + G + r2.offsetTop, width: S2.width, height: S2.height }, i2.outlineWidth = O, o2 && (c2 && (o2.translateX = null, o2.translateY = null, o2.markupX = null, o2.markupY = null, o2.markupWidth = null, o2.markupHeight = null), o2.opacity = w ? 0.3 : 1, o2.stageOffsetX = _2, o2.stageOffsetY = R, o2.markupX = S2.x + _2, o2.markupY = S2.y + R, o2.markupWidth = S2.width, o2.markupHeight = S2.height, o2.allowInteraction = A);
+    i2.isDraft = c2, i2.overlayOpacity = I, i2.xOrigin = s2.x, i2.yOrigin = s2.y, i2.xTranslation = d.x + p.x + _2, i2.yTranslation = d.y + p.y + R, i2.left = P, i2.top = G + r2.offsetTop, i2.width = t2.rect.element.width + k2, i2.height = t2.rect.element.height + D2 + r2.offsetTop, i2.scale = U, i2.xRotation = v2.vertical ? Math.PI : 0, i2.yRotation = v2.horizontal ? Math.PI : 0, i2.zRotation = g.main + g.sub + m, i2.stage = { x: T.x + P, y: T.y + G + r2.offsetTop, width: T.width, height: T.height }, i2.overlay = { x: S2.x + _2 + P, y: S2.y + R + G + r2.offsetTop, width: S2.width, height: S2.height }, i2.outlineWidth = O, o2 && (c2 && (o2.translateX = null, o2.translateY = null, o2.markupX = null, o2.markupY = null, o2.markupWidth = null, o2.markupHeight = null), o2.opacity = w ? 0.3 : 1, o2.stageOffsetX = _2, o2.stageOffsetY = R, o2.markupX = S2.x + _2, o2.markupY = S2.y + R, o2.markupWidth = S2.width, o2.markupHeight = S2.height, o2.allowInteraction = A);
   }
 }) });
 var createGroup = function() {
@@ -15690,7 +15391,7 @@ var cropRect = createView2({ ignoreRect: true, ignoreRectUpdate: true, name: "cr
   var t2 = e3.root, r2 = e3.props, n = r2.rectangle, i2 = r2.draft, o2 = r2.rotating, a2 = r2.enabled;
   if (n && (!rectEqualsRect(n, t2.ref.previousRect) || o2 !== t2.ref.previousRotating || a2 !== t2.ref.previousEnabled || i2 !== t2.ref.previousDraft)) {
     t2.ref.previousRect = n, t2.ref.previousRotating = o2, t2.ref.previousEnabled = a2, t2.ref.previousDraft = i2;
-    var c2 = t2.ref, l3 = c2.n, u = c2.e, s5 = c2.s, d = c2.w, p = c2.nw, f2 = c2.ne, h2 = c2.se, g = c2.sw, m = c2.lines, v2 = c2.animationDir, y = n.x, E = n.y, T = n.x + n.width, _2 = n.y + n.height, R = _2 - E, w = T - y, A = Math.min(w, R);
+    var c2 = t2.ref, l3 = c2.n, u = c2.e, s2 = c2.s, d = c2.w, p = c2.nw, f2 = c2.ne, h2 = c2.se, g = c2.sw, m = c2.lines, v2 = c2.animationDir, y = n.x, E = n.y, T = n.x + n.width, _2 = n.y + n.height, R = _2 - E, w = T - y, A = Math.min(w, R);
     t2.element.dataset.indicatorSize = A < 80 ? "none" : "default", edges.forEach(function(e4) {
       return t2.ref[e4].setAllowInteraction(a2);
     }), corners.forEach(function(e4) {
@@ -15705,7 +15406,7 @@ var cropRect = createView2({ ignoreRect: true, ignoreRectUpdate: true, name: "cr
       return t2.ref[e4];
     }).forEach(function(e4) {
       e4.opacity = 0, e4.scaleX = 0.5, e4.scaleY = 0.5;
-    })), transformTranslate(i2, p, y, E), transformTranslate(i2, f2, T, E), transformTranslate(i2, h2, T, _2), transformTranslate(i2, g, y, _2), transformTranslateScale(i2, l3, y, E, w / 100, 1), transformTranslateScale(i2, u, T, E, 1, R / 100), transformTranslateScale(i2, s5, y, _2, w / 100, 1), transformTranslateScale(i2, d, y, E, 1, R / 100), o2) {
+    })), transformTranslate(i2, p, y, E), transformTranslate(i2, f2, T, E), transformTranslate(i2, h2, T, _2), transformTranslate(i2, g, y, _2), transformTranslateScale(i2, l3, y, E, w / 100, 1), transformTranslateScale(i2, u, T, E, 1, R / 100), transformTranslateScale(i2, s2, y, _2, w / 100, 1), transformTranslateScale(i2, d, y, E, 1, R / 100), o2) {
       t2.ref.wasRotating = true;
       var S2 = m.slice(0, 5), C2 = 1 / S2.length;
       S2.forEach(function(e4, t3) {
@@ -15772,10 +15473,10 @@ var cropSize = createView2({ ignoreRect: true, name: "crop-size", mixins: { styl
   if (!(t2.opacity <= 0)) {
     var i2 = t2.query("GET_CROP", r2.id, n);
     if (i2) {
-      var o2 = i2.cropStatus, a2 = i2.isDraft, c2 = t2.ref, l3 = c2.outputWidth, u = c2.outputHeight, s5 = c2.resizePercentage, d = c2.previousValues, p = o2.image, f2 = o2.crop, h2 = o2.currentWidth, g = o2.currentHeight, m = p.width ? Math.round(p.width / f2.width * 100) : 0;
+      var o2 = i2.cropStatus, a2 = i2.isDraft, c2 = t2.ref, l3 = c2.outputWidth, u = c2.outputHeight, s2 = c2.resizePercentage, d = c2.previousValues, p = o2.image, f2 = o2.crop, h2 = o2.currentWidth, g = o2.currentHeight, m = p.width ? Math.round(p.width / f2.width * 100) : 0;
       a2 && (t2.sizeWidth = null, t2.sizeHeight = null), t2.sizeWidth = h2, t2.sizeHeight = g;
       var v2 = Math.round(t2.sizeWidth), y = Math.round(t2.sizeHeight);
-      v2 !== d.width && (updateText$1(l3, v2), d.width = v2), y !== d.height && (updateText$1(u, y), d.height = y), m !== d.percentage && (p.width ? updateText$1(s5, "".concat(m, "%")) : updateText$1(s5, ""), d.percentage = m);
+      v2 !== d.width && (updateText$1(l3, v2), d.width = v2), y !== d.height && (updateText$1(u, y), d.height = y), m !== d.percentage && (p.width ? updateText$1(s2, "".concat(m, "%")) : updateText$1(s2, ""), d.percentage = m);
     }
   }
 } });
@@ -15843,16 +15544,16 @@ var cropSubject = createView2({ name: "crop-subject", ignoreRect: true, mixins: 
   var t2 = e3.root, r2 = e3.props, n = e3.timestamp, i2 = t2.ref, o2 = i2.cropView, a2 = i2.maskView, c2 = i2.btnZoom, l3 = i2.cropSize, u = i2.instructions;
   if (!t2.query("IS_ACTIVE_VIEW", "crop") && o2) return o2.enabled = false, t2.ref.timestampOffset = null, void (l3 && (l3.opacity = 0));
   t2.ref.timestampOffset || (t2.ref.timestampOffset = n);
-  var s5 = t2.query("GET_CROP", r2.id, n);
-  if (s5) {
-    var d = s5.cropRect, p = s5.isRotating, f2 = s5.isDraft, h2 = s5.scale, g = t2.query("GET_STAGE");
+  var s2 = t2.query("GET_CROP", r2.id, n);
+  if (s2) {
+    var d = s2.cropRect, p = s2.isRotating, f2 = s2.isDraft, h2 = s2.scale, g = t2.query("GET_STAGE");
     if (t2.translateX = g.x - t2.rect.element.left, t2.translateY = g.y - t2.rect.element.top, o2 && (o2.draft = f2, o2.rotating = p, o2.rectangle = d, o2.enabled = true), l3) {
       l3.opacity = 1, f2 && (l3.translateX = null, l3.translateY = null);
       var m = getCropSizeOffset(t2.rect.element, l3.rect.element, d);
       l3.translateX = f2 ? m.x : autoPrecision(m.x), l3.translateY = f2 ? m.y : autoPrecision(m.y);
     }
-    if (t2.query("GET_CROP_MASK") && (f2 && (a2.translateX = null, a2.translateY = null, a2.maskWidth = null, a2.maskHeight = null), a2.translateX = autoPrecision(d.x), a2.translateY = autoPrecision(d.y), a2.maskWidth = d.width, a2.maskHeight = d.height, a2.scale = h2), s5.canRecenter) u && (u.opacity = 0), c2 && (c2.opacity = s5.isDraft ? 0 : 1);
-    else if (c2 && (c2.opacity = 0), u && !u.seen && !s5.isDraft) {
+    if (t2.query("GET_CROP_MASK") && (f2 && (a2.translateX = null, a2.translateY = null, a2.maskWidth = null, a2.maskHeight = null), a2.translateX = autoPrecision(d.x), a2.translateY = autoPrecision(d.y), a2.maskWidth = d.width, a2.maskHeight = d.height, a2.scale = h2), s2.canRecenter) u && (u.opacity = 0), c2 && (c2.opacity = s2.isDraft ? 0 : 1);
+    else if (c2 && (c2.opacity = 0), u && !u.seen && !s2.isDraft) {
       var v2 = d.x + 0.5 * d.width, y = d.y + 0.5 * d.height;
       u.translateX = Math.round(v2 - 0.5 * u.rect.element.width), u.translateY = Math.round(y - 0.5 * u.rect.element.height), n - t2.ref.timestampOffset > 2e3 && (u.opacity = 1);
     }
@@ -15886,8 +15587,8 @@ var isMyTarget = function(e3, t2) {
   return !!r2 && contains(r2, e3);
 };
 var updateIndicators = function(e3) {
-  var t2 = e3.root, r2 = e3.props, n = e3.action.position, i2 = r2.pivotPoint, o2 = t2.ref, a2 = o2.indicatorA, c2 = o2.indicatorB, l3 = i2.x - n.x, u = i2.y - n.y, s5 = { x: i2.x + l3, y: i2.y + u }, d = { x: i2.x - l3, y: i2.y - u };
-  a2.style.cssText = "transform: translate3d(".concat(s5.x, "px, ").concat(s5.y, "px, 0)"), c2.style.cssText = "transform: translate3d(".concat(d.x, "px, ").concat(d.y, "px, 0)");
+  var t2 = e3.root, r2 = e3.props, n = e3.action.position, i2 = r2.pivotPoint, o2 = t2.ref, a2 = o2.indicatorA, c2 = o2.indicatorB, l3 = i2.x - n.x, u = i2.y - n.y, s2 = { x: i2.x + l3, y: i2.y + u }, d = { x: i2.x - l3, y: i2.y - u };
+  a2.style.cssText = "transform: translate3d(".concat(s2.x, "px, ").concat(s2.y, "px, 0)"), c2.style.cssText = "transform: translate3d(".concat(d.x, "px, ").concat(d.y, "px, 0)");
 };
 var getPositionFromEvent = function(e3) {
   return { x: e3.pageX, y: e3.pageY };
@@ -15919,10 +15620,10 @@ var cropResize = createView2({ ignoreRect: true, ignoreRectUpdate: true, name: "
       r3 && (removeEvent$1(document.documentElement, "move", t2.ref.resizeMove), removeEvent$1(document.documentElement, "up", t2.ref.resizeEnd)), l3 && (e4.preventDefault(), r3 && t2.dispatch("CROP_IMAGE_RESIZE_RELEASE"));
     }
   }, addEvent$1(document.documentElement, "down", t2.ref.resizeStart);
-  var u = performance.now(), s5 = 0, d = 1, p = throttle(function(e4) {
+  var u = performance.now(), s2 = 0, d = 1, p = throttle(function(e4) {
     if (!t2.ref.isCropping) {
       var r3 = Math.sign(e4.wheelDelta || e4.deltaY), n2 = now(), i3 = n2 - u;
-      u = n2, (i3 > 750 || s5 !== r3) && (d = 1, s5 = r3), d += 0.05 * r3, t2.dispatch("CROP_IMAGE_RESIZE_MULTIPLY", { value: Math.max(0.1, d) }), t2.dispatch("CROP_IMAGE_RESIZE_RELEASE");
+      u = n2, (i3 > 750 || s2 !== r3) && (d = 1, s2 = r3), d += 0.05 * r3, t2.dispatch("CROP_IMAGE_RESIZE_MULTIPLY", { value: Math.max(0.1, d) }), t2.dispatch("CROP_IMAGE_RESIZE_RELEASE");
     }
   }, 100);
   t2.ref.wheel = function(e4) {
@@ -15936,9 +15637,9 @@ var cropResize = createView2({ ignoreRect: true, ignoreRectUpdate: true, name: "
   }, document.addEventListener("wheel", t2.ref.wheel, { passive: false }), t2.ref.hasEnabledResizeModifier && (t2.ref.move = function(e4) {
     if (t2.ref.isActive && !t2.ref.isCropping && (i2.position.x = e4.pageX - t2.ref.state.offsetX, i2.position.y = e4.pageY - t2.ref.state.scrollY - t2.ref.state.offsetY, i2.enabled)) if (isMyTarget(t2.element, e4.target)) {
       "idle" === t2.element.dataset.state && t2.dispatch("RESIZER_SHOW", { position: _objectSpread({}, i2.position) }), e4.preventDefault(), t2.dispatch("RESIZER_MOVE", { position: _objectSpread({}, i2.position) });
-      var n2 = r2.pivotPoint, a3 = n2.x - i2.position.x, l4 = n2.y - i2.position.y, u2 = { x: n2.x + a3, y: n2.y + l4 }, s6 = _objectSpread({}, i2.position);
+      var n2 = r2.pivotPoint, a3 = n2.x - i2.position.x, l4 = n2.y - i2.position.y, u2 = { x: n2.x + a3, y: n2.y + l4 }, s3 = _objectSpread({}, i2.position);
       if (i2.selecting) {
-        var d2 = (vectorDistance3(u2, s6) - c2) / c2, p2 = performance.now();
+        var d2 = (vectorDistance3(u2, s3) - c2) / c2, p2 = performance.now();
         p2 - o2 > 25 && (o2 = p2, t2.dispatch("CROP_IMAGE_RESIZE", { value: d2 }));
       }
     } else t2.dispatch("RESIZER_CANCEL");
@@ -16070,7 +15771,7 @@ var cropRoot = createView2({ name: "crop", ignoreRect: true, mixins: { apis: ["v
   var t2 = e3.root, r2 = t2.ref, n = r2.menu, i2 = r2.rotator;
   n.opacity = 1, i2 && (i2.opacity = 1, i2.translateY = 0), t2.ref.updateControls();
 } }, function(e3) {
-  var t2 = e3.root, r2 = e3.props, n = e3.timestamp, i2 = t2.ref, o2 = i2.resizer, a2 = i2.subject, c2 = i2.menu, l3 = i2.rotator, u = i2.isHiding, s5 = i2.cropToggleLimitDropdown, d = i2.aspectRatioDropdown, p = r2.hidden, f2 = 0 === a2.opacity && 0 === c2.opacity && (!l3 || l3 && 0 === l3.opacity);
+  var t2 = e3.root, r2 = e3.props, n = e3.timestamp, i2 = t2.ref, o2 = i2.resizer, a2 = i2.subject, c2 = i2.menu, l3 = i2.rotator, u = i2.isHiding, s2 = i2.cropToggleLimitDropdown, d = i2.aspectRatioDropdown, p = r2.hidden, f2 = 0 === a2.opacity && 0 === c2.opacity && (!l3 || l3 && 0 === l3.opacity);
   if (!p && u && f2 && (t2.ref.isHiding = false, r2.hidden = true), !r2.hidden) {
     var h2 = t2.query("GET_CROP", r2.id, n);
     if (h2) {
@@ -16078,7 +15779,7 @@ var cropRoot = createView2({ name: "crop", ignoreRect: true, mixins: { apis: ["v
         var g = t2.query("GET_ACTIVE_CROP_ASPECT_RATIO"), m = t2.query("GET_SIZE"), v2 = d.selectedValue;
         v2 ? (v2.aspectRatio !== g && updateAspectRatioIcon(t2, g), v2.aspectRatio === g && v2.width === m.width && v2.height === m.height || (d.selectedValue = { aspectRatio: g, width: m.width, height: m.height })) : (d.selectedValue = { aspectRatio: g, width: m.width, height: m.height }, updateAspectRatioIcon(t2, g));
       }
-      if (s5 && t2.ref.isLimitedToImageBounds !== h2.isLimitedToImageBounds && (t2.ref.isLimitedToImageBounds = h2.isLimitedToImageBounds, updateImageBoundsIcon(t2, h2.isLimitedToImageBounds), s5.selectedValue = h2.isLimitedToImageBounds), o2.pivotPoint = { x: 0.5 * o2.rect.element.width, y: 0.5 * o2.rect.element.height }, l3 && (l3.animate = !h2.isDraft, l3.rotation = h2.rotation.sub, l3.setAllowInteraction(t2.query("IS_ACTIVE_VIEW", "crop"))), c2.element.dataset.layout = t2.ref.menuItemsRequiredWidth > t2.ref.menu.rect.element.width ? "compact" : "spacious", t2.query("GET_CROP_RESIZE_SCROLL_RECT_ONLY")) {
+      if (s2 && t2.ref.isLimitedToImageBounds !== h2.isLimitedToImageBounds && (t2.ref.isLimitedToImageBounds = h2.isLimitedToImageBounds, updateImageBoundsIcon(t2, h2.isLimitedToImageBounds), s2.selectedValue = h2.isLimitedToImageBounds), o2.pivotPoint = { x: 0.5 * o2.rect.element.width, y: 0.5 * o2.rect.element.height }, l3 && (l3.animate = !h2.isDraft, l3.rotation = h2.rotation.sub, l3.setAllowInteraction(t2.query("IS_ACTIVE_VIEW", "crop"))), c2.element.dataset.layout = t2.ref.menuItemsRequiredWidth > t2.ref.menu.rect.element.width ? "compact" : "spacious", t2.query("GET_CROP_RESIZE_SCROLL_RECT_ONLY")) {
         var y = t2.query("GET_STAGE"), E = y.x, T = y.y, _2 = t2.query("GET_ROOT"), R = t2.ref.isModal ? _2.left : 0, w = t2.ref.isModal ? _2.top : 0;
         o2.scrollRect = { x: R + E + h2.cropRect.x, y: w + T + h2.cropRect.y + r2.offsetTop, width: h2.cropRect.width, height: h2.cropRect.height };
       }
@@ -16087,8 +15788,8 @@ var cropRoot = createView2({ name: "crop", ignoreRect: true, mixins: { apis: ["v
 }) });
 var sizeInput = createView2({ name: "size-input", mixins: { listeners: true, apis: ["id", "value", "placeholder", "getValue", "setValue", "setPlaceholder", "hasFocus", "onChange"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = r2.id, i2 = r2.min, o2 = r2.max, a2 = r2.value, c2 = r2.placeholder, l3 = r2.onChange, u = void 0 === l3 ? function() {
-  } : l3, s5 = r2.onBlur, d = void 0 === s5 ? function() {
-  } : s5, p = "doka--".concat(n, "-").concat(getUniqueId3()), f2 = createElement6("input", { type: "number", step: 1, id: p, min: i2, max: o2, value: a2, placeholder: c2 }), h2 = f2.getAttribute("max").length, g = createElement6("label", { for: p });
+  } : l3, s2 = r2.onBlur, d = void 0 === s2 ? function() {
+  } : s2, p = "doka--".concat(n, "-").concat(getUniqueId3()), f2 = createElement6("input", { type: "number", step: 1, id: p, min: i2, max: o2, value: a2, placeholder: c2 }), h2 = f2.getAttribute("max").length, g = createElement6("label", { for: p });
   g.textContent = r2.label;
   var m = function(e4, t3, r3) {
     return isString2(e4) ? ((e4 = e4.replace(/[^0-9]/g, "")).length > h2 && (e4 = e4.slice(0, h2)), e4 = parseInt(e4, 10)) : e4 = Math.round(e4), isNaN(e4) ? null : limit2(e4, t3, r3);
@@ -16115,17 +15816,17 @@ var sizeInput = createView2({ name: "size-input", mixins: { listeners: true, api
 var checkboxInput = createView2({ name: "checkable", tag: "span", mixins: { listeners: true, apis: ["id", "checked", "onChange", "onSetValue", "setValue", "getValue"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = r2.id, i2 = r2.checked, o2 = r2.onChange, a2 = void 0 === o2 ? function() {
   } : o2, c2 = r2.onSetValue, l3 = void 0 === c2 ? function() {
-  } : c2, u = "doka--".concat(n, "-").concat(getUniqueId3()), s5 = createElement6("input", { type: "checkbox", value: 1, id: u });
-  s5.checked = i2, t2.ref.input = s5;
+  } : c2, u = "doka--".concat(n, "-").concat(getUniqueId3()), s2 = createElement6("input", { type: "checkbox", value: 1, id: u });
+  s2.checked = i2, t2.ref.input = s2;
   var d = createElement6("label", { for: u });
-  d.innerHTML = r2.label, t2.appendChild(s5), t2.appendChild(d), t2.ref.handleChange = function() {
-    l3(s5.checked), a2(s5.checked);
-  }, s5.addEventListener("change", t2.ref.handleChange), r2.getValue = function() {
-    return s5.checked;
+  d.innerHTML = r2.label, t2.appendChild(s2), t2.appendChild(d), t2.ref.handleChange = function() {
+    l3(s2.checked), a2(s2.checked);
+  }, s2.addEventListener("change", t2.ref.handleChange), r2.getValue = function() {
+    return s2.checked;
   }, r2.setValue = function(e4) {
-    s5.checked = e4, l3(s5.checked);
+    s2.checked = e4, l3(s2.checked);
   }, setTimeout(function() {
-    l3(s5.checked);
+    l3(s2.checked);
   }, 0);
 }, destroy: function(e3) {
   var t2 = e3.root;
@@ -16139,17 +15840,17 @@ var resizeForm = createView2({ ignoreRect: true, name: "resize-form", tag: "form
   var t2 = e3.root;
   t2.element.setAttribute("novalidate", "novalidate"), t2.element.setAttribute("action", "#"), t2.ref.shouldBlurKeyboard = isIOS2() || isAndroid();
   var r2 = t2.query("GET_SIZE_MAX"), n = t2.query("GET_SIZE_MIN"), i2 = function() {
-    var e4 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, i3 = e4.axisLock, o3 = void 0 === i3 ? "none" : i3, a2 = e4.enforceLimits, c2 = void 0 !== a2 && a2, l3 = t2.ref, u = l3.inputImageWidth, s5 = l3.inputImageHeight, d = l3.buttonConfirm, p = t2.query("GET_SIZE_ASPECT_RATIO_LOCK"), f2 = t2.query("GET_CROP_RECTANGLE_ASPECT_RATIO"), h2 = { width: u.getValue(), height: s5.getValue() }, g = limitSize(h2, c2 ? n : { width: 1, height: 1 }, c2 ? r2 : { width: 999999, height: 999999 }, p ? f2 : null, o3);
-    if (p) "width" === o3 ? s5.setValue(g.width / f2) : "height" === o3 ? u.setValue(g.height * f2) : (u.setValue(g.width || g.height * f2), s5.setValue(g.height || g.width / f2));
+    var e4 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, i3 = e4.axisLock, o3 = void 0 === i3 ? "none" : i3, a2 = e4.enforceLimits, c2 = void 0 !== a2 && a2, l3 = t2.ref, u = l3.inputImageWidth, s2 = l3.inputImageHeight, d = l3.buttonConfirm, p = t2.query("GET_SIZE_ASPECT_RATIO_LOCK"), f2 = t2.query("GET_CROP_RECTANGLE_ASPECT_RATIO"), h2 = { width: u.getValue(), height: s2.getValue() }, g = limitSize(h2, c2 ? n : { width: 1, height: 1 }, c2 ? r2 : { width: 999999, height: 999999 }, p ? f2 : null, o3);
+    if (p) "width" === o3 ? s2.setValue(g.width / f2) : "height" === o3 ? u.setValue(g.height * f2) : (u.setValue(g.width || g.height * f2), s2.setValue(g.height || g.width / f2));
     else if (g.width && !g.height) {
       var m = Math.round(g.width / f2), v2 = limitSize({ width: g.width, height: m }, c2 ? n : { width: 1, height: 1 }, c2 ? r2 : { width: 999999, height: 999999 }, f2, o3);
-      c2 && u.setValue(Math.round(v2.width)), s5.setPlaceholder(Math.round(v2.height));
+      c2 && u.setValue(Math.round(v2.width)), s2.setPlaceholder(Math.round(v2.height));
     } else if (g.height && !g.width) {
       var y = Math.round(g.height * f2);
       u.setPlaceholder(y);
     }
-    var E = t2.query("GET_SIZE_INPUT"), T = E.width, _2 = E.height, R = isNumber2(T) ? Math.round(T) : null, w = isNumber2(_2) ? Math.round(_2) : null, A = u.getValue(), I = s5.getValue(), S2 = A !== R || I !== w;
-    return d.opacity = S2 ? 1 : 0, t2.dispatch("KICK"), { width: u.getValue(), height: s5.getValue() };
+    var E = t2.query("GET_SIZE_INPUT"), T = E.width, _2 = E.height, R = isNumber2(T) ? Math.round(T) : null, w = isNumber2(_2) ? Math.round(_2) : null, A = u.getValue(), I = s2.getValue(), S2 = A !== R || I !== w;
+    return d.opacity = S2 ? 1 : 0, t2.dispatch("KICK"), { width: u.getValue(), height: s2.getValue() };
   }, o2 = t2;
   t2.appendChildView(t2.createChildView(createFieldGroup("Image size", function(e4) {
     var t3 = e4.root, a2 = t3.query("GET_SIZE"), c2 = t3.appendChildView(t3.createChildView(sizeInput, { id: "image-width", label: t3.query("GET_LABEL_RESIZE_WIDTH"), value: isNumber2(a2.width) ? Math.round(a2.width) : null, min: n.width, max: r2.width, placeholder: 0, onChange: function() {
@@ -16198,8 +15899,8 @@ var resizeForm = createView2({ ignoreRect: true, name: "resize-form", tag: "form
       var u = t2.query("GET_CROP_RECTANGLE_ASPECT_RATIO");
       if (null === c2.getValue() && null === l3.getValue()) c2.setPlaceholder(o2.crop.width), l3.setPlaceholder(o2.crop.height);
       else if (null === c2.getValue() && null !== o2.image.height) {
-        var s5 = Math.round(o2.image.height * u);
-        c2.setPlaceholder(s5);
+        var s2 = Math.round(o2.image.height * u);
+        c2.setPlaceholder(s2);
       } else if (null === l3.getValue() && null !== o2.image.width) {
         var d = Math.round(o2.image.width / u);
         l3.setPlaceholder(d);
@@ -16237,11 +15938,11 @@ var resizeRoot = createView2({ name: "resize", ignoreRect: true, mixins: { apis:
 }) });
 var rangeInput = createView2({ name: "range-input", tag: "span", mixins: { listeners: true, apis: ["onUpdate", "setValue", "getValue", "setAllowInteraction"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = r2.id, i2 = r2.min, o2 = r2.max, a2 = r2.step, c2 = r2.value, l3 = r2.onUpdate, u = void 0 === l3 ? function() {
-  } : l3, s5 = "doka--".concat(n, "-").concat(getUniqueId3()), d = createElement6("input", { type: "range", id: s5, min: i2, max: o2, step: a2 });
+  } : l3, s2 = "doka--".concat(n, "-").concat(getUniqueId3()), d = createElement6("input", { type: "range", id: s2, min: i2, max: o2, step: a2 });
   d.value = c2, t2.ref.input = d;
   var p = createElement6("span");
   p.className = "doka--range-input-inner";
-  var f2 = createElement6("label", { for: s5 });
+  var f2 = createElement6("label", { for: s2 });
   f2.innerHTML = r2.label;
   var h2 = i2 + 0.5 * (o2 - i2);
   t2.element.dataset.centered = c2 === h2, t2.ref.handleRecenter = function() {
@@ -16316,16 +16017,16 @@ var createFilterTile = function(e3) {
     o2.textContent = r2.label, t2.appendChild(o2);
     var a2 = r2.imageData, c2 = Math.min(a2.width, a2.height), l3 = c2, u = createElement6("canvas");
     u.width = c2, u.height = l3;
-    var s5 = u.getContext("2d");
+    var s2 = u.getContext("2d");
     t2.ref.image = u;
     var d = createElement6("div");
     t2.ref.imageOverlay = d;
     var p = { x: 0.5 * c2 - 0.5 * a2.width, y: 0.5 * l3 - 0.5 * a2.height }, f2 = createElement6("div");
     f2.appendChild(u), f2.appendChild(d), t2.appendChild(f2), t2.ref.imageWrapper = f2, r2.matrix ? (tilePreviewWorker || (tilePreviewWorker = createWorker3(TransformWorker2)), clearTimeout(tilePreviewWorkerTerminationTimeout), tilePreviewWorker.post({ transforms: [{ type: "filter", data: r2.matrix }], imageData: a2 }, function(e5) {
-      s5.putImageData(e5, p.x, p.y), clearTimeout(tilePreviewWorkerTerminationTimeout), tilePreviewWorkerTerminationTimeout = setTimeout(function() {
+      s2.putImageData(e5, p.x, p.y), clearTimeout(tilePreviewWorkerTerminationTimeout), tilePreviewWorkerTerminationTimeout = setTimeout(function() {
         tilePreviewWorker.terminate(), tilePreviewWorker = null;
       }, 1e3);
-    }, [a2.data.buffer]), t2.ref.activeColors = updateColors(t2, t2.query("GET_COLOR_VALUES"))) : s5.putImageData(a2, p.x, p.y);
+    }, [a2.data.buffer]), t2.ref.activeColors = updateColors(t2, t2.query("GET_COLOR_VALUES"))) : s2.putImageData(a2, p.x, p.y);
   }, write: function(e4) {
     var t2 = e4.root;
     if (!(t2.opacity <= 0)) {
@@ -16491,15 +16192,15 @@ var markupColor = createView2({ ignoreRect: true, tag: "div", name: "markup-colo
   }), t2.element.appendChild(a2), t2.query("GET_MARKUP_ALLOW_CUSTOM_COLOR") && supportsColorPicker()) {
     var c2 = createElement6("div", { class: "doka--color-input" }), l3 = "doka--color-" + getUniqueId3(), u = createElement6("label", { for: l3 });
     u.textContent = "Choose color";
-    var s5 = createElement6("input", { id: l3, name: i2, type: "color" }), d = createElement6("span", { class: "doka--color-visualizer" }), p = createElement6("span", { class: "doka--color-brightness" });
+    var s2 = createElement6("input", { id: l3, name: i2, type: "color" }), d = createElement6("span", { class: "doka--color-visualizer" }), p = createElement6("span", { class: "doka--color-brightness" });
     t2.ref.handleCustomColorChange = function() {
-      var e4 = toRGBColorArray(s5.value), t3 = toHSL.apply(void 0, _toConsumableArray(e4)), r3 = 360 * t3[0] - 90, n2 = 0.625 * t3[1], i3 = 1 - t3[2];
-      d.style.backgroundColor = s5.value, d.style.transform = "rotateZ(".concat(r3, "deg) translateX(").concat(n2, "em)"), p.style.opacity = i3, o2(s5.value);
+      var e4 = toRGBColorArray(s2.value), t3 = toHSL.apply(void 0, _toConsumableArray(e4)), r3 = 360 * t3[0] - 90, n2 = 0.625 * t3[1], i3 = 1 - t3[2];
+      d.style.backgroundColor = s2.value, d.style.transform = "rotateZ(".concat(r3, "deg) translateX(").concat(n2, "em)"), p.style.opacity = i3, o2(s2.value);
     };
     var f2 = true;
     t2.ref.handleCustomColorSelect = function(e4) {
       f2 ? o2(e4.target.value) : t2.ref.handleCustomColorChange(), f2 = false;
-    }, s5.addEventListener("click", t2.ref.handleCustomColorSelect), s5.addEventListener("input", t2.ref.handleCustomColorChange), appendChild2(c2)(s5), appendChild2(c2)(u), appendChild2(c2)(d), appendChild2(c2)(p), t2.appendChild(c2), t2.ref.customInput = s5;
+    }, s2.addEventListener("click", t2.ref.handleCustomColorSelect), s2.addEventListener("input", t2.ref.handleCustomColorChange), appendChild2(c2)(s2), appendChild2(c2)(u), appendChild2(c2)(d), appendChild2(c2)(p), t2.appendChild(c2), t2.ref.customInput = s2;
   }
 }, write: function(e3) {
   var t2 = e3.root, r2 = e3.props;
@@ -16563,9 +16264,9 @@ var markupTools = createView2({ name: "markup-tools", ignoreRect: true, mixins: 
   var t2 = e3.root;
   "draw" === e3.action.util && showDrawTool(t2);
 }, MARKUP_SELECT: function(e3) {
-  var t2 = e3.root, r2 = e3.action, n = t2.ref, i2 = n.colorSelect, o2 = n.fontFamilySelect, a2 = n.fontSizeSelect, c2 = n.shapeStyleSelect, l3 = n.lineStyleSelect, u = n.lineDecorationSelect, s5 = r2.id ? t2.query("GET_MARKUP_BY_ID", r2.id) : null, d = [i2, o2, a2, c2, l3, u], p = [];
-  if (s5) {
-    var f2 = _slicedToArray(s5, 2), h2 = f2[0], g = f2[1], m = Array.isArray(g.allowEdit) ? g.allowEdit : false === g.allowEdit ? [] : ALL_SETTINGS, v2 = ALL_SETTINGS.reduce(function(e4, t3) {
+  var t2 = e3.root, r2 = e3.action, n = t2.ref, i2 = n.colorSelect, o2 = n.fontFamilySelect, a2 = n.fontSizeSelect, c2 = n.shapeStyleSelect, l3 = n.lineStyleSelect, u = n.lineDecorationSelect, s2 = r2.id ? t2.query("GET_MARKUP_BY_ID", r2.id) : null, d = [i2, o2, a2, c2, l3, u], p = [];
+  if (s2) {
+    var f2 = _slicedToArray(s2, 2), h2 = f2[0], g = f2[1], m = Array.isArray(g.allowEdit) ? g.allowEdit : false === g.allowEdit ? [] : ALL_SETTINGS, v2 = ALL_SETTINGS.reduce(function(e4, t3) {
       return e4[t3] = -1 !== m.indexOf(t3), e4;
     }, {});
     if (v2.color = !!m.find(function(e4) {
@@ -16629,8 +16330,8 @@ var markupRoot = createView2({ name: "markup", ignoreRect: true, mixins: { apis:
         var i2 = t2.ref.menu.rect.element.width;
         t2.ref.menuItemsRequiredWidth = 0 === i2 ? null : i2;
       }
-      var o2 = t2.ref.menu && t2.ref.menu.rect, a2 = t2.ref.tools.rect.element.height, c2 = o2 ? o2.element.height : a2, l3 = !o2 || 0 === o2.element.top, u = l3 ? n.element.top + c2 : n.element.top, s5 = l3 ? n.element.height - c2 : n.element.height - c2 - n.element.top;
-      r2.stagePosition = { x: n.element.left + 20, y: u, width: n.element.width - 40, height: s5 - a2 };
+      var o2 = t2.ref.menu && t2.ref.menu.rect, a2 = t2.ref.tools.rect.element.height, c2 = o2 ? o2.element.height : a2, l3 = !o2 || 0 === o2.element.top, u = l3 ? n.element.top + c2 : n.element.top, s2 = l3 ? n.element.height - c2 : n.element.height - c2 - n.element.top;
+      r2.stagePosition = { x: n.element.left + 20, y: u, width: n.element.width - 40, height: s2 - a2 };
     }
   }
 }, shouldUpdateChildViews: function(e3) {
@@ -16669,17 +16370,17 @@ var stickerList = createView2({ ignoreRect: true, tag: "ul", name: "sticker-list
   var r2 = function(e4, r3) {
     var n2 = e4.markup;
     "string" == typeof e4 || Array.isArray(e4) ? n2 = e4 : e4.markup || (n2 = e4.sticker), Array.isArray(e4.sticker) && (n2 = [n2[0], _objectSpread({}, e4.sticker[1], n2[1])]);
-    var i2, o2, a2 = "string" == typeof n2, c2 = a2 && isEmoji(n2), l3 = a2 && !c2, u = 0, s5 = 0, d = t2.query("GET_CROP_RECTANGLE_ASPECT_RATIO");
-    if (l3) i2 = "image", u = 0.5 * -(o2 = { src: n2, width: 0.5, height: 0.5 * d, fit: "contain" }).width, s5 = 0.5 * -o2.height;
+    var i2, o2, a2 = "string" == typeof n2, c2 = a2 && isEmoji(n2), l3 = a2 && !c2, u = 0, s2 = 0, d = t2.query("GET_CROP_RECTANGLE_ASPECT_RATIO");
+    if (l3) i2 = "image", u = 0.5 * -(o2 = { src: n2, width: 0.5, height: 0.5 * d, fit: "contain" }).width, s2 = 0.5 * -o2.height;
     else {
       if (c2 ? (i2 = "text", o2 = { text: n2 }) : (i2 = n2[0], o2 = _objectSpread({}, n2[1])), "text" === i2) {
         o2.fontColor = o2.fontColor || "#000000", o2.fontSize = o2.fontSize || 0.125, o2.allowInput = void 0 !== o2.allowInput && o2.allowInput, o2.allowEdit = void 0 !== o2.allowEdit && o2.allowEdit;
         var p = c2 ? 0.75 * o2.fontSize : 0.35 * o2.fontSize * o2.text.length;
-        u = -0.5 * p, s5 = 0.5 * (c2 ? p * d * 0.5 : 0.5 * o2.fontSize);
+        u = -0.5 * p, s2 = 0.5 * (c2 ? p * d * 0.5 : 0.5 * o2.fontSize);
       }
-      "string" == typeof o2.width || "string" == typeof o2.height || "rect" !== i2 && "ellipse" !== i2 && "line" !== i2 && "image" !== i2 || (o2.height = o2.height * d, u = 0.5 * -o2.width, s5 = 0.5 * -o2.height);
+      "string" == typeof o2.width || "string" == typeof o2.height || "rect" !== i2 && "ellipse" !== i2 && "line" !== i2 && "image" !== i2 || (o2.height = o2.height * d, u = 0.5 * -o2.width, s2 = 0.5 * -o2.height);
     }
-    r3 && (o2.x = r3.x + u, o2.y = r3.y + s5), hasNoPosition(o2) && (o2.x = 0.5 + 0.5 * getRandomRange() + u, o2.y = 0.5 + 0.5 * getRandomRange() + s5), t2.dispatch("MARKUP_ADD", [i2, o2]);
+    r3 && (o2.x = r3.x + u, o2.y = r3.y + s2), hasNoPosition(o2) && (o2.x = 0.5 + 0.5 * getRandomRange() + u, o2.y = 0.5 + 0.5 * getRandomRange() + s2), t2.dispatch("MARKUP_ADD", [i2, o2]);
   };
   t2.element.addEventListener("pointerdown", function(e4) {
     var n2 = e4.target.dataset.index || "";
@@ -16692,7 +16393,7 @@ var stickerList = createView2({ ignoreRect: true, tag: "ul", name: "sticker-list
           var c2 = { x: n3.pageX, y: n3.pageY }, l3 = vectorDistanceSquared3(o2, c2), u = Date.now() - a2;
           if (l3 < 10 && u < 300) r2(i2);
           else {
-            var s5 = t2.query("GET_ROOT"), d = t2.query("GET_STAGE"), p = t2.query("GET_CROP_RECT"), f2 = void 0 !== n3.offsetX ? n3.offsetX : n3.pageX - s5.x - d.x - window.pageXOffset, h2 = void 0 !== n3.offsetY ? n3.offsetY : n3.pageY - s5.y - d.y - window.pageYOffset, g = d.x + p.x, m = d.y + p.y, v2 = (f2 - g) / p.width, y = (h2 - m) / p.height;
+            var s2 = t2.query("GET_ROOT"), d = t2.query("GET_STAGE"), p = t2.query("GET_CROP_RECT"), f2 = void 0 !== n3.offsetX ? n3.offsetX : n3.pageX - s2.x - d.x - window.pageXOffset, h2 = void 0 !== n3.offsetY ? n3.offsetY : n3.pageY - s2.y - d.y - window.pageYOffset, g = d.x + p.x, m = d.y + p.y, v2 = (f2 - g) / p.width, y = (h2 - m) / p.height;
             v2 < 0 || v2 > 1 || y < 0 || y > 1 || r2(i2, { x: v2, y });
           }
         });
@@ -16707,10 +16408,10 @@ var stickerList = createView2({ ignoreRect: true, tag: "ul", name: "sticker-list
       var o2, a2 = createElement6("button"), c2 = "string" == typeof i2, l3 = c2 && isEmoji(i2);
       if (c2 && !l3) (o2 = new Image()).src = i2;
       else {
-        var u, s5;
-        o2 = createElement6("svg", { viewBox: "0 0 100 100", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink" }), l3 ? (u = "text", s5 = { text: i2 }) : (u = i2[0], s5 = _objectSpread({}, i2[1])), "text" === u && (s5.fontColor = s5.fontColor || "#000000", s5.fontSize = s5.fontSize || 0.3125);
-        var d = createMarkupByType3(u, s5);
-        updateMarkupByType3(d, u, s5, { width: 200, height: 200 }), d.removeAttribute("id");
+        var u, s2;
+        o2 = createElement6("svg", { viewBox: "0 0 100 100", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink" }), l3 ? (u = "text", s2 = { text: i2 }) : (u = i2[0], s2 = _objectSpread({}, i2[1])), "text" === u && (s2.fontColor = s2.fontColor || "#000000", s2.fontSize = s2.fontSize || 0.3125);
+        var d = createMarkupByType3(u, s2);
+        updateMarkupByType3(d, u, s2, { width: 200, height: 200 }), d.removeAttribute("id");
         var p = "text" === u ? 6 : 0;
         "ellipse" === u ? (d.setAttribute("cx", "50"), d.setAttribute("cy", "50")) : (d.setAttribute("x", 50 - 0.5 * d.getAttribute("width")), d.setAttribute("y", 50 - 0.5 * d.getAttribute("height"))), "text" === u && (d.setAttribute("x", "50"), d.setAttribute("y", 50 + p), d.setAttribute("text-anchor", "middle"), d.setAttribute("dominant-baseline", "middle")), o2.appendChild(d);
       }
@@ -16757,9 +16458,9 @@ var viewStack = createView2({ name: "view-stack", ignoreRect: true, mixins: { ap
   if (i2 && i2.stagePosition && (t2.childViews.forEach(function(e4) {
     e4.offsetTop = r2.offsetTop, e4.element.viewHidden !== e4.hidden && (e4.element.viewHidden = e4.hidden, e4.element.dataset.viewHidden = e4.hidden);
   }), hasStagePositionChanged(i2.stagePosition, o2))) {
-    var a2 = i2.stagePosition, c2 = a2.x, l3 = a2.y, u = a2.width, s5 = a2.height;
-    if (0 === u && 0 === s5) return;
-    t2.dispatch("DID_RESIZE_STAGE", { offset: { x: c2, y: l3 }, size: { width: u, height: s5 }, animate: true }), t2.ref.previousStagePosition = i2.stagePosition;
+    var a2 = i2.stagePosition, c2 = a2.x, l3 = a2.y, u = a2.width, s2 = a2.height;
+    if (0 === u && 0 === s2) return;
+    t2.dispatch("DID_RESIZE_STAGE", { offset: { x: c2, y: l3 }, size: { width: u, height: s2 }, animate: true }), t2.ref.previousStagePosition = i2.stagePosition;
   }
 }), didWriteView: function(e3) {
   var t2 = e3.root;
@@ -16880,10 +16581,10 @@ var editContainer = createView2({ name: "container", create: function(e3) {
   if (i2) {
     var o2 = i2.cropStatus, a2 = o2.props, c2 = { crop: { center: { x: roundFloat(a2.center.x, 5), y: roundFloat(a2.center.y, 5) }, rotation: roundFloat(a2.rotation, 5), zoom: roundFloat(a2.zoom, 5), aspectRatio: roundFloat(a2.aspectRatio, 5), flip: { horizontal: a2.flip.horizontal, vertical: a2.flip.vertical }, scaleToFit: a2.scaleToFit, width: o2.currentWidth, height: o2.currentHeight }, preview: { scale: i2.scale / Math.max(i2.cropRect.width / i2.previewSize.width, i2.cropRect.height / i2.previewSize.height) } };
     hasStateChanged(t2.ref.previousState, c2) && (t2.dispatch("DID_UPDATE", { state: _objectSpread({}, c2) }), t2.ref.previousState = c2);
-    var l3 = t2.ref, u = l3.btnReset, s5 = l3.btnCancel, d = l3.content, p = i2.canReset;
-    if (u && (u.opacity = p ? 1 : 0), s5 && u) {
+    var l3 = t2.ref, u = l3.btnReset, s2 = l3.btnCancel, d = l3.content, p = i2.canReset;
+    if (u && (u.opacity = p ? 1 : 0), s2 && u) {
       var f2 = t2.query("GET_ROOT_SIZE");
-      s5.opacity = p && f2.width <= 600 ? 0 : 1;
+      s2.opacity = p && f2.width <= 600 ? 0 : 1;
     }
     d && 0 === d.opacity && t2.dispatch("DID_UNLOAD_IMAGE");
   }
@@ -16925,15 +16626,15 @@ var createPointerEvents = function(e3) {
       return t3.preventDefault();
     } };
     return i2(t3.target, n2), n2;
-  }, s5 = function(e4) {
+  }, s2 = function(e4) {
     u("pointerdown", e4);
   }, d = function(e4) {
     u("pointermove", e4);
   }, p = function(e4) {
     u("pointerup", e4);
   };
-  return "ontouchstart" in window ? (e3.addEventListener("touchstart", a2), e3.addEventListener("touchmove", c2), e3.addEventListener("touchend", l3)) : "onmousedown" in window && (e3.addEventListener("mousedown", s5), e3.addEventListener("mousemove", d), e3.addEventListener("mouseup", p)), t2.destroy = function() {
-    n.length = 0, e3.pointersPolyfilled = false, e3.removeEventListener("touchstart", a2), e3.removeEventListener("touchmove", c2), e3.removeEventListener("touchend", l3), e3.removeEventListener("mousedown", s5), e3.removeEventListener("mousemove", d), e3.removeEventListener("mouseup", p);
+  return "ontouchstart" in window ? (e3.addEventListener("touchstart", a2), e3.addEventListener("touchmove", c2), e3.addEventListener("touchend", l3)) : "onmousedown" in window && (e3.addEventListener("mousedown", s2), e3.addEventListener("mousemove", d), e3.addEventListener("mouseup", p)), t2.destroy = function() {
+    n.length = 0, e3.pointersPolyfilled = false, e3.removeEventListener("touchstart", a2), e3.removeEventListener("touchmove", c2), e3.removeEventListener("touchend", l3), e3.removeEventListener("mousedown", s2), e3.removeEventListener("mousemove", d), e3.removeEventListener("mouseup", p);
   }, t2;
 };
 var prevent2 = function(e3) {
@@ -17130,10 +16831,10 @@ var createApp2 = function() {
       var r3 = { type: e4 };
       return t3 ? (t3.hasOwnProperty("error") && (r3.error = isObject2(t3.error) ? _objectSpread({}, t3.error) : t3.error || null), t3.hasOwnProperty("output") && (r3.output = t3.output), t3.hasOwnProperty("image") && (r3.image = t3.image), t3.hasOwnProperty("source") && (r3.source = t3.source), t3.hasOwnProperty("state") && (r3.state = t3.state), r3) : r3;
     };
-  }, s5 = { DID_CONFIRM: u("confirm"), DID_CANCEL: u("cancel"), DID_REQUEST_LOAD_IMAGE: u("loadstart"), DID_LOAD_IMAGE: u("load"), DID_LOAD_IMAGE_ERROR: u("loaderror"), DID_SHOW_IMAGE: u("ready"), DID_UPDATE: u("update"), DID_CLOSE: u("close"), DID_DESTROY: u("destroy"), DID_INIT: u("init") }, d = function(e4) {
+  }, s2 = { DID_CONFIRM: u("confirm"), DID_CANCEL: u("cancel"), DID_REQUEST_LOAD_IMAGE: u("loadstart"), DID_LOAD_IMAGE: u("load"), DID_LOAD_IMAGE_ERROR: u("loaderror"), DID_SHOW_IMAGE: u("ready"), DID_UPDATE: u("update"), DID_CLOSE: u("close"), DID_DESTROY: u("destroy"), DID_INIT: u("init") }, d = function(e4) {
     e4.length && e4.forEach(function(e5) {
-      if (s5[e5.type]) {
-        var t3 = s5[e5.type];
+      if (s2[e5.type]) {
+        var t3 = s2[e5.type];
         (Array.isArray(t3) ? t3 : [t3]).forEach(function(t4) {
           setTimeout(function() {
             !(function(e6) {
@@ -17394,7 +17095,7 @@ var getApp1Segment = (e3) => new Promise(((t2, r2) => {
     for (o2 += 2; ; ) {
       const a2 = i3.getUint16(o2);
       if (65498 === a2) break;
-      const s5 = i3.getUint16(o2 + 2);
+      const s2 = i3.getUint16(o2 + 2);
       if (65505 === a2 && 1165519206 === i3.getUint32(o2 + 4)) {
         const a3 = o2 + 10;
         let f2;
@@ -17418,9 +17119,9 @@ var getApp1Segment = (e3) => new Promise(((t2, r2) => {
             break;
           }
         }
-        return t2(e4.slice(o2, o2 + 2 + s5));
+        return t2(e4.slice(o2, o2 + 2 + s2));
       }
-      o2 += 2 + s5;
+      o2 += 2 + s2;
     }
     return t2(new Blob());
   })), i2.readAsArrayBuffer(e3);
@@ -17434,28 +17135,28 @@ var t = { get exports() {
 !(function(e3) {
   var r2, i2, UZIP2 = {};
   t.exports = UZIP2, UZIP2.parse = function(e4, t2) {
-    for (var r3 = UZIP2.bin.readUshort, i3 = UZIP2.bin.readUint, o2 = 0, a2 = {}, s5 = new Uint8Array(e4), f2 = s5.length - 4; 101010256 != i3(s5, f2); ) f2--;
+    for (var r3 = UZIP2.bin.readUshort, i3 = UZIP2.bin.readUint, o2 = 0, a2 = {}, s2 = new Uint8Array(e4), f2 = s2.length - 4; 101010256 != i3(s2, f2); ) f2--;
     o2 = f2;
     o2 += 4;
-    var l3 = r3(s5, o2 += 4);
-    r3(s5, o2 += 2);
-    var c2 = i3(s5, o2 += 2), u = i3(s5, o2 += 4);
+    var l3 = r3(s2, o2 += 4);
+    r3(s2, o2 += 2);
+    var c2 = i3(s2, o2 += 2), u = i3(s2, o2 += 4);
     o2 += 4, o2 = u;
     for (var h2 = 0; h2 < l3; h2++) {
-      i3(s5, o2), o2 += 4, o2 += 4, o2 += 4, i3(s5, o2 += 4);
-      c2 = i3(s5, o2 += 4);
-      var d = i3(s5, o2 += 4), A = r3(s5, o2 += 4), g = r3(s5, o2 + 2), p = r3(s5, o2 + 4);
+      i3(s2, o2), o2 += 4, o2 += 4, o2 += 4, i3(s2, o2 += 4);
+      c2 = i3(s2, o2 += 4);
+      var d = i3(s2, o2 += 4), A = r3(s2, o2 += 4), g = r3(s2, o2 + 2), p = r3(s2, o2 + 4);
       o2 += 6;
-      var m = i3(s5, o2 += 8);
-      o2 += 4, o2 += A + g + p, UZIP2._readLocal(s5, m, a2, c2, d, t2);
+      var m = i3(s2, o2 += 8);
+      o2 += 4, o2 += A + g + p, UZIP2._readLocal(s2, m, a2, c2, d, t2);
     }
     return a2;
   }, UZIP2._readLocal = function(e4, t2, r3, i3, o2, a2) {
-    var s5 = UZIP2.bin.readUshort, f2 = UZIP2.bin.readUint;
-    f2(e4, t2), s5(e4, t2 += 4), s5(e4, t2 += 2);
-    var l3 = s5(e4, t2 += 2);
+    var s2 = UZIP2.bin.readUshort, f2 = UZIP2.bin.readUint;
+    f2(e4, t2), s2(e4, t2 += 4), s2(e4, t2 += 2);
+    var l3 = s2(e4, t2 += 2);
     f2(e4, t2 += 2), f2(e4, t2 += 4), t2 += 4;
-    var c2 = s5(e4, t2 += 8), u = s5(e4, t2 += 2);
+    var c2 = s2(e4, t2 += 8), u = s2(e4, t2 += 2);
     t2 += 2;
     var h2 = UZIP2.bin.readUTF8(e4, t2, c2);
     if (t2 += c2, t2 += u, a2) r3[h2] = { size: o2, csize: i3 };
@@ -17485,21 +17186,21 @@ var t = { get exports() {
   }, UZIP2.encode = function(e4, t2) {
     null == t2 && (t2 = false);
     var r3 = 0, i3 = UZIP2.bin.writeUint, o2 = UZIP2.bin.writeUshort, a2 = {};
-    for (var s5 in e4) {
-      var f2 = !UZIP2._noNeed(s5) && !t2, l3 = e4[s5], c2 = UZIP2.crc.crc(l3, 0, l3.length);
-      a2[s5] = { cpr: f2, usize: l3.length, crc: c2, file: f2 ? UZIP2.deflateRaw(l3) : l3 };
+    for (var s2 in e4) {
+      var f2 = !UZIP2._noNeed(s2) && !t2, l3 = e4[s2], c2 = UZIP2.crc.crc(l3, 0, l3.length);
+      a2[s2] = { cpr: f2, usize: l3.length, crc: c2, file: f2 ? UZIP2.deflateRaw(l3) : l3 };
     }
-    for (var s5 in a2) r3 += a2[s5].file.length + 30 + 46 + 2 * UZIP2.bin.sizeUTF8(s5);
+    for (var s2 in a2) r3 += a2[s2].file.length + 30 + 46 + 2 * UZIP2.bin.sizeUTF8(s2);
     r3 += 22;
     var u = new Uint8Array(r3), h2 = 0, d = [];
-    for (var s5 in a2) {
-      var A = a2[s5];
-      d.push(h2), h2 = UZIP2._writeHeader(u, h2, s5, A, 0);
+    for (var s2 in a2) {
+      var A = a2[s2];
+      d.push(h2), h2 = UZIP2._writeHeader(u, h2, s2, A, 0);
     }
     var g = 0, p = h2;
-    for (var s5 in a2) {
-      A = a2[s5];
-      d.push(h2), h2 = UZIP2._writeHeader(u, h2, s5, A, 1, d[g++]);
+    for (var s2 in a2) {
+      A = a2[s2];
+      d.push(h2), h2 = UZIP2._writeHeader(u, h2, s2, A, 1, d[g++]);
     }
     var m = h2 - p;
     return i3(u, h2, 101010256), h2 += 4, o2(u, h2 += 4, g), o2(u, h2 += 2, g), i3(u, h2 += 2, m), i3(u, h2 += 4, p), h2 += 4, h2 += 2, u.buffer;
@@ -17507,8 +17208,8 @@ var t = { get exports() {
     var t2 = e4.split(".").pop().toLowerCase();
     return -1 != "png,jpg,jpeg,zip".indexOf(t2);
   }, UZIP2._writeHeader = function(e4, t2, r3, i3, o2, a2) {
-    var s5 = UZIP2.bin.writeUint, f2 = UZIP2.bin.writeUshort, l3 = i3.file;
-    return s5(e4, t2, 0 == o2 ? 67324752 : 33639248), t2 += 4, 1 == o2 && (t2 += 2), f2(e4, t2, 20), f2(e4, t2 += 2, 0), f2(e4, t2 += 2, i3.cpr ? 8 : 0), s5(e4, t2 += 2, 0), s5(e4, t2 += 4, i3.crc), s5(e4, t2 += 4, l3.length), s5(e4, t2 += 4, i3.usize), f2(e4, t2 += 4, UZIP2.bin.sizeUTF8(r3)), f2(e4, t2 += 2, 0), t2 += 2, 1 == o2 && (t2 += 2, t2 += 2, s5(e4, t2 += 6, a2), t2 += 4), t2 += UZIP2.bin.writeUTF8(e4, t2, r3), 0 == o2 && (e4.set(l3, t2), t2 += l3.length), t2;
+    var s2 = UZIP2.bin.writeUint, f2 = UZIP2.bin.writeUshort, l3 = i3.file;
+    return s2(e4, t2, 0 == o2 ? 67324752 : 33639248), t2 += 4, 1 == o2 && (t2 += 2), f2(e4, t2, 20), f2(e4, t2 += 2, 0), f2(e4, t2 += 2, i3.cpr ? 8 : 0), s2(e4, t2 += 2, 0), s2(e4, t2 += 4, i3.crc), s2(e4, t2 += 4, l3.length), s2(e4, t2 += 4, i3.usize), f2(e4, t2 += 4, UZIP2.bin.sizeUTF8(r3)), f2(e4, t2 += 2, 0), t2 += 2, 1 == o2 && (t2 += 2, t2 += 2, s2(e4, t2 += 6, a2), t2 += 4), t2 += UZIP2.bin.writeUTF8(e4, t2, r3), 0 == o2 && (e4.set(l3, t2), t2 += l3.length), t2;
   }, UZIP2.crc = { table: (function() {
     for (var e4 = new Uint32Array(256), t2 = 0; t2 < 256; t2++) {
       for (var r3 = t2, i3 = 0; i3 < 8; i3++) 1 & r3 ? r3 = 3988292384 ^ r3 >>> 1 : r3 >>>= 1;
@@ -17521,8 +17222,8 @@ var t = { get exports() {
   }, crc: function(e4, t2, r3) {
     return 4294967295 ^ UZIP2.crc.update(4294967295, e4, t2, r3);
   } }, UZIP2.adler = function(e4, t2, r3) {
-    for (var i3 = 1, o2 = 0, a2 = t2, s5 = t2 + r3; a2 < s5; ) {
-      for (var f2 = Math.min(a2 + 5552, s5); a2 < f2; ) o2 += i3 += e4[a2++];
+    for (var i3 = 1, o2 = 0, a2 = t2, s2 = t2 + r3; a2 < s2; ) {
+      for (var f2 = Math.min(a2 + 5552, s2); a2 < f2; ) o2 += i3 += e4[a2++];
       i3 %= 65521, o2 %= 65521;
     }
     return o2 << 16 | i3;
@@ -17551,13 +17252,13 @@ var t = { get exports() {
     return i3;
   }, writeUTF8: function(e4, t2, r3) {
     for (var i3 = r3.length, o2 = 0, a2 = 0; a2 < i3; a2++) {
-      var s5 = r3.charCodeAt(a2);
-      if (0 == (4294967168 & s5)) e4[t2 + o2] = s5, o2++;
-      else if (0 == (4294965248 & s5)) e4[t2 + o2] = 192 | s5 >> 6, e4[t2 + o2 + 1] = 128 | s5 >> 0 & 63, o2 += 2;
-      else if (0 == (4294901760 & s5)) e4[t2 + o2] = 224 | s5 >> 12, e4[t2 + o2 + 1] = 128 | s5 >> 6 & 63, e4[t2 + o2 + 2] = 128 | s5 >> 0 & 63, o2 += 3;
+      var s2 = r3.charCodeAt(a2);
+      if (0 == (4294967168 & s2)) e4[t2 + o2] = s2, o2++;
+      else if (0 == (4294965248 & s2)) e4[t2 + o2] = 192 | s2 >> 6, e4[t2 + o2 + 1] = 128 | s2 >> 0 & 63, o2 += 2;
+      else if (0 == (4294901760 & s2)) e4[t2 + o2] = 224 | s2 >> 12, e4[t2 + o2 + 1] = 128 | s2 >> 6 & 63, e4[t2 + o2 + 2] = 128 | s2 >> 0 & 63, o2 += 3;
       else {
-        if (0 != (4292870144 & s5)) throw "e";
-        e4[t2 + o2] = 240 | s5 >> 18, e4[t2 + o2 + 1] = 128 | s5 >> 12 & 63, e4[t2 + o2 + 2] = 128 | s5 >> 6 & 63, e4[t2 + o2 + 3] = 128 | s5 >> 0 & 63, o2 += 4;
+        if (0 != (4292870144 & s2)) throw "e";
+        e4[t2 + o2] = 240 | s2 >> 18, e4[t2 + o2 + 1] = 128 | s2 >> 12 & 63, e4[t2 + o2 + 2] = 128 | s2 >> 6 & 63, e4[t2 + o2 + 3] = 128 | s2 >> 0 & 63, o2 += 4;
       }
     }
     return o2;
@@ -17574,7 +17275,7 @@ var t = { get exports() {
     }
     return r3;
   } }, UZIP2.F = {}, UZIP2.F.deflateRaw = function(e4, t2, r3, i3) {
-    var o2 = [[0, 0, 0, 0, 0], [4, 4, 8, 4, 0], [4, 5, 16, 8, 0], [4, 6, 16, 16, 0], [4, 10, 16, 32, 0], [8, 16, 32, 32, 0], [8, 16, 128, 128, 0], [8, 32, 128, 256, 0], [32, 128, 258, 1024, 1], [32, 258, 258, 4096, 1]][i3], a2 = UZIP2.F.U, s5 = UZIP2.F._goodIndex;
+    var o2 = [[0, 0, 0, 0, 0], [4, 4, 8, 4, 0], [4, 5, 16, 8, 0], [4, 6, 16, 16, 0], [4, 10, 16, 32, 0], [8, 16, 32, 32, 0], [8, 16, 128, 128, 0], [8, 32, 128, 256, 0], [32, 128, 258, 1024, 1], [32, 258, 258, 4096, 1]][i3], a2 = UZIP2.F.U, s2 = UZIP2.F._goodIndex;
     UZIP2.F._hash;
     var f2 = UZIP2.F._putsE, l3 = 0, c2 = r3 << 3, u = 0, h2 = e4.length;
     if (0 == i3) {
@@ -17597,9 +17298,9 @@ var t = { get exports() {
         var _2 = F >>> 16, B = 65535 & F;
         if (0 != F) {
           B = 65535 & F;
-          var U = s5(_2 = F >>> 16, a2.of0);
+          var U = s2(_2 = F >>> 16, a2.of0);
           a2.lhst[257 + U]++;
-          var C2 = s5(B, a2.df0);
+          var C2 = s2(B, a2.df0);
           a2.dhst[C2]++, v2 += a2.exb[U] + a2.dxb[C2], d[p] = _2 << 23 | l3 - u, d[p + 1] = B << 16 | U << 8 | C2, p += 2, u = l3 + _2;
         } else a2.lhst[e4[l3]]++;
         m++;
@@ -17608,9 +17309,9 @@ var t = { get exports() {
     for (w == l3 && 0 != e4.length || (u < l3 && (d[p] = l3 - u, p += 2, u = l3), c2 = UZIP2.F._writeBlock(1, d, p, v2, e4, w, l3 - w, t2, c2), p = 0, m = 0, p = m = v2 = 0, w = l3); 0 != (7 & c2); ) c2++;
     return c2 >>> 3;
   }, UZIP2.F._bestMatch = function(e4, t2, r3, i3, o2, a2) {
-    var s5 = 32767 & t2, f2 = r3[s5], l3 = s5 - f2 + 32768 & 32767;
-    if (f2 == s5 || i3 != UZIP2.F._hash(e4, t2 - l3)) return 0;
-    for (var c2 = 0, u = 0, h2 = Math.min(32767, t2); l3 <= h2 && 0 != --a2 && f2 != s5; ) {
+    var s2 = 32767 & t2, f2 = r3[s2], l3 = s2 - f2 + 32768 & 32767;
+    if (f2 == s2 || i3 != UZIP2.F._hash(e4, t2 - l3)) return 0;
+    for (var c2 = 0, u = 0, h2 = Math.min(32767, t2); l3 <= h2 && 0 != --a2 && f2 != s2; ) {
       if (0 == c2 || e4[t2 + c2] == e4[t2 + c2 - l3]) {
         var d = UZIP2.F._howLong(e4, t2, l3);
         if (d > c2) {
@@ -17622,7 +17323,7 @@ var t = { get exports() {
           }
         }
       }
-      l3 += (s5 = f2) - (f2 = r3[s5]) + 32768 & 32767;
+      l3 += (s2 = f2) - (f2 = r3[s2]) + 32768 & 32767;
     }
     return c2 << 16 | u;
   }, UZIP2.F._howLong = function(e4, t2, r3) {
@@ -17632,10 +17333,10 @@ var t = { get exports() {
     return t2 - i3;
   }, UZIP2.F._hash = function(e4, t2) {
     return (e4[t2] << 8 | e4[t2 + 1]) + (e4[t2 + 2] << 4) & 65535;
-  }, UZIP2.saved = 0, UZIP2.F._writeBlock = function(e4, t2, r3, i3, o2, a2, s5, f2, l3) {
+  }, UZIP2.saved = 0, UZIP2.F._writeBlock = function(e4, t2, r3, i3, o2, a2, s2, f2, l3) {
     var c2, u, h2, d, A, g, p, m, w, v2 = UZIP2.F.U, b = UZIP2.F._putsF, y = UZIP2.F._putsE;
     v2.lhst[256]++, u = (c2 = UZIP2.F.getTrees())[0], h2 = c2[1], d = c2[2], A = c2[3], g = c2[4], p = c2[5], m = c2[6], w = c2[7];
-    var E = 32 + (0 == (l3 + 3 & 7) ? 0 : 8 - (l3 + 3 & 7)) + (s5 << 3), F = i3 + UZIP2.F.contSize(v2.fltree, v2.lhst) + UZIP2.F.contSize(v2.fdtree, v2.dhst), _2 = i3 + UZIP2.F.contSize(v2.ltree, v2.lhst) + UZIP2.F.contSize(v2.dtree, v2.dhst);
+    var E = 32 + (0 == (l3 + 3 & 7) ? 0 : 8 - (l3 + 3 & 7)) + (s2 << 3), F = i3 + UZIP2.F.contSize(v2.fltree, v2.lhst) + UZIP2.F.contSize(v2.fdtree, v2.dhst), _2 = i3 + UZIP2.F.contSize(v2.ltree, v2.lhst) + UZIP2.F.contSize(v2.dtree, v2.dhst);
     _2 += 14 + 3 * p + UZIP2.F.contSize(v2.itree, v2.ihst) + (2 * v2.ihst[16] + 3 * v2.ihst[17] + 7 * v2.ihst[18]);
     for (var B = 0; B < 286; B++) v2.lhst[B] = 0;
     for (B = 0; B < 30; B++) v2.dhst[B] = 0;
@@ -17643,7 +17344,7 @@ var t = { get exports() {
     var U = E < F && E < _2 ? 0 : F < _2 ? 1 : 2;
     if (b(f2, l3, e4), b(f2, l3 + 1, U), l3 += 3, 0 == U) {
       for (; 0 != (7 & l3); ) l3++;
-      l3 = UZIP2.F._copyExact(o2, a2, s5, f2, l3);
+      l3 = UZIP2.F._copyExact(o2, a2, s2, f2, l3);
     } else {
       var C2, I;
       if (1 == U && (C2 = v2.fltree, I = v2.fdtree), 2 == U) {
@@ -17665,10 +17366,10 @@ var t = { get exports() {
     var a2 = o2 >>> 3;
     return i3[a2] = r3, i3[a2 + 1] = r3 >>> 8, i3[a2 + 2] = 255 - i3[a2], i3[a2 + 3] = 255 - i3[a2 + 1], a2 += 4, i3.set(new Uint8Array(e4.buffer, t2, r3), a2), o2 + (r3 + 4 << 3);
   }, UZIP2.F.getTrees = function() {
-    for (var e4 = UZIP2.F.U, t2 = UZIP2.F._hufTree(e4.lhst, e4.ltree, 15), r3 = UZIP2.F._hufTree(e4.dhst, e4.dtree, 15), i3 = [], o2 = UZIP2.F._lenCodes(e4.ltree, i3), a2 = [], s5 = UZIP2.F._lenCodes(e4.dtree, a2), f2 = 0; f2 < i3.length; f2 += 2) e4.ihst[i3[f2]]++;
+    for (var e4 = UZIP2.F.U, t2 = UZIP2.F._hufTree(e4.lhst, e4.ltree, 15), r3 = UZIP2.F._hufTree(e4.dhst, e4.dtree, 15), i3 = [], o2 = UZIP2.F._lenCodes(e4.ltree, i3), a2 = [], s2 = UZIP2.F._lenCodes(e4.dtree, a2), f2 = 0; f2 < i3.length; f2 += 2) e4.ihst[i3[f2]]++;
     for (f2 = 0; f2 < a2.length; f2 += 2) e4.ihst[a2[f2]]++;
     for (var l3 = UZIP2.F._hufTree(e4.ihst, e4.itree, 7), c2 = 19; c2 > 4 && 0 == e4.itree[1 + (e4.ordr[c2 - 1] << 1)]; ) c2--;
-    return [t2, r3, l3, o2, s5, c2, i3, a2];
+    return [t2, r3, l3, o2, s2, c2, i3, a2];
   }, UZIP2.F.getSecond = function(e4) {
     for (var t2 = [], r3 = 0; r3 < e4.length; r3 += 2) t2.push(e4[r3 + 1]);
     return t2;
@@ -17680,20 +17381,20 @@ var t = { get exports() {
     return r3;
   }, UZIP2.F._codeTiny = function(e4, t2, r3, i3) {
     for (var o2 = 0; o2 < e4.length; o2 += 2) {
-      var a2 = e4[o2], s5 = e4[o2 + 1];
+      var a2 = e4[o2], s2 = e4[o2 + 1];
       i3 = UZIP2.F._writeLit(a2, t2, r3, i3);
       var f2 = 16 == a2 ? 2 : 17 == a2 ? 3 : 7;
-      a2 > 15 && (UZIP2.F._putsE(r3, i3, s5, f2), i3 += f2);
+      a2 > 15 && (UZIP2.F._putsE(r3, i3, s2, f2), i3 += f2);
     }
     return i3;
   }, UZIP2.F._lenCodes = function(e4, t2) {
     for (var r3 = e4.length; 2 != r3 && 0 == e4[r3 - 1]; ) r3 -= 2;
     for (var i3 = 0; i3 < r3; i3 += 2) {
-      var o2 = e4[i3 + 1], a2 = i3 + 3 < r3 ? e4[i3 + 3] : -1, s5 = i3 + 5 < r3 ? e4[i3 + 5] : -1, f2 = 0 == i3 ? -1 : e4[i3 - 1];
-      if (0 == o2 && a2 == o2 && s5 == o2) {
+      var o2 = e4[i3 + 1], a2 = i3 + 3 < r3 ? e4[i3 + 3] : -1, s2 = i3 + 5 < r3 ? e4[i3 + 5] : -1, f2 = 0 == i3 ? -1 : e4[i3 - 1];
+      if (0 == o2 && a2 == o2 && s2 == o2) {
         for (var l3 = i3 + 5; l3 + 2 < r3 && e4[l3 + 2] == o2; ) l3 += 2;
         (c2 = Math.min(l3 + 1 - i3 >>> 1, 138)) < 11 ? t2.push(17, c2 - 3) : t2.push(18, c2 - 11), i3 += 2 * c2 - 2;
-      } else if (o2 == f2 && a2 == o2 && s5 == o2) {
+      } else if (o2 == f2 && a2 == o2 && s2 == o2) {
         for (l3 = i3 + 5; l3 + 2 < r3 && e4[l3 + 2] == o2; ) l3 += 2;
         var c2 = Math.min(l3 + 1 - i3 >>> 1, 6);
         t2.push(16, c2 - 3), i3 += 2 * c2 - 2;
@@ -17701,9 +17402,9 @@ var t = { get exports() {
     }
     return r3 >>> 1;
   }, UZIP2.F._hufTree = function(e4, t2, r3) {
-    var i3 = [], o2 = e4.length, a2 = t2.length, s5 = 0;
-    for (s5 = 0; s5 < a2; s5 += 2) t2[s5] = 0, t2[s5 + 1] = 0;
-    for (s5 = 0; s5 < o2; s5++) 0 != e4[s5] && i3.push({ lit: s5, f: e4[s5] });
+    var i3 = [], o2 = e4.length, a2 = t2.length, s2 = 0;
+    for (s2 = 0; s2 < a2; s2 += 2) t2[s2] = 0, t2[s2 + 1] = 0;
+    for (s2 = 0; s2 < o2; s2++) 0 != e4[s2] && i3.push({ lit: s2, f: e4[s2] });
     var f2 = i3.length, l3 = i3.slice(0);
     if (0 == f2) return 0;
     if (1 == f2) {
@@ -17717,7 +17418,7 @@ var t = { get exports() {
     var u = i3[0], h2 = i3[1], d = 0, A = 1, g = 2;
     for (i3[0] = { lit: -1, f: u.f + h2.f, l: u, r: h2, d: 0 }; A != f2 - 1; ) u = d != A && (g == f2 || i3[d].f < i3[g].f) ? i3[d++] : i3[g++], h2 = d != A && (g == f2 || i3[d].f < i3[g].f) ? i3[d++] : i3[g++], i3[A++] = { lit: -1, f: u.f + h2.f, l: u, r: h2 };
     var p = UZIP2.F.setDepth(i3[A - 1], 0);
-    for (p > r3 && (UZIP2.F.restrictDepth(l3, r3, p), p = r3), s5 = 0; s5 < f2; s5++) t2[1 + (l3[s5].lit << 1)] = l3[s5].d;
+    for (p > r3 && (UZIP2.F.restrictDepth(l3, r3, p), p = r3), s2 = 0; s2 < f2; s2++) t2[1 + (l3[s2].lit << 1)] = l3[s2].d;
     return p;
   }, UZIP2.F.setDepth = function(e4, t2) {
     return -1 != e4.lit ? (e4.d = t2, t2) : Math.max(UZIP2.F.setDepth(e4.l, t2 + 1), UZIP2.F.setDepth(e4.r, t2 + 1));
@@ -17726,11 +17427,11 @@ var t = { get exports() {
     for (e4.sort((function(e5, t3) {
       return t3.d == e5.d ? e5.f - t3.f : t3.d - e5.d;
     })), i3 = 0; i3 < e4.length && e4[i3].d > t2; i3++) {
-      var s5 = e4[i3].d;
-      e4[i3].d = t2, a2 += o2 - (1 << r3 - s5);
+      var s2 = e4[i3].d;
+      e4[i3].d = t2, a2 += o2 - (1 << r3 - s2);
     }
     for (a2 >>>= r3 - t2; a2 > 0; ) {
-      (s5 = e4[i3].d) < t2 ? (e4[i3].d++, a2 -= 1 << t2 - s5 - 1) : i3++;
+      (s2 = e4[i3].d) < t2 ? (e4[i3].d++, a2 -= 1 << t2 - s2 - 1) : i3++;
     }
     for (; i3 >= 0; i3--) e4[i3].d == t2 && a2 < 0 && (e4[i3].d--, a2++);
     0 != a2 && console.log("debt left");
@@ -17742,7 +17443,7 @@ var t = { get exports() {
   }, UZIP2.F.inflate = function(e4, t2) {
     var r3 = Uint8Array;
     if (3 == e4[0] && 0 == e4[1]) return t2 || new r3(0);
-    var i3 = UZIP2.F, o2 = i3._bitsF, a2 = i3._bitsE, s5 = i3._decodeTiny, f2 = i3.makeCodes, l3 = i3.codes2map, c2 = i3._get17, u = i3.U, h2 = null == t2;
+    var i3 = UZIP2.F, o2 = i3._bitsF, a2 = i3._bitsE, s2 = i3._decodeTiny, f2 = i3.makeCodes, l3 = i3.codes2map, c2 = i3._get17, u = i3.U, h2 = null == t2;
     h2 && (t2 = new r3(e4.length >>> 2 << 3));
     for (var d, A, g = 0, p = 0, m = 0, w = 0, v2 = 0, b = 0, y = 0, E = 0, F = 0; 0 == g; ) if (g = o2(e4, F, 1), p = o2(e4, F + 1, 2), F += 3, 0 != p) {
       if (h2 && (t2 = UZIP2.F._check(t2, E + (1 << 17))), 1 == p && (d = u.flmap, A = u.fdmap, b = 511, y = 31), 2 == p) {
@@ -17753,7 +17454,7 @@ var t = { get exports() {
           var U = a2(e4, F + 3 * _2, 3);
           u.itree[1 + (u.ordr[_2] << 1)] = U, U > B && (B = U);
         }
-        F += 3 * v2, f2(u.itree, B), l3(u.itree, B, u.imap), d = u.lmap, A = u.dmap, F = s5(u.imap, (1 << B) - 1, m + w, e4, F, u.ttree);
+        F += 3 * v2, f2(u.itree, B), l3(u.itree, B, u.imap), d = u.lmap, A = u.dmap, F = s2(u.imap, (1 << B) - 1, m + w, e4, F, u.ttree);
         var C2 = i3._copyOut(u.ttree, 0, m, u.ltree);
         b = (1 << C2) - 1;
         var I = i3._copyOut(u.ttree, m, w, u.dtree);
@@ -17790,33 +17491,33 @@ var t = { get exports() {
     var i3 = new Uint8Array(Math.max(r3 << 1, t2));
     return i3.set(e4, 0), i3;
   }, UZIP2.F._decodeTiny = function(e4, t2, r3, i3, o2, a2) {
-    for (var s5 = UZIP2.F._bitsE, f2 = UZIP2.F._get17, l3 = 0; l3 < r3; ) {
+    for (var s2 = UZIP2.F._bitsE, f2 = UZIP2.F._get17, l3 = 0; l3 < r3; ) {
       var c2 = e4[f2(i3, o2) & t2];
       o2 += 15 & c2;
       var u = c2 >>> 4;
       if (u <= 15) a2[l3] = u, l3++;
       else {
         var h2 = 0, d = 0;
-        16 == u ? (d = 3 + s5(i3, o2, 2), o2 += 2, h2 = a2[l3 - 1]) : 17 == u ? (d = 3 + s5(i3, o2, 3), o2 += 3) : 18 == u && (d = 11 + s5(i3, o2, 7), o2 += 7);
+        16 == u ? (d = 3 + s2(i3, o2, 2), o2 += 2, h2 = a2[l3 - 1]) : 17 == u ? (d = 3 + s2(i3, o2, 3), o2 += 3) : 18 == u && (d = 11 + s2(i3, o2, 7), o2 += 7);
         for (var A = l3 + d; l3 < A; ) a2[l3] = h2, l3++;
       }
     }
     return o2;
   }, UZIP2.F._copyOut = function(e4, t2, r3, i3) {
-    for (var o2 = 0, a2 = 0, s5 = i3.length >>> 1; a2 < r3; ) {
+    for (var o2 = 0, a2 = 0, s2 = i3.length >>> 1; a2 < r3; ) {
       var f2 = e4[a2 + t2];
       i3[a2 << 1] = 0, i3[1 + (a2 << 1)] = f2, f2 > o2 && (o2 = f2), a2++;
     }
-    for (; a2 < s5; ) i3[a2 << 1] = 0, i3[1 + (a2 << 1)] = 0, a2++;
+    for (; a2 < s2; ) i3[a2 << 1] = 0, i3[1 + (a2 << 1)] = 0, a2++;
     return o2;
   }, UZIP2.F.makeCodes = function(e4, t2) {
-    for (var r3, i3, o2, a2, s5 = UZIP2.F.U, f2 = e4.length, l3 = s5.bl_count, c2 = 0; c2 <= t2; c2++) l3[c2] = 0;
+    for (var r3, i3, o2, a2, s2 = UZIP2.F.U, f2 = e4.length, l3 = s2.bl_count, c2 = 0; c2 <= t2; c2++) l3[c2] = 0;
     for (c2 = 1; c2 < f2; c2 += 2) l3[e4[c2]]++;
-    var u = s5.next_code;
+    var u = s2.next_code;
     for (r3 = 0, l3[0] = 0, i3 = 1; i3 <= t2; i3++) r3 = r3 + l3[i3 - 1] << 1, u[i3] = r3;
     for (o2 = 0; o2 < f2; o2 += 2) 0 != (a2 = e4[o2 + 1]) && (e4[o2] = u[a2], u[a2]++);
   }, UZIP2.F.codes2map = function(e4, t2, r3) {
-    for (var i3 = e4.length, o2 = UZIP2.F.U.rev15, a2 = 0; a2 < i3; a2 += 2) if (0 != e4[a2 + 1]) for (var s5 = a2 >> 1, f2 = e4[a2 + 1], l3 = s5 << 4 | f2, c2 = t2 - f2, u = e4[a2] << c2, h2 = u + (1 << c2); u != h2; ) {
+    for (var i3 = e4.length, o2 = UZIP2.F.U.rev15, a2 = 0; a2 < i3; a2 += 2) if (0 != e4[a2 + 1]) for (var s2 = a2 >> 1, f2 = e4[a2 + 1], l3 = s2 << 4 | f2, c2 = t2 - f2, u = e4[a2] << c2, h2 = u + (1 << c2); u != h2; ) {
       r3[o2[u] >>> 15 - t2] = l3, u++;
     }
   }, UZIP2.F.revCodes = function(e4, t2) {
@@ -17882,7 +17583,7 @@ var UPNG = (function() {
     return o2;
   } };
   function decodeImage(t3, r2, i2, o2) {
-    const a2 = r2 * i2, s5 = _getBPP(o2), f2 = Math.ceil(r2 * s5 / 8), l3 = new Uint8Array(4 * a2), c2 = new Uint32Array(l3.buffer), { ctype: u } = o2, { depth: h2 } = o2, d = e3.readUshort;
+    const a2 = r2 * i2, s2 = _getBPP(o2), f2 = Math.ceil(r2 * s2 / 8), l3 = new Uint8Array(4 * a2), c2 = new Uint32Array(l3.buffer), { ctype: u } = o2, { depth: h2 } = o2, d = e3.readUshort;
     if (6 == u) {
       const e4 = a2 << 2;
       if (8 == h2) for (var A = 0; A < e4; A += 4) l3[A] = t3[A], l3[A + 1] = t3[A + 1], l3[A + 2] = t3[A + 2], l3[A + 3] = t3[A + 3];
@@ -17912,27 +17613,27 @@ var UPNG = (function() {
         }
       }
     } else if (3 == u) {
-      const e4 = o2.tabs.PLTE, s6 = o2.tabs.tRNS, c3 = s6 ? s6.length : 0;
+      const e4 = o2.tabs.PLTE, s3 = o2.tabs.tRNS, c3 = s3 ? s3.length : 0;
       if (1 == h2) for (var w = 0; w < i2; w++) {
         var v2 = w * f2, b = w * r2;
         for (A = 0; A < r2; A++) {
           m = b + A << 2;
           var y = 3 * (E = t3[v2 + (A >> 3)] >> 7 - ((7 & A) << 0) & 1);
-          l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s6[E] : 255;
+          l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s3[E] : 255;
         }
       }
       if (2 == h2) for (w = 0; w < i2; w++) for (v2 = w * f2, b = w * r2, A = 0; A < r2; A++) {
         m = b + A << 2, y = 3 * (E = t3[v2 + (A >> 2)] >> 6 - ((3 & A) << 1) & 3);
-        l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s6[E] : 255;
+        l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s3[E] : 255;
       }
       if (4 == h2) for (w = 0; w < i2; w++) for (v2 = w * f2, b = w * r2, A = 0; A < r2; A++) {
         m = b + A << 2, y = 3 * (E = t3[v2 + (A >> 1)] >> 4 - ((1 & A) << 2) & 15);
-        l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s6[E] : 255;
+        l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s3[E] : 255;
       }
       if (8 == h2) for (A = 0; A < a2; A++) {
         var E;
         m = A << 2, y = 3 * (E = t3[A]);
-        l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s6[E] : 255;
+        l3[m] = e4[y], l3[m + 1] = e4[y + 1], l3[m + 2] = e4[y + 2], l3[m + 3] = E < c3 ? s3[E] : 255;
       }
     } else if (4 == u) {
       if (8 == h2) for (A = 0; A < a2; A++) {
@@ -17971,9 +17672,9 @@ var UPNG = (function() {
     return l3;
   }
   function _decompress(e4, r2, i2, o2) {
-    const a2 = _getBPP(e4), s5 = Math.ceil(i2 * a2 / 8), f2 = new Uint8Array((s5 + 1 + e4.interlace) * o2);
+    const a2 = _getBPP(e4), s2 = Math.ceil(i2 * a2 / 8), f2 = new Uint8Array((s2 + 1 + e4.interlace) * o2);
     return r2 = e4.tabs.CgBI ? t2(r2, f2) : _inflate(r2, f2), 0 == e4.interlace ? r2 = _filterZero(r2, e4, 0, i2, o2) : 1 == e4.interlace && (r2 = (function _readInterlace(e5, t3) {
-      const r3 = t3.width, i3 = t3.height, o3 = _getBPP(t3), a3 = o3 >> 3, s6 = Math.ceil(r3 * o3 / 8), f3 = new Uint8Array(i3 * s6);
+      const r3 = t3.width, i3 = t3.height, o3 = _getBPP(t3), a3 = o3 >> 3, s3 = Math.ceil(r3 * o3 / 8), f3 = new Uint8Array(i3 * s3);
       let l3 = 0;
       const c2 = [0, 0, 4, 0, 2, 0, 1], u = [0, 4, 0, 2, 0, 1, 0], h2 = [8, 8, 8, 4, 4, 2, 2], d = [8, 8, 4, 4, 2, 2, 1];
       let A = 0;
@@ -17990,11 +17691,11 @@ var UPNG = (function() {
           let t4 = u[A], i4 = l3 + F * E << 3;
           for (; t4 < r3; ) {
             var g;
-            if (1 == o3) g = (g = e5[i4 >> 3]) >> 7 - (7 & i4) & 1, f3[_2 * s6 + (t4 >> 3)] |= g << 7 - ((7 & t4) << 0);
-            if (2 == o3) g = (g = e5[i4 >> 3]) >> 6 - (7 & i4) & 3, f3[_2 * s6 + (t4 >> 2)] |= g << 6 - ((3 & t4) << 1);
-            if (4 == o3) g = (g = e5[i4 >> 3]) >> 4 - (7 & i4) & 15, f3[_2 * s6 + (t4 >> 1)] |= g << 4 - ((1 & t4) << 2);
+            if (1 == o3) g = (g = e5[i4 >> 3]) >> 7 - (7 & i4) & 1, f3[_2 * s3 + (t4 >> 3)] |= g << 7 - ((7 & t4) << 0);
+            if (2 == o3) g = (g = e5[i4 >> 3]) >> 6 - (7 & i4) & 3, f3[_2 * s3 + (t4 >> 2)] |= g << 6 - ((3 & t4) << 1);
+            if (4 == o3) g = (g = e5[i4 >> 3]) >> 4 - (7 & i4) & 15, f3[_2 * s3 + (t4 >> 1)] |= g << 4 - ((1 & t4) << 2);
             if (o3 >= 8) {
-              const r4 = _2 * s6 + t4 * a3;
+              const r4 = _2 * s3 + t4 * a3;
               for (let t5 = 0; t5 < a3; t5++) f3[r4 + t5] = e5[(i4 >> 3) + t5];
             }
             i4 += o3, t4 += m;
@@ -18013,10 +17714,10 @@ var UPNG = (function() {
     const e4 = { H: {} };
     return e4.H.N = function(t3, r2) {
       const i2 = Uint8Array;
-      let o2, a2, s5 = 0, f2 = 0, l3 = 0, c2 = 0, u = 0, h2 = 0, d = 0, A = 0, g = 0;
+      let o2, a2, s2 = 0, f2 = 0, l3 = 0, c2 = 0, u = 0, h2 = 0, d = 0, A = 0, g = 0;
       if (3 == t3[0] && 0 == t3[1]) return r2 || new i2(0);
       const p = e4.H, m = p.b, w = p.e, v2 = p.R, b = p.n, y = p.A, E = p.Z, F = p.m, _2 = null == r2;
-      for (_2 && (r2 = new i2(t3.length >>> 2 << 5)); 0 == s5; ) if (s5 = m(t3, g, 1), f2 = m(t3, g + 1, 2), g += 3, 0 != f2) {
+      for (_2 && (r2 = new i2(t3.length >>> 2 << 5)); 0 == s2; ) if (s2 = m(t3, g, 1), f2 = m(t3, g + 1, 2), g += 3, 0 != f2) {
         if (_2 && (r2 = e4.H.W(r2, A + (1 << 17))), 1 == f2 && (o2 = F.J, a2 = F.h, h2 = 511, d = 31), 2 == f2) {
           l3 = w(t3, g, 5) + 257, c2 = w(t3, g + 5, 5) + 1, u = w(t3, g + 10, 4) + 4, g += 14;
           let e5 = 1;
@@ -18046,7 +17747,7 @@ var UPNG = (function() {
               }
               const o3 = a2[E(t3, g) & d];
               g += 15 & o3;
-              const s6 = o3 >>> 4, f3 = F.c[s6], l4 = (f3 >>> 4) + m(t3, g, 15 & f3);
+              const s3 = o3 >>> 4, f3 = F.c[s3], l4 = (f3 >>> 4) + m(t3, g, 15 & f3);
               for (g += 15 & f3; A < e6; ) r2[A] = r2[A++ - l4], r2[A] = r2[A++ - l4], r2[A] = r2[A++ - l4], r2[A] = r2[A++ - l4];
               A = e6;
             }
@@ -18063,45 +17764,45 @@ var UPNG = (function() {
       if (t3 <= r2) return e5;
       const i2 = new Uint8Array(r2 << 1);
       return i2.set(e5, 0), i2;
-    }, e4.H.R = function(t3, r2, i2, o2, a2, s5) {
+    }, e4.H.R = function(t3, r2, i2, o2, a2, s2) {
       const f2 = e4.H.e, l3 = e4.H.Z;
       let c2 = 0;
       for (; c2 < i2; ) {
         const e5 = t3[l3(o2, a2) & r2];
         a2 += 15 & e5;
         const i3 = e5 >>> 4;
-        if (i3 <= 15) s5[c2] = i3, c2++;
+        if (i3 <= 15) s2[c2] = i3, c2++;
         else {
           let e6 = 0, t4 = 0;
-          16 == i3 ? (t4 = 3 + f2(o2, a2, 2), a2 += 2, e6 = s5[c2 - 1]) : 17 == i3 ? (t4 = 3 + f2(o2, a2, 3), a2 += 3) : 18 == i3 && (t4 = 11 + f2(o2, a2, 7), a2 += 7);
+          16 == i3 ? (t4 = 3 + f2(o2, a2, 2), a2 += 2, e6 = s2[c2 - 1]) : 17 == i3 ? (t4 = 3 + f2(o2, a2, 3), a2 += 3) : 18 == i3 && (t4 = 11 + f2(o2, a2, 7), a2 += 7);
           const r3 = c2 + t4;
-          for (; c2 < r3; ) s5[c2] = e6, c2++;
+          for (; c2 < r3; ) s2[c2] = e6, c2++;
         }
       }
       return a2;
     }, e4.H.V = function(e5, t3, r2, i2) {
       let o2 = 0, a2 = 0;
-      const s5 = i2.length >>> 1;
+      const s2 = i2.length >>> 1;
       for (; a2 < r2; ) {
         const r3 = e5[a2 + t3];
         i2[a2 << 1] = 0, i2[1 + (a2 << 1)] = r3, r3 > o2 && (o2 = r3), a2++;
       }
-      for (; a2 < s5; ) i2[a2 << 1] = 0, i2[1 + (a2 << 1)] = 0, a2++;
+      for (; a2 < s2; ) i2[a2 << 1] = 0, i2[1 + (a2 << 1)] = 0, a2++;
       return o2;
     }, e4.H.n = function(t3, r2) {
       const i2 = e4.H.m, o2 = t3.length;
-      let a2, s5, f2;
+      let a2, s2, f2;
       let l3;
       const c2 = i2.j;
       for (var u = 0; u <= r2; u++) c2[u] = 0;
       for (u = 1; u < o2; u += 2) c2[t3[u]]++;
       const h2 = i2.K;
-      for (a2 = 0, c2[0] = 0, s5 = 1; s5 <= r2; s5++) a2 = a2 + c2[s5 - 1] << 1, h2[s5] = a2;
+      for (a2 = 0, c2[0] = 0, s2 = 1; s2 <= r2; s2++) a2 = a2 + c2[s2 - 1] << 1, h2[s2] = a2;
       for (f2 = 0; f2 < o2; f2 += 2) l3 = t3[f2 + 1], 0 != l3 && (t3[f2] = h2[l3], h2[l3]++);
     }, e4.H.A = function(t3, r2, i2) {
       const o2 = t3.length, a2 = e4.H.m.r;
       for (let e5 = 0; e5 < o2; e5 += 2) if (0 != t3[e5 + 1]) {
-        const o3 = e5 >> 1, s5 = t3[e5 + 1], f2 = o3 << 4 | s5, l3 = r2 - s5;
+        const o3 = e5 >> 1, s2 = t3[e5 + 1], f2 = o3 << 4 | s2, l3 = r2 - s2;
         let c2 = t3[e5] << l3;
         const u = c2 + (1 << l3);
         for (; c2 != u; ) {
@@ -18151,36 +17852,36 @@ var UPNG = (function() {
   }
   function _filterZero(e4, t3, r2, i2, o2) {
     let a2 = _getBPP(t3);
-    const s5 = Math.ceil(i2 * a2 / 8);
+    const s2 = Math.ceil(i2 * a2 / 8);
     let f2, l3;
     a2 = Math.ceil(a2 / 8);
     let c2 = e4[r2], u = 0;
-    if (c2 > 1 && (e4[r2] = [0, 0, 1][c2 - 2]), 3 == c2) for (u = a2; u < s5; u++) e4[u + 1] = e4[u + 1] + (e4[u + 1 - a2] >>> 1) & 255;
-    for (let t4 = 0; t4 < o2; t4++) if (f2 = r2 + t4 * s5, l3 = f2 + t4 + 1, c2 = e4[l3 - 1], u = 0, 0 == c2) for (; u < s5; u++) e4[f2 + u] = e4[l3 + u];
+    if (c2 > 1 && (e4[r2] = [0, 0, 1][c2 - 2]), 3 == c2) for (u = a2; u < s2; u++) e4[u + 1] = e4[u + 1] + (e4[u + 1 - a2] >>> 1) & 255;
+    for (let t4 = 0; t4 < o2; t4++) if (f2 = r2 + t4 * s2, l3 = f2 + t4 + 1, c2 = e4[l3 - 1], u = 0, 0 == c2) for (; u < s2; u++) e4[f2 + u] = e4[l3 + u];
     else if (1 == c2) {
       for (; u < a2; u++) e4[f2 + u] = e4[l3 + u];
-      for (; u < s5; u++) e4[f2 + u] = e4[l3 + u] + e4[f2 + u - a2];
-    } else if (2 == c2) for (; u < s5; u++) e4[f2 + u] = e4[l3 + u] + e4[f2 + u - s5];
+      for (; u < s2; u++) e4[f2 + u] = e4[l3 + u] + e4[f2 + u - a2];
+    } else if (2 == c2) for (; u < s2; u++) e4[f2 + u] = e4[l3 + u] + e4[f2 + u - s2];
     else if (3 == c2) {
-      for (; u < a2; u++) e4[f2 + u] = e4[l3 + u] + (e4[f2 + u - s5] >>> 1);
-      for (; u < s5; u++) e4[f2 + u] = e4[l3 + u] + (e4[f2 + u - s5] + e4[f2 + u - a2] >>> 1);
+      for (; u < a2; u++) e4[f2 + u] = e4[l3 + u] + (e4[f2 + u - s2] >>> 1);
+      for (; u < s2; u++) e4[f2 + u] = e4[l3 + u] + (e4[f2 + u - s2] + e4[f2 + u - a2] >>> 1);
     } else {
-      for (; u < a2; u++) e4[f2 + u] = e4[l3 + u] + _paeth(0, e4[f2 + u - s5], 0);
-      for (; u < s5; u++) e4[f2 + u] = e4[l3 + u] + _paeth(e4[f2 + u - a2], e4[f2 + u - s5], e4[f2 + u - a2 - s5]);
+      for (; u < a2; u++) e4[f2 + u] = e4[l3 + u] + _paeth(0, e4[f2 + u - s2], 0);
+      for (; u < s2; u++) e4[f2 + u] = e4[l3 + u] + _paeth(e4[f2 + u - a2], e4[f2 + u - s2], e4[f2 + u - a2 - s2]);
     }
     return e4;
   }
   function _paeth(e4, t3, r2) {
-    const i2 = e4 + t3 - r2, o2 = i2 - e4, a2 = i2 - t3, s5 = i2 - r2;
-    return o2 * o2 <= a2 * a2 && o2 * o2 <= s5 * s5 ? e4 : a2 * a2 <= s5 * s5 ? t3 : r2;
+    const i2 = e4 + t3 - r2, o2 = i2 - e4, a2 = i2 - t3, s2 = i2 - r2;
+    return o2 * o2 <= a2 * a2 && o2 * o2 <= s2 * s2 ? e4 : a2 * a2 <= s2 * s2 ? t3 : r2;
   }
   function _IHDR(t3, r2, i2) {
     i2.width = e3.readUint(t3, r2), r2 += 4, i2.height = e3.readUint(t3, r2), r2 += 4, i2.depth = t3[r2], r2++, i2.ctype = t3[r2], r2++, i2.compress = t3[r2], r2++, i2.filter = t3[r2], r2++, i2.interlace = t3[r2], r2++;
   }
-  function _copyTile(e4, t3, r2, i2, o2, a2, s5, f2, l3) {
+  function _copyTile(e4, t3, r2, i2, o2, a2, s2, f2, l3) {
     const c2 = Math.min(t3, o2), u = Math.min(r2, a2);
     let h2 = 0, d = 0;
-    for (let r3 = 0; r3 < u; r3++) for (let a3 = 0; a3 < c2; a3++) if (s5 >= 0 && f2 >= 0 ? (h2 = r3 * t3 + a3 << 2, d = (f2 + r3) * o2 + s5 + a3 << 2) : (h2 = (-f2 + r3) * t3 - s5 + a3 << 2, d = r3 * o2 + a3 << 2), 0 == l3) i2[d] = e4[h2], i2[d + 1] = e4[h2 + 1], i2[d + 2] = e4[h2 + 2], i2[d + 3] = e4[h2 + 3];
+    for (let r3 = 0; r3 < u; r3++) for (let a3 = 0; a3 < c2; a3++) if (s2 >= 0 && f2 >= 0 ? (h2 = r3 * t3 + a3 << 2, d = (f2 + r3) * o2 + s2 + a3 << 2) : (h2 = (-f2 + r3) * t3 - s2 + a3 << 2, d = r3 * o2 + a3 << 2), 0 == l3) i2[d] = e4[h2], i2[d + 1] = e4[h2 + 1], i2[d + 2] = e4[h2 + 2], i2[d + 3] = e4[h2 + 3];
     else if (1 == l3) {
       var A = e4[h2 + 3] * (1 / 255), g = e4[h2] * A, p = e4[h2 + 1] * A, m = e4[h2 + 2] * A, w = i2[d + 3] * (1 / 255), v2 = i2[d] * w, b = i2[d + 1] * w, y = i2[d + 2] * w;
       const t4 = 1 - A, r4 = A + w * t4, o3 = 0 == r4 ? 0 : 1 / r4;
@@ -18198,7 +17899,7 @@ var UPNG = (function() {
   return { decode: function decode(r2) {
     const i2 = new Uint8Array(r2);
     let o2 = 8;
-    const a2 = e3, s5 = a2.readUshort, f2 = a2.readUint, l3 = { tabs: {}, frames: [] }, c2 = new Uint8Array(i2.length);
+    const a2 = e3, s2 = a2.readUshort, f2 = a2.readUint, l3 = { tabs: {}, frames: [] }, c2 = new Uint8Array(i2.length);
     let u, h2 = 0, d = 0;
     const A = [137, 80, 78, 71, 13, 10, 26, 10];
     for (var g = 0; g < 8; g++) if (i2[g] != A[g]) throw "The input is not a PNG file!";
@@ -18210,12 +17911,12 @@ var UPNG = (function() {
       else if ("iCCP" == r3) {
         for (var p = o2; 0 != i2[p]; ) p++;
         a2.readASCII(i2, o2, p - o2), i2[p + 1];
-        const s6 = i2.slice(p + 2, o2 + e4);
+        const s3 = i2.slice(p + 2, o2 + e4);
         let f3 = null;
         try {
-          f3 = _inflate(s6);
+          f3 = _inflate(s3);
         } catch (e5) {
-          f3 = t2(s6);
+          f3 = t2(s3);
         }
         l3.tabs[r3] = f3;
       } else if ("CgBI" == r3) l3.tabs[r3] = i2.slice(o2, o2 + 4);
@@ -18226,8 +17927,8 @@ var UPNG = (function() {
       else if ("fcTL" == r3) {
         if (0 != d) (E = l3.frames[l3.frames.length - 1]).data = _decompress(l3, u.slice(0, d), E.rect.width, E.rect.height), d = 0;
         const e5 = { x: f2(i2, o2 + 12), y: f2(i2, o2 + 16), width: f2(i2, o2 + 4), height: f2(i2, o2 + 8) };
-        let t3 = s5(i2, o2 + 22);
-        t3 = s5(i2, o2 + 20) / (0 == t3 ? 100 : t3);
+        let t3 = s2(i2, o2 + 22);
+        t3 = s2(i2, o2 + 20) / (0 == t3 ? 100 : t3);
         const r4 = { rect: e5, delay: Math.round(1e3 * t3), dispose: i2[o2 + 24], blend: i2[o2 + 25] };
         l3.frames.push(r4);
       } else if ("fdAT" == r3) {
@@ -18265,11 +17966,11 @@ var UPNG = (function() {
       else if ("hIST" == r3) {
         const e5 = l3.tabs.PLTE.length / 3;
         l3.tabs[r3] = [];
-        for (g = 0; g < e5; g++) l3.tabs[r3].push(s5(i2, o2 + 2 * g));
-      } else if ("tRNS" == r3) 3 == l3.ctype ? l3.tabs[r3] = a2.readBytes(i2, o2, e4) : 0 == l3.ctype ? l3.tabs[r3] = s5(i2, o2) : 2 == l3.ctype && (l3.tabs[r3] = [s5(i2, o2), s5(i2, o2 + 2), s5(i2, o2 + 4)]);
+        for (g = 0; g < e5; g++) l3.tabs[r3].push(s2(i2, o2 + 2 * g));
+      } else if ("tRNS" == r3) 3 == l3.ctype ? l3.tabs[r3] = a2.readBytes(i2, o2, e4) : 0 == l3.ctype ? l3.tabs[r3] = s2(i2, o2) : 2 == l3.ctype && (l3.tabs[r3] = [s2(i2, o2), s2(i2, o2 + 2), s2(i2, o2 + 4)]);
       else if ("gAMA" == r3) l3.tabs[r3] = a2.readUint(i2, o2) / 1e5;
       else if ("sRGB" == r3) l3.tabs[r3] = i2[o2];
-      else if ("bKGD" == r3) 0 == l3.ctype || 4 == l3.ctype ? l3.tabs[r3] = [s5(i2, o2)] : 2 == l3.ctype || 6 == l3.ctype ? l3.tabs[r3] = [s5(i2, o2), s5(i2, o2 + 2), s5(i2, o2 + 4)] : 3 == l3.ctype && (l3.tabs[r3] = i2[o2]);
+      else if ("bKGD" == r3) 0 == l3.ctype || 4 == l3.ctype ? l3.tabs[r3] = [s2(i2, o2)] : 2 == l3.ctype || 6 == l3.ctype ? l3.tabs[r3] = [s2(i2, o2), s2(i2, o2 + 2), s2(i2, o2 + 4)] : 3 == l3.ctype && (l3.tabs[r3] = i2[o2]);
       else if ("IEND" == r3) break;
       o2 += e4, a2.readUint(i2, o2), o2 += 4;
     }
@@ -18280,12 +17981,12 @@ var UPNG = (function() {
     if (null == e4.tabs.acTL) return [decodeImage(e4.data, t3, r2, e4).buffer];
     const i2 = [];
     null == e4.frames[0].data && (e4.frames[0].data = e4.data);
-    const o2 = t3 * r2 * 4, a2 = new Uint8Array(o2), s5 = new Uint8Array(o2), f2 = new Uint8Array(o2);
+    const o2 = t3 * r2 * 4, a2 = new Uint8Array(o2), s2 = new Uint8Array(o2), f2 = new Uint8Array(o2);
     for (let c2 = 0; c2 < e4.frames.length; c2++) {
       const u = e4.frames[c2], h2 = u.rect.x, d = u.rect.y, A = u.rect.width, g = u.rect.height, p = decodeImage(u.data, A, g, e4);
       if (0 != c2) for (var l3 = 0; l3 < o2; l3++) f2[l3] = a2[l3];
       if (0 == u.blend ? _copyTile(p, A, g, a2, t3, r2, h2, d, 0) : 1 == u.blend && _copyTile(p, A, g, a2, t3, r2, h2, d, 1), i2.push(a2.buffer.slice(0)), 0 == u.dispose) ;
-      else if (1 == u.dispose) _copyTile(s5, A, g, a2, t3, r2, h2, d, 0);
+      else if (1 == u.dispose) _copyTile(s2, A, g, a2, t3, r2, h2, d, 0);
       else if (2 == u.dispose) for (l3 = 0; l3 < o2; l3++) a2[l3] = f2[l3];
     }
     return i2;
@@ -18315,8 +18016,8 @@ var UPNG = (function() {
     const r3 = e4[0] - t3[0], i3 = e4[1] - t3[1], o3 = e4[2] - t3[2], a2 = e4[3] - t3[3];
     return r3 * r3 + i3 * i3 + o3 * o3 + a2 * a2;
   }
-  function dither(e4, t3, r3, i3, o3, a2, s5) {
-    null == s5 && (s5 = 1);
+  function dither(e4, t3, r3, i3, o3, a2, s2) {
+    null == s2 && (s2 = 1);
     const f2 = i3.length, l3 = [];
     for (var c2 = 0; c2 < f2; c2++) {
       const e5 = i3[c2];
@@ -18334,7 +18035,7 @@ var UPNG = (function() {
     for (let o4 = 0; o4 < r3; o4++) for (let w = 0; w < t3; w++) {
       var m;
       c2 = 4 * (o4 * t3 + w);
-      if (2 != s5) m = [N(e4[c2] + g[c2]), N(e4[c2 + 1] + g[c2 + 1]), N(e4[c2 + 2] + g[c2 + 2]), N(e4[c2 + 3] + g[c2 + 3])];
+      if (2 != s2) m = [N(e4[c2] + g[c2]), N(e4[c2 + 1] + g[c2 + 1]), N(e4[c2 + 2] + g[c2 + 2]), N(e4[c2 + 3] + g[c2 + 3])];
       else {
         d = p[4 * (3 & o4) + (3 & w)];
         m = [N(e4[c2] + d), N(e4[c2 + 1] + d), N(e4[c2 + 2] + d), N(e4[c2 + 3] + d)];
@@ -18346,16 +18047,16 @@ var UPNG = (function() {
         e5 < v2 && (v2 = e5, u = h2);
       }
       const b = l3[u], y = [m[0] - b[0], m[1] - b[1], m[2] - b[2], m[3] - b[3]];
-      1 == s5 && (w != t3 - 1 && addErr(y, g, c2 + 4, 7), o4 != r3 - 1 && (0 != w && addErr(y, g, c2 + 4 * t3 - 4, 3), addErr(y, g, c2 + 4 * t3, 5), w != t3 - 1 && addErr(y, g, c2 + 4 * t3 + 4, 1))), a2[c2 >> 2] = u, A[c2 >> 2] = i3[u];
+      1 == s2 && (w != t3 - 1 && addErr(y, g, c2 + 4, 7), o4 != r3 - 1 && (0 != w && addErr(y, g, c2 + 4 * t3 - 4, 3), addErr(y, g, c2 + 4 * t3, 5), w != t3 - 1 && addErr(y, g, c2 + 4 * t3 + 4, 1))), a2[c2 >> 2] = u, A[c2 >> 2] = i3[u];
     }
   }
-  function _main(e4, r3, o3, a2, s5) {
-    null == s5 && (s5 = {});
+  function _main(e4, r3, o3, a2, s2) {
+    null == s2 && (s2 = {});
     const { crc: f2 } = i2, l3 = t2.writeUint, c2 = t2.writeUshort, u = t2.writeASCII;
     let h2 = 8;
     const d = e4.frames.length > 1;
     let A, g = false, p = 33 + (d ? 20 : 0);
-    if (null != s5.sRGB && (p += 13), null != s5.pHYs && (p += 21), null != s5.iCCP && (A = pako.deflate(s5.iCCP), p += 21 + A.length + 4), 3 == e4.ctype) {
+    if (null != s2.sRGB && (p += 13), null != s2.pHYs && (p += 21), null != s2.iCCP && (A = pako.deflate(s2.iCCP), p += 21 + A.length + 4), 3 == e4.ctype) {
       for (var m = e4.plte.length, w = 0; w < m; w++) e4.plte[w] >>> 24 != 255 && (g = true);
       p += 8 + 3 * m + 4 + (g ? 8 + 1 * m + 4 : 0);
     }
@@ -18365,11 +18066,11 @@ var UPNG = (function() {
     p += 12;
     const b = new Uint8Array(p), y = [137, 80, 78, 71, 13, 10, 26, 10];
     for (w = 0; w < 8; w++) b[w] = y[w];
-    if (l3(b, h2, 13), h2 += 4, u(b, h2, "IHDR"), h2 += 4, l3(b, h2, r3), h2 += 4, l3(b, h2, o3), h2 += 4, b[h2] = e4.depth, h2++, b[h2] = e4.ctype, h2++, b[h2] = 0, h2++, b[h2] = 0, h2++, b[h2] = 0, h2++, l3(b, h2, f2(b, h2 - 17, 17)), h2 += 4, null != s5.sRGB && (l3(b, h2, 1), h2 += 4, u(b, h2, "sRGB"), h2 += 4, b[h2] = s5.sRGB, h2++, l3(b, h2, f2(b, h2 - 5, 5)), h2 += 4), null != s5.iCCP) {
+    if (l3(b, h2, 13), h2 += 4, u(b, h2, "IHDR"), h2 += 4, l3(b, h2, r3), h2 += 4, l3(b, h2, o3), h2 += 4, b[h2] = e4.depth, h2++, b[h2] = e4.ctype, h2++, b[h2] = 0, h2++, b[h2] = 0, h2++, b[h2] = 0, h2++, l3(b, h2, f2(b, h2 - 17, 17)), h2 += 4, null != s2.sRGB && (l3(b, h2, 1), h2 += 4, u(b, h2, "sRGB"), h2 += 4, b[h2] = s2.sRGB, h2++, l3(b, h2, f2(b, h2 - 5, 5)), h2 += 4), null != s2.iCCP) {
       const e5 = 13 + A.length;
       l3(b, h2, e5), h2 += 4, u(b, h2, "iCCP"), h2 += 4, u(b, h2, "ICC profile"), h2 += 11, h2 += 2, b.set(A, h2), h2 += A.length, l3(b, h2, f2(b, h2 - (e5 + 4), e5 + 4)), h2 += 4;
     }
-    if (null != s5.pHYs && (l3(b, h2, 9), h2 += 4, u(b, h2, "pHYs"), h2 += 4, l3(b, h2, s5.pHYs[0]), h2 += 4, l3(b, h2, s5.pHYs[1]), h2 += 4, b[h2] = s5.pHYs[2], h2++, l3(b, h2, f2(b, h2 - 13, 13)), h2 += 4), d && (l3(b, h2, 8), h2 += 4, u(b, h2, "acTL"), h2 += 4, l3(b, h2, e4.frames.length), h2 += 4, l3(b, h2, null != s5.loop ? s5.loop : 0), h2 += 4, l3(b, h2, f2(b, h2 - 12, 12)), h2 += 4), 3 == e4.ctype) {
+    if (null != s2.pHYs && (l3(b, h2, 9), h2 += 4, u(b, h2, "pHYs"), h2 += 4, l3(b, h2, s2.pHYs[0]), h2 += 4, l3(b, h2, s2.pHYs[1]), h2 += 4, b[h2] = s2.pHYs[2], h2++, l3(b, h2, f2(b, h2 - 13, 13)), h2 += 4), d && (l3(b, h2, 8), h2 += 4, u(b, h2, "acTL"), h2 += 4, l3(b, h2, e4.frames.length), h2 += 4, l3(b, h2, null != s2.loop ? s2.loop : 0), h2 += 4, l3(b, h2, f2(b, h2 - 12, 12)), h2 += 4), 3 == e4.ctype) {
       l3(b, h2, 3 * (m = e4.plte.length)), h2 += 4, u(b, h2, "PLTE"), h2 += 4;
       for (w = 0; w < m; w++) {
         const t3 = 3 * w, r4 = e4.plte[w], i3 = 255 & r4, o4 = r4 >>> 8 & 255, a3 = r4 >>> 16 & 255;
@@ -18396,36 +18097,36 @@ var UPNG = (function() {
     for (let i3 = 0; i3 < e4.frames.length; i3++) {
       const o3 = e4.frames[i3];
       o3.rect.width;
-      const a2 = o3.rect.height, s5 = new Uint8Array(a2 * o3.bpl + a2);
-      o3.cimg = _filterZero(o3.img, a2, o3.bpp, o3.bpl, s5, t3, r3);
+      const a2 = o3.rect.height, s2 = new Uint8Array(a2 * o3.bpl + a2);
+      o3.cimg = _filterZero(o3.img, a2, o3.bpp, o3.bpl, s2, t3, r3);
     }
   }
   function compress2(t3, r3, i3, o3, a2) {
-    const s5 = a2[0], f2 = a2[1], l3 = a2[2], c2 = a2[3], u = a2[4], h2 = a2[5];
+    const s2 = a2[0], f2 = a2[1], l3 = a2[2], c2 = a2[3], u = a2[4], h2 = a2[5];
     let d = 6, A = 8, g = 255;
     for (var p = 0; p < t3.length; p++) {
       const e4 = new Uint8Array(t3[p]);
       for (var m = e4.length, w = 0; w < m; w += 4) g &= e4[w + 3];
     }
-    const v2 = 255 != g, b = (function framize(t4, r4, i4, o4, a3, s6) {
+    const v2 = 255 != g, b = (function framize(t4, r4, i4, o4, a3, s3) {
       const f3 = [];
       for (var l4 = 0; l4 < t4.length; l4++) {
         const h4 = new Uint8Array(t4[l4]), A3 = new Uint32Array(h4.buffer);
         var c3;
         let g2 = 0, p2 = 0, m2 = r4, w2 = i4, v3 = o4 ? 1 : 0;
         if (0 != l4) {
-          const b2 = s6 || o4 || 1 == l4 || 0 != f3[l4 - 2].dispose ? 1 : 2;
+          const b2 = s3 || o4 || 1 == l4 || 0 != f3[l4 - 2].dispose ? 1 : 2;
           let y2 = 0, E2 = 1e9;
           for (let e4 = 0; e4 < b2; e4++) {
             var u2 = new Uint8Array(t4[l4 - 1 - e4]);
             const o5 = new Uint32Array(t4[l4 - 1 - e4]);
-            let s7 = r4, f4 = i4, c4 = -1, h5 = -1;
+            let s4 = r4, f4 = i4, c4 = -1, h5 = -1;
             for (let e5 = 0; e5 < i4; e5++) for (let t5 = 0; t5 < r4; t5++) {
-              A3[d2 = e5 * r4 + t5] != o5[d2] && (t5 < s7 && (s7 = t5), t5 > c4 && (c4 = t5), e5 < f4 && (f4 = e5), e5 > h5 && (h5 = e5));
+              A3[d2 = e5 * r4 + t5] != o5[d2] && (t5 < s4 && (s4 = t5), t5 > c4 && (c4 = t5), e5 < f4 && (f4 = e5), e5 > h5 && (h5 = e5));
             }
-            -1 == c4 && (s7 = f4 = c4 = h5 = 0), a3 && (1 == (1 & s7) && s7--, 1 == (1 & f4) && f4--);
-            const v4 = (c4 - s7 + 1) * (h5 - f4 + 1);
-            v4 < E2 && (E2 = v4, y2 = e4, g2 = s7, p2 = f4, m2 = c4 - s7 + 1, w2 = h5 - f4 + 1);
+            -1 == c4 && (s4 = f4 = c4 = h5 = 0), a3 && (1 == (1 & s4) && s4--, 1 == (1 & f4) && f4--);
+            const v4 = (c4 - s4 + 1) * (h5 - f4 + 1);
+            v4 < E2 && (E2 = v4, y2 = e4, g2 = s4, p2 = f4, m2 = c4 - s4 + 1, w2 = h5 - f4 + 1);
           }
           u2 = new Uint8Array(t4[l4 - 1 - y2]);
           1 == y2 && (f3[l4 - 1].dispose = 2), c3 = new Uint8Array(m2 * w2 * 4), e3(u2, r4, i4, c3, m2, w2, -g2, -p2, 0), v3 = e3(h4, r4, i4, c3, m2, w2, -g2, -p2, 3) ? 1 : 0, 1 == v3 ? _prepareDiff(h4, r4, i4, c3, { x: g2, y: p2, width: m2, height: w2 }) : e3(h4, r4, i4, c3, m2, w2, -g2, -p2, 0);
@@ -18434,7 +18135,7 @@ var UPNG = (function() {
       }
       if (o4) for (l4 = 0; l4 < f3.length; l4++) {
         if (1 == (A2 = f3[l4]).blend) continue;
-        const e4 = A2.rect, o5 = f3[l4 - 1].rect, s7 = Math.min(e4.x, o5.x), c4 = Math.min(e4.y, o5.y), u3 = { x: s7, y: c4, width: Math.max(e4.x + e4.width, o5.x + o5.width) - s7, height: Math.max(e4.y + e4.height, o5.y + o5.height) - c4 };
+        const e4 = A2.rect, o5 = f3[l4 - 1].rect, s4 = Math.min(e4.x, o5.x), c4 = Math.min(e4.y, o5.y), u3 = { x: s4, y: c4, width: Math.max(e4.x + e4.width, o5.x + o5.width) - s4, height: Math.max(e4.y + e4.height, o5.y + o5.height) - c4 };
         f3[l4 - 1].dispose = 1, l4 - 1 != 0 && _updateFrame(t4, r4, i4, f3, l4 - 1, u3, a3), _updateFrame(t4, r4, i4, f3, l4, u3, a3);
       }
       let h3 = 0;
@@ -18443,7 +18144,7 @@ var UPNG = (function() {
         h3 += (A2 = f3[d2]).rect.width * A2.rect.height;
       }
       return f3;
-    })(t3, r3, i3, s5, f2, l3), y = {}, E = [], F = [];
+    })(t3, r3, i3, s2, f2, l3), y = {}, E = [], F = [];
     if (0 != o3) {
       const e4 = [];
       for (w = 0; w < b.length; w++) e4.push(b[w].img.buffer);
@@ -18455,9 +18156,9 @@ var UPNG = (function() {
         for (r5 = 0; r5 < e5.length; r5++) {
           const t6 = new Uint8Array(e5[r5]), a3 = t6.length;
           for (let e6 = 0; e6 < a3; e6 += 4) {
-            let r6 = t6[e6], a4 = t6[e6 + 1], s6 = t6[e6 + 2];
+            let r6 = t6[e6], a4 = t6[e6 + 1], s3 = t6[e6 + 2];
             const f3 = t6[e6 + 3];
-            0 == f3 && (r6 = a4 = s6 = 0), i5[o4 + e6] = r6, i5[o4 + e6 + 1] = a4, i5[o4 + e6 + 2] = s6, i5[o4 + e6 + 3] = f3;
+            0 == f3 && (r6 = a4 = s3 = 0), i5[o4 + e6] = r6, i5[o4 + e6 + 1] = a4, i5[o4 + e6 + 2] = s3, i5[o4 + e6 + 3] = f3;
           }
           o4 += a3;
         }
@@ -18524,24 +18225,24 @@ var UPNG = (function() {
     }
     return { ctype: d, depth: A, plte: E, frames: b };
   }
-  function _updateFrame(t3, r3, i3, o3, a2, s5, f2) {
+  function _updateFrame(t3, r3, i3, o3, a2, s2, f2) {
     const l3 = Uint8Array, c2 = Uint32Array, u = new l3(t3[a2 - 1]), h2 = new c2(t3[a2 - 1]), d = a2 + 1 < t3.length ? new l3(t3[a2 + 1]) : null, A = new l3(t3[a2]), g = new c2(A.buffer);
     let p = r3, m = i3, w = -1, v2 = -1;
-    for (let e4 = 0; e4 < s5.height; e4++) for (let t4 = 0; t4 < s5.width; t4++) {
-      const i4 = s5.x + t4, f3 = s5.y + e4, l4 = f3 * r3 + i4, c3 = g[l4];
+    for (let e4 = 0; e4 < s2.height; e4++) for (let t4 = 0; t4 < s2.width; t4++) {
+      const i4 = s2.x + t4, f3 = s2.y + e4, l4 = f3 * r3 + i4, c3 = g[l4];
       0 == c3 || 0 == o3[a2 - 1].dispose && h2[l4] == c3 && (null == d || 0 != d[4 * l4 + 3]) || (i4 < p && (p = i4), i4 > w && (w = i4), f3 < m && (m = f3), f3 > v2 && (v2 = f3));
     }
-    -1 == w && (p = m = w = v2 = 0), f2 && (1 == (1 & p) && p--, 1 == (1 & m) && m--), s5 = { x: p, y: m, width: w - p + 1, height: v2 - m + 1 };
+    -1 == w && (p = m = w = v2 = 0), f2 && (1 == (1 & p) && p--, 1 == (1 & m) && m--), s2 = { x: p, y: m, width: w - p + 1, height: v2 - m + 1 };
     const b = o3[a2];
-    b.rect = s5, b.blend = 1, b.img = new Uint8Array(s5.width * s5.height * 4), 0 == o3[a2 - 1].dispose ? (e3(u, r3, i3, b.img, s5.width, s5.height, -s5.x, -s5.y, 0), _prepareDiff(A, r3, i3, b.img, s5)) : e3(A, r3, i3, b.img, s5.width, s5.height, -s5.x, -s5.y, 0);
+    b.rect = s2, b.blend = 1, b.img = new Uint8Array(s2.width * s2.height * 4), 0 == o3[a2 - 1].dispose ? (e3(u, r3, i3, b.img, s2.width, s2.height, -s2.x, -s2.y, 0), _prepareDiff(A, r3, i3, b.img, s2)) : e3(A, r3, i3, b.img, s2.width, s2.height, -s2.x, -s2.y, 0);
   }
   function _prepareDiff(t3, r3, i3, o3, a2) {
     e3(t3, r3, i3, o3, a2.width, a2.height, -a2.x, -a2.y, 2);
   }
-  function _filterZero(e4, t3, r3, i3, o3, a2, s5) {
+  function _filterZero(e4, t3, r3, i3, o3, a2, s2) {
     const f2 = [];
     let l3, c2 = [0, 1, 2, 3, 4];
-    -1 != a2 ? c2 = [a2] : (t3 * i3 > 5e5 || 1 == r3) && (c2 = [0]), s5 && (l3 = { level: 0 });
+    -1 != a2 ? c2 = [a2] : (t3 * i3 > 5e5 || 1 == r3) && (c2 = [0]), s2 && (l3 = { level: 0 });
     const u = UZIP;
     for (var h2 = 0; h2 < c2.length; h2++) {
       for (let a3 = 0; a3 < t3; a3++) _filterLine(o3, e4, a3, i3, r3, c2[h2]);
@@ -18551,40 +18252,40 @@ var UPNG = (function() {
     for (h2 = 0; h2 < f2.length; h2++) f2[h2].length < A && (d = h2, A = f2[h2].length);
     return f2[d];
   }
-  function _filterLine(e4, t3, i3, o3, a2, s5) {
+  function _filterLine(e4, t3, i3, o3, a2, s2) {
     const f2 = i3 * o3;
     let l3 = f2 + i3;
-    if (e4[l3] = s5, l3++, 0 == s5) if (o3 < 500) for (var c2 = 0; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2];
+    if (e4[l3] = s2, l3++, 0 == s2) if (o3 < 500) for (var c2 = 0; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2];
     else e4.set(new Uint8Array(t3.buffer, f2, o3), l3);
-    else if (1 == s5) {
+    else if (1 == s2) {
       for (c2 = 0; c2 < a2; c2++) e4[l3 + c2] = t3[f2 + c2];
       for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] - t3[f2 + c2 - a2] + 256 & 255;
     } else if (0 == i3) {
       for (c2 = 0; c2 < a2; c2++) e4[l3 + c2] = t3[f2 + c2];
-      if (2 == s5) for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2];
-      if (3 == s5) for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] - (t3[f2 + c2 - a2] >> 1) + 256 & 255;
-      if (4 == s5) for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] - r2(t3[f2 + c2 - a2], 0, 0) + 256 & 255;
+      if (2 == s2) for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2];
+      if (3 == s2) for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] - (t3[f2 + c2 - a2] >> 1) + 256 & 255;
+      if (4 == s2) for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] - r2(t3[f2 + c2 - a2], 0, 0) + 256 & 255;
     } else {
-      if (2 == s5) for (c2 = 0; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] + 256 - t3[f2 + c2 - o3] & 255;
-      if (3 == s5) {
+      if (2 == s2) for (c2 = 0; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] + 256 - t3[f2 + c2 - o3] & 255;
+      if (3 == s2) {
         for (c2 = 0; c2 < a2; c2++) e4[l3 + c2] = t3[f2 + c2] + 256 - (t3[f2 + c2 - o3] >> 1) & 255;
         for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] + 256 - (t3[f2 + c2 - o3] + t3[f2 + c2 - a2] >> 1) & 255;
       }
-      if (4 == s5) {
+      if (4 == s2) {
         for (c2 = 0; c2 < a2; c2++) e4[l3 + c2] = t3[f2 + c2] + 256 - r2(0, t3[f2 + c2 - o3], 0) & 255;
         for (c2 = a2; c2 < o3; c2++) e4[l3 + c2] = t3[f2 + c2] + 256 - r2(t3[f2 + c2 - a2], t3[f2 + c2 - o3], t3[f2 + c2 - a2 - o3]) & 255;
       }
     }
   }
   function quantize(e4, t3) {
-    const r3 = new Uint8Array(e4), i3 = r3.slice(0), o3 = new Uint32Array(i3.buffer), a2 = getKDtree(i3, t3), s5 = a2[0], f2 = a2[1], l3 = r3.length, c2 = new Uint8Array(l3 >> 2);
+    const r3 = new Uint8Array(e4), i3 = r3.slice(0), o3 = new Uint32Array(i3.buffer), a2 = getKDtree(i3, t3), s2 = a2[0], f2 = a2[1], l3 = r3.length, c2 = new Uint8Array(l3 >> 2);
     let u;
     if (r3.length < 2e7) for (var h2 = 0; h2 < l3; h2 += 4) {
-      u = getNearest(s5, d = r3[h2] * (1 / 255), A = r3[h2 + 1] * (1 / 255), g = r3[h2 + 2] * (1 / 255), p = r3[h2 + 3] * (1 / 255)), c2[h2 >> 2] = u.ind, o3[h2 >> 2] = u.est.rgba;
+      u = getNearest(s2, d = r3[h2] * (1 / 255), A = r3[h2 + 1] * (1 / 255), g = r3[h2 + 2] * (1 / 255), p = r3[h2 + 3] * (1 / 255)), c2[h2 >> 2] = u.ind, o3[h2 >> 2] = u.est.rgba;
     }
     else for (h2 = 0; h2 < l3; h2 += 4) {
       var d = r3[h2] * (1 / 255), A = r3[h2 + 1] * (1 / 255), g = r3[h2 + 2] * (1 / 255), p = r3[h2 + 3] * (1 / 255);
-      for (u = s5; u.left; ) u = planeDst(u.est, d, A, g, p) <= 0 ? u.left : u.right;
+      for (u = s2; u.left; ) u = planeDst(u.est, d, A, g, p) <= 0 ? u.left : u.right;
       c2[h2 >> 2] = u.ind, o3[h2 >> 2] = u.est.rgba;
     }
     return { abuf: i3.buffer, inds: c2, plte: f2 };
@@ -18596,7 +18297,7 @@ var UPNG = (function() {
     const a2 = [o3];
     for (; a2.length < t3; ) {
       let t4 = 0, o4 = 0;
-      for (var s5 = 0; s5 < a2.length; s5++) a2[s5].est.L > t4 && (t4 = a2[s5].est.L, o4 = s5);
+      for (var s2 = 0; s2 < a2.length; s2++) a2[s2].est.L > t4 && (t4 = a2[s2].est.L, o4 = s2);
       if (t4 < r3) break;
       const f2 = a2[o4], l3 = splitPixels(e4, i3, f2.i0, f2.i1, f2.est.e, f2.est.eMq255);
       if (f2.i0 >= l3 || f2.i1 <= l3) {
@@ -18607,23 +18308,23 @@ var UPNG = (function() {
       c2.bst = stats(e4, c2.i0, c2.i1), c2.est = estats(c2.bst);
       const u = { i0: l3, i1: f2.i1, bst: null, est: null, tdst: 0, left: null, right: null };
       u.bst = { R: [], m: [], N: f2.bst.N - c2.bst.N };
-      for (s5 = 0; s5 < 16; s5++) u.bst.R[s5] = f2.bst.R[s5] - c2.bst.R[s5];
-      for (s5 = 0; s5 < 4; s5++) u.bst.m[s5] = f2.bst.m[s5] - c2.bst.m[s5];
+      for (s2 = 0; s2 < 16; s2++) u.bst.R[s2] = f2.bst.R[s2] - c2.bst.R[s2];
+      for (s2 = 0; s2 < 4; s2++) u.bst.m[s2] = f2.bst.m[s2] - c2.bst.m[s2];
       u.est = estats(u.bst), f2.left = c2, f2.right = u, a2[o4] = c2, a2.push(u);
     }
     a2.sort(((e5, t4) => t4.bst.N - e5.bst.N));
-    for (s5 = 0; s5 < a2.length; s5++) a2[s5].ind = s5;
+    for (s2 = 0; s2 < a2.length; s2++) a2[s2].ind = s2;
     return [o3, a2];
   }
   function getNearest(e4, t3, r3, i3, o3) {
     if (null == e4.left) return e4.tdst = (function dist(e5, t4, r4, i4, o4) {
-      const a3 = t4 - e5[0], s6 = r4 - e5[1], f3 = i4 - e5[2], l4 = o4 - e5[3];
-      return a3 * a3 + s6 * s6 + f3 * f3 + l4 * l4;
+      const a3 = t4 - e5[0], s3 = r4 - e5[1], f3 = i4 - e5[2], l4 = o4 - e5[3];
+      return a3 * a3 + s3 * s3 + f3 * f3 + l4 * l4;
     })(e4.est.q, t3, r3, i3, o3), e4;
     const a2 = planeDst(e4.est, t3, r3, i3, o3);
-    let s5 = e4.left, f2 = e4.right;
-    a2 > 0 && (s5 = e4.right, f2 = e4.left);
-    const l3 = getNearest(s5, t3, r3, i3, o3);
+    let s2 = e4.left, f2 = e4.right;
+    a2 > 0 && (s2 = e4.right, f2 = e4.left);
+    const l3 = getNearest(s2, t3, r3, i3, o3);
     if (l3.tdst <= a2 * a2) return l3;
     const c2 = getNearest(f2, t3, r3, i3, o3);
     return c2.tdst < l3.tdst ? c2 : l3;
@@ -18637,8 +18338,8 @@ var UPNG = (function() {
       for (; vecDot(e4, r3, o3) <= a2; ) r3 += 4;
       for (; vecDot(e4, i3, o3) > a2; ) i3 -= 4;
       if (r3 >= i3) break;
-      const s5 = t3[r3 >> 2];
-      t3[r3 >> 2] = t3[i3 >> 2], t3[i3 >> 2] = s5, r3 += 4, i3 -= 4;
+      const s2 = t3[r3 >> 2];
+      t3[r3 >> 2] = t3[i3 >> 2], t3[i3 >> 2] = s2, r3 += 4, i3 -= 4;
     }
     for (; vecDot(e4, r3, o3) > a2; ) r3 -= 4;
     return r3 + 4;
@@ -18649,31 +18350,31 @@ var UPNG = (function() {
   function stats(e4, t3, r3) {
     const i3 = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], o3 = [0, 0, 0, 0], a2 = r3 - t3 >> 2;
     for (let a3 = t3; a3 < r3; a3 += 4) {
-      const t4 = e4[a3] * (1 / 255), r4 = e4[a3 + 1] * (1 / 255), s5 = e4[a3 + 2] * (1 / 255), f2 = e4[a3 + 3] * (1 / 255);
-      o3[0] += t4, o3[1] += r4, o3[2] += s5, o3[3] += f2, i3[0] += t4 * t4, i3[1] += t4 * r4, i3[2] += t4 * s5, i3[3] += t4 * f2, i3[5] += r4 * r4, i3[6] += r4 * s5, i3[7] += r4 * f2, i3[10] += s5 * s5, i3[11] += s5 * f2, i3[15] += f2 * f2;
+      const t4 = e4[a3] * (1 / 255), r4 = e4[a3 + 1] * (1 / 255), s2 = e4[a3 + 2] * (1 / 255), f2 = e4[a3 + 3] * (1 / 255);
+      o3[0] += t4, o3[1] += r4, o3[2] += s2, o3[3] += f2, i3[0] += t4 * t4, i3[1] += t4 * r4, i3[2] += t4 * s2, i3[3] += t4 * f2, i3[5] += r4 * r4, i3[6] += r4 * s2, i3[7] += r4 * f2, i3[10] += s2 * s2, i3[11] += s2 * f2, i3[15] += f2 * f2;
     }
     return i3[4] = i3[1], i3[8] = i3[2], i3[9] = i3[6], i3[12] = i3[3], i3[13] = i3[7], i3[14] = i3[11], { R: i3, m: o3, N: a2 };
   }
   function estats(e4) {
-    const { R: t3 } = e4, { m: r3 } = e4, { N: i3 } = e4, a2 = r3[0], s5 = r3[1], f2 = r3[2], l3 = r3[3], c2 = 0 == i3 ? 0 : 1 / i3, u = [t3[0] - a2 * a2 * c2, t3[1] - a2 * s5 * c2, t3[2] - a2 * f2 * c2, t3[3] - a2 * l3 * c2, t3[4] - s5 * a2 * c2, t3[5] - s5 * s5 * c2, t3[6] - s5 * f2 * c2, t3[7] - s5 * l3 * c2, t3[8] - f2 * a2 * c2, t3[9] - f2 * s5 * c2, t3[10] - f2 * f2 * c2, t3[11] - f2 * l3 * c2, t3[12] - l3 * a2 * c2, t3[13] - l3 * s5 * c2, t3[14] - l3 * f2 * c2, t3[15] - l3 * l3 * c2], h2 = u, d = o2;
+    const { R: t3 } = e4, { m: r3 } = e4, { N: i3 } = e4, a2 = r3[0], s2 = r3[1], f2 = r3[2], l3 = r3[3], c2 = 0 == i3 ? 0 : 1 / i3, u = [t3[0] - a2 * a2 * c2, t3[1] - a2 * s2 * c2, t3[2] - a2 * f2 * c2, t3[3] - a2 * l3 * c2, t3[4] - s2 * a2 * c2, t3[5] - s2 * s2 * c2, t3[6] - s2 * f2 * c2, t3[7] - s2 * l3 * c2, t3[8] - f2 * a2 * c2, t3[9] - f2 * s2 * c2, t3[10] - f2 * f2 * c2, t3[11] - f2 * l3 * c2, t3[12] - l3 * a2 * c2, t3[13] - l3 * s2 * c2, t3[14] - l3 * f2 * c2, t3[15] - l3 * l3 * c2], h2 = u, d = o2;
     let A = [Math.random(), Math.random(), Math.random(), Math.random()], g = 0, p = 0;
     if (0 != i3) for (let e5 = 0; e5 < 16 && (A = d.multVec(h2, A), p = Math.sqrt(d.dot(A, A)), A = d.sml(1 / p, A), !(0 != e5 && Math.abs(p - g) < 1e-9)); e5++) g = p;
-    const m = [a2 * c2, s5 * c2, f2 * c2, l3 * c2];
+    const m = [a2 * c2, s2 * c2, f2 * c2, l3 * c2];
     return { Cov: u, q: m, e: A, L: g, eMq255: d.dot(d.sml(255, m), A), eMq: d.dot(A, m), rgba: (Math.round(255 * m[3]) << 24 | Math.round(255 * m[2]) << 16 | Math.round(255 * m[1]) << 8 | Math.round(255 * m[0]) << 0) >>> 0 };
   }
   var o2 = { multVec: (e4, t3) => [e4[0] * t3[0] + e4[1] * t3[1] + e4[2] * t3[2] + e4[3] * t3[3], e4[4] * t3[0] + e4[5] * t3[1] + e4[6] * t3[2] + e4[7] * t3[3], e4[8] * t3[0] + e4[9] * t3[1] + e4[10] * t3[2] + e4[11] * t3[3], e4[12] * t3[0] + e4[13] * t3[1] + e4[14] * t3[2] + e4[15] * t3[3]], dot: (e4, t3) => e4[0] * t3[0] + e4[1] * t3[1] + e4[2] * t3[2] + e4[3] * t3[3], sml: (e4, t3) => [e4 * t3[0], e4 * t3[1], e4 * t3[2], e4 * t3[3]] };
-  UPNG.encode = function encode(e4, t3, r3, i3, o3, a2, s5) {
-    null == i3 && (i3 = 0), null == s5 && (s5 = false);
-    const f2 = compress2(e4, t3, r3, i3, [false, false, false, 0, s5, false]);
+  UPNG.encode = function encode(e4, t3, r3, i3, o3, a2, s2) {
+    null == i3 && (i3 = 0), null == s2 && (s2 = false);
+    const f2 = compress2(e4, t3, r3, i3, [false, false, false, 0, s2, false]);
     return compressPNG(f2, -1), _main(f2, t3, r3, o3, a2);
-  }, UPNG.encodeLL = function encodeLL(e4, t3, r3, i3, o3, a2, s5, f2) {
+  }, UPNG.encodeLL = function encodeLL(e4, t3, r3, i3, o3, a2, s2, f2) {
     const l3 = { ctype: 0 + (1 == i3 ? 0 : 2) + (0 == o3 ? 0 : 4), depth: a2, frames: [] }, c2 = (i3 + o3) * a2, u = c2 * t3;
     for (let i4 = 0; i4 < e4.length; i4++) l3.frames.push({ rect: { x: 0, y: 0, width: t3, height: r3 }, img: new Uint8Array(e4[i4]), blend: 0, dispose: 1, bpp: Math.ceil(c2 / 8), bpl: Math.ceil(u / 8) });
-    return compressPNG(l3, 0, true), _main(l3, t3, r3, s5, f2);
+    return compressPNG(l3, 0, true), _main(l3, t3, r3, s2, f2);
   }, UPNG.encode.compress = compress2, UPNG.encode.dither = dither, UPNG.quantize = quantize, UPNG.quantize.getKDtree = getKDtree, UPNG.quantize.getNearest = getNearest;
 })();
 var r = { toArrayBuffer(e3, t2) {
-  const i2 = e3.width, o2 = e3.height, a2 = i2 << 2, s5 = e3.getContext("2d").getImageData(0, 0, i2, o2), f2 = new Uint32Array(s5.data.buffer), l3 = (32 * i2 + 31) / 32 << 2, c2 = l3 * o2, u = 122 + c2, h2 = new ArrayBuffer(u), d = new DataView(h2), A = 1 << 20;
+  const i2 = e3.width, o2 = e3.height, a2 = i2 << 2, s2 = e3.getContext("2d").getImageData(0, 0, i2, o2), f2 = new Uint32Array(s2.data.buffer), l3 = (32 * i2 + 31) / 32 << 2, c2 = l3 * o2, u = 122 + c2, h2 = new ArrayBuffer(u), d = new DataView(h2), A = 1 << 20;
   let g, p, m, w, v2 = A, b = 0, y = 0, E = 0;
   function set16(e4) {
     d.setUint16(y, e4, true), y += 2;
@@ -18705,10 +18406,10 @@ var CustomFile = (a || s) && (f && f.getOriginalSymbol(window, "File") || "undef
 var CustomFileReader = (a || s) && (f && f.getOriginalSymbol(window, "FileReader") || "undefined" != typeof FileReader && FileReader);
 function getFilefromDataUrl(e3, t2, r2 = Date.now()) {
   return new Promise(((i2) => {
-    const o2 = e3.split(","), a2 = o2[0].match(/:(.*?);/)[1], s5 = globalThis.atob(o2[1]);
-    let f2 = s5.length;
+    const o2 = e3.split(","), a2 = o2[0].match(/:(.*?);/)[1], s2 = globalThis.atob(o2[1]);
+    let f2 = s2.length;
     const l3 = new Uint8Array(f2);
-    for (; f2--; ) l3[f2] = s5.charCodeAt(f2);
+    for (; f2--; ) l3[f2] = s2.charCodeAt(f2);
     const c2 = new Blob([l3], { type: a2 });
     c2.name = t2, c2.lastModified = r2, i2(c2);
   }));
@@ -18733,13 +18434,13 @@ function getBrowserName() {
 }
 function approximateBelowMaximumCanvasSizeOfBrowser(e3, t2) {
   const r2 = getBrowserName(), i2 = o[r2];
-  let a2 = e3, s5 = t2, f2 = a2 * s5;
-  const l3 = a2 > s5 ? s5 / a2 : a2 / s5;
+  let a2 = e3, s2 = t2, f2 = a2 * s2;
+  const l3 = a2 > s2 ? s2 / a2 : a2 / s2;
   for (; f2 > i2 * i2; ) {
-    const e4 = (i2 + a2) / 2, t3 = (i2 + s5) / 2;
-    e4 < t3 ? (s5 = t3, a2 = t3 * l3) : (s5 = e4 * l3, a2 = e4), f2 = a2 * s5;
+    const e4 = (i2 + a2) / 2, t3 = (i2 + s2) / 2;
+    e4 < t3 ? (s2 = t3, a2 = t3 * l3) : (s2 = e4 * l3, a2 = e4), f2 = a2 * s2;
   }
-  return { width: a2, height: s5 };
+  return { width: a2, height: s2 };
 }
 function getNewCanvasAndCtx(e3, t2) {
   let r2, i2;
@@ -18759,10 +18460,10 @@ function isIOS3() {
 }
 function drawFileInCanvas(e3, t2 = {}) {
   return new Promise((function(r2, o2) {
-    let a2, s5;
+    let a2, s2;
     var $Try_2_Post = function() {
       try {
-        return s5 = drawImageInCanvas(a2, t2.fileType || e3.type), r2([a2, s5]);
+        return s2 = drawImageInCanvas(a2, t2.fileType || e3.type), r2([a2, s2]);
       } catch (e4) {
         return o2(e4);
       }
@@ -18819,7 +18520,7 @@ function drawFileInCanvas(e3, t2 = {}) {
   }));
 }
 function canvasToFile(e3, t2, i2, o2, a2 = 1) {
-  return new Promise((function(s5, f2) {
+  return new Promise((function(s2, f2) {
     let l3;
     if ("image/png" === t2) {
       let c2, u, h2;
@@ -18860,7 +18561,7 @@ function canvasToFile(e3, t2, i2, o2, a2 = 1) {
       }
     }
     function $If_4() {
-      return s5(l3);
+      return s2(l3);
     }
   }));
 }
@@ -18869,7 +18570,7 @@ function cleanupCanvasMemory(e3) {
 }
 function isAutoOrientationInBrowser() {
   return new Promise((function(e3, t2) {
-    let i2, o2, a2, s5;
+    let i2, o2, a2, s2;
     return void 0 !== isAutoOrientationInBrowser.cachedResult ? e3(isAutoOrientationInBrowser.cachedResult) : (getFilefromDataUrl("data:image/jpeg;base64,/9j/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/2wCEAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/AABEIAAEAAgMBEQACEQEDEQH/xABKAAEAAAAAAAAAAAAAAAAAAAALEAEAAAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAAAAAAAAAAAAAEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8H//2Q==", "test.jpg", Date.now()).then((function(r3) {
       try {
         return i2 = r3, drawFileInCanvas(i2).then((function(r4) {
@@ -18878,7 +18579,7 @@ function isAutoOrientationInBrowser() {
               try {
                 return a2 = r5, cleanupCanvasMemory(o2), drawFileInCanvas(a2).then((function(r6) {
                   try {
-                    return s5 = r6[0], isAutoOrientationInBrowser.cachedResult = 1 === s5.width && 2 === s5.height, e3(isAutoOrientationInBrowser.cachedResult);
+                    return s2 = r6[0], isAutoOrientationInBrowser.cachedResult = 1 === s2.width && 2 === s2.height, e3(isAutoOrientationInBrowser.cachedResult);
                   } catch (e4) {
                     return t2(e4);
                   }
@@ -18926,8 +18627,8 @@ function getExifOrientation(e3) {
 }
 function handleMaxWidthOrHeight(e3, t2) {
   const { width: r2 } = e3, { height: i2 } = e3, { maxWidthOrHeight: o2 } = t2;
-  let a2, s5 = e3;
-  return isFinite(o2) && (r2 > o2 || i2 > o2) && ([s5, a2] = getNewCanvasAndCtx(r2, i2), r2 > i2 ? (s5.width = o2, s5.height = i2 / r2 * o2) : (s5.width = r2 / i2 * o2, s5.height = o2), a2.drawImage(e3, 0, 0, s5.width, s5.height), cleanupCanvasMemory(e3)), s5;
+  let a2, s2 = e3;
+  return isFinite(o2) && (r2 > o2 || i2 > o2) && ([s2, a2] = getNewCanvasAndCtx(r2, i2), r2 > i2 ? (s2.width = o2, s2.height = i2 / r2 * o2) : (s2.width = r2 / i2 * o2, s2.height = o2), a2.drawImage(e3, 0, 0, s2.width, s2.height), cleanupCanvasMemory(e3)), s2;
 }
 function followExifOrientation(e3, t2) {
   const { width: r2 } = e3, { height: i2 } = e3, [o2, a2] = getNewCanvasAndCtx(r2, i2);
@@ -18957,7 +18658,7 @@ function followExifOrientation(e3, t2) {
 }
 function compress(e3, t2, r2 = 0) {
   return new Promise((function(i2, o2) {
-    let a2, s5, f2, l3, c2, u, h2, d, A, g, p, m, w, v2, b, y, E, F, _2, B;
+    let a2, s2, f2, l3, c2, u, h2, d, A, g, p, m, w, v2, b, y, E, F, _2, B;
     function incProgress(e4 = 5) {
       if (t2.signal && t2.signal.aborted) throw t2.signal.reason;
       a2 += e4, t2.onProgress(Math.min(a2, 100));
@@ -18966,7 +18667,7 @@ function compress(e3, t2, r2 = 0) {
       if (t2.signal && t2.signal.aborted) throw t2.signal.reason;
       a2 = Math.min(Math.max(e4, a2), 100), t2.onProgress(a2);
     }
-    return a2 = r2, s5 = t2.maxIteration || 10, f2 = 1024 * t2.maxSizeMB * 1024, incProgress(), drawFileInCanvas(e3, t2).then(function(r3) {
+    return a2 = r2, s2 = t2.maxIteration || 10, f2 = 1024 * t2.maxSizeMB * 1024, incProgress(), drawFileInCanvas(e3, t2).then(function(r3) {
       try {
         return [, l3] = r3, incProgress(), c2 = handleMaxWidthOrHeight(l3, t2), incProgress(), new Promise((function(r4, i3) {
           var o3;
@@ -18989,7 +18690,7 @@ function compress(e3, t2, r2 = 0) {
                   try {
                     {
                       let $Loop_32 = function() {
-                        if (s5-- && (b > f2 || b > w)) {
+                        if (s2-- && (b > f2 || b > w)) {
                           let t3, r7;
                           return t3 = B ? 0.95 * _2.width : _2.width, r7 = B ? 0.95 * _2.height : _2.height, [E, F] = getNewCanvasAndCtx(t3, r7), F.drawImage(_2, 0, 0, t3, r7), d *= "image/png" === A ? 0.85 : 0.95, canvasToFile(E, A, e3.name, e3.lastModified, d).then((function(e4) {
                             try {
@@ -19060,9 +18761,9 @@ function compressOnWebWorker(e3, t2) {
 }
 function imageCompression(e3, t2) {
   return new Promise((function(r2, i2) {
-    let o2, a2, s5, f2, l3, c2;
-    if (o2 = { ...t2 }, s5 = 0, { onProgress: f2 } = o2, o2.maxSizeMB = o2.maxSizeMB || Number.POSITIVE_INFINITY, l3 = "boolean" != typeof o2.useWebWorker || o2.useWebWorker, delete o2.useWebWorker, o2.onProgress = (e4) => {
-      s5 = e4, "function" == typeof f2 && f2(s5);
+    let o2, a2, s2, f2, l3, c2;
+    if (o2 = { ...t2 }, s2 = 0, { onProgress: f2 } = o2, o2.maxSizeMB = o2.maxSizeMB || Number.POSITIVE_INFINITY, l3 = "boolean" != typeof o2.useWebWorker || o2.useWebWorker, delete o2.useWebWorker, o2.onProgress = (e4) => {
+      s2 = e4, "function" == typeof f2 && f2(s2);
     }, !(e3 instanceof Blob || e3 instanceof CustomFile)) return i2(new Error("The file given is not an instance of Blob or File"));
     if (!/^image/.test(e3.type)) return i2(new Error("The file given is not an image"));
     if (c2 = "undefined" != typeof WorkerGlobalScope && self instanceof WorkerGlobalScope, !l3 || "function" != typeof Worker || c2) return compress(e3, o2).then(function(e4) {
@@ -19892,15 +19593,15 @@ function usePresence(present) {
     prevAnimationNameRef.current = state3 === "mounted" ? currentAnimationName : "none";
   }, [state3]);
   useLayoutEffect2(() => {
-    const styles4 = stylesRef.current;
+    const styles3 = stylesRef.current;
     const wasPresent = prevPresentRef.current;
     const hasPresentChanged = wasPresent !== present;
     if (hasPresentChanged) {
       const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles4);
+      const currentAnimationName = getAnimationName(styles3);
       if (present) {
         send("MOUNT");
-      } else if (currentAnimationName === "none" || styles4?.display === "none") {
+      } else if (currentAnimationName === "none" || styles3?.display === "none") {
         send("UNMOUNT");
       } else {
         const isAnimating = prevAnimationName !== currentAnimationName;
@@ -19959,8 +19660,8 @@ function usePresence(present) {
     }, [])
   };
 }
-function getAnimationName(styles4) {
-  return styles4?.animationName || "none";
+function getAnimationName(styles3) {
+  return styles3?.animationName || "none";
 }
 function getElementRef2(element) {
   let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
@@ -20004,22 +19705,22 @@ function createFocusGuard() {
 // node_modules/tslib/tslib.es6.mjs
 var __assign = function() {
   __assign = Object.assign || function __assign2(t2) {
-    for (var s5, i2 = 1, n = arguments.length; i2 < n; i2++) {
-      s5 = arguments[i2];
-      for (var p in s5) if (Object.prototype.hasOwnProperty.call(s5, p)) t2[p] = s5[p];
+    for (var s2, i2 = 1, n = arguments.length; i2 < n; i2++) {
+      s2 = arguments[i2];
+      for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p)) t2[p] = s2[p];
     }
     return t2;
   };
   return __assign.apply(this, arguments);
 };
-function __rest(s5, e3) {
+function __rest(s2, e3) {
   var t2 = {};
-  for (var p in s5) if (Object.prototype.hasOwnProperty.call(s5, p) && e3.indexOf(p) < 0)
-    t2[p] = s5[p];
-  if (s5 != null && typeof Object.getOwnPropertySymbols === "function")
-    for (var i2 = 0, p = Object.getOwnPropertySymbols(s5); i2 < p.length; i2++) {
-      if (e3.indexOf(p[i2]) < 0 && Object.prototype.propertyIsEnumerable.call(s5, p[i2]))
-        t2[p[i2]] = s5[p[i2]];
+  for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p) && e3.indexOf(p) < 0)
+    t2[p] = s2[p];
+  if (s2 != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i2 = 0, p = Object.getOwnPropertySymbols(s2); i2 < p.length; i2++) {
+      if (e3.indexOf(p[i2]) < 0 && Object.prototype.propertyIsEnumerable.call(s2, p[i2]))
+        t2[p[i2]] = s2[p[i2]];
     }
   return t2;
 }
@@ -20295,13 +19996,13 @@ var stylesheetSingleton = function() {
 // node_modules/react-style-singleton/dist/es2015/hook.js
 var styleHookSingleton = function() {
   var sheet = stylesheetSingleton();
-  return function(styles4, isDynamic) {
+  return function(styles3, isDynamic) {
     React__default__namespace.useEffect(function() {
-      sheet.add(styles4);
+      sheet.add(styles3);
       return function() {
         sheet.remove();
       };
-    }, [styles4 && isDynamic]);
+    }, [styles3 && isDynamic]);
   };
 };
 
@@ -20309,8 +20010,8 @@ var styleHookSingleton = function() {
 var styleSingleton = function() {
   var useStyle = styleHookSingleton();
   var Sheet = function(_a) {
-    var styles4 = _a.styles, dynamic = _a.dynamic;
-    useStyle(styles4, dynamic);
+    var styles3 = _a.styles, dynamic = _a.dynamic;
+    useStyle(styles3, dynamic);
     return null;
   };
   return Sheet;
@@ -20418,11 +20119,11 @@ var elementCanBeScrolled = function(node, overflow) {
   if (!(node instanceof Element)) {
     return false;
   }
-  var styles4 = window.getComputedStyle(node);
+  var styles3 = window.getComputedStyle(node);
   return (
     // not-not-scrollable
-    styles4[overflow] !== "hidden" && // contains scroll inside self
-    !(styles4.overflowY === styles4.overflowX && !alwaysContainsScroll(node) && styles4[overflow] === "visible")
+    styles3[overflow] !== "hidden" && // contains scroll inside self
+    !(styles3.overflowY === styles3.overflowX && !alwaysContainsScroll(node) && styles3[overflow] === "visible")
   );
 };
 var elementCouldBeVScrolled = function(node) {
@@ -21383,10 +21084,10 @@ function useComposedRefs2(...refs) {
   return React__default__namespace.useCallback(composeRefs2(...refs), refs);
 }
 var cache = /* @__PURE__ */ new WeakMap();
-function set(el, styles4, ignoreCache = false) {
+function set(el, styles3, ignoreCache = false) {
   if (!el || !(el instanceof HTMLElement)) return;
   let originalStyles = {};
-  Object.entries(styles4).forEach(([key, value]) => {
+  Object.entries(styles3).forEach(([key, value]) => {
     if (key.startsWith("--")) {
       el.style.setProperty(key, value);
       return;
@@ -22627,196 +22328,6 @@ var formatBytes = (bytes, decimals = 1) => {
   const i2 = Math.floor(Math.log(bytes) / Math.log(k2));
   return parseFloat((bytes / Math.pow(k2, i2)).toFixed(decimals)) + " " + sizes[i2];
 };
-var s2 = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    fontFamily: "'Inter', system-ui, sans-serif"
-  },
-  fileItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "10px 12px",
-    background: "#fafafa",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "#e4e4e7",
-    borderRadius: "10px",
-    transition: "background 0.15s ease"
-  },
-  fileThumb: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "8px",
-    objectFit: "cover",
-    background: "#f4f4f5",
-    flexShrink: 0
-  },
-  fileIcon: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "8px",
-    background: "#eff6ff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#3b82f6",
-    flexShrink: 0
-  },
-  fileInfo: {
-    flex: 1,
-    minWidth: 0
-  },
-  fileName: {
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "#18181b",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    margin: 0
-  },
-  fileMeta: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    marginTop: "3px"
-  },
-  fileBadge: {
-    fontSize: "10px",
-    fontWeight: 700,
-    padding: "1px 5px",
-    background: "#dbeafe",
-    color: "#2563eb",
-    borderRadius: "4px",
-    lineHeight: "14px"
-  },
-  fileSize: {
-    fontSize: "11px",
-    color: "#a1a1aa",
-    margin: 0
-  },
-  fileActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: "2px",
-    flexShrink: 0
-  },
-  actionBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "30px",
-    height: "30px",
-    color: "#a1a1aa",
-    background: "none",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    transition: "all 0.15s ease"
-  },
-  mainActions: {
-    display: "flex",
-    gap: "8px"
-  },
-  btnSecondary: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    flex: 1,
-    justifyContent: "center",
-    padding: "10px",
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "#3f3f46",
-    background: "#f4f4f5",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "#e4e4e7",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "all 0.15s ease"
-  },
-  drawerOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0, 0, 0, 0.4)",
-    zIndex: 9999
-  },
-  drawerContent: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "85vh",
-    display: "flex",
-    flexDirection: "column",
-    background: "#ffffff",
-    borderTopLeftRadius: "16px",
-    borderTopRightRadius: "16px",
-    zIndex: 1e4,
-    padding: "16px"
-  },
-  drawerHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "16px"
-  },
-  drawerTitle: {
-    fontSize: "18px",
-    fontWeight: 600,
-    margin: 0
-  },
-  drawerCloseBtn: {
-    background: "#f4f4f5",
-    border: "none",
-    borderRadius: "50%",
-    width: "32px",
-    height: "32px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer"
-  },
-  galleryGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-    gap: "12px",
-    overflowY: "auto",
-    paddingBottom: "24px"
-  },
-  galleryItem: (selected) => ({
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "8px",
-    background: selected ? "#eff6ff" : "#fafafa",
-    borderWidth: "2px",
-    borderStyle: "solid",
-    borderColor: selected ? "#3b82f6" : "#e4e4e7",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "all 0.15s ease"
-  }),
-  galleryThumb: {
-    width: "100%",
-    aspectRatio: "1",
-    objectFit: "cover",
-    borderRadius: "4px",
-    marginBottom: "8px"
-  },
-  uploadedHeader: {
-    fontSize: "11px",
-    fontWeight: 600,
-    color: "#a1a1aa",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    margin: "4px 0 6px 0"
-  }
-};
 var FileItemRenderer = ({
   file: file2,
   onRemove,
@@ -22825,32 +22336,32 @@ var FileItemRenderer = ({
 }) => {
   const fileUrl = `${cdnUrl}/${file2.name}`;
   const ext = getFileExtension(file2.name);
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.fileItem, children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-item", children: [
     isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
       TecofPicture,
       {
         data: file2,
         alt: file2.meta?.originalName || file2.name,
         size: "thumbnail",
-        style: s2.fileThumb,
-        imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }
+        className: "tecof-upload-file-thumb",
+        imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }
       }
-    ) : /* @__PURE__ */ jsxRuntime.jsx("div", { style: s2.fileIcon, children: /* @__PURE__ */ jsxRuntime.jsx(File2, { size: 18 }) }),
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.fileInfo, children: [
-      /* @__PURE__ */ jsxRuntime.jsx("p", { style: s2.fileName, title: file2.meta?.originalName || file2.name, children: file2.meta?.originalName || file2.name }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.fileMeta, children: [
-        ext && /* @__PURE__ */ jsxRuntime.jsx("span", { style: s2.fileBadge, children: ext }),
-        file2.size > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { style: s2.fileSize, children: formatBytes(file2.size) })
+    ) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-icon", children: /* @__PURE__ */ jsxRuntime.jsx(File2, { size: 20 }) }),
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-info", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-file-name", title: file2.meta?.originalName || file2.name, children: file2.meta?.originalName || file2.name }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-meta", children: [
+        ext && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-file-badge", children: ext }),
+        file2.size > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-file-size", children: formatBytes(file2.size) })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.fileActions, children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-actions", children: [
       /* @__PURE__ */ jsxRuntime.jsx(
         "a",
         {
           href: fileUrl,
           target: "_blank",
           rel: "noopener noreferrer",
-          style: s2.actionBtn,
+          className: "tecof-upload-action-btn",
           title: "G\xF6r\xFCnt\xFCle",
           children: /* @__PURE__ */ jsxRuntime.jsx(Eye, { size: 15 })
         }
@@ -22860,12 +22371,12 @@ var FileItemRenderer = ({
         {
           href: fileUrl,
           download: true,
-          style: s2.actionBtn,
+          className: "tecof-upload-action-btn",
           title: "\u0130ndir",
           children: /* @__PURE__ */ jsxRuntime.jsx(Download, { size: 15 })
         }
       ),
-      !readOnly && onRemove && /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", style: s2.actionBtn, onClick: onRemove, title: "Kald\u0131r", children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 15 }) })
+      !readOnly && onRemove && /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-upload-action-btn tecof-upload-action-btn-danger", onClick: onRemove, title: "Kald\u0131r", children: /* @__PURE__ */ jsxRuntime.jsx(Trash2, { size: 14 }) })
     ] })
   ] });
 };
@@ -22988,6 +22499,7 @@ var UploadField = ({
   const [galleryFiles, setGalleryFiles] = React__default.useState([]);
   const [loading, setLoading] = React__default.useState(false);
   const [refreshKey, setRefreshKey] = React__default.useState(0);
+  const [gallerySearch, setGallerySearch] = React__default.useState("");
   const sourceToIdRef = React__default.useRef(/* @__PURE__ */ new Map());
   const compressFile = React__default.useCallback(async (file2) => {
     if (!imageCompressionEnabled) return file2;
@@ -23112,12 +22624,14 @@ var UploadField = ({
     }
   };
   const canAddMore = allowMultiple ? value.length < maxFiles : value.length === 0;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.container, children: [
-    value.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: "6px" }, children: [
-      showUploadedFiles && /* @__PURE__ */ jsxRuntime.jsxs("p", { style: s2.uploadedHeader, children: [
-        "Y\xFCklenen Dosyalar (",
-        value.length,
-        ")"
+  const filteredGallery = gallerySearch.trim() ? galleryFiles.filter(
+    (f2) => f2.name?.toLowerCase().includes(gallerySearch.toLowerCase()) || f2.meta?.originalName?.toLowerCase().includes(gallerySearch.toLowerCase())
+  ) : galleryFiles;
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-container", children: [
+    value.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-list", children: [
+      showUploadedFiles && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-uploaded-header", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-uploaded-label", children: "Y\xFCklenen Dosyalar" }),
+        /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-count-badge", children: value.length })
       ] }),
       value.map((file2, idx) => /* @__PURE__ */ jsxRuntime.jsx(
         FileItemRenderer,
@@ -23130,27 +22644,49 @@ var UploadField = ({
         file2._id || idx
       ))
     ] }),
-    !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.mainActions, children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", style: s2.btnSecondary, onClick: () => setDrawerOpen(true), children: [
-        /* @__PURE__ */ jsxRuntime.jsx(FolderOpen, { size: 16 }),
+    value.length === 0 && !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxRuntime.jsxs(
+      "div",
+      {
+        className: "tecof-upload-empty-state",
+        onClick: () => setDrawerOpen(true),
+        children: [
+          /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(ImagePlus, { size: 22 }) }),
+          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-title", children: "Dosya ekleyin" }),
+          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-desc", children: "Medya k\xFCt\xFCphanesinden se\xE7in veya yeni y\xFCkleyin" })
+        ]
+      }
+    ),
+    !readOnly && canAddMore && !showPond && value.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-main-actions", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setDrawerOpen(true), children: [
+        /* @__PURE__ */ jsxRuntime.jsx(FolderOpen, { size: 15 }),
         " Medya Se\xE7"
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", style: s2.btnSecondary, onClick: () => setShowPond(true), children: [
-        /* @__PURE__ */ jsxRuntime.jsx(Upload, { size: 16 }),
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
+        /* @__PURE__ */ jsxRuntime.jsx(Upload, { size: 15 }),
         " Yeni Y\xFCkle"
       ] })
     ] }),
-    !readOnly && showPond && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginTop: "8px", position: "relative" }, children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        "button",
-        {
-          type: "button",
-          style: { ...s2.actionBtn, position: "absolute", top: -30, right: 0, zIndex: 1 },
-          onClick: () => setShowPond(false),
-          children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 16 })
-        }
-      ),
-      /* @__PURE__ */ jsxRuntime.jsx(
+    value.length === 0 && !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-main-actions", children: /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
+      /* @__PURE__ */ jsxRuntime.jsx(Upload, { size: 15 }),
+      " Yeni Y\xFCkle"
+    ] }) }),
+    !readOnly && showPond && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-pond-section", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-pond-header", children: [
+        /* @__PURE__ */ jsxRuntime.jsxs("p", { className: "tecof-upload-pond-header-title", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(Upload, { size: 14 }),
+          " Dosya Y\xFCkle"
+        ] }),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-upload-pond-close-btn",
+            onClick: () => setShowPond(false),
+            children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 14 })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-pond-body", children: /* @__PURE__ */ jsxRuntime.jsx(
         FilePond,
         {
           files: filesForPond,
@@ -23170,67 +22706,107 @@ var UploadField = ({
           credits: false,
           ...FILEPOND_LABELS
         }
-      )
+      ) })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx(Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Portal, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { style: s2.drawerOverlay }),
-      /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { style: s2.drawerContent, children: [
-        /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s2.drawerHeader, children: [
-          /* @__PURE__ */ jsxRuntime.jsx("h2", { style: s2.drawerTitle, children: "Medya K\xFCt\xFCphanesi" }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [
+    /* @__PURE__ */ jsxRuntime.jsx(Drawer.Root, { open: drawerOpen, onOpenChange: (open) => {
+      setDrawerOpen(open);
+      if (!open) setGallerySearch("");
+    }, children: /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Portal, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
+      /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { className: "tecof-upload-drawer-content", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-drawer-handle" }),
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-inner", children: [
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header", children: [
+            /* @__PURE__ */ jsxRuntime.jsx("h2", { className: "tecof-upload-drawer-title", children: "Medya K\xFCt\xFCphanesi" }),
+            /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header-actions", children: [
+              /* @__PURE__ */ jsxRuntime.jsx(
+                "button",
+                {
+                  className: "tecof-upload-drawer-action-btn",
+                  onClick: () => setRefreshKey((k2) => k2 + 1),
+                  disabled: loading,
+                  title: "Yenile",
+                  children: /* @__PURE__ */ jsxRuntime.jsx(RefreshCcw, { size: 15, className: loading ? "tecof-upload-spin" : "" })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntime.jsx(
+                "button",
+                {
+                  className: "tecof-upload-drawer-action-btn",
+                  onClick: () => setDrawerOpen(false),
+                  title: "Kapat",
+                  children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 15 })
+                }
+              )
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-search-box", children: [
+            /* @__PURE__ */ jsxRuntime.jsx(Search, { size: 15, color: "#a1a1aa" }),
             /* @__PURE__ */ jsxRuntime.jsx(
-              "button",
+              "input",
               {
-                style: s2.drawerCloseBtn,
-                onClick: () => setRefreshKey((k2) => k2 + 1),
-                disabled: loading,
-                children: /* @__PURE__ */ jsxRuntime.jsx(RefreshCcw, { size: 16 })
+                type: "text",
+                placeholder: "Dosya ara...",
+                value: gallerySearch,
+                onChange: (e3) => setGallerySearch(e3.target.value),
+                className: "tecof-upload-search-input"
               }
             ),
-            /* @__PURE__ */ jsxRuntime.jsx(
+            gallerySearch && /* @__PURE__ */ jsxRuntime.jsx(
               "button",
               {
-                style: s2.drawerCloseBtn,
-                onClick: () => setDrawerOpen(false),
-                children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 16 })
+                type: "button",
+                className: "tecof-upload-action-btn tecof-upload-clear-search-btn",
+                onClick: () => setGallerySearch(""),
+                children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 13 })
               }
             )
-          ] })
-        ] }),
-        loading ? /* @__PURE__ */ jsxRuntime.jsx("div", { style: { textAlign: "center", padding: "40px", color: "#a1a1aa" }, children: "Y\xFCkleniyor..." }) : /* @__PURE__ */ jsxRuntime.jsx("div", { style: s2.galleryGrid, children: galleryFiles.map((file2) => {
-          const selected = value.some((v2) => v2._id === file2._id);
-          return /* @__PURE__ */ jsxRuntime.jsxs(
-            "div",
-            {
-              style: s2.galleryItem(selected),
-              onClick: () => toggleGalleryFile(file2),
-              children: [
-                isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
-                  TecofPicture,
-                  {
-                    data: file2,
-                    alt: file2.name,
-                    size: "thumbnail",
-                    style: s2.galleryThumb,
-                    imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }
-                  }
-                ) : /* @__PURE__ */ jsxRuntime.jsx("div", { style: { ...s2.galleryThumb, display: "flex", alignItems: "center", justifyContent: "center", background: "#f4f4f5" }, children: /* @__PURE__ */ jsxRuntime.jsx(Image2, { size: 24, color: "#a1a1aa" }) }),
-                /* @__PURE__ */ jsxRuntime.jsx("p", { style: { ...s2.fileName, fontSize: "11px", width: "100%", textAlign: "center" }, children: file2.name })
-              ]
-            },
-            file2._id
-          );
-        }) })
+          ] }),
+          loading ? /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-gallery-empty", children: [
+            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(RefreshCcw, { size: 24, color: "#a1a1aa", className: "tecof-upload-spin" }) }),
+            /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-loading-text", children: "Y\xFCkleniyor..." })
+          ] }) : filteredGallery.length === 0 ? /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-gallery-empty", children: [
+            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(Image2, { size: 24, color: "#a1a1aa" }) }),
+            /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-heading", children: gallerySearch ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz dosya yok" }),
+            /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-subheading", children: gallerySearch ? "Farkl\u0131 bir arama terimi deneyin" : "Dosyalar\u0131n\u0131z burada g\xF6r\xFCnecek" })
+          ] }) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-grid", children: filteredGallery.map((file2) => {
+            const selected = value.some((v2) => v2._id === file2._id);
+            return /* @__PURE__ */ jsxRuntime.jsxs(
+              "div",
+              {
+                className: `tecof-upload-gallery-item ${selected ? "selected" : ""}`,
+                onClick: () => toggleGalleryFile(file2),
+                children: [
+                  selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(Check, { size: 12, strokeWidth: 3 }) }),
+                  isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+                    TecofPicture,
+                    {
+                      data: file2,
+                      alt: file2.name,
+                      size: "thumbnail",
+                      className: "tecof-upload-gallery-thumb",
+                      imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }
+                    }
+                  ) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsxRuntime.jsx(File2, { size: 24, color: "#a1a1aa" }) }),
+                  /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-gallery-file-name", children: file2.meta?.originalName || file2.name })
+                ]
+              },
+              file2._id
+            );
+          }) })
+        ] })
       ] })
     ] }) })
   ] });
 };
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
       UploadField,
       {
@@ -23764,10 +23340,10 @@ function te(e3, r2) {
   return e3.Uri.parse(r2);
 }
 function Oe({ original: e3, modified: r2, language: n, originalLanguage: t2, modifiedLanguage: a2, originalModelPath: m, modifiedModelPath: E, keepCurrentOriginalModel: g = false, keepCurrentModifiedModel: N = false, theme: x = "light", loading: P = "Loading...", options: y = {}, height: V = "100%", width: z = "100%", className: F, wrapperProps: j = {}, beforeMount: A = D, onMount: q = D }) {
-  let [M, O] = React__default.useState(false), [T, s5] = React__default.useState(true), u = React__default.useRef(null), c2 = React__default.useRef(null), w = React__default.useRef(null), d = React__default.useRef(q), o2 = React__default.useRef(A), b = React__default.useRef(false);
+  let [M, O] = React__default.useState(false), [T, s2] = React__default.useState(true), u = React__default.useRef(null), c2 = React__default.useRef(null), w = React__default.useRef(null), d = React__default.useRef(q), o2 = React__default.useRef(A), b = React__default.useRef(false);
   k(() => {
     let i2 = loader.init();
-    return i2.then((f2) => (c2.current = f2) && s5(false)).catch((f2) => f2?.type !== "cancelation" && console.error("Monaco initialization: error:", f2)), () => u.current ? I() : i2.cancel();
+    return i2.then((f2) => (c2.current = f2) && s2(false)).catch((f2) => f2?.type !== "cancelation" && console.error("Monaco initialization: error:", f2)), () => u.current ? I() : i2.cancel();
   }), l2(() => {
     if (u.current && c2.current) {
       let i2 = u.current.getOriginalEditor(), f2 = h(c2.current, e3 || "", t2 || n || "text", m || "");
@@ -23821,26 +23397,26 @@ function He(e3) {
 var se = He;
 var _ = /* @__PURE__ */ new Map();
 function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, language: a2, path: m, theme: E = "light", line: g, loading: N = "Loading...", options: x = {}, overrideServices: P = {}, saveViewState: y = true, keepCurrentModel: V = false, width: z = "100%", height: F = "100%", className: j, wrapperProps: A = {}, beforeMount: q = D, onMount: M = D, onChange: O, onValidate: T = D }) {
-  let [s5, u] = React__default.useState(false), [c2, w] = React__default.useState(true), d = React__default.useRef(null), o2 = React__default.useRef(null), b = React__default.useRef(null), L = React__default.useRef(M), U = React__default.useRef(q), I = React__default.useRef(), i2 = React__default.useRef(t2), f2 = se(m), Q = React__default.useRef(false), B = React__default.useRef(false);
+  let [s2, u] = React__default.useState(false), [c2, w] = React__default.useState(true), d = React__default.useRef(null), o2 = React__default.useRef(null), b = React__default.useRef(null), L = React__default.useRef(M), U = React__default.useRef(q), I = React__default.useRef(), i2 = React__default.useRef(t2), f2 = se(m), Q = React__default.useRef(false), B = React__default.useRef(false);
   k(() => {
     let p = loader.init();
     return p.then((R) => (d.current = R) && w(false)).catch((R) => R?.type !== "cancelation" && console.error("Monaco initialization: error:", R)), () => o2.current ? pe() : p.cancel();
   }), l2(() => {
     let p = h(d.current, e3 || t2 || "", r2 || a2 || "", m || n || "");
     p !== o2.current?.getModel() && (y && _.set(f2, o2.current?.saveViewState()), o2.current?.setModel(p), y && o2.current?.restoreViewState(_.get(m)));
-  }, [m], s5), l2(() => {
+  }, [m], s2), l2(() => {
     o2.current?.updateOptions(x);
-  }, [x], s5), l2(() => {
+  }, [x], s2), l2(() => {
     !o2.current || t2 === void 0 || (o2.current.getOption(d.current.editor.EditorOption.readOnly) ? o2.current.setValue(t2) : t2 !== o2.current.getValue() && (B.current = true, o2.current.executeEdits("", [{ range: o2.current.getModel().getFullModelRange(), text: t2, forceMoveMarkers: true }]), o2.current.pushUndoStop(), B.current = false));
-  }, [t2], s5), l2(() => {
+  }, [t2], s2), l2(() => {
     let p = o2.current?.getModel();
     p && a2 && d.current?.editor.setModelLanguage(p, a2);
-  }, [a2], s5), l2(() => {
+  }, [a2], s2), l2(() => {
     g !== void 0 && o2.current?.revealLine(g);
-  }, [g], s5), l2(() => {
+  }, [g], s2), l2(() => {
     d.current?.editor.setTheme(E);
-  }, [E], s5);
-  let X2 = React__default.useCallback(() => {
+  }, [E], s2);
+  let X3 = React__default.useCallback(() => {
     if (!(!b.current || !d.current) && !Q.current) {
       U.current(d.current);
       let p = m || n, R = h(d.current, t2 || e3 || "", r2 || a2 || "", p || "");
@@ -23848,15 +23424,15 @@ function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, 
     }
   }, [e3, r2, n, t2, a2, m, x, P, y, E, g]);
   React__default.useEffect(() => {
-    s5 && L.current(o2.current, d.current);
-  }, [s5]), React__default.useEffect(() => {
-    !c2 && !s5 && X2();
-  }, [c2, s5, X2]), i2.current = t2, React__default.useEffect(() => {
-    s5 && O && (I.current?.dispose(), I.current = o2.current?.onDidChangeModelContent((p) => {
+    s2 && L.current(o2.current, d.current);
+  }, [s2]), React__default.useEffect(() => {
+    !c2 && !s2 && X3();
+  }, [c2, s2, X3]), i2.current = t2, React__default.useEffect(() => {
+    s2 && O && (I.current?.dispose(), I.current = o2.current?.onDidChangeModelContent((p) => {
       B.current || O(o2.current.getValue(), p);
     }));
-  }, [s5, O]), React__default.useEffect(() => {
-    if (s5) {
+  }, [s2, O]), React__default.useEffect(() => {
+    if (s2) {
       let p = d.current.editor.onDidChangeMarkers((R) => {
         let G = o2.current.getModel()?.uri;
         if (G && R.find((J) => J.path === G.path)) {
@@ -23870,25 +23446,15 @@ function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, 
     }
     return () => {
     };
-  }, [s5, T]);
+  }, [s2, T]);
   function pe() {
     I.current?.dispose(), V ? y && _.set(m, o2.current.saveViewState()) : o2.current.getModel()?.dispose(), o2.current.dispose();
   }
-  return React__default__namespace.default.createElement(H, { width: z, height: F, isEditorReady: s5, loading: N, _ref: b, className: j, wrapperProps: A });
+  return React__default__namespace.default.createElement(H, { width: z, height: F, isEditorReady: s2, loading: N, _ref: b, className: j, wrapperProps: A });
 }
 var fe = Ve;
 var de = React__default.memo(fe);
 var Ft = de;
-var s3 = {
-  container: {
-    width: "100%",
-    fontFamily: "'Inter', system-ui, sans-serif",
-    border: "1px solid #e4e4e7",
-    borderRadius: "8px",
-    overflow: "hidden",
-    background: "#ffffff"
-  }
-};
 var CodeEditorField = React__default.forwardRef(({
   value,
   onChange,
@@ -23901,7 +23467,7 @@ var CodeEditorField = React__default.forwardRef(({
   const handleEditorDidMount = (editor2) => {
     editorRef.current = editor2;
   };
-  return /* @__PURE__ */ jsxRuntime.jsx("div", { ref, style: s3.container, children: /* @__PURE__ */ jsxRuntime.jsx(
+  return /* @__PURE__ */ jsxRuntime.jsx("div", { ref, className: "tecof-code-editor-container", children: /* @__PURE__ */ jsxRuntime.jsx(
     Ft,
     {
       onMount: handleEditorDidMount,
@@ -23924,10 +23490,12 @@ var CodeEditorField = React__default.forwardRef(({
 });
 CodeEditorField.displayName = "CodeEditorField";
 var createCodeEditorField = (options = {}) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
       CodeEditorField,
       {
@@ -23941,269 +23509,6 @@ var createCodeEditorField = (options = {}) => {
       }
     )
   };
-};
-var s4 = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    fontFamily: "'Inter', system-ui, sans-serif"
-  },
-  // Current value display
-  valueBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px 12px",
-    background: "#fafafa",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "#e4e4e7",
-    borderRadius: "10px",
-    transition: "all 0.15s ease"
-  },
-  valueIcon: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "8px",
-    background: "#eff6ff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#3b82f6",
-    flexShrink: 0
-  },
-  valueInfo: {
-    flex: 1,
-    minWidth: 0
-  },
-  valueLabel: {
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "#18181b",
-    margin: 0,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis"
-  },
-  valueUrl: {
-    fontSize: "11px",
-    color: "#a1a1aa",
-    margin: "2px 0 0",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis"
-  },
-  valueBadge: {
-    fontSize: "10px",
-    fontWeight: 600,
-    padding: "2px 6px",
-    borderRadius: "4px",
-    lineHeight: "14px",
-    flexShrink: 0
-  },
-  badgePage: {
-    background: "#dbeafe",
-    color: "#2563eb"
-  },
-  badgeCustom: {
-    background: "#fef3c7",
-    color: "#d97706"
-  },
-  actionBtnSmall: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "28px",
-    height: "28px",
-    color: "#a1a1aa",
-    background: "none",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    flexShrink: 0
-  },
-  // Action buttons
-  mainActions: {
-    display: "flex",
-    gap: "8px"
-  },
-  btnSecondary: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    flex: 1,
-    justifyContent: "center",
-    padding: "10px",
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "#3f3f46",
-    background: "#f4f4f5",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "#e4e4e7",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "all 0.15s ease"
-  },
-  // Manual input
-  inputGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    padding: "12px",
-    background: "#fafafa",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: "#e4e4e7",
-    borderRadius: "10px"
-  },
-  inputLabel: {
-    fontSize: "11px",
-    fontWeight: 600,
-    color: "#71717a",
-    margin: 0,
-    textTransform: "uppercase",
-    letterSpacing: "0.5px"
-  },
-  input: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "8px 10px",
-    fontSize: "13px",
-    border: "1px solid #e4e4e7",
-    borderRadius: "6px",
-    outline: "none",
-    background: "#fff",
-    color: "#18181b"
-  },
-  inputRow: {
-    display: "flex",
-    gap: "8px"
-  },
-  selectSmall: {
-    padding: "8px 10px",
-    fontSize: "13px",
-    border: "1px solid #e4e4e7",
-    borderRadius: "6px",
-    outline: "none",
-    background: "#fff",
-    color: "#18181b",
-    cursor: "pointer"
-  },
-  btnConfirm: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    padding: "8px 16px",
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "#fff",
-    background: "#3b82f6",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer"
-  },
-  // Drawer
-  drawerOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0, 0, 0, 0.4)",
-    zIndex: 9999
-  },
-  drawerContent: {
-    position: "fixed",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "70vh",
-    display: "flex",
-    flexDirection: "column",
-    background: "#ffffff",
-    borderTopLeftRadius: "16px",
-    borderTopRightRadius: "16px",
-    zIndex: 1e4,
-    padding: "16px"
-  },
-  drawerHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "12px"
-  },
-  drawerTitle: {
-    fontSize: "16px",
-    fontWeight: 600,
-    margin: 0
-  },
-  drawerCloseBtn: {
-    background: "#f4f4f5",
-    border: "none",
-    borderRadius: "50%",
-    width: "32px",
-    height: "32px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer"
-  },
-  searchBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 12px",
-    background: "#f4f4f5",
-    borderRadius: "8px",
-    marginBottom: "12px"
-  },
-  searchInput: {
-    flex: 1,
-    border: "none",
-    background: "transparent",
-    outline: "none",
-    fontSize: "13px",
-    color: "#18181b"
-  },
-  pageList: {
-    flex: 1,
-    overflowY: "auto",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px"
-  },
-  pageItem: (selected) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "10px 12px",
-    background: selected ? "#eff6ff" : "#fff",
-    borderWidth: "1px",
-    borderStyle: "solid",
-    borderColor: selected ? "#3b82f6" : "#f4f4f5",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "all 0.15s ease"
-  }),
-  pageSlug: {
-    fontSize: "13px",
-    fontWeight: 500,
-    color: "#18181b",
-    margin: 0,
-    flex: 1
-  },
-  pageTitle: {
-    fontSize: "11px",
-    color: "#a1a1aa",
-    margin: "2px 0 0"
-  },
-  statusDot: (status) => ({
-    width: "6px",
-    height: "6px",
-    borderRadius: "50%",
-    background: status === "published" ? "#22c55e" : status === "changed" ? "#f59e0b" : "#a1a1aa",
-    flexShrink: 0
-  })
 };
 var LinkField = ({
   value,
@@ -24267,35 +23572,32 @@ var LinkField = ({
     setShowManual(true);
   }, [value]);
   const hasValue = value && value.url;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.container, children: [
-    hasValue && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.valueBox, children: [
-      /* @__PURE__ */ jsxRuntime.jsx("div", { style: s4.valueIcon, children: value.type === "page" ? /* @__PURE__ */ jsxRuntime.jsx(FileText, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(Globe, { size: 16 }) }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.valueInfo, children: [
-        /* @__PURE__ */ jsxRuntime.jsx("p", { style: s4.valueLabel, children: value.label || value.url }),
-        /* @__PURE__ */ jsxRuntime.jsx("p", { style: s4.valueUrl, children: value.url })
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-container", children: [
+    hasValue && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-box", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-value-icon", children: value.type === "page" ? /* @__PURE__ */ jsxRuntime.jsx(FileText, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(Globe, { size: 16 }) }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-info", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-value-label", children: value.label || value.url }),
+        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-value-url", children: value.url })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsx("span", { style: {
-        ...s4.valueBadge,
-        ...value.type === "page" ? s4.badgePage : s4.badgeCustom
-      }, children: value.type === "page" ? "Sayfa" : "Link" }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: `tecof-link-value-badge ${value.type === "page" ? "tecof-link-badge-page" : "tecof-link-badge-custom"}`, children: value.type === "page" ? "Sayfa" : "Link" }),
       value.target === "_blank" && /* @__PURE__ */ jsxRuntime.jsx(ExternalLink, { size: 14, color: "#a1a1aa" }),
       !readOnly && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", style: s4.actionBtnSmall, onClick: handleEditManual, title: "D\xFCzenle", children: /* @__PURE__ */ jsxRuntime.jsx(Pencil, { size: 14 }) }),
-        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", style: s4.actionBtnSmall, onClick: handleClear, title: "Kald\u0131r", children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 14 }) })
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-link-action-btn-small", onClick: handleEditManual, title: "D\xFCzenle", children: /* @__PURE__ */ jsxRuntime.jsx(Pencil, { size: 14 }) }),
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-link-action-btn-small", onClick: handleClear, title: "Kald\u0131r", children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 14 }) })
       ] })
     ] }),
-    !readOnly && !hasValue && !showManual && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.mainActions, children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", style: s4.btnSecondary, onClick: () => setDrawerOpen(true), children: [
+    !readOnly && !hasValue && !showManual && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-main-actions", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-link-btn-secondary", onClick: () => setDrawerOpen(true), children: [
         /* @__PURE__ */ jsxRuntime.jsx(FileText, { size: 16 }),
         " Sayfa Se\xE7"
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", style: s4.btnSecondary, onClick: () => setShowManual(true), children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-link-btn-secondary", onClick: () => setShowManual(true), children: [
         /* @__PURE__ */ jsxRuntime.jsx(Link, { size: 16 }),
         " Manuel Link"
       ] })
     ] }),
-    !readOnly && showManual && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.inputGroup, children: [
-      /* @__PURE__ */ jsxRuntime.jsx("p", { style: s4.inputLabel, children: "Manuel Link" }),
+    !readOnly && showManual && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-input-group", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-input-label", children: "Manuel Link" }),
       /* @__PURE__ */ jsxRuntime.jsx(
         "input",
         {
@@ -24303,7 +23605,7 @@ var LinkField = ({
           placeholder,
           value: manualUrl,
           onChange: (e3) => setManualUrl(e3.target.value),
-          style: s4.input
+          className: "tecof-link-input"
         }
       ),
       /* @__PURE__ */ jsxRuntime.jsx(
@@ -24313,28 +23615,28 @@ var LinkField = ({
           placeholder: "Etiket (opsiyonel)",
           value: manualLabel,
           onChange: (e3) => setManualLabel(e3.target.value),
-          style: s4.input
+          className: "tecof-link-input"
         }
       ),
-      showTarget && /* @__PURE__ */ jsxRuntime.jsx("div", { style: s4.inputRow, children: /* @__PURE__ */ jsxRuntime.jsxs(
+      showTarget && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-input-row", children: /* @__PURE__ */ jsxRuntime.jsxs(
         "select",
         {
           value: manualTarget,
           onChange: (e3) => setManualTarget(e3.target.value),
-          style: { ...s4.selectSmall, flex: 1 },
+          className: "tecof-link-select-small tecof-flex-1",
           children: [
             /* @__PURE__ */ jsxRuntime.jsx("option", { value: "_self", children: "Ayn\u0131 Sekmede A\xE7" }),
             /* @__PURE__ */ jsxRuntime.jsx("option", { value: "_blank", children: "Yeni Sekmede A\xE7" })
           ]
         }
       ) }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.inputRow, children: [
-        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", style: s4.btnConfirm, onClick: handleConfirmManual, children: "Uygula" }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-manual-actions", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-link-btn-confirm", onClick: handleConfirmManual, children: "Uygula" }),
         /* @__PURE__ */ jsxRuntime.jsx(
           "button",
           {
             type: "button",
-            style: { ...s4.btnSecondary, flex: "none", padding: "8px 16px" },
+            className: "tecof-link-btn-secondary tecof-flex-none tecof-pad-8-16",
             onClick: () => setShowManual(false),
             children: "\u0130ptal"
           }
@@ -24342,13 +23644,13 @@ var LinkField = ({
       ] })
     ] }),
     /* @__PURE__ */ jsxRuntime.jsx(Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Portal, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { style: s4.drawerOverlay }),
-      /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { style: s4.drawerContent, children: [
-        /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.drawerHeader, children: [
-          /* @__PURE__ */ jsxRuntime.jsx("h2", { style: s4.drawerTitle, children: "Sayfa Se\xE7" }),
-          /* @__PURE__ */ jsxRuntime.jsx("button", { style: s4.drawerCloseBtn, onClick: () => setDrawerOpen(false), children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 16 }) })
+      /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { className: "tecof-link-drawer-overlay" }),
+      /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { className: "tecof-link-drawer-content", children: [
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-drawer-header", children: [
+          /* @__PURE__ */ jsxRuntime.jsx("h2", { className: "tecof-link-drawer-title", children: "Sayfa Se\xE7" }),
+          /* @__PURE__ */ jsxRuntime.jsx("button", { className: "tecof-link-drawer-close-btn", onClick: () => setDrawerOpen(false), children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 16 }) })
         ] }),
-        /* @__PURE__ */ jsxRuntime.jsxs("div", { style: s4.searchBox, children: [
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-search-box", children: [
           /* @__PURE__ */ jsxRuntime.jsx(Search, { size: 16, color: "#a1a1aa" }),
           /* @__PURE__ */ jsxRuntime.jsx(
             "input",
@@ -24357,25 +23659,25 @@ var LinkField = ({
               placeholder: "Sayfa ara...",
               value: search,
               onChange: (e3) => setSearch(e3.target.value),
-              style: s4.searchInput
+              className: "tecof-link-search-input"
             }
           )
         ] }),
-        loading ? /* @__PURE__ */ jsxRuntime.jsx("div", { style: { textAlign: "center", padding: "40px", color: "#a1a1aa" }, children: "Y\xFCkleniyor..." }) : filteredPages.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("div", { style: { textAlign: "center", padding: "40px", color: "#a1a1aa" }, children: search ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz sayfa yok" }) : /* @__PURE__ */ jsxRuntime.jsx("div", { style: s4.pageList, children: filteredPages.map((page) => {
+        loading ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-text-center tecof-p-40 tecof-text-muted", children: "Y\xFCkleniyor..." }) : filteredPages.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-text-center tecof-p-40 tecof-text-muted", children: search ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz sayfa yok" }) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-page-list", children: filteredPages.map((page) => {
           const selected = value?.url === `/${page.slug}`;
           return /* @__PURE__ */ jsxRuntime.jsxs(
             "div",
             {
-              style: s4.pageItem(selected),
+              className: `tecof-link-page-item ${selected ? "selected" : ""}`,
               onClick: () => handleSelectPage(page),
               children: [
-                /* @__PURE__ */ jsxRuntime.jsx("div", { style: s4.statusDot(page.status), title: page.status }),
-                /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
-                  /* @__PURE__ */ jsxRuntime.jsxs("p", { style: s4.pageSlug, children: [
+                /* @__PURE__ */ jsxRuntime.jsx("div", { className: `tecof-link-status-dot ${page.status || "draft"}`, title: page.status }),
+                /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-flex-1 tecof-min-w-0", children: [
+                  /* @__PURE__ */ jsxRuntime.jsxs("p", { className: "tecof-link-page-slug", children: [
                     "/",
                     page.slug
                   ] }),
-                  page.title && /* @__PURE__ */ jsxRuntime.jsx("p", { style: s4.pageTitle, children: page.title })
+                  page.title && /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-link-page-title", children: page.title })
                 ] }),
                 /* @__PURE__ */ jsxRuntime.jsx(ChevronRight, { size: 16, color: "#d4d4d8" })
               ]
@@ -24389,10 +23691,12 @@ var LinkField = ({
 };
 LinkField.displayName = "LinkField";
 var createLinkField = (options = {}) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
       LinkField,
       {
@@ -24400,6 +23704,281 @@ var createLinkField = (options = {}) => {
         name: name3,
         id,
         value: value || null,
+        onChange,
+        readOnly,
+        ...fieldOptions
+      }
+    )
+  };
+};
+var PRESET_COLORS = [
+  // Grays
+  "#ffffff",
+  "#f4f4f5",
+  "#d4d4d8",
+  "#a1a1aa",
+  "#71717a",
+  "#3f3f46",
+  "#27272a",
+  "#18181b",
+  "#000000",
+  // Reds
+  "#fef2f2",
+  "#fca5a5",
+  "#f87171",
+  "#ef4444",
+  "#dc2626",
+  "#b91c1c",
+  // Oranges
+  "#fff7ed",
+  "#fdba74",
+  "#fb923c",
+  "#f97316",
+  "#ea580c",
+  "#c2410c",
+  // Yellows
+  "#fefce8",
+  "#fde047",
+  "#facc15",
+  "#eab308",
+  "#ca8a04",
+  "#a16207",
+  // Greens
+  "#f0fdf4",
+  "#86efac",
+  "#4ade80",
+  "#22c55e",
+  "#16a34a",
+  "#15803d",
+  // Blues
+  "#eff6ff",
+  "#93c5fd",
+  "#60a5fa",
+  "#3b82f6",
+  "#2563eb",
+  "#1d4ed8",
+  // Indigos
+  "#eef2ff",
+  "#a5b4fc",
+  "#818cf8",
+  "#6366f1",
+  "#4f46e5",
+  "#4338ca",
+  // Purples
+  "#faf5ff",
+  "#d8b4fe",
+  "#c084fc",
+  "#a855f7",
+  "#9333ea",
+  "#7e22ce",
+  // Pinks
+  "#fdf2f8",
+  "#f9a8d4",
+  "#f472b6",
+  "#ec4899",
+  "#db2777",
+  "#be185d"
+];
+var isValidHex = (hex) => /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(hex);
+var normalizeHex = (hex) => {
+  if (!hex) return "";
+  let v2 = hex.startsWith("#") ? hex : `#${hex}`;
+  if (/^#[0-9A-Fa-f]{3}$/.test(v2)) {
+    v2 = `#${v2[1]}${v2[1]}${v2[2]}${v2[2]}${v2[3]}${v2[3]}`;
+  }
+  return v2;
+};
+var ColorField = ({
+  value,
+  onChange,
+  readOnly,
+  showOpacity = false,
+  showPresets = true,
+  presetColors = PRESET_COLORS,
+  defaultColor = "",
+  placeholder = "#000000",
+  showReset = true
+}) => {
+  const [hexInput, setHexInput] = React__default.useState(value || "");
+  const [opacity, setOpacity2] = React__default.useState(100);
+  const [focused, setFocused] = React__default.useState(false);
+  const inputRef = React__default.useRef(null);
+  React__default.useEffect(() => {
+    setHexInput(value || "");
+    if (value && value.length === 9) {
+      const alphaHex = value.slice(7, 9);
+      const alphaPercent = Math.round(parseInt(alphaHex, 16) / 255 * 100);
+      setOpacity2(alphaPercent);
+    } else {
+      setOpacity2(100);
+    }
+  }, [value]);
+  const applyColor = React__default.useCallback(
+    (hex, opacityPercent) => {
+      const normalized = normalizeHex(hex);
+      if (!isValidHex(normalized)) return;
+      const op = opacityPercent ?? opacity;
+      if (showOpacity && op < 100) {
+        const alphaHex = Math.round(op / 100 * 255).toString(16).padStart(2, "0");
+        onChange(normalized.slice(0, 7) + alphaHex);
+      } else {
+        onChange(normalized.slice(0, 7));
+      }
+    },
+    [onChange, opacity, showOpacity]
+  );
+  const handleHexChange = React__default.useCallback(
+    (e3) => {
+      let val = e3.target.value;
+      if (val && !val.startsWith("#")) {
+        val = `#${val}`;
+      }
+      setHexInput(val);
+      if (isValidHex(val)) {
+        applyColor(val);
+      }
+    },
+    [applyColor]
+  );
+  const handleHexBlur = React__default.useCallback(() => {
+    setFocused(false);
+    if (hexInput && isValidHex(normalizeHex(hexInput))) {
+      applyColor(hexInput);
+    } else if (hexInput && !isValidHex(normalizeHex(hexInput))) {
+      setHexInput(value || "");
+    }
+  }, [hexInput, value, applyColor]);
+  const handleNativeChange = React__default.useCallback(
+    (e3) => {
+      const hex = e3.target.value;
+      setHexInput(hex);
+      applyColor(hex);
+    },
+    [applyColor]
+  );
+  const handlePresetClick = React__default.useCallback(
+    (color) => {
+      setHexInput(color);
+      applyColor(color);
+    },
+    [applyColor]
+  );
+  const handleOpacityChange = React__default.useCallback(
+    (e3) => {
+      const op = parseInt(e3.target.value, 10);
+      setOpacity2(op);
+      if (hexInput && isValidHex(normalizeHex(hexInput))) {
+        applyColor(hexInput, op);
+      }
+    },
+    [hexInput, applyColor]
+  );
+  const handleReset = React__default.useCallback(() => {
+    setHexInput(defaultColor);
+    setOpacity2(100);
+    onChange(defaultColor);
+  }, [defaultColor, onChange]);
+  const currentColor = normalizeHex(hexInput);
+  const isValid = !hexInput || isValidHex(currentColor);
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-container", children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-preview-row", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "div",
+        {
+          className: `tecof-color-swatch ${focused ? "focused" : ""}`,
+          style: { background: isValid && currentColor ? currentColor : "#ffffff" },
+          children: !readOnly && /* @__PURE__ */ jsxRuntime.jsx(
+            "input",
+            {
+              type: "color",
+              value: currentColor && isValid ? currentColor.slice(0, 7) : "#000000",
+              onChange: handleNativeChange,
+              className: "tecof-color-native-input",
+              title: "Renk se\xE7ici"
+            }
+          )
+        }
+      ),
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "input",
+        {
+          ref: inputRef,
+          type: "text",
+          value: hexInput,
+          onChange: handleHexChange,
+          onFocus: () => setFocused(true),
+          onBlur: handleHexBlur,
+          disabled: readOnly,
+          placeholder,
+          maxLength: 9,
+          className: `tecof-color-hex-input ${!isValid ? "invalid" : ""}`
+        }
+      ),
+      !readOnly && showReset && hexInput && /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          className: "tecof-color-action-btn",
+          onClick: handleReset,
+          title: "S\u0131f\u0131rla",
+          children: /* @__PURE__ */ jsxRuntime.jsx(RotateCcw, { size: 14 })
+        }
+      )
+    ] }),
+    showOpacity && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-opacity-row", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-color-opacity-label", children: "Opakl\u0131k" }),
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "input",
+        {
+          type: "range",
+          min: 0,
+          max: 100,
+          value: opacity,
+          onChange: handleOpacityChange,
+          disabled: readOnly,
+          className: "tecof-color-opacity-slider"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntime.jsxs("span", { className: "tecof-color-opacity-value", children: [
+        opacity,
+        "%"
+      ] })
+    ] }),
+    showPresets && presetColors.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-color-section-label", children: "Haz\u0131r Renkler" }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-preset-grid", children: presetColors.map((color, idx) => {
+        const selected = currentColor?.toLowerCase() === color.toLowerCase();
+        return /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            className: `tecof-color-preset-swatch ${selected ? "selected" : ""} ${color.toLowerCase() === "#ffffff" ? "is-white" : ""}`,
+            style: { background: color },
+            onClick: () => !readOnly && handlePresetClick(color),
+            title: color,
+            disabled: readOnly
+          },
+          `${color}-${idx}`
+        );
+      }) })
+    ] })
+  ] });
+};
+ColorField.displayName = "ColorField";
+var createColorField = (options = {}) => {
+  const { label, labelIcon, visible, ...fieldOptions } = options;
+  return {
+    type: "custom",
+    label,
+    labelIcon,
+    visible,
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsxRuntime.jsx(
+      ColorField,
+      {
+        field,
+        name: name3,
+        id,
+        value: value || "",
         onChange,
         readOnly,
         ...fieldOptions
@@ -24418,11 +23997,11 @@ function hexToHsl(hex) {
   const max = Math.max(r2, g, b);
   const min = Math.min(r2, g, b);
   let h2 = 0;
-  let s5 = 0;
+  let s2 = 0;
   const l3 = (max + min) / 2;
   if (max !== min) {
     const d = max - min;
-    s5 = l3 > 0.5 ? d / (2 - max - min) : d / (max + min);
+    s2 = l3 > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
       case r2:
         h2 = ((g - b) / d + (g < b ? 6 : 0)) / 6;
@@ -24437,12 +24016,12 @@ function hexToHsl(hex) {
   }
   return {
     h: Math.round(h2 * 360),
-    s: Math.round(s5 * 100),
+    s: Math.round(s2 * 100),
     l: Math.round(l3 * 100)
   };
 }
-function hslToHex(h2, s5, l3) {
-  const sNorm = s5 / 100;
+function hslToHex(h2, s2, l3) {
+  const sNorm = s2 / 100;
   const lNorm = l3 / 100;
   const a2 = sNorm * Math.min(lNorm, 1 - lNorm);
   const f2 = (n) => {
@@ -24453,12 +24032,12 @@ function hslToHex(h2, s5, l3) {
   return `#${f2(0)}${f2(8)}${f2(4)}`;
 }
 function lighten(hex, amount) {
-  const { h: h2, s: s5, l: l3 } = hexToHsl(hex);
-  return hslToHex(h2, s5, Math.min(100, l3 + amount));
+  const { h: h2, s: s2, l: l3 } = hexToHsl(hex);
+  return hslToHex(h2, s2, Math.min(100, l3 + amount));
 }
 function darken(hex, amount) {
-  const { h: h2, s: s5, l: l3 } = hexToHsl(hex);
-  return hslToHex(h2, s5, Math.max(0, l3 - amount));
+  const { h: h2, s: s2, l: l3 } = hexToHsl(hex);
+  return hslToHex(h2, s2, Math.max(0, l3 - amount));
 }
 function generateCSSVariables(theme) {
   const lines = [":root {"];
@@ -24565,6 +24144,7 @@ lucide-react/dist/esm/shared/src/utils/hasA11yProp.js:
 lucide-react/dist/esm/context.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/check.js:
 lucide-react/dist/esm/icons/chevron-right.js:
 lucide-react/dist/esm/icons/copy.js:
 lucide-react/dist/esm/icons/download.js:
@@ -24574,13 +24154,16 @@ lucide-react/dist/esm/icons/file-text.js:
 lucide-react/dist/esm/icons/file.js:
 lucide-react/dist/esm/icons/folder-open.js:
 lucide-react/dist/esm/icons/globe.js:
+lucide-react/dist/esm/icons/image-plus.js:
 lucide-react/dist/esm/icons/image.js:
 lucide-react/dist/esm/icons/languages.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/refresh-ccw.js:
+lucide-react/dist/esm/icons/rotate-ccw.js:
 lucide-react/dist/esm/icons/search.js:
+lucide-react/dist/esm/icons/trash-2.js:
 lucide-react/dist/esm/icons/upload.js:
 lucide-react/dist/esm/icons/x.js:
 lucide-react/dist/esm/lucide-react.js:
@@ -24667,6 +24250,7 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
 */
 
 exports.CodeEditorField = CodeEditorField;
+exports.ColorField = ColorField;
 exports.EditorField = EditorField;
 exports.LanguageField = LanguageField;
 exports.LinkField = LinkField;
@@ -24677,6 +24261,7 @@ exports.TecofProvider = TecofProvider;
 exports.TecofRender = TecofRender;
 exports.UploadField = UploadField;
 exports.createCodeEditorField = createCodeEditorField;
+exports.createColorField = createColorField;
 exports.createEditorField = createEditorField;
 exports.createLanguageField = createLanguageField;
 exports.createLinkField = createLinkField;

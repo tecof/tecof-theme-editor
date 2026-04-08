@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Puck, fieldsPlugin, type Data, type Config } from '@puckeditor/core';
 import { useTecof } from './TecofProvider';
-import { editorStyles, injectKeyframes } from './styles';
 import type { TecofEditorProps, PuckPageData } from '../types';
 
 const EMPTY_PAGE: PuckPageData = { content: [], root: { props: {} }, zones: {} };
@@ -43,8 +42,6 @@ export const TecofEditor = ({
   const puckDataRef = useRef<Data | null>(null);
   const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
 
-  // Inject spinner keyframes once
-  useEffect(() => { injectKeyframes(); }, []);
 
   /* ── Fetch page ── */
   useEffect(() => {
@@ -184,10 +181,10 @@ export const TecofEditor = ({
   /* ── Loading ── */
   if (loading || !initialData) {
     return (
-      <div style={editorStyles.loading} className={className}>
-        <div style={editorStyles.loadingInner}>
-          <div style={editorStyles.spinner} />
-          <p style={editorStyles.loadingText}>Loading editor...</p>
+      <div className={`tecof-editor-loading ${className || ''}`.trim()}>
+        <div className="tecof-editor-loading-inner">
+          <div className="tecof-editor-spinner" />
+          <p className="tecof-editor-loading-text">Loading editor...</p>
         </div>
       </div>
     );
@@ -202,7 +199,7 @@ export const TecofEditor = ({
   const mergedOverrides = { header: () => <></>, ...(overrides || {}) };
 
   return (
-    <div style={editorStyles.wrapper} className={className}>
+    <div className={`tecof-editor-wrapper ${className || ''}`.trim()}>
       <Puck
         plugins={plugins}
         config={config as Config}
@@ -212,7 +209,7 @@ export const TecofEditor = ({
         overrides={mergedOverrides}
       />
       {saving && (
-        <div style={editorStyles.saveIndicator}>
+        <div className="tecof-editor-save-indicator">
           {saveStatus === 'error' ? 'Save failed' : 'Saving...'}
         </div>
       )}

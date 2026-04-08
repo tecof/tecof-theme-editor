@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
-import react__default from 'react';
+import react__default, { ReactElement } from 'react';
 
 interface ThemeColors {
     primary: string;
@@ -81,6 +81,8 @@ interface TecofProviderProps {
     apiUrl: string;
     /** Merchant secret key */
     secretKey: string;
+    /** CDN base URL for media files (defaults to apiUrl if not provided) */
+    cdnUrl?: string;
     /** React children */
     children: React.ReactNode;
 }
@@ -282,6 +284,12 @@ interface LanguageFieldProps {
     readOnly?: boolean;
 }
 interface LanguageFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
     /** Whether to render as textarea instead of input */
     isTextarea?: boolean;
     /** Number of rows for textarea mode */
@@ -292,11 +300,11 @@ interface LanguageFieldOptions {
     isHtml?: boolean;
 }
 declare const LanguageField: ({ value, onChange, readOnly, isTextarea, textareaRows, placeholder, isHtml, }: LanguageFieldProps & LanguageFieldOptions) => react_jsx_runtime.JSX.Element | null;
-declare const createLanguageField: (options?: LanguageFieldOptions & {
-    label?: string;
-}) => {
+declare const createLanguageField: (options?: LanguageFieldOptions) => {
     type: "custom";
     label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
     render: ({ value, onChange, readOnly, field, name, id }: LanguageFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
@@ -309,6 +317,12 @@ interface EditorFieldProps {
     readOnly?: boolean;
 }
 interface EditorFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
     /** Placeholder text for empty editor */
     placeholder?: string;
 }
@@ -342,11 +356,11 @@ declare const EditorField: ({ value, onChange, readOnly, }: EditorFieldProps & E
  * };
  * ```
  */
-declare const createEditorField: (options?: EditorFieldOptions & {
-    label?: string;
-}) => {
+declare const createEditorField: (options?: EditorFieldOptions) => {
     type: "custom";
     label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
     render: ({ value, onChange, readOnly, field, name, id }: EditorFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
@@ -359,13 +373,18 @@ interface UploadFieldProps {
     readOnly?: boolean;
 }
 interface UploadFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
     allowMultiple?: boolean;
     maxFiles?: number;
     acceptedTypes?: string[];
     maxFileSize?: string;
     maxTotalFileSize?: string;
     folder?: string;
-    label?: string;
     /** Show uploaded files list with view/download buttons */
     showUploadedFiles?: boolean;
     /** Preview height for images in FilePond */
@@ -389,6 +408,8 @@ declare const UploadField: {
 declare const createUploadField: (options?: UploadFieldOptions) => {
     type: "custom";
     label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
     render: ({ value, onChange, readOnly, field, name, id }: UploadFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
@@ -401,7 +422,12 @@ interface CodeEditorFieldProps {
     readOnly?: boolean;
 }
 interface CodeEditorFieldOptions {
+    /** Field label displayed in the Puck sidebar */
     label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
     defaultLanguage?: string;
     height?: string;
     theme?: string;
@@ -438,6 +464,8 @@ declare const CodeEditorField: react__default.ForwardRefExoticComponent<CodeEdit
 declare const createCodeEditorField: (options?: CodeEditorFieldOptions) => {
     type: "custom";
     label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react__default.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
     render: ({ value, onChange, readOnly, field, name, id }: CodeEditorFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
@@ -450,7 +478,12 @@ interface LinkFieldProps {
     readOnly?: boolean;
 }
 interface LinkFieldOptions {
+    /** Field label displayed in the Puck sidebar */
     label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
     /** Show target selector (_self / _blank) */
     showTarget?: boolean;
     /** Placeholder for URL input */
@@ -463,7 +496,66 @@ declare const LinkField: {
 declare const createLinkField: (options?: LinkFieldOptions) => {
     type: "custom";
     label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
     render: ({ value, onChange, readOnly, field, name, id }: LinkFieldProps) => react_jsx_runtime.JSX.Element;
+};
+
+interface ColorFieldProps {
+    field: any;
+    name: string;
+    id: string;
+    value: string;
+    onChange: (value: string) => void;
+    readOnly?: boolean;
+}
+interface ColorFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
+    /** Show opacity/alpha slider */
+    showOpacity?: boolean;
+    /** Show preset color palette */
+    showPresets?: boolean;
+    /** Custom preset colors (array of hex strings) */
+    presetColors?: string[];
+    /** Default/fallback color */
+    defaultColor?: string;
+    /** Placeholder text for hex input */
+    placeholder?: string;
+    /** Show reset button */
+    showReset?: boolean;
+}
+declare const ColorField: {
+    ({ value, onChange, readOnly, showOpacity, showPresets, presetColors, defaultColor, placeholder, showReset, }: ColorFieldProps & ColorFieldOptions): react_jsx_runtime.JSX.Element;
+    displayName: string;
+};
+/**
+ * Creates a Puck custom field definition for color picking.
+ *
+ * @example
+ * ```ts
+ * import { createColorField } from '@tecof/theme-editor';
+ *
+ * fields: {
+ *   bgColor: createColorField({ label: 'Arka Plan Rengi' }),
+ *   textColor: createColorField({
+ *     label: 'Metin Rengi',
+ *     showOpacity: true,
+ *     defaultColor: '#18181b',
+ *   }),
+ * }
+ * ```
+ */
+declare const createColorField: (options?: ColorFieldOptions) => {
+    type: "custom";
+    label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
+    render: ({ value, onChange, readOnly, field, name, id }: ColorFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
 declare function hexToHsl(hex: string): HSL;
@@ -474,4 +566,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CodeEditorField, EditorField, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, CodeEditorField, ColorField, EditorField, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

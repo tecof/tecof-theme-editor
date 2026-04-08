@@ -10,6 +10,7 @@ export { EditorField, createEditorField } from './components/fields';
 export { UploadField, createUploadField } from './components/fields';
 export { CodeEditorField, createCodeEditorField } from './components/fields';
 export { LinkField, createLinkField } from './components/fields';
+export { ColorField, createColorField } from './components/fields';
 
 /* ─── API Client ─── */
 export { TecofApiClient } from './api';

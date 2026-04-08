@@ -100,6 +100,8 @@ export interface TecofProviderProps {
   apiUrl: string;
   /** Merchant secret key */
   secretKey: string;
+  /** CDN base URL for media files (defaults to apiUrl if not provided) */
+  cdnUrl?: string;
   /** React children */
   children: React.ReactNode;
 }

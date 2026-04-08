@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { useCallback, useMemo, useEffect, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import Document from '@tiptap/extension-document';
@@ -17,7 +18,7 @@ import Link from '@tiptap/extension-link';
 import Code from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
 import { useLanguages } from './useLanguages';
-import { LanguageTabBar, FieldLoading, fieldStyles } from './LanguageField';
+import { LanguageTabBar, FieldLoading } from './LanguageField';
 import type { LanguageFieldValue } from '../../types';
 
 /* ─── Extensions preset ─── */
@@ -44,51 +45,6 @@ const createExtensions = () => [
   Link.configure({ openOnClick: false, HTMLAttributes: { target: '_blank' } }),
 ];
 
-/* ─── Toolbar Styles ─── */
-
-const editorFieldStyles = {
-  editorWrapper: {
-    border: '1px solid #e4e4e7',
-    borderRadius: '8px',
-    overflow: 'hidden' as const,
-    background: '#ffffff',
-    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
-  },
-  toolbar: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '1px',
-    padding: '4px 6px',
-    borderBottom: '1px solid #e4e4e7',
-    background: '#fafafa',
-  },
-  toolbarBtn: (isActive: boolean) => ({
-    display: 'inline-flex',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    width: '28px',
-    height: '28px',
-    padding: '0',
-    fontSize: '13px',
-    fontWeight: isActive ? 700 : 400,
-    color: isActive ? '#3b82f6' : '#52525b',
-    background: isActive ? '#eff6ff' : 'transparent',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer' as const,
-    transition: 'all 0.1s ease',
-    outline: 'none',
-    lineHeight: 1,
-  }),
-  divider: {
-    width: '1px',
-    height: '20px',
-    background: '#e4e4e7',
-    margin: '4px 3px',
-    alignSelf: 'center' as const,
-  },
-} as const;
-
 /* ─── Toolbar Button ─── */
 
 const ToolbarBtn = ({
@@ -104,7 +60,7 @@ const ToolbarBtn = ({
 }) => (
   <button
     type="button"
-    style={editorFieldStyles.toolbarBtn(isActive)}
+    className={`tecof-editor-toolbar-btn ${isActive ? 'active' : ''}`}
     onClick={onClick}
     title={title}
     onMouseDown={e => e.preventDefault()}
@@ -119,7 +75,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
   if (!editor) return null;
 
   return (
-    <div style={editorFieldStyles.toolbar}>
+    <div className="tecof-editor-toolbar">
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleBold().run()}
         isActive={editor.isActive('bold')}
@@ -139,17 +95,17 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
         isActive={editor.isActive('underline')}
         title="Underline"
       >
-        <span style={{ textDecoration: 'underline' }}>U</span>
+        <span className="tecof-underline">U</span>
       </ToolbarBtn>
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleStrike().run()}
         isActive={editor.isActive('strike')}
         title="Strikethrough"
       >
-        <span style={{ textDecoration: 'line-through' }}>S</span>
+        <span className="tecof-line-through">S</span>
       </ToolbarBtn>
 
-      <div style={editorFieldStyles.divider} />
+      <div className="tecof-editor-divider" />
 
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -166,7 +122,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
         H3
       </ToolbarBtn>
 
-      <div style={editorFieldStyles.divider} />
+      <div className="tecof-editor-divider" />
 
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -183,7 +139,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
         1.
       </ToolbarBtn>
 
-      <div style={editorFieldStyles.divider} />
+      <div className="tecof-editor-divider" />
 
       <ToolbarBtn
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
@@ -207,7 +163,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
         ☰
       </ToolbarBtn>
 
-      <div style={editorFieldStyles.divider} />
+      <div className="tecof-editor-divider" />
 
       <ToolbarBtn
         onClick={() => {
@@ -233,7 +189,7 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
         ❝
       </ToolbarBtn>
 
-      <div style={editorFieldStyles.divider} />
+      <div className="tecof-editor-divider" />
 
       <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} title="Undo">
         ↩
@@ -298,55 +254,7 @@ const TipTapInstance = ({
   );
 };
 
-/* ─── Inject Editor Styles ─── */
 
-let editorStylesInjected = false;
-const injectEditorStyles = () => {
-  if (editorStylesInjected || typeof document === 'undefined') return;
-  const style = document.createElement('style');
-  style.textContent = `
-    .tecof-editor-field .tiptap {
-      padding: 10px 14px;
-      min-height: 120px;
-      outline: none;
-      font-size: 14px;
-      line-height: 1.6;
-      color: #18181b;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    .tecof-editor-field .tiptap p { margin: 0 0 0.5em 0; }
-    .tecof-editor-field .tiptap h2 { font-size: 1.4em; font-weight: 600; margin: 0.8em 0 0.4em; }
-    .tecof-editor-field .tiptap h3 { font-size: 1.2em; font-weight: 600; margin: 0.6em 0 0.3em; }
-    .tecof-editor-field .tiptap h4 { font-size: 1.1em; font-weight: 600; margin: 0.5em 0 0.25em; }
-    .tecof-editor-field .tiptap ul,
-    .tecof-editor-field .tiptap ol { padding-left: 1.4em; margin: 0.4em 0; }
-    .tecof-editor-field .tiptap li { margin: 0.1em 0; }
-    .tecof-editor-field .tiptap blockquote {
-      border-left: 3px solid #e4e4e7;
-      padding-left: 12px;
-      margin: 0.6em 0;
-      color: #71717a;
-      font-style: italic;
-    }
-    .tecof-editor-field .tiptap a { color: #3b82f6; text-decoration: underline; }
-    .tecof-editor-field .tiptap code {
-      background: #f4f4f5; padding: 2px 4px; border-radius: 3px;
-      font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.9em;
-    }
-    .tecof-editor-field .tiptap pre {
-      background: #18181b; color: #e4e4e7; padding: 12px 16px;
-      border-radius: 6px; font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 13px; overflow-x: auto;
-    }
-    .tecof-editor-field .tiptap hr {
-      border: none; border-top: 1px solid #e4e4e7; margin: 1em 0;
-    }
-  `;
-  document.head.appendChild(style);
-  editorStylesInjected = true;
-};
-
-/* ─── Props ─── */
 
 export interface EditorFieldProps {
   field: any;
@@ -358,6 +266,12 @@ export interface EditorFieldProps {
 }
 
 export interface EditorFieldOptions {
+  /** Field label displayed in the Puck sidebar */
+  label?: string;
+  /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+  labelIcon?: ReactElement;
+  /** Whether this field is visible in the sidebar */
+  visible?: boolean;
   /** Placeholder text for empty editor */
   placeholder?: string;
 }
@@ -379,9 +293,6 @@ export const EditorField = ({
   readOnly,
 }: EditorFieldProps & EditorFieldOptions) => {
   const { merchantInfo, loading, error, activeTab, setActiveTab } = useLanguages();
-
-  // Inject TipTap styles once
-  useEffect(() => { injectEditorStyles(); }, []);
 
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
@@ -406,13 +317,13 @@ export const EditorField = ({
   }, [values, onChange]);
 
   if (loading) return <FieldLoading />;
-  if (error && !merchantInfo) return <div style={fieldStyles.error}>{error}</div>;
+  if (error && !merchantInfo) return <div className="tecof-lang-error">{error}</div>;
   if (!merchantInfo) return null;
 
   const { languages, defaultLanguage } = merchantInfo;
 
   return (
-    <div style={fieldStyles.container} className="tecof-editor-field">
+    <div className="tecof-lang-container tecof-editor-field">
       <LanguageTabBar
         languages={languages}
         defaultLanguage={defaultLanguage}
@@ -425,7 +336,7 @@ export const EditorField = ({
         const currentValue = values.find(v => v.code === code)?.value || '';
 
         return (
-          <div key={code} style={editorFieldStyles.editorWrapper}>
+          <div key={code} className="tecof-editor-wrapper">
             <TipTapInstance
               content={currentValue}
               onUpdate={(html) => handleChange(code, html)}
@@ -461,13 +372,15 @@ export const EditorField = ({
  * ```
  */
 export const createEditorField = (
-  options: EditorFieldOptions & { label?: string } = {}
+  options: EditorFieldOptions = {}
 ) => {
-  const { label, ...fieldOptions } = options;
+  const { label, labelIcon, visible, ...fieldOptions } = options;
 
   return {
     type: 'custom' as const,
     label,
+    labelIcon,
+    visible,
     render: ({ value, onChange, readOnly, field, name, id }: EditorFieldProps) => (
       <EditorField
         field={field}
