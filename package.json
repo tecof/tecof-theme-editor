@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "description": "React theme editor library for Tecof projects",
     "keywords": [
         "react",
@@ -26,11 +26,12 @@
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.js",
-            "require": "./dist/index.cjs"
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
         },
         "./puck.css": "./dist/puck.css",
-        "./styles.css": "./dist/styles.css"
+        "./styles.css": "./dist/styles.css",
+        "./dist/styles.css": "./dist/styles.css"
     },
     "files": [
         "dist"

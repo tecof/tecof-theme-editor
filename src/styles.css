@@ -1,9 +1,4 @@
-/* @tecof/theme-editor — Required CSS for UploadField (FilePond + Doka) */
-@import 'filepond/dist/filepond.min.css';
-@import 'filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css';
-@import 'filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css';
-@import './doka.min.css';
-
+/* @tecof/theme-editor ─── Core styles ─── */
 /* ─── CodeEditorField ─── */
 .tecof-code-editor-container {
   width: 100%;
