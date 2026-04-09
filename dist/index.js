@@ -18,7 +18,7 @@ var HardBreak = require('@tiptap/extension-hard-break');
 var HorizontalRule = require('@tiptap/extension-horizontal-rule');
 var TextAlign = require('@tiptap/extension-text-align');
 var Link2 = require('@tiptap/extension-link');
-var Code = require('@tiptap/extension-code');
+var Code2 = require('@tiptap/extension-code');
 var CodeBlock = require('@tiptap/extension-code-block');
 var ReactDOM = require('react-dom');
 
@@ -56,7 +56,7 @@ var HardBreak__default = /*#__PURE__*/_interopDefault(HardBreak);
 var HorizontalRule__default = /*#__PURE__*/_interopDefault(HorizontalRule);
 var TextAlign__default = /*#__PURE__*/_interopDefault(TextAlign);
 var Link2__default = /*#__PURE__*/_interopDefault(Link2);
-var Code__default = /*#__PURE__*/_interopDefault(Code);
+var Code2__default = /*#__PURE__*/_interopDefault(Code2);
 var CodeBlock__default = /*#__PURE__*/_interopDefault(CodeBlock);
 var ReactDOM__namespace = /*#__PURE__*/_interopNamespace(ReactDOM);
 
@@ -677,23 +677,30 @@ var Check = createLucideIcon("check", __iconNode);
 var __iconNode2 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
 var ChevronRight = createLucideIcon("chevron-right", __iconNode2);
 
-// node_modules/lucide-react/dist/esm/icons/copy.js
+// node_modules/lucide-react/dist/esm/icons/code.js
 var __iconNode3 = [
+  ["path", { d: "m16 18 6-6-6-6", key: "eg8j8" }],
+  ["path", { d: "m8 6-6 6 6 6", key: "ppft3o" }]
+];
+var Code = createLucideIcon("code", __iconNode3);
+
+// node_modules/lucide-react/dist/esm/icons/copy.js
+var __iconNode4 = [
   ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
   ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
 ];
-var Copy = createLucideIcon("copy", __iconNode3);
+var Copy = createLucideIcon("copy", __iconNode4);
 
 // node_modules/lucide-react/dist/esm/icons/external-link.js
-var __iconNode4 = [
+var __iconNode5 = [
   ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
   ["path", { d: "M10 14 21 3", key: "gplh6r" }],
   ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ];
-var ExternalLink = createLucideIcon("external-link", __iconNode4);
+var ExternalLink = createLucideIcon("external-link", __iconNode5);
 
 // node_modules/lucide-react/dist/esm/icons/file-text.js
-var __iconNode5 = [
+var __iconNode6 = [
   [
     "path",
     {
@@ -706,10 +713,10 @@ var __iconNode5 = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-var FileText = createLucideIcon("file-text", __iconNode5);
+var FileText = createLucideIcon("file-text", __iconNode6);
 
 // node_modules/lucide-react/dist/esm/icons/file.js
-var __iconNode6 = [
+var __iconNode7 = [
   [
     "path",
     {
@@ -719,10 +726,10 @@ var __iconNode6 = [
   ],
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
 ];
-var File2 = createLucideIcon("file", __iconNode6);
+var File2 = createLucideIcon("file", __iconNode7);
 
 // node_modules/lucide-react/dist/esm/icons/folder-open.js
-var __iconNode7 = [
+var __iconNode8 = [
   [
     "path",
     {
@@ -731,36 +738,36 @@ var __iconNode7 = [
     }
   ]
 ];
-var FolderOpen = createLucideIcon("folder-open", __iconNode7);
+var FolderOpen = createLucideIcon("folder-open", __iconNode8);
 
 // node_modules/lucide-react/dist/esm/icons/globe.js
-var __iconNode8 = [
+var __iconNode9 = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-var Globe = createLucideIcon("globe", __iconNode8);
+var Globe = createLucideIcon("globe", __iconNode9);
 
 // node_modules/lucide-react/dist/esm/icons/image-plus.js
-var __iconNode9 = [
+var __iconNode10 = [
   ["path", { d: "M16 5h6", key: "1vod17" }],
   ["path", { d: "M19 2v6", key: "4bpg5p" }],
   ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
 ];
-var ImagePlus = createLucideIcon("image-plus", __iconNode9);
+var ImagePlus = createLucideIcon("image-plus", __iconNode10);
 
 // node_modules/lucide-react/dist/esm/icons/image.js
-var __iconNode10 = [
+var __iconNode11 = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
 ];
-var Image2 = createLucideIcon("image", __iconNode10);
+var Image2 = createLucideIcon("image", __iconNode11);
 
 // node_modules/lucide-react/dist/esm/icons/languages.js
-var __iconNode11 = [
+var __iconNode12 = [
   ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
   ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
   ["path", { d: "M2 5h12", key: "or177f" }],
@@ -768,21 +775,21 @@ var __iconNode11 = [
   ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
   ["path", { d: "M14 18h6", key: "1m8k6r" }]
 ];
-var Languages = createLucideIcon("languages", __iconNode11);
+var Languages = createLucideIcon("languages", __iconNode12);
 
 // node_modules/lucide-react/dist/esm/icons/link.js
-var __iconNode12 = [
+var __iconNode13 = [
   ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
   ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
 ];
-var Link = createLucideIcon("link", __iconNode12);
+var Link = createLucideIcon("link", __iconNode13);
 
 // node_modules/lucide-react/dist/esm/icons/loader-circle.js
-var __iconNode13 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-var LoaderCircle = createLucideIcon("loader-circle", __iconNode13);
+var __iconNode14 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+var LoaderCircle = createLucideIcon("loader-circle", __iconNode14);
 
 // node_modules/lucide-react/dist/esm/icons/pencil.js
-var __iconNode14 = [
+var __iconNode15 = [
   [
     "path",
     {
@@ -792,55 +799,55 @@ var __iconNode14 = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-var Pencil = createLucideIcon("pencil", __iconNode14);
+var Pencil = createLucideIcon("pencil", __iconNode15);
 
 // node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
-var __iconNode15 = [
+var __iconNode16 = [
   ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
   ["path", { d: "M16 16h5v5", key: "ccwih5" }]
 ];
-var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode15);
+var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode16);
 
 // node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
-var __iconNode16 = [
+var __iconNode17 = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
 ];
-var RotateCcw = createLucideIcon("rotate-ccw", __iconNode16);
+var RotateCcw = createLucideIcon("rotate-ccw", __iconNode17);
 
 // node_modules/lucide-react/dist/esm/icons/search.js
-var __iconNode17 = [
+var __iconNode18 = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-var Search = createLucideIcon("search", __iconNode17);
+var Search = createLucideIcon("search", __iconNode18);
 
 // node_modules/lucide-react/dist/esm/icons/trash-2.js
-var __iconNode18 = [
+var __iconNode19 = [
   ["path", { d: "M10 11v6", key: "nco0om" }],
   ["path", { d: "M14 11v6", key: "outv1u" }],
   ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
   ["path", { d: "M3 6h18", key: "d0wm0j" }],
   ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
 ];
-var Trash2 = createLucideIcon("trash-2", __iconNode18);
+var Trash2 = createLucideIcon("trash-2", __iconNode19);
 
 // node_modules/lucide-react/dist/esm/icons/upload.js
-var __iconNode19 = [
+var __iconNode20 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-var Upload = createLucideIcon("upload", __iconNode19);
+var Upload = createLucideIcon("upload", __iconNode20);
 
 // node_modules/lucide-react/dist/esm/icons/x.js
-var __iconNode20 = [
+var __iconNode21 = [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ];
-var X = createLucideIcon("x", __iconNode20);
+var X = createLucideIcon("x", __iconNode21);
 var LanguageTabBar = ({
   languages,
   defaultLanguage,
@@ -1056,7 +1063,7 @@ var createExtensions = () => [
   Blockquote__default.default,
   HardBreak__default.default,
   HorizontalRule__default.default,
-  Code__default.default,
+  Code2__default.default,
   CodeBlock__default.default,
   TextAlign__default.default.configure({ types: ["heading", "paragraph"] }),
   Link2__default.default.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } })
@@ -22323,7 +22330,7 @@ var FileItemRenderer = ({
   `${cdnUrl}/${file2.name}`;
   const ext = getFileExtension(file2.name);
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-item", children: [
-    isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+    file2.type === "image/reference" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-icon", style: { backgroundColor: "#eef2ff", color: "#4f46e5" }, children: /* @__PURE__ */ jsxRuntime.jsx(Code, { size: 20 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
       TecofPicture,
       {
         data: file2,
@@ -22459,6 +22466,8 @@ var UploadField = ({
   const [filesForPond, setFilesForPond] = React__default.useState([]);
   const [showPond, setShowPond] = React__default.useState(false);
   const [drawerOpen, setDrawerOpen] = React__default.useState(false);
+  const [showRefInput, setShowRefInput] = React__default.useState(false);
+  const [refCode, setRefCode] = React__default.useState("{{ data. }}");
   const [galleryFiles, setGalleryFiles] = React__default.useState([]);
   const [loading, setLoading] = React__default.useState(false);
   const [refreshKey, setRefreshKey] = React__default.useState(0);
@@ -22505,6 +22514,20 @@ var UploadField = ({
     updated.splice(idx, 1);
     onChange(updated);
   }, [value, onChange]);
+  const handleAddRef = React__default.useCallback(() => {
+    if (!refCode.trim()) return;
+    const refFile = {
+      _id: `ref_${Date.now()}`,
+      name: refCode.trim(),
+      size: 0,
+      type: "image/reference",
+      meta: { originalName: refCode.trim(), isReference: true }
+    };
+    const updated = allowMultiple ? [...value, refFile] : [refFile];
+    onChange(updated);
+    setShowRefInput(false);
+    setRefCode("{{ data. }}");
+  }, [refCode, allowMultiple, value, onChange]);
   React__default.useEffect(() => {
     if (!drawerOpen) return;
     setLoading(true);
@@ -22619,7 +22642,11 @@ var UploadField = ({
         ]
       }
     ),
-    !readOnly && canAddMore && !showPond && value.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-main-actions", children: [
+    !readOnly && canAddMore && !showPond && value.length > 0 && !showRefInput && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-main-actions", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
+        /* @__PURE__ */ jsxRuntime.jsx(Code, { size: 15 }),
+        " Referans"
+      ] }),
       /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setDrawerOpen(true), children: [
         /* @__PURE__ */ jsxRuntime.jsx(FolderOpen, { size: 15 }),
         " Medya Se\xE7"
@@ -22629,10 +22656,54 @@ var UploadField = ({
         " Yeni Y\xFCkle"
       ] })
     ] }),
-    value.length === 0 && !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-main-actions", children: /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
-      /* @__PURE__ */ jsxRuntime.jsx(Upload, { size: 15 }),
-      " Yeni Y\xFCkle"
-    ] }) }),
+    value.length === 0 && !readOnly && canAddMore && !showPond && !showRefInput && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-main-actions", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
+        /* @__PURE__ */ jsxRuntime.jsx(Code, { size: 15 }),
+        " Dinamik Referans Se\xE7"
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
+        /* @__PURE__ */ jsxRuntime.jsx(Upload, { size: 15 }),
+        " Yeni Y\xFCkle"
+      ] })
+    ] }),
+    showRefInput && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-ref-section", style: { background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0", marginTop: "10px" }, children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }, children: [
+        /* @__PURE__ */ jsxRuntime.jsxs("span", { style: { fontSize: "12px", fontWeight: 500, color: "#475569" }, children: [
+          "Dinamik CMS De\u011Fi\u015Fkeni (\xD6rn: ",
+          `{{ data.image }}`,
+          ")"
+        ] }),
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: () => setShowRefInput(false), style: { background: "none", border: "none", cursor: "pointer", color: "#64748b" }, children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 14 }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { display: "flex", gap: "8px" }, children: [
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "input",
+          {
+            type: "text",
+            value: refCode,
+            onChange: (e3) => setRefCode(e3.target.value),
+            placeholder: "{{ data. }}",
+            style: { flex: 1, padding: "8px 10px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none" },
+            autoFocus: true,
+            onKeyDown: (e3) => {
+              if (e3.key === "Enter") {
+                e3.preventDefault();
+                handleAddRef();
+              }
+            }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: handleAddRef,
+            style: { padding: "0 12px", background: "#4f46e5", color: "#fff", fontSize: "12px", fontWeight: 500, borderRadius: "6px", border: "none", cursor: "pointer" },
+            children: "Ekle"
+          }
+        )
+      ] })
+    ] }),
     !readOnly && showPond && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-pond-section", children: [
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-pond-header", children: [
         /* @__PURE__ */ jsxRuntime.jsxs("p", { className: "tecof-upload-pond-header-title", children: [
@@ -24157,6 +24228,7 @@ lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
 lucide-react/dist/esm/icons/check.js:
 lucide-react/dist/esm/icons/chevron-right.js:
+lucide-react/dist/esm/icons/code.js:
 lucide-react/dist/esm/icons/copy.js:
 lucide-react/dist/esm/icons/external-link.js:
 lucide-react/dist/esm/icons/file-text.js:
