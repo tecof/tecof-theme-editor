@@ -37,6 +37,7 @@ import {
   Check,
   ImagePlus,
   Trash2,
+  Code,
 } from 'lucide-react';
 
 registerPlugin(
@@ -150,7 +151,11 @@ const FileItemRenderer = ({
 
   return (
     <div className="tecof-upload-file-item">
-      {isImageType(file.type) ? (
+      {file.type === 'image/reference' ? (
+        <div className="tecof-upload-file-icon" style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}>
+          <Code size={20} />
+        </div>
+      ) : isImageType(file.type) ? (
         <TecofPicture
           data={file}
           alt={file.meta?.originalName || file.name}
@@ -317,6 +322,8 @@ export const UploadField = ({
   const [filesForPond, setFilesForPond] = useState<any[]>([]);
   const [showPond, setShowPond] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showRefInput, setShowRefInput] = useState(false);
+  const [refCode, setRefCode] = useState('{{ data. }}');
 
   // Gallery State
   const [galleryFiles, setGalleryFiles] = useState<UploadedFile[]>([]);
@@ -387,6 +394,23 @@ export const UploadField = ({
     updated.splice(idx, 1);
     onChange(updated);
   }, [value, onChange]);
+
+  /* ── Reference Code Handler ── */
+
+  const handleAddRef = useCallback(() => {
+    if (!refCode.trim()) return;
+    const refFile = {
+      _id: `ref_${Date.now()}`,
+      name: refCode.trim(),
+      size: 0,
+      type: 'image/reference',
+      meta: { originalName: refCode.trim(), isReference: true }
+    };
+    const updated = allowMultiple ? [...value, refFile] : [refFile];
+    onChange(updated);
+    setShowRefInput(false);
+    setRefCode('{{ data. }}');
+  }, [refCode, allowMultiple, value, onChange]);
 
   /* ── Drawer Gallery ── */
 
@@ -538,8 +562,11 @@ export const UploadField = ({
       )}
 
       {/* Action Buttons */}
-      {!readOnly && canAddMore && !showPond && value.length > 0 && (
+      {!readOnly && canAddMore && !showPond && value.length > 0 && !showRefInput && (
         <div className="tecof-upload-main-actions">
+          <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
+            <Code size={15} /> Referans
+          </button>
           <button type="button" className="tecof-upload-btn-secondary" onClick={() => setDrawerOpen(true)}>
             <FolderOpen size={15} /> Medya Seç
           </button>
@@ -550,11 +577,49 @@ export const UploadField = ({
       )}
 
       {/* Empty state — secondary actions row */}
-      {value.length === 0 && !readOnly && canAddMore && !showPond && (
+      {value.length === 0 && !readOnly && canAddMore && !showPond && !showRefInput && (
         <div className="tecof-upload-main-actions">
+          <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
+            <Code size={15} /> Dinamik Referans Seç
+          </button>
           <button type="button" className="tecof-upload-btn-primary" onClick={() => setShowPond(true)}>
             <Upload size={15} /> Yeni Yükle
           </button>
+        </div>
+      )}
+
+      {/* Reference Code Input Mode */}
+      {showRefInput && (
+        <div className="tecof-upload-ref-section" style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: '#475569' }}>Dinamik CMS Değişkeni (Örn: {`{{ data.image }}`})</span>
+            <button type="button" onClick={() => setShowRefInput(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+              <X size={14} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              value={refCode}
+              onChange={(e) => setRefCode(e.target.value)}
+              placeholder="{{ data. }}"
+              style={{ flex: 1, padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddRef();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleAddRef}
+              style={{ padding: '0 12px', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 500, borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+            >
+              Ekle
+            </button>
+          </div>
         </div>
       )}
 
