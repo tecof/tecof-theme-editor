@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.16",
+    "version": "0.0.17",
     "description": "React theme editor library for Tecof projects",
     "keywords": [
         "react",
