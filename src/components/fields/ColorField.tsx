@@ -1,30 +1,7 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FieldLabel } from '@puckeditor/core';
-import { Pipette, X, RotateCcw } from 'lucide-react';
-
-/* ─── Preset Palettes ─── */
-
-const PRESET_COLORS = [
-  // Grays
-  '#ffffff', '#f4f4f5', '#d4d4d8', '#a1a1aa', '#71717a', '#3f3f46', '#27272a', '#18181b', '#000000',
-  // Reds
-  '#fef2f2', '#fca5a5', '#f87171', '#ef4444', '#dc2626', '#b91c1c',
-  // Oranges
-  '#fff7ed', '#fdba74', '#fb923c', '#f97316', '#ea580c', '#c2410c',
-  // Yellows
-  '#fefce8', '#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207',
-  // Greens
-  '#f0fdf4', '#86efac', '#4ade80', '#22c55e', '#16a34a', '#15803d',
-  // Blues
-  '#eff6ff', '#93c5fd', '#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8',
-  // Indigos
-  '#eef2ff', '#a5b4fc', '#818cf8', '#6366f1', '#4f46e5', '#4338ca',
-  // Purples
-  '#faf5ff', '#d8b4fe', '#c084fc', '#a855f7', '#9333ea', '#7e22ce',
-  // Pinks
-  '#fdf2f8', '#f9a8d4', '#f472b6', '#ec4899', '#db2777', '#be185d',
-];
+import { RotateCcw } from 'lucide-react';
 
 /* ─── Helpers ─── */
 
@@ -40,21 +17,6 @@ const normalizeHex = (hex: string): string => {
   }
   return v;
 };
-
-const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  const match = /^#([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})/.exec(hex);
-  if (!match) return null;
-  return { r: parseInt(match[1], 16), g: parseInt(match[2], 16), b: parseInt(match[3], 16) };
-};
-
-const getContrastColor = (hex: string): string => {
-  const rgb = hexToRgb(normalizeHex(hex));
-  if (!rgb) return '#000000';
-  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  return luminance > 0.5 ? '#18181b' : '#ffffff';
-};
-
-
 
 /* ─── Props ─── */
 
@@ -76,10 +38,6 @@ export interface ColorFieldOptions {
   visible?: boolean;
   /** Show opacity/alpha slider */
   showOpacity?: boolean;
-  /** Show preset color palette */
-  showPresets?: boolean;
-  /** Custom preset colors (array of hex strings) */
-  presetColors?: string[];
   /** Default/fallback color */
   defaultColor?: string;
   /** Placeholder text for hex input */
@@ -95,8 +53,6 @@ export const ColorField = ({
   onChange,
   readOnly,
   showOpacity = false,
-  showPresets = true,
-  presetColors = PRESET_COLORS,
   defaultColor = '',
   placeholder = '#000000',
   showReset = true,
@@ -173,13 +129,6 @@ export const ColorField = ({
     [applyColor]
   );
 
-  const handlePresetClick = useCallback(
-    (color: string) => {
-      setHexInput(color);
-      applyColor(color);
-    },
-    [applyColor]
-  );
 
   const handleOpacityChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,28 +214,7 @@ export const ColorField = ({
         </div>
       )}
 
-      {/* Preset Colors */}
-      {showPresets && presetColors.length > 0 && (
-        <>
-          <p className="tecof-color-section-label">Hazır Renkler</p>
-          <div className="tecof-color-preset-grid">
-            {presetColors.map((color, idx) => {
-              const selected = currentColor?.toLowerCase() === color.toLowerCase();
-              return (
-                <button
-                  key={`${color}-${idx}`}
-                  type="button"
-                  className={`tecof-color-preset-swatch ${selected ? 'selected' : ''} ${color.toLowerCase() === '#ffffff' ? 'is-white' : ''}`}
-                  style={{ background: color }}
-                  onClick={() => !readOnly && handlePresetClick(color)}
-                  title={color}
-                  disabled={readOnly}
-                />
-              );
-            })}
-          </div>
-        </>
-      )}
+
     </div>
   );
 };

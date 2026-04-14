@@ -123,11 +123,15 @@ interface LanguageFieldValue {
     value: string;
 }
 interface UploadedFile {
-    _id: string;
+    _id?: string;
     name: string;
     size: number;
     type: string;
     mimeType?: string;
+    /** Direct URL for external images (e.g. Freepik stock photos) */
+    url?: string;
+    folder?: string;
+    provider?: string;
     meta?: {
         width?: number;
         height?: number;
@@ -524,10 +528,6 @@ interface ColorFieldOptions {
     visible?: boolean;
     /** Show opacity/alpha slider */
     showOpacity?: boolean;
-    /** Show preset color palette */
-    showPresets?: boolean;
-    /** Custom preset colors (array of hex strings) */
-    presetColors?: string[];
     /** Default/fallback color */
     defaultColor?: string;
     /** Placeholder text for hex input */
@@ -536,7 +536,7 @@ interface ColorFieldOptions {
     showReset?: boolean;
 }
 declare const ColorField: {
-    ({ value, onChange, readOnly, showOpacity, showPresets, presetColors, defaultColor, placeholder, showReset, }: ColorFieldProps & ColorFieldOptions): react_jsx_runtime.JSX.Element;
+    ({ value, onChange, readOnly, showOpacity, defaultColor, placeholder, showReset, }: ColorFieldProps & ColorFieldOptions): react_jsx_runtime.JSX.Element;
     displayName: string;
 };
 /**

@@ -459,9 +459,11 @@ var TecofPicture = React__default.memo(({
   const { apiClient } = useTecof();
   const cdnUrl = apiClient.cdnUrl;
   if (!data3) return null;
-  const fileURL = `${cdnUrl}/${data3.name}`;
-  const isImageType2 = isImage(data3.type);
-  const isVideoType = isVideo(data3.type);
+  const isExternal = data3?.type === "external" || data3?.provider === "external";
+  const fileURL = isExternal ? data3?.url || "" : `${cdnUrl}/${data3?.name}`;
+  const isImageType2 = isExternal ? true : isImage(data3?.type);
+  const isVideoType = isExternal ? false : isVideo(data3?.type);
+  if (!fileURL) return null;
   const imgWidth = width || data3?.meta?.width || 500;
   const imgHeight = height || data3?.meta?.height || 500;
   const sizes = getSizes(size);
@@ -13503,8 +13505,8 @@ var getImageTransformsFromRect = function(e3, t2, r2) {
     }
     d = createRect(p.left, p.top, p.right - p.left, p.bottom - p.top);
   }
-  var P = rectCorners(d), G = rectCenter(d), k2 = vectorRotate3(P.tl, o2, c2), D2 = vectorRotate3(P.br, o2, c2), U = k2.x + 0.5 * (D2.x - k2.x), B = k2.y + 0.5 * (D2.y - k2.y), V = rectTranslate(d, { x: U - G.x, y: B - G.y }), N = rectTranslate(l3, { x: U - G.x, y: B - G.y }), F = rectCenter(N), z = { x: V.x, y: V.y }, W2 = V.width, q = V.height, H2 = (F.x - z.x) / W2, Y2 = (F.y - z.y) / q, j = W2 / e3.width, X3 = { x: H2 * e3.width, y: Y2 * e3.height }, Z2 = 1 - j, $2 = X3.x * Z2, K2 = X3.y * Z2, Q = { x: z.x + W2 * H2, y: z.y + q * Y2 }, J = vectorRotate3(z, o2, { x: z.x + 0.5 * W2, y: z.y + 0.5 * q }), ee2 = vectorRotate3(z, o2, Q), te2 = J.x - ee2.x, re2 = J.y - ee2.y;
-  return { origin: X3, translation: { x: z.x - $2 + te2, y: z.y - K2 + re2 }, scale: j, rotation: r2.rotation };
+  var P = rectCorners(d), G = rectCenter(d), k2 = vectorRotate3(P.tl, o2, c2), D2 = vectorRotate3(P.br, o2, c2), U = k2.x + 0.5 * (D2.x - k2.x), B = k2.y + 0.5 * (D2.y - k2.y), V = rectTranslate(d, { x: U - G.x, y: B - G.y }), N = rectTranslate(l3, { x: U - G.x, y: B - G.y }), F = rectCenter(N), z = { x: V.x, y: V.y }, W2 = V.width, q = V.height, H2 = (F.x - z.x) / W2, Y2 = (F.y - z.y) / q, j = W2 / e3.width, X2 = { x: H2 * e3.width, y: Y2 * e3.height }, Z2 = 1 - j, $2 = X2.x * Z2, K2 = X2.y * Z2, Q = { x: z.x + W2 * H2, y: z.y + q * Y2 }, J = vectorRotate3(z, o2, { x: z.x + 0.5 * W2, y: z.y + 0.5 * q }), ee2 = vectorRotate3(z, o2, Q), te2 = J.x - ee2.x, re2 = J.y - ee2.y;
+  return { origin: X2, translation: { x: z.x - $2 + te2, y: z.y - K2 + re2 }, scale: j, rotation: r2.rotation };
 };
 var getEdgeTargetRect = function(e3, t2, r2, n, i2, o2, a2, c2, l3) {
   var u = o2.left, s2 = o2.right, d = o2.top, p = o2.bottom, f2 = s2 - u, h2 = p - d, g = i2.left, m = i2.right, v2 = i2.top, y = i2.bottom;
@@ -14948,15 +14950,15 @@ var setup = function(e3, t2, r2) {
   u.bindBuffer(u.ARRAY_BUFFER, S2), u.bufferData(u.ARRAY_BUFFER, C2, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var O = createProgram(u, imageVertexShader, imageFragmentShader);
   u.useProgram(O);
-  var x = u.getUniformLocation(O, "uMatrix"), b = u.getUniformLocation(O, "uTexture"), M = u.getUniformLocation(O, "uTextureSize"), L = u.getUniformLocation(O, "uOverlayColor"), P = u.getUniformLocation(O, "uOverlayLeftTop"), G = u.getUniformLocation(O, "uOverlayRightBottom"), k2 = u.getUniformLocation(O, "uColorOpacity"), D2 = u.getUniformLocation(O, "uColorOffset"), U = u.getUniformLocation(O, "uColorMatrix"), B = u.getAttribLocation(O, "aPosition"), V = u.getAttribLocation(O, "aTexCoord"), N = createTexture(u, b, M, 0, t2), F = t2.width * r2, z = t2.height * r2, W2 = -0.5 * F, q = 0.5 * z, H2 = 0.5 * F, Y2 = -0.5 * z, j = new Float32Array([W2, q, W2, Y2, H2, q, H2, Y2]), X3 = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), Z2 = j.length / 2, $2 = u.createBuffer();
+  var x = u.getUniformLocation(O, "uMatrix"), b = u.getUniformLocation(O, "uTexture"), M = u.getUniformLocation(O, "uTextureSize"), L = u.getUniformLocation(O, "uOverlayColor"), P = u.getUniformLocation(O, "uOverlayLeftTop"), G = u.getUniformLocation(O, "uOverlayRightBottom"), k2 = u.getUniformLocation(O, "uColorOpacity"), D2 = u.getUniformLocation(O, "uColorOffset"), U = u.getUniformLocation(O, "uColorMatrix"), B = u.getAttribLocation(O, "aPosition"), V = u.getAttribLocation(O, "aTexCoord"), N = createTexture(u, b, M, 0, t2), F = t2.width * r2, z = t2.height * r2, W2 = -0.5 * F, q = 0.5 * z, H2 = 0.5 * F, Y2 = -0.5 * z, j = new Float32Array([W2, q, W2, Y2, H2, q, H2, Y2]), X2 = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), Z2 = j.length / 2, $2 = u.createBuffer();
   u.bindBuffer(u.ARRAY_BUFFER, $2), u.bufferData(u.ARRAY_BUFFER, j, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var K2 = u.createBuffer();
-  u.bindBuffer(u.ARRAY_BUFFER, K2), u.bufferData(u.ARRAY_BUFFER, X3, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
+  u.bindBuffer(u.ARRAY_BUFFER, K2), u.bufferData(u.ARRAY_BUFFER, X2, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var Q = 0, J = 0, ee2 = { release: function() {
     e3.width = 1, e3.height = 1;
   }, resize: function(t3, a3) {
     e3.width = t3 * r2, e3.height = a3 * r2, e3.style.width = "".concat(t3, "px"), e3.style.height = "".concat(a3, "px"), n.width = t3 * r2, n.height = a3 * r2, i2.x = 0.5 * n.width, i2.y = 0.5 * n.height, o2 = n.width / n.height, u.viewport(0, 0, u.canvas.width, u.canvas.height);
-  }, update: function(e4, l4, E2, C3, b2, M2, F2, z2, W3, q2, H3, Y3, j2, X4, te2, re2, ne2, ie2, oe2) {
+  }, update: function(e4, l4, E2, C3, b2, M2, F2, z2, W3, q2, H3, Y3, j2, X3, te2, re2, ne2, ie2, oe2) {
     var ae2 = H3 ? H3.height * r2 : n.height;
     Q = t2.width * r2, J = t2.height * r2, e4 *= r2, l4 *= r2, E2 *= r2, C3 *= r2;
     var ce = J / 2 / c2 * (n.height / ae2) * -1;
@@ -14964,7 +14966,7 @@ var setup = function(e3, t2, r2) {
     var le2 = 0.5 * Q, ue2 = 0.5 * J;
     e4 -= le2, l4 -= ue2;
     var se2 = z2, de2 = -(i2.x - le2) + E2, pe = i2.y - ue2 - C3, fe2 = mat4.create();
-    mat4.perspective(fe2, a2, o2, 1, 2 * -ce), mat4.translate(fe2, [de2, pe, ce]), mat4.translate(fe2, [e4, -l4, 0]), mat4.scale(fe2, [se2, se2, se2]), mat4.rotateZ(fe2, -F2), mat4.translate(fe2, [-e4, l4, 0]), mat4.rotateY(fe2, M2), mat4.rotateX(fe2, b2), u.clearColor(X4[0], X4[1], X4[2], 1), u.clear(u.COLOR_BUFFER_BIT);
+    mat4.perspective(fe2, a2, o2, 1, 2 * -ce), mat4.translate(fe2, [de2, pe, ce]), mat4.translate(fe2, [e4, -l4, 0]), mat4.scale(fe2, [se2, se2, se2]), mat4.rotateZ(fe2, -F2), mat4.translate(fe2, [-e4, l4, 0]), mat4.rotateY(fe2, M2), mat4.rotateX(fe2, b2), u.clearColor(X3[0], X3[1], X3[2], 1), u.clear(u.COLOR_BUFFER_BIT);
     var he2 = Y3.x * r2, ge2 = Y3.y * r2, me2 = Y3.width * r2, ve2 = Y3.height * r2, ye2 = he2, Ee2 = ye2 + me2, Te2 = n.height - ge2, _e2 = n.height - (ge2 + ve2);
     u.useProgram(s2), u.uniform3fv(d, te2), u.uniform3fv(p, re2), u.uniform4fv(v2, oe2.map(function(e5, t3) {
       return t3 < 3 ? e5 / 255 : e5;
@@ -23452,7 +23454,7 @@ function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, 
   }, [g], s2), l2(() => {
     d.current?.editor.setTheme(E);
   }, [E], s2);
-  let X3 = React__default.useCallback(() => {
+  let X2 = React__default.useCallback(() => {
     if (!(!b.current || !d.current) && !Q.current) {
       U.current(d.current);
       let p = m || n, R = h(d.current, t2 || e3 || "", r2 || a2 || "", p || "");
@@ -23462,8 +23464,8 @@ function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, 
   React__default.useEffect(() => {
     s2 && L.current(o2.current, d.current);
   }, [s2]), React__default.useEffect(() => {
-    !c2 && !s2 && X3();
-  }, [c2, s2, X3]), i2.current = t2, React__default.useEffect(() => {
+    !c2 && !s2 && X2();
+  }, [c2, s2, X2]), i2.current = t2, React__default.useEffect(() => {
     s2 && O && (I.current?.dispose(), I.current = o2.current?.onDidChangeModelContent((p) => {
       B.current || O(o2.current.getValue(), p);
     }));
@@ -23793,74 +23795,6 @@ var createLinkField = (options = {}) => {
     ) })
   };
 };
-var PRESET_COLORS = [
-  // Grays
-  "#ffffff",
-  "#f4f4f5",
-  "#d4d4d8",
-  "#a1a1aa",
-  "#71717a",
-  "#3f3f46",
-  "#27272a",
-  "#18181b",
-  "#000000",
-  // Reds
-  "#fef2f2",
-  "#fca5a5",
-  "#f87171",
-  "#ef4444",
-  "#dc2626",
-  "#b91c1c",
-  // Oranges
-  "#fff7ed",
-  "#fdba74",
-  "#fb923c",
-  "#f97316",
-  "#ea580c",
-  "#c2410c",
-  // Yellows
-  "#fefce8",
-  "#fde047",
-  "#facc15",
-  "#eab308",
-  "#ca8a04",
-  "#a16207",
-  // Greens
-  "#f0fdf4",
-  "#86efac",
-  "#4ade80",
-  "#22c55e",
-  "#16a34a",
-  "#15803d",
-  // Blues
-  "#eff6ff",
-  "#93c5fd",
-  "#60a5fa",
-  "#3b82f6",
-  "#2563eb",
-  "#1d4ed8",
-  // Indigos
-  "#eef2ff",
-  "#a5b4fc",
-  "#818cf8",
-  "#6366f1",
-  "#4f46e5",
-  "#4338ca",
-  // Purples
-  "#faf5ff",
-  "#d8b4fe",
-  "#c084fc",
-  "#a855f7",
-  "#9333ea",
-  "#7e22ce",
-  // Pinks
-  "#fdf2f8",
-  "#f9a8d4",
-  "#f472b6",
-  "#ec4899",
-  "#db2777",
-  "#be185d"
-];
 var isValidHex = (hex) => /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(hex);
 var normalizeHex = (hex) => {
   if (!hex) return "";
@@ -23875,8 +23809,6 @@ var ColorField = ({
   onChange,
   readOnly,
   showOpacity = false,
-  showPresets = true,
-  presetColors = PRESET_COLORS,
   defaultColor = "",
   placeholder = "#000000",
   showReset = true
@@ -23935,13 +23867,6 @@ var ColorField = ({
       const hex = e3.target.value;
       setHexInput(hex);
       applyColor(hex);
-    },
-    [applyColor]
-  );
-  const handlePresetClick = React__default.useCallback(
-    (color) => {
-      setHexInput(color);
-      applyColor(color);
     },
     [applyColor]
   );
@@ -24025,24 +23950,6 @@ var ColorField = ({
         opacity,
         "%"
       ] })
-    ] }),
-    showPresets && presetColors.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-color-section-label", children: "Haz\u0131r Renkler" }),
-      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-preset-grid", children: presetColors.map((color, idx) => {
-        const selected = currentColor?.toLowerCase() === color.toLowerCase();
-        return /* @__PURE__ */ jsxRuntime.jsx(
-          "button",
-          {
-            type: "button",
-            className: `tecof-color-preset-swatch ${selected ? "selected" : ""} ${color.toLowerCase() === "#ffffff" ? "is-white" : ""}`,
-            style: { background: color },
-            onClick: () => !readOnly && handlePresetClick(color),
-            title: color,
-            disabled: readOnly
-          },
-          `${color}-${idx}`
-        );
-      }) })
     ] })
   ] });
 };
