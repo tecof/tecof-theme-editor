@@ -107,9 +107,13 @@ export const TecofPicture = memo(({
 
   if (!data) return null;
 
-  const fileURL = `${cdnUrl}/${data.name}`;
-  const isImageType = isImage(data.type);
-  const isVideoType = isVideo(data.type);
+  /* ── External vs CDN URL Resolution ── */
+  const isExternal = data?.type === 'external' || data?.provider === 'external';
+  const fileURL = isExternal ? (data?.url || '') : `${cdnUrl}/${data?.name}`;
+  const isImageType = isExternal ? true : isImage(data?.type);
+  const isVideoType = isExternal ? false : isVideo(data?.type);
+
+  if (!fileURL) return null;
 
   const imgWidth = width || data?.meta?.width || 500;
   const imgHeight = height || data?.meta?.height || 500;

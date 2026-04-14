@@ -157,11 +157,15 @@ export interface LanguageFieldValue {
 /* ─── Uploaded File ─── */
 
 export interface UploadedFile {
-  _id: string;
+  _id?: string;
   name: string;
   size: number;
-  type: string;
+  type: string;            // "png" | "jpg" | "external" | ...
   mimeType?: string;
+  /** Direct URL for external images (e.g. Freepik stock photos) */
+  url?: string;
+  folder?: string;
+  provider?: string;       // "sftp" | "external"
   meta?: {
     width?: number;
     height?: number;
