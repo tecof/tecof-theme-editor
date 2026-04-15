@@ -32,7 +32,7 @@ export const TecofEditor = ({
   plugins: extraPlugins,
   className,
 }: TecofEditorProps) => {
-  const { apiClient } = useTecof();
+  const { apiClient, secretKey } = useTecof();
 
   const [initialData, setInitialData] = useState<PuckPageData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -195,7 +195,42 @@ export const TecofEditor = ({
     ...(extraPlugins || []),
   ];
 
-  const mergedOverrides = { header: () => <></>, ...(overrides || {}) };
+  const mergedOverrides = {
+    header: () => <></>,
+    drawerItem: ({ children, name }: { children: React.ReactNode, name: string }) => {
+      // Accessing `secretKey` to use as token for screenshots
+      const token = secretKey;
+      return (
+        <div className="tecof-drawer-item-group group">
+          {children}
+          {/* Hover Popover showing Screenshot */}
+          <div className="tecof-drawer-popover">
+            <div className="tecof-drawer-popover-header">
+              {name} Önizleme
+            </div>
+            <div className="tecof-drawer-popover-body">
+              <div className="tecof-drawer-skeleton"></div>
+              <img
+                src={`/api/screenshot?componentName=${name}&token=${token}`}
+                alt={`${name} preview`}
+                className="tecof-drawer-img"
+                onLoad={(e) => {
+                  const loader = e.currentTarget.previousElementSibling;
+                  if (loader) loader.remove();
+                }}
+                onError={(e) => {
+                  const loader = e.currentTarget.previousElementSibling;
+                  if (loader) loader.remove();
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    },
+    ...(overrides || {})
+  };
 
   return (
     <div className={`tecof-editor-wrapper ${className || ''}`.trim()}>

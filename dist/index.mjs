@@ -226,7 +226,7 @@ var TecofEditor = ({
   plugins: extraPlugins,
   className
 }) => {
-  const { apiClient } = useTecof();
+  const { apiClient, secretKey } = useTecof();
   const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -354,7 +354,42 @@ var TecofEditor = ({
     ...fieldsPlugin ? [fieldsPlugin({ desktopSideBar: "left" })] : [],
     ...extraPlugins || []
   ];
-  const mergedOverrides = { header: () => /* @__PURE__ */ jsx(Fragment, {}), ...overrides || {} };
+  const mergedOverrides = {
+    header: () => /* @__PURE__ */ jsx(Fragment, {}),
+    drawerItem: ({ children, name: name3 }) => {
+      const token = secretKey;
+      return /* @__PURE__ */ jsxs("div", { className: "tecof-drawer-item-group group", children: [
+        children,
+        /* @__PURE__ */ jsxs("div", { className: "tecof-drawer-popover", children: [
+          /* @__PURE__ */ jsxs("div", { className: "tecof-drawer-popover-header", children: [
+            name3,
+            " \xD6nizleme"
+          ] }),
+          /* @__PURE__ */ jsxs("div", { className: "tecof-drawer-popover-body", children: [
+            /* @__PURE__ */ jsx("div", { className: "tecof-drawer-skeleton" }),
+            /* @__PURE__ */ jsx(
+              "img",
+              {
+                src: `/api/screenshot?componentName=${name3}&token=${token}`,
+                alt: `${name3} preview`,
+                className: "tecof-drawer-img",
+                onLoad: (e3) => {
+                  const loader2 = e3.currentTarget.previousElementSibling;
+                  if (loader2) loader2.remove();
+                },
+                onError: (e3) => {
+                  const loader2 = e3.currentTarget.previousElementSibling;
+                  if (loader2) loader2.remove();
+                  e3.currentTarget.style.display = "none";
+                }
+              }
+            )
+          ] })
+        ] })
+      ] });
+    },
+    ...overrides || {}
+  };
   return /* @__PURE__ */ jsxs("div", { className: `tecof-editor-wrapper ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsx(
       Puck,

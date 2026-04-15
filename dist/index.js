@@ -264,7 +264,7 @@ var TecofEditor = ({
   plugins: extraPlugins,
   className
 }) => {
-  const { apiClient } = useTecof();
+  const { apiClient, secretKey } = useTecof();
   const [initialData, setInitialData] = React__default.useState(null);
   const [loading, setLoading] = React__default.useState(true);
   const [saving, setSaving] = React__default.useState(false);
@@ -392,7 +392,42 @@ var TecofEditor = ({
     ...core.fieldsPlugin ? [core.fieldsPlugin({ desktopSideBar: "left" })] : [],
     ...extraPlugins || []
   ];
-  const mergedOverrides = { header: () => /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, {}), ...overrides || {} };
+  const mergedOverrides = {
+    header: () => /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, {}),
+    drawerItem: ({ children, name: name3 }) => {
+      const token = secretKey;
+      return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-item-group group", children: [
+        children,
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover", children: [
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover-header", children: [
+            name3,
+            " \xD6nizleme"
+          ] }),
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover-body", children: [
+            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-drawer-skeleton" }),
+            /* @__PURE__ */ jsxRuntime.jsx(
+              "img",
+              {
+                src: `/api/screenshot?componentName=${name3}&token=${token}`,
+                alt: `${name3} preview`,
+                className: "tecof-drawer-img",
+                onLoad: (e3) => {
+                  const loader2 = e3.currentTarget.previousElementSibling;
+                  if (loader2) loader2.remove();
+                },
+                onError: (e3) => {
+                  const loader2 = e3.currentTarget.previousElementSibling;
+                  if (loader2) loader2.remove();
+                  e3.currentTarget.style.display = "none";
+                }
+              }
+            )
+          ] })
+        ] })
+      ] });
+    },
+    ...overrides || {}
+  };
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-editor-wrapper ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsxRuntime.jsx(
       core.Puck,
