@@ -58,7 +58,7 @@ var TecofApiClient = class {
   /**
    * Save a page by ID
    */
-  async savePage(pageId, puckData, title, accessToken) {
+  async savePage(pageId, draftData, title, accessToken) {
     try {
       const res2 = await fetch(`${this.apiUrl}/api/store/editor/${pageId}`, {
         method: "PUT",
@@ -66,7 +66,7 @@ var TecofApiClient = class {
           ...this.headers,
           ...accessToken && { Authorization: accessToken }
         },
-        body: JSON.stringify({ puckData, ...title && { title } })
+        body: JSON.stringify({ draftData, ...title && { title } })
       });
       return await res2.json();
     } catch (error2) {
@@ -231,7 +231,7 @@ var TecofEditor = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
-  const puckDataRef = useRef(null);
+  const draftDataRef = useRef(null);
   const isEmbedded = typeof window !== "undefined" && window.parent !== window;
   useEffect(() => {
     let cancelled = false;
@@ -239,9 +239,9 @@ var TecofEditor = ({
       setLoading(true);
       const res2 = await apiClient.getPage(pageId);
       if (cancelled) return;
-      const data3 = res2.success && res2.data?.puckData ? res2.data.puckData : EMPTY_PAGE;
+      const data3 = res2.success && res2.data?.draftData ? res2.data.draftData : EMPTY_PAGE;
       setInitialData(data3);
-      puckDataRef.current = data3;
+      draftDataRef.current = data3;
       setLoading(false);
     };
     load();
@@ -251,16 +251,16 @@ var TecofEditor = ({
   }, [pageId, apiClient]);
   const handleSaveDraft = useCallback(
     async (data3) => {
-      const currentData = data3 || puckDataRef.current;
+      const currentData = data3 || draftDataRef.current;
       if (!currentData) return;
-      const puckData = currentData;
+      const draftData = currentData;
       setSaving(true);
       setSaveStatus("idle");
-      const res2 = await apiClient.savePage(pageId, puckData, void 0, accessToken);
+      const res2 = await apiClient.savePage(pageId, draftData, void 0, accessToken);
       if (res2.success) {
         setSaveStatus("success");
         setTimeout(() => setSaveStatus("idle"), 3e3);
-        onSave?.(puckData);
+        onSave?.(draftData);
         if (isEmbedded) window.parent.postMessage({ type: "puck:saved" }, "*");
       } else {
         setSaveStatus("error");
@@ -272,9 +272,9 @@ var TecofEditor = ({
   );
   const handleChange = useCallback(
     (data3) => {
-      puckDataRef.current = data3;
-      const puckData = data3;
-      onChange?.(puckData);
+      draftDataRef.current = data3;
+      const draftData = data3;
+      onChange?.(draftData);
       if (isEmbedded) window.parent.postMessage({ type: "puck:changed" }, "*");
     },
     [onChange, isEmbedded]

@@ -39,9 +39,8 @@ export const TecofEditor = ({
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const puckDataRef = useRef<Data | null>(null);
+  const draftDataRef = useRef<Data | null>(null);
   const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
-
 
   /* ── Fetch page ── */
   useEffect(() => {
@@ -50,9 +49,9 @@ export const TecofEditor = ({
       setLoading(true);
       const res = await apiClient.getPage(pageId);
       if (cancelled) return;
-      const data = res.success && res.data?.puckData ? res.data.puckData : EMPTY_PAGE;
+      const data = res.success && res.data?.draftData ? res.data.draftData : EMPTY_PAGE;
       setInitialData(data);
-      puckDataRef.current = data as unknown as Data;
+      draftDataRef.current = data as unknown as Data;
       setLoading(false);
     };
     load();
@@ -62,19 +61,19 @@ export const TecofEditor = ({
   /* ── Save Draft (Taslak Kaydet) ── */
   const handleSaveDraft = useCallback(
     async (data?: Data) => {
-      const currentData = data || puckDataRef.current;
+      const currentData = data || draftDataRef.current;
       if (!currentData) return;
 
-      const puckData = currentData as unknown as PuckPageData;
+      const draftData = currentData as unknown as PuckPageData;
       setSaving(true);
       setSaveStatus('idle');
 
-      const res = await apiClient.savePage(pageId, puckData, undefined, accessToken);
+      const res = await apiClient.savePage(pageId, draftData, undefined, accessToken);
 
       if (res.success) {
         setSaveStatus('success');
         setTimeout(() => setSaveStatus('idle'), 3000);
-        onSave?.(puckData);
+        onSave?.(draftData);
         if (isEmbedded) window.parent.postMessage({ type: 'puck:saved' }, '*');
       } else {
         setSaveStatus('error');
@@ -89,9 +88,9 @@ export const TecofEditor = ({
   /* ── Change ── */
   const handleChange = useCallback(
     (data: Data) => {
-      puckDataRef.current = data;
-      const puckData = data as unknown as PuckPageData;
-      onChange?.(puckData);
+      draftDataRef.current = data;
+      const draftData = data as unknown as PuckPageData;
+      onChange?.(draftData);
       if (isEmbedded) window.parent.postMessage({ type: 'puck:changed' }, '*');
     },
     [onChange, isEmbedded]

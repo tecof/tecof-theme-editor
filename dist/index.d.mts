@@ -72,7 +72,7 @@ interface PageApiData {
     _id?: string;
     slug: string;
     title?: string;
-    puckData: PuckPageData;
+    draftData: PuckPageData;
     status?: string;
     [key: string]: any;
 }
@@ -175,7 +175,7 @@ declare class TecofApiClient {
     /**
      * Save a page by ID
      */
-    savePage(pageId: string, puckData: PuckPageData, title?: string, accessToken?: string): Promise<ApiResponse<PageApiData>>;
+    savePage(pageId: string, draftData: PuckPageData, title?: string, accessToken?: string): Promise<ApiResponse<PageApiData>>;
     /**
      * Fetch a published page by slug + locale (for rendering)
      */

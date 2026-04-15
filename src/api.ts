@@ -52,7 +52,7 @@ export class TecofApiClient {
    */
   async savePage(
     pageId: string,
-    puckData: PuckPageData,
+    draftData: PuckPageData,
     title?: string,
     accessToken?: string
   ): Promise<ApiResponse<PageApiData>> {
@@ -63,7 +63,7 @@ export class TecofApiClient {
           ...this.headers,
           ...(accessToken && { Authorization: accessToken }),
         },
-        body: JSON.stringify({ puckData, ...(title && { title }) }),
+        body: JSON.stringify({ draftData, ...(title && { title }) }),
       });
       return await res.json();
     } catch (error) {

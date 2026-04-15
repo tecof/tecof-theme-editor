@@ -88,7 +88,7 @@ export interface PageApiData {
   _id?: string;
   slug: string;
   title?: string;
-  puckData: PuckPageData;
+  draftData: PuckPageData;
   status?: string;
   [key: string]: any;
 }
