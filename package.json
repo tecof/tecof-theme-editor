@@ -57,7 +57,7 @@
     },
     "devDependencies": {
         "@monaco-editor/react": "^4.7.0",
-        "@puckeditor/core": "^0.21.1",
+        "@puckeditor/core": "^0.21.2",
         "@storybook/react-vite": "^8.0.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
@@ -80,5 +80,9 @@
         "typescript": "^5.0.0",
         "vaul": "^1.1.2",
         "vitest": "^3.0.0"
+    },
+    "dependencies": {
+        "i": "^0.3.7",
+        "npm": "^11.12.1"
     }
 }
