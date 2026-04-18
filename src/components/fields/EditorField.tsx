@@ -379,6 +379,7 @@ export const createEditorField = (
 
   return {
     type: 'custom' as const,
+    _fieldType: 'editor' as const,
     label,
     labelIcon,
     visible,

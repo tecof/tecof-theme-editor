@@ -245,6 +245,7 @@ export const createColorField = (options: ColorFieldOptions = {}) => {
 
   return {
     type: 'custom' as const,
+    _fieldType: 'color' as const,
     label,
     labelIcon,
     visible,

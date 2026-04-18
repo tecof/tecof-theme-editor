@@ -312,6 +312,7 @@ interface LanguageFieldOptions {
 declare const LanguageField: ({ value, onChange, readOnly, isTextarea, textareaRows, placeholder, isHtml, }: LanguageFieldProps & LanguageFieldOptions) => react_jsx_runtime.JSX.Element | null;
 declare const createLanguageField: (options?: LanguageFieldOptions) => {
     type: "custom";
+    _fieldType: "language";
     label: string | undefined;
     labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;
@@ -368,6 +369,7 @@ declare const EditorField: ({ value, onChange, readOnly, }: EditorFieldProps & E
  */
 declare const createEditorField: (options?: EditorFieldOptions) => {
     type: "custom";
+    _fieldType: "editor";
     label: string | undefined;
     labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;
@@ -417,6 +419,7 @@ declare const UploadField: {
 };
 declare const createUploadField: (options?: UploadFieldOptions) => {
     type: "custom";
+    _fieldType: "upload";
     label: string | undefined;
     labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;
@@ -473,6 +476,7 @@ declare const CodeEditorField: react__default.ForwardRefExoticComponent<CodeEdit
  */
 declare const createCodeEditorField: (options?: CodeEditorFieldOptions) => {
     type: "custom";
+    _fieldType: "code";
     label: string | undefined;
     labelIcon: ReactElement<unknown, string | react__default.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;
@@ -505,6 +509,7 @@ declare const LinkField: {
 };
 declare const createLinkField: (options?: LinkFieldOptions) => {
     type: "custom";
+    _fieldType: "link";
     label: string | undefined;
     labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;
@@ -558,6 +563,7 @@ declare const ColorField: {
  */
 declare const createColorField: (options?: ColorFieldOptions) => {
     type: "custom";
+    _fieldType: "color";
     label: string | undefined;
     labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;

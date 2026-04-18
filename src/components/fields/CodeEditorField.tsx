@@ -109,6 +109,7 @@ export const createCodeEditorField = (options: CodeEditorFieldOptions = {}) => {
 
   return {
     type: 'custom' as const,
+    _fieldType: 'code' as const,
     label,
     labelIcon,
     visible,

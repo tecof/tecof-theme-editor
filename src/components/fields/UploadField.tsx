@@ -789,6 +789,7 @@ export const createUploadField = (options: UploadFieldOptions = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: 'custom' as const,
+    _fieldType: 'upload' as const,
     label,
     labelIcon,
     visible,

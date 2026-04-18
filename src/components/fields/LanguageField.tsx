@@ -265,6 +265,7 @@ export const createLanguageField = (
 
   return {
     type: 'custom' as const,
+    _fieldType: 'language' as const,
     label,
     labelIcon,
     visible,

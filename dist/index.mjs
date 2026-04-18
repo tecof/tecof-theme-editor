@@ -1029,6 +1029,7 @@ var createLanguageField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
+    _fieldType: "language",
     label,
     labelIcon,
     visible,
@@ -1319,6 +1320,7 @@ var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
+    _fieldType: "editor",
     label,
     labelIcon,
     visible,
@@ -22839,6 +22841,7 @@ var createUploadField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
+    _fieldType: "upload",
     label,
     labelIcon,
     visible,
@@ -23533,6 +23536,7 @@ var createCodeEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
+    _fieldType: "code",
     label,
     labelIcon,
     visible,
@@ -23775,6 +23779,7 @@ var createLinkField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
+    _fieldType: "link",
     label,
     labelIcon,
     visible,
@@ -23955,6 +23960,7 @@ var createColorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: "custom",
+    _fieldType: "color",
     label,
     labelIcon,
     visible,

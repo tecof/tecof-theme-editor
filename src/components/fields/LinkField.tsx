@@ -346,6 +346,7 @@ export const createLinkField = (options: LinkFieldOptions = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
     type: 'custom' as const,
+    _fieldType: 'link' as const,
     label,
     labelIcon,
     visible,
