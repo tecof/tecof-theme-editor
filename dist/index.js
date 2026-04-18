@@ -65,6 +65,13 @@ var ReactDOM__namespace = /*#__PURE__*/_interopNamespace(ReactDOM);
 // src/api.ts
 var TecofApiClient = class {
   constructor(apiUrl, secretKey, customCdnUrl) {
+    /**
+     * Get a component preview screenshot as a Blob URL.
+     * Calls POST /api/store/component-preview with domain + componentName.
+     * Returns a blob:// URL that can be used as an img src.
+     * Results are cached client-side in a Map.
+     */
+    this.previewBlobCache = /* @__PURE__ */ new Map();
     this.apiUrl = apiUrl.replace(/\/+$/, "");
     this.secretKey = secretKey;
     this.customCdnUrl = customCdnUrl ? customCdnUrl.replace(/\/+$/, "") : void 0;
@@ -228,6 +235,30 @@ var TecofApiClient = class {
       };
     }
   }
+  async getComponentPreview(domain, componentName) {
+    const cacheKey = `${domain}:${componentName}`;
+    if (this.previewBlobCache.has(cacheKey)) {
+      return this.previewBlobCache.get(cacheKey);
+    }
+    try {
+      const res2 = await fetch(`${this.apiUrl}/api/store/component-preview`, {
+        method: "POST",
+        headers: {
+          "x-secret-key": this.secretKey,
+          Accept: "image/png",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ domain, componentName })
+      });
+      if (!res2.ok) return null;
+      const blob2 = await res2.blob();
+      const blobUrl = URL.createObjectURL(blob2);
+      this.previewBlobCache.set(cacheKey, blobUrl);
+      return blobUrl;
+    } catch {
+      return null;
+    }
+  }
   /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl() {
     return this.customCdnUrl || this.apiUrl;
@@ -254,6 +285,55 @@ function useTecof() {
   return ctx;
 }
 var EMPTY_PAGE = { content: [], root: { props: {} }, zones: {} };
+var ComponentDrawerItem = ({
+  name: name3,
+  apiClient,
+  children
+}) => {
+  const [imgSrc, setImgSrc] = React__default.useState(null);
+  const [loading, setLoading] = React__default.useState(false);
+  const [error2, setError] = React__default.useState(false);
+  const fetchedRef = React__default.useRef(false);
+  const handleMouseEnter = React__default.useCallback(async () => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    setLoading(true);
+    try {
+      const domain = typeof window !== "undefined" ? window.location.hostname : "";
+      const blobUrl = await apiClient.getComponentPreview(domain, name3);
+      if (blobUrl) {
+        setImgSrc(blobUrl);
+      } else {
+        setError(true);
+      }
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [name3, apiClient]);
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-item-group group", onMouseEnter: handleMouseEnter, children: [
+    children,
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover-header", children: [
+        name3,
+        " \xD6nizleme"
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover-body", children: [
+        (loading || !imgSrc && !error2) && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-drawer-skeleton" }),
+        imgSrc && /* @__PURE__ */ jsxRuntime.jsx(
+          "img",
+          {
+            src: imgSrc,
+            alt: `${name3} preview`,
+            className: "tecof-drawer-img"
+          }
+        ),
+        error2 && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-drawer-preview-error", children: "\xD6nizleme y\xFCklenemedi" })
+      ] })
+    ] })
+  ] });
+};
 var TecofEditor = ({
   pageId,
   config: config3,
@@ -395,36 +475,7 @@ var TecofEditor = ({
   const mergedOverrides = {
     header: () => /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, {}),
     drawerItem: ({ children, name: name3 }) => {
-      const token = secretKey;
-      return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-item-group group", children: [
-        children,
-        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover", children: [
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover-header", children: [
-            name3,
-            " \xD6nizleme"
-          ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-drawer-popover-body", children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-drawer-skeleton" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              "img",
-              {
-                src: `/api/screenshot?componentName=${name3}&token=${token}`,
-                alt: `${name3} preview`,
-                className: "tecof-drawer-img",
-                onLoad: (e3) => {
-                  const loader2 = e3.currentTarget.previousElementSibling;
-                  if (loader2) loader2.remove();
-                },
-                onError: (e3) => {
-                  const loader2 = e3.currentTarget.previousElementSibling;
-                  if (loader2) loader2.remove();
-                  e3.currentTarget.style.display = "none";
-                }
-              }
-            )
-          ] })
-        ] })
-      ] });
+      return /* @__PURE__ */ jsxRuntime.jsx(ComponentDrawerItem, { name: name3, apiClient, children });
     },
     ...overrides || {}
   };

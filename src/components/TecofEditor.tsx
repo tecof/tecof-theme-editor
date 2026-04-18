@@ -2,8 +2,78 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Puck, fieldsPlugin, type Data, type Config } from '@puckeditor/core';
 import { useTecof } from './TecofProvider';
 import type { TecofEditorProps, PuckPageData } from '../types';
+import type { TecofApiClient } from '../api';
 
 const EMPTY_PAGE: PuckPageData = { content: [], root: { props: {} }, zones: {} };
+
+/* ─── ComponentDrawerItem — Hover-triggered lazy preview ─── */
+
+const ComponentDrawerItem = ({
+  name,
+  apiClient,
+  children,
+}: {
+  name: string;
+  apiClient: TecofApiClient;
+  children: React.ReactNode;
+}) => {
+  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const handleMouseEnter = useCallback(async () => {
+    // Only fetch once per component lifetime
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    setLoading(true);
+
+    try {
+      const domain = typeof window !== 'undefined' ? window.location.hostname : '';
+      const blobUrl = await apiClient.getComponentPreview(domain, name);
+      if (blobUrl) {
+        setImgSrc(blobUrl);
+      } else {
+        setError(true);
+      }
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [name, apiClient]);
+
+  return (
+    <div className="tecof-drawer-item-group group" onMouseEnter={handleMouseEnter}>
+      {children}
+      <div className="tecof-drawer-popover">
+        <div className="tecof-drawer-popover-header">
+          {name} Önizleme
+        </div>
+        <div className="tecof-drawer-popover-body">
+          {/* Skeleton loader */}
+          {(loading || (!imgSrc && !error)) && (
+            <div className="tecof-drawer-skeleton" />
+          )}
+          {/* Screenshot image */}
+          {imgSrc && (
+            <img
+              src={imgSrc}
+              alt={`${name} preview`}
+              className="tecof-drawer-img"
+            />
+          )}
+          {/* Error state */}
+          {error && (
+            <div className="tecof-drawer-preview-error">
+              Önizleme yüklenemedi
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /**
  * TecofEditor — Puck CMS page editor.
@@ -198,36 +268,7 @@ export const TecofEditor = ({
   const mergedOverrides = {
     header: () => <></>,
     drawerItem: ({ children, name }: { children: React.ReactNode, name: string }) => {
-      // Accessing `secretKey` to use as token for screenshots
-      const token = secretKey;
-      return (
-        <div className="tecof-drawer-item-group group">
-          {children}
-          {/* Hover Popover showing Screenshot */}
-          <div className="tecof-drawer-popover">
-            <div className="tecof-drawer-popover-header">
-              {name} Önizleme
-            </div>
-            <div className="tecof-drawer-popover-body">
-              <div className="tecof-drawer-skeleton"></div>
-              <img
-                src={`/api/screenshot?componentName=${name}&token=${token}`}
-                alt={`${name} preview`}
-                className="tecof-drawer-img"
-                onLoad={(e) => {
-                  const loader = e.currentTarget.previousElementSibling;
-                  if (loader) loader.remove();
-                }}
-                onError={(e) => {
-                  const loader = e.currentTarget.previousElementSibling;
-                  if (loader) loader.remove();
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      );
+      return <ComponentDrawerItem name={name} apiClient={apiClient}>{children}</ComponentDrawerItem>;
     },
     ...(overrides || {})
   };

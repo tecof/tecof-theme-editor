@@ -206,6 +206,14 @@ declare class TecofApiClient {
         code: string;
         value: string;
     }[]>>;
+    /**
+     * Get a component preview screenshot as a Blob URL.
+     * Calls POST /api/store/component-preview with domain + componentName.
+     * Returns a blob:// URL that can be used as an img src.
+     * Results are cached client-side in a Map.
+     */
+    private previewBlobCache;
+    getComponentPreview(domain: string, componentName: string): Promise<string | null>;
     /** CDN base URL (defaults to apiUrl if not set) */
     get cdnUrl(): string;
 }

@@ -206,6 +206,46 @@ export class TecofApiClient {
     }
   }
 
+  /**
+   * Get a component preview screenshot as a Blob URL.
+   * Calls POST /api/store/component-preview with domain + componentName.
+   * Returns a blob:// URL that can be used as an img src.
+   * Results are cached client-side in a Map.
+   */
+  private previewBlobCache = new Map<string, string>();
+
+  async getComponentPreview(domain: string, componentName: string): Promise<string | null> {
+    const cacheKey = `${domain}:${componentName}`;
+
+    // Return cached blob URL
+    if (this.previewBlobCache.has(cacheKey)) {
+      return this.previewBlobCache.get(cacheKey)!;
+    }
+
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/component-preview`, {
+        method: 'POST',
+        headers: {
+          'x-secret-key': this.secretKey,
+          Accept: 'image/png',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ domain, componentName }),
+      });
+
+      if (!res.ok) return null;
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      // Cache the blob URL
+      this.previewBlobCache.set(cacheKey, blobUrl);
+      return blobUrl;
+    } catch {
+      return null;
+    }
+  }
+
   /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl(): string {
     return this.customCdnUrl || this.apiUrl;
