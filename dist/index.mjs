@@ -507,8 +507,9 @@ var TecofPicture = memo(({
   const { apiClient } = useTecof();
   const cdnUrl = apiClient.cdnUrl;
   if (!data3) return null;
+  const buildPath = (fileName) => data3?.folder && data3.folder !== "/" ? `${data3.folder.replace(/^\//, "")}/${fileName}` : fileName;
   const isExternal = data3?.type === "external" || data3?.provider === "external";
-  const fileURL = isExternal ? data3?.url || "" : `${cdnUrl}/${data3?.name}`;
+  const fileURL = isExternal ? data3?.url || "" : `${cdnUrl}/${buildPath(data3?.name)}`;
   const isImageType2 = isExternal ? true : isImage(data3?.type);
   const isVideoType = isExternal ? false : isVideo(data3?.type);
   if (!fileURL) return null;

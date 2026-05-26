@@ -108,8 +108,9 @@ export const TecofPicture = memo(({
   if (!data) return null;
 
   /* ── External vs CDN URL Resolution ── */
+  const buildPath = (fileName: string) => data?.folder && data.folder !== "/" ? `${data.folder.replace(/^\//, "")}/${fileName}` : fileName;
   const isExternal = data?.type === 'external' || data?.provider === 'external';
-  const fileURL = isExternal ? (data?.url || '') : `${cdnUrl}/${data?.name}`;
+  const fileURL = isExternal ? (data?.url || '') : `${cdnUrl}/${buildPath(data?.name)}`;
   const isImageType = isExternal ? true : isImage(data?.type);
   const isVideoType = isExternal ? false : isVideo(data?.type);
 
