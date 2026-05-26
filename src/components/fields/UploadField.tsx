@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
 import { FieldLabel } from '@puckeditor/core';
+import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
 import type { UploadedFile } from '../../types';
@@ -795,15 +796,17 @@ export const createUploadField = (options: UploadFieldOptions = {}) => {
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: UploadFieldProps) => (
       <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
-        <UploadField
-          field={field}
-          name={name}
-          id={id}
-          value={value || []}
-          onChange={onChange}
-          readOnly={readOnly}
-          {...fieldOptions}
-        />
+        <FieldErrorBoundary fieldName={name}>
+          <UploadField
+            field={field}
+            name={name}
+            id={id}
+            value={value || []}
+            onChange={onChange}
+            readOnly={readOnly}
+            {...fieldOptions}
+          />
+        </FieldErrorBoundary>
       </FieldLabel>
     ),
   };

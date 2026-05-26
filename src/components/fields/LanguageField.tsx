@@ -1,10 +1,11 @@
 import type { ReactElement } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguages } from './useLanguages';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import { Languages, Copy, Loader2 } from 'lucide-react';
 import { FieldLabel } from '@puckeditor/core';
+import { FieldErrorBoundary } from './FieldErrorBoundary';
 
 /* ─── Shared Tab Bar Component ─── */
 
@@ -49,6 +50,100 @@ export const FieldLoading = () => (
     <span className="tecof-lang-loading-dot" />
   </div>
 );
+
+/* ─── Stable Input (cursor-safe) ─── */
+
+/**
+ * An input that maintains its own local state to prevent cursor jumping.
+ * Only syncs from parent when the external value actually differs from
+ * what we last sent upstream (i.e. programmatic changes like translate/fast-fill).
+ */
+const StableInput = ({
+  value: externalValue,
+  onChange,
+  disabled,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  className?: string;
+}) => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const lastEmitted = useRef(externalValue);
+
+  // Sync from parent only when externally changed (translate, fast-fill, tab switch)
+  useEffect(() => {
+    if (externalValue !== lastEmitted.current) {
+      setLocalValue(externalValue);
+      lastEmitted.current = externalValue;
+    }
+  }, [externalValue]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    lastEmitted.current = val;
+    onChange(val);
+  };
+
+  return (
+    <input
+      type="text"
+      value={localValue}
+      onChange={handleChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+};
+
+const StableTextarea = ({
+  value: externalValue,
+  onChange,
+  disabled,
+  placeholder,
+  className,
+  rows,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  className?: string;
+  rows?: number;
+}) => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const lastEmitted = useRef(externalValue);
+
+  useEffect(() => {
+    if (externalValue !== lastEmitted.current) {
+      setLocalValue(externalValue);
+      lastEmitted.current = externalValue;
+    }
+  }, [externalValue]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setLocalValue(val);
+    lastEmitted.current = val;
+    onChange(val);
+  };
+
+  return (
+    <textarea
+      value={localValue}
+      onChange={handleChange}
+      rows={rows}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+};
 
 /* ─── Props ─── */
 
@@ -104,22 +199,31 @@ export const LanguageField = ({
     });
   }, [value, merchantInfo]);
 
-  // Handle input change
+  // Keep a ref to current values for callbacks
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+
+  // Stable onChange ref — Puck re-creates onChange on every render
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  // Handle input change — fully stable, no dependencies that change
   const handleChange = useCallback((code: string, newVal: string) => {
-    const updated = [...values];
+    const current = valuesRef.current;
+    const updated = [...current];
     const idx = updated.findIndex(v => v.code === code);
     if (idx >= 0) {
       updated[idx] = { ...updated[idx], value: newVal };
     } else {
       updated.push({ code, value: newVal });
     }
-    onChange(updated);
-  }, [values, onChange]);
+    onChangeRef.current(updated);
+  }, []);
 
   // Get current active tab's text
   const getCurrentText = useCallback(() => {
-    return values.find(v => v.code === activeTab)?.value || '';
-  }, [values, activeTab]);
+    return valuesRef.current.find(v => v.code === activeTab)?.value || '';
+  }, [activeTab]);
 
   // ── Fast Fill: copy active text to ALL languages ──
   const handleFastFill = useCallback(() => {
@@ -131,10 +235,10 @@ export const LanguageField = ({
       code,
       value: text,
     }));
-    onChange(updated);
+    onChangeRef.current(updated);
     setStatusMsg({ text: 'Tüm dillere kopyalandı', type: 'success' });
     setTimeout(() => setStatusMsg(null), 2000);
-  }, [getCurrentText, merchantInfo, onChange]);
+  }, [getCurrentText, merchantInfo]);
 
   // ── Translate: translate active text to ALL other languages ──
   const handleTranslate = useCallback(async () => {
@@ -150,7 +254,7 @@ export const LanguageField = ({
     try {
       const res = await apiClient.translate(text, activeTab, otherLocales, isHtml);
       if (res.success && Array.isArray(res.data)) {
-        const updated = [...values];
+        const updated = [...valuesRef.current];
         for (const t of res.data) {
           const idx = updated.findIndex(v => v.code === t.code);
           if (idx >= 0) {
@@ -159,7 +263,7 @@ export const LanguageField = ({
             updated.push({ code: t.code, value: t.value });
           }
         }
-        onChange(updated);
+        onChangeRef.current(updated);
         setStatusMsg({ text: 'Çeviri tamamlandı', type: 'success' });
       } else {
         setStatusMsg({ text: res.message || 'Çeviri hatası', type: 'error' });
@@ -170,7 +274,7 @@ export const LanguageField = ({
       setTranslating(false);
       setTimeout(() => setStatusMsg(null), 3000);
     }
-  }, [getCurrentText, merchantInfo, activeTab, values, onChange, apiClient, isHtml]);
+  }, [getCurrentText, merchantInfo, activeTab, apiClient, isHtml]);
 
   if (loading) return <FieldLoading />;
   if (error && !merchantInfo) return <div className="tecof-lang-error">{error}</div>;
@@ -196,19 +300,18 @@ export const LanguageField = ({
         return (
           <div key={code} className="tecof-lang-input-wrapper">
             {isTextarea ? (
-              <textarea
+              <StableTextarea
                 value={currentValue}
-                onChange={e => handleChange(code, e.target.value)}
+                onChange={val => handleChange(code, val)}
                 rows={textareaRows}
                 placeholder={placeholder || `${code.toUpperCase()} text...`}
                 disabled={readOnly}
                 className="tecof-lang-input tecof-lang-textarea"
               />
             ) : (
-              <input
-                type="text"
+              <StableInput
                 value={currentValue}
-                onChange={e => handleChange(code, e.target.value)}
+                onChange={val => handleChange(code, val)}
                 placeholder={placeholder || `${code.toUpperCase()} text...`}
                 disabled={readOnly}
                 className="tecof-lang-input"
@@ -271,15 +374,17 @@ export const createLanguageField = (
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: LanguageFieldProps) => (
       <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
-        <LanguageField
-          field={field}
-          name={name}
-          id={id}
-          value={value || []}
-          onChange={onChange}
-          readOnly={readOnly}
-          {...fieldOptions}
-        />
+        <FieldErrorBoundary fieldName={name}>
+          <LanguageField
+            field={field}
+            name={name}
+            id={id}
+            value={value || []}
+            onChange={onChange}
+            readOnly={readOnly}
+            {...fieldOptions}
+          />
+        </FieldErrorBoundary>
       </FieldLabel>
     ),
   };

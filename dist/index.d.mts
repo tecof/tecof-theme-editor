@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
-import react__default, { ReactElement } from 'react';
+import react__default, { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
 
 interface ThemeColors {
     primary: string;
@@ -578,6 +578,39 @@ declare const createColorField: (options?: ColorFieldOptions) => {
     render: ({ value, onChange, readOnly, field, name, id }: ColorFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
+interface FieldErrorBoundaryProps {
+    /** The field name (for error reporting) */
+    fieldName?: string;
+    /** Fallback UI to show when a field crashes */
+    fallback?: ReactNode;
+    /** Optional error callback */
+    onError?: (error: Error, errorInfo: ErrorInfo) => void;
+    children: ReactNode;
+}
+interface FieldErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+/**
+ * Error boundary for Puck custom fields.
+ * Catches render errors in child components and shows a friendly fallback
+ * instead of crashing the entire editor.
+ *
+ * @example
+ * ```tsx
+ * <FieldErrorBoundary fieldName="title">
+ *   <LanguageField ... />
+ * </FieldErrorBoundary>
+ * ```
+ */
+declare class FieldErrorBoundary extends Component<FieldErrorBoundaryProps, FieldErrorBoundaryState> {
+    constructor(props: FieldErrorBoundaryProps);
+    static getDerivedStateFromError(error: Error): FieldErrorBoundaryState;
+    componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
+    handleRetry: () => void;
+    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | react_jsx_runtime.JSX.Element | null | undefined;
+}
+
 declare function hexToHsl(hex: string): HSL;
 declare function hslToHex(h: number, s: number, l: number): string;
 declare function lighten(hex: string, amount: number): string;
@@ -586,4 +619,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CodeEditorField, ColorField, EditorField, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { FieldLabel } from '@puckeditor/core';
+import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useTecof } from '../TecofProvider';
 import type { LinkFieldValue, LocalizedLinkFieldValue } from '../../types';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
@@ -80,11 +81,17 @@ export const LinkField = ({
     });
   }, [value, merchantInfo]);
 
+  // Stable refs to prevent cursor jump — Puck re-creates onChange on every render
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   const activeValueItem = values.find(v => v.code === activeTab);
   const activeValue = activeValueItem?.value || { url: '' };
 
   const updateActiveValue = useCallback((newLinkVal: LinkFieldValue | null) => {
-    const updated = [...values];
+    const updated = [...valuesRef.current];
     const idx = updated.findIndex(v => v.code === activeTab);
     
     if (idx >= 0) {
@@ -97,8 +104,8 @@ export const LinkField = ({
     } else if (newLinkVal) {
       updated.push({ code: activeTab, value: newLinkVal });
     }
-    onChange(updated);
-  }, [values, activeTab, onChange]);
+    onChangeRef.current(updated);
+  }, [activeTab]);
 
   /* ── Fetch Pages ── */
 
@@ -352,15 +359,17 @@ export const createLinkField = (options: LinkFieldOptions = {}) => {
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: LinkFieldProps) => (
       <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
-        <LinkField
-          field={field}
-          name={name}
-          id={id}
-          value={value || []}
-          onChange={onChange}
-          readOnly={readOnly}
-          {...fieldOptions}
-        />
+        <FieldErrorBoundary fieldName={name}>
+          <LinkField
+            field={field}
+            name={name}
+            id={id}
+            value={value || []}
+            onChange={onChange}
+            readOnly={readOnly}
+            {...fieldOptions}
+          />
+        </FieldErrorBoundary>
       </FieldLabel>
     ),
   };

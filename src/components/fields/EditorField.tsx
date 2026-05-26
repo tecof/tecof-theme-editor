@@ -18,6 +18,7 @@ import Link from '@tiptap/extension-link';
 import Code from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
 import { FieldLabel } from '@puckeditor/core';
+import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useLanguages } from './useLanguages';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
 import type { LanguageFieldValue } from '../../types';
@@ -305,17 +306,24 @@ export const EditorField = ({
     });
   }, [value, merchantInfo]);
 
+  // Stable refs for callbacks
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
   // Handle editor content change
   const handleChange = useCallback((code: string, html: string) => {
-    const updated = [...values];
+    const current = valuesRef.current;
+    const updated = [...current];
     const idx = updated.findIndex(v => v.code === code);
     if (idx >= 0) {
       updated[idx] = { ...updated[idx], value: html };
     } else {
       updated.push({ code, value: html });
     }
-    onChange(updated);
-  }, [values, onChange]);
+    onChangeRef.current(updated);
+  }, []);
 
   if (loading) return <FieldLoading />;
   if (error && !merchantInfo) return <div className="tecof-lang-error">{error}</div>;
@@ -385,15 +393,17 @@ export const createEditorField = (
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: EditorFieldProps) => (
       <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
-        <EditorField
-          field={field}
-          name={name}
-          id={id}
-          value={value || []}
-          onChange={onChange}
-          readOnly={readOnly}
-          {...fieldOptions}
-        />
+        <FieldErrorBoundary fieldName={name}>
+          <EditorField
+            field={field}
+            name={name}
+            id={id}
+            value={value || []}
+            onChange={onChange}
+            readOnly={readOnly}
+            {...fieldOptions}
+          />
+        </FieldErrorBoundary>
       </FieldLabel>
     ),
   };

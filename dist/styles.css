@@ -1631,3 +1631,60 @@
     justify-content: center;
     position: relative;
 }
+
+/* ─── FieldErrorBoundary ─── */
+.tecof-field-error-boundary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.tecof-field-error-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+.tecof-field-error-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.tecof-field-error-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #991b1b;
+  margin: 0;
+}
+
+.tecof-field-error-detail {
+  font-size: 11px;
+  color: #b91c1c;
+  margin: 4px 0 0;
+  word-break: break-word;
+}
+
+.tecof-field-error-retry {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #991b1b;
+  background: #ffffff;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  align-self: center;
+}
+
+.tecof-field-error-retry:hover {
+  background: #fef2f2;
+  border-color: #f87171;
+}

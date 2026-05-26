@@ -16,4 +16,5 @@ export type { LinkFieldProps, LinkFieldOptions } from './LinkField';
 export { ColorField, createColorField } from './ColorField';
 export type { ColorFieldProps, ColorFieldOptions } from './ColorField';
 
+export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';

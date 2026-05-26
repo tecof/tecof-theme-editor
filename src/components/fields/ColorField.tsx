@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FieldLabel } from '@puckeditor/core';
 import { RotateCcw } from 'lucide-react';
+import { FieldErrorBoundary } from './FieldErrorBoundary';
 
 /* ─── Helpers ─── */
 
@@ -251,15 +252,17 @@ export const createColorField = (options: ColorFieldOptions = {}) => {
     visible,
     render: ({ value, onChange, readOnly, field, name, id }: ColorFieldProps) => (
       <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
-        <ColorField
-          field={field}
-          name={name}
-          id={id}
-          value={value || ''}
-          onChange={onChange}
-          readOnly={readOnly}
-          {...fieldOptions}
-        />
+        <FieldErrorBoundary fieldName={name}>
+          <ColorField
+            field={field}
+            name={name}
+            id={id}
+            value={value || ''}
+            onChange={onChange}
+            readOnly={readOnly}
+            {...fieldOptions}
+          />
+        </FieldErrorBoundary>
       </FieldLabel>
     ),
   };

@@ -1,5 +1,5 @@
 import * as React__default from 'react';
-import React__default__default, { createContext, memo, forwardRef, createElement, useRef, useCallback, useContext, useState, useEffect, useMemo, useLayoutEffect } from 'react';
+import React__default__default, { createContext, memo, forwardRef, createElement, useRef, useCallback, useContext, useState, useEffect, useMemo, Component, useLayoutEffect } from 'react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 import { fieldsPlugin, Puck, Render, FieldLabel } from '@puckeditor/core';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -703,7 +703,7 @@ var Icon = forwardRef(
 
 // node_modules/lucide-react/dist/esm/createLucideIcon.js
 var createLucideIcon = (iconName, iconNode) => {
-  const Component = forwardRef(
+  const Component2 = forwardRef(
     ({ className, ...props }, ref) => createElement(Icon, {
       ref,
       iconNode,
@@ -715,8 +715,8 @@ var createLucideIcon = (iconName, iconNode) => {
       ...props
     })
   );
-  Component.displayName = toPascalCase(iconName);
-  return Component;
+  Component2.displayName = toPascalCase(iconName);
+  return Component2;
 };
 
 // node_modules/lucide-react/dist/esm/icons/check.js
@@ -898,6 +898,50 @@ var __iconNode21 = [
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ];
 var X = createLucideIcon("x", __iconNode21);
+var FieldErrorBoundary = class extends Component {
+  constructor(props) {
+    super(props);
+    this.handleRetry = () => {
+      this.setState({ hasError: false, error: null });
+    };
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error2) {
+    return { hasError: true, error: error2 };
+  }
+  componentDidCatch(error2, errorInfo) {
+    console.error(
+      `[TecofEditor] Field "${this.props.fieldName || "unknown"}" crashed:`,
+      error2,
+      errorInfo
+    );
+    this.props.onError?.(error2, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      return /* @__PURE__ */ jsxs("div", { className: "tecof-field-error-boundary", children: [
+        /* @__PURE__ */ jsx("div", { className: "tecof-field-error-icon", children: "\u26A0\uFE0F" }),
+        /* @__PURE__ */ jsxs("div", { className: "tecof-field-error-content", children: [
+          /* @__PURE__ */ jsx("p", { className: "tecof-field-error-title", children: "Bu alan y\xFCklenemedi" }),
+          /* @__PURE__ */ jsx("p", { className: "tecof-field-error-detail", children: this.state.error?.message || "Beklenmeyen bir hata olu\u015Ftu" })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-field-error-retry",
+            onClick: this.handleRetry,
+            children: "Tekrar Dene"
+          }
+        )
+      ] });
+    }
+    return this.props.children;
+  }
+};
 var LanguageTabBar = ({
   languages,
   defaultLanguage,
@@ -925,6 +969,73 @@ var FieldLoading = () => /* @__PURE__ */ jsxs("div", { className: "tecof-lang-lo
   /* @__PURE__ */ jsx("span", { className: "tecof-lang-loading-dot" }),
   /* @__PURE__ */ jsx("span", { className: "tecof-lang-loading-dot" })
 ] });
+var StableInput = ({
+  value: externalValue,
+  onChange,
+  disabled,
+  placeholder,
+  className
+}) => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const lastEmitted = useRef(externalValue);
+  useEffect(() => {
+    if (externalValue !== lastEmitted.current) {
+      setLocalValue(externalValue);
+      lastEmitted.current = externalValue;
+    }
+  }, [externalValue]);
+  const handleChange = (e3) => {
+    const val = e3.target.value;
+    setLocalValue(val);
+    lastEmitted.current = val;
+    onChange(val);
+  };
+  return /* @__PURE__ */ jsx(
+    "input",
+    {
+      type: "text",
+      value: localValue,
+      onChange: handleChange,
+      disabled,
+      placeholder,
+      className
+    }
+  );
+};
+var StableTextarea = ({
+  value: externalValue,
+  onChange,
+  disabled,
+  placeholder,
+  className,
+  rows
+}) => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const lastEmitted = useRef(externalValue);
+  useEffect(() => {
+    if (externalValue !== lastEmitted.current) {
+      setLocalValue(externalValue);
+      lastEmitted.current = externalValue;
+    }
+  }, [externalValue]);
+  const handleChange = (e3) => {
+    const val = e3.target.value;
+    setLocalValue(val);
+    lastEmitted.current = val;
+    onChange(val);
+  };
+  return /* @__PURE__ */ jsx(
+    "textarea",
+    {
+      value: localValue,
+      onChange: handleChange,
+      rows,
+      disabled,
+      placeholder,
+      className
+    }
+  );
+};
 var LanguageField = ({
   value,
   onChange,
@@ -946,19 +1057,24 @@ var LanguageField = ({
       return existing || { code, value: "" };
     });
   }, [value, merchantInfo]);
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const handleChange = useCallback((code, newVal) => {
-    const updated = [...values];
+    const current = valuesRef.current;
+    const updated = [...current];
     const idx = updated.findIndex((v2) => v2.code === code);
     if (idx >= 0) {
       updated[idx] = { ...updated[idx], value: newVal };
     } else {
       updated.push({ code, value: newVal });
     }
-    onChange(updated);
-  }, [values, onChange]);
+    onChangeRef.current(updated);
+  }, []);
   const getCurrentText = useCallback(() => {
-    return values.find((v2) => v2.code === activeTab)?.value || "";
-  }, [values, activeTab]);
+    return valuesRef.current.find((v2) => v2.code === activeTab)?.value || "";
+  }, [activeTab]);
   const handleFastFill = useCallback(() => {
     const text2 = getCurrentText();
     if (!text2) return;
@@ -967,10 +1083,10 @@ var LanguageField = ({
       code,
       value: text2
     }));
-    onChange(updated);
+    onChangeRef.current(updated);
     setStatusMsg({ text: "T\xFCm dillere kopyaland\u0131", type: "success" });
     setTimeout(() => setStatusMsg(null), 2e3);
-  }, [getCurrentText, merchantInfo, onChange]);
+  }, [getCurrentText, merchantInfo]);
   const handleTranslate = useCallback(async () => {
     const text2 = getCurrentText();
     if (!text2 || !merchantInfo) return;
@@ -981,7 +1097,7 @@ var LanguageField = ({
     try {
       const res2 = await apiClient.translate(text2, activeTab, otherLocales, isHtml);
       if (res2.success && Array.isArray(res2.data)) {
-        const updated = [...values];
+        const updated = [...valuesRef.current];
         for (const t2 of res2.data) {
           const idx = updated.findIndex((v2) => v2.code === t2.code);
           if (idx >= 0) {
@@ -990,7 +1106,7 @@ var LanguageField = ({
             updated.push({ code: t2.code, value: t2.value });
           }
         }
-        onChange(updated);
+        onChangeRef.current(updated);
         setStatusMsg({ text: "\xC7eviri tamamland\u0131", type: "success" });
       } else {
         setStatusMsg({ text: res2.message || "\xC7eviri hatas\u0131", type: "error" });
@@ -1001,7 +1117,7 @@ var LanguageField = ({
       setTranslating(false);
       setTimeout(() => setStatusMsg(null), 3e3);
     }
-  }, [getCurrentText, merchantInfo, activeTab, values, onChange, apiClient, isHtml]);
+  }, [getCurrentText, merchantInfo, activeTab, apiClient, isHtml]);
   if (loading) return /* @__PURE__ */ jsx(FieldLoading, {});
   if (error2 && !merchantInfo) return /* @__PURE__ */ jsx("div", { className: "tecof-lang-error", children: error2 });
   if (!merchantInfo) return null;
@@ -1022,21 +1138,20 @@ var LanguageField = ({
       if (activeTab !== code) return null;
       const currentValue = values.find((v2) => v2.code === code)?.value || "";
       return /* @__PURE__ */ jsx("div", { className: "tecof-lang-input-wrapper", children: isTextarea ? /* @__PURE__ */ jsx(
-        "textarea",
+        StableTextarea,
         {
           value: currentValue,
-          onChange: (e3) => handleChange(code, e3.target.value),
+          onChange: (val) => handleChange(code, val),
           rows: textareaRows,
           placeholder: placeholder || `${code.toUpperCase()} text...`,
           disabled: readOnly,
           className: "tecof-lang-input tecof-lang-textarea"
         }
       ) : /* @__PURE__ */ jsx(
-        "input",
+        StableInput,
         {
-          type: "text",
           value: currentValue,
-          onChange: (e3) => handleChange(code, e3.target.value),
+          onChange: (val) => handleChange(code, val),
           placeholder: placeholder || `${code.toUpperCase()} text...`,
           disabled: readOnly,
           className: "tecof-lang-input"
@@ -1084,7 +1199,7 @@ var createLanguageField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
       LanguageField,
       {
         field,
@@ -1095,7 +1210,7 @@ var createLanguageField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    ) })
+    ) }) })
   };
 };
 var createExtensions = () => [
@@ -1329,16 +1444,21 @@ var EditorField = ({
       return existing || { code, value: "" };
     });
   }, [value, merchantInfo]);
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const handleChange = useCallback((code, html) => {
-    const updated = [...values];
+    const current = valuesRef.current;
+    const updated = [...current];
     const idx = updated.findIndex((v2) => v2.code === code);
     if (idx >= 0) {
       updated[idx] = { ...updated[idx], value: html };
     } else {
       updated.push({ code, value: html });
     }
-    onChange(updated);
-  }, [values, onChange]);
+    onChangeRef.current(updated);
+  }, []);
   if (loading) return /* @__PURE__ */ jsx(FieldLoading, {});
   if (error2 && !merchantInfo) return /* @__PURE__ */ jsx("div", { className: "tecof-lang-error", children: error2 });
   if (!merchantInfo) return null;
@@ -1375,7 +1495,7 @@ var createEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
       EditorField,
       {
         field,
@@ -1386,7 +1506,7 @@ var createEditorField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    ) })
+    ) }) })
   };
 };
 
@@ -22896,7 +23016,7 @@ var createUploadField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
       UploadField,
       {
         field,
@@ -22907,7 +23027,7 @@ var createUploadField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    ) })
+    ) }) })
   };
 };
 
@@ -23591,7 +23711,7 @@ var createCodeEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
       CodeEditorField,
       {
         field,
@@ -23602,7 +23722,7 @@ var createCodeEditorField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    ) })
+    ) }) })
   };
 };
 var LinkField = ({
@@ -23630,10 +23750,14 @@ var LinkField = ({
       return existing || { code, value: { url: "" } };
     });
   }, [value, merchantInfo]);
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const activeValueItem = values.find((v2) => v2.code === activeTab);
   const activeValue = activeValueItem?.value || { url: "" };
   const updateActiveValue = useCallback((newLinkVal) => {
-    const updated = [...values];
+    const updated = [...valuesRef.current];
     const idx = updated.findIndex((v2) => v2.code === activeTab);
     if (idx >= 0) {
       if (newLinkVal) {
@@ -23644,8 +23768,8 @@ var LinkField = ({
     } else if (newLinkVal) {
       updated.push({ code: activeTab, value: newLinkVal });
     }
-    onChange(updated);
-  }, [values, activeTab, onChange]);
+    onChangeRef.current(updated);
+  }, [activeTab]);
   useEffect(() => {
     if (!drawerOpen) return;
     setLoading(true);
@@ -23834,7 +23958,7 @@ var createLinkField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
       LinkField,
       {
         field,
@@ -23845,7 +23969,7 @@ var createLinkField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    ) })
+    ) }) })
   };
 };
 var isValidHex = (hex) => /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$/.test(hex);
@@ -24015,7 +24139,7 @@ var createColorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
       ColorField,
       {
         field,
@@ -24026,7 +24150,7 @@ var createColorField = (options = {}) => {
         readOnly,
         ...fieldOptions
       }
-    ) })
+    ) }) })
   };
 };
 
@@ -24291,6 +24415,6 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
    *)
 */
 
-export { CodeEditorField, ColorField, EditorField, LanguageField, LinkField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UploadField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UploadField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map
