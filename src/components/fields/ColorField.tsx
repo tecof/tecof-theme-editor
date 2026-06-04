@@ -19,6 +19,29 @@ const normalizeHex = (hex: string): string => {
   return v;
 };
 
+/** Convert rgb()/rgba()/hsl() string → hex. Returns original string if unparseable. */
+const toHex = (val: string): string => {
+  if (!val) return '';
+  const trimmed = val.trim();
+  // Already hex
+  if (trimmed.startsWith('#')) return trimmed;
+  // Try rgba(r, g, b, a) or rgb(r, g, b)
+  const rgbaMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/i);
+  if (rgbaMatch) {
+    const r = parseInt(rgbaMatch[1], 10);
+    const g = parseInt(rgbaMatch[2], 10);
+    const b = parseInt(rgbaMatch[3], 10);
+    const a = rgbaMatch[4] !== undefined ? parseFloat(rgbaMatch[4]) : 1;
+    const hex = `#${[r, g, b].map(c => c.toString(16).padStart(2, '0')).join('')}`;
+    if (a < 1) {
+      const alphaHex = Math.round(a * 255).toString(16).padStart(2, '0');
+      return hex + alphaHex;
+    }
+    return hex;
+  }
+  return trimmed;
+};
+
 /* ─── Props ─── */
 
 export interface ColorFieldProps {
@@ -58,17 +81,18 @@ export const ColorField = ({
   placeholder = '#000000',
   showReset = true,
 }: ColorFieldProps & ColorFieldOptions) => {
-  const [hexInput, setHexInput] = useState(value || '');
+  const [hexInput, setHexInput] = useState(() => toHex(value || ''));
   const [opacity, setOpacity] = useState(100);
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync external value changes
   useEffect(() => {
-    setHexInput(value || '');
+    const hex = toHex(value || '');
+    setHexInput(hex);
     // Parse opacity from 8-digit hex
-    if (value && value.length === 9) {
-      const alphaHex = value.slice(7, 9);
+    if (hex && hex.length === 9) {
+      const alphaHex = hex.slice(7, 9);
       const alphaPercent = Math.round((parseInt(alphaHex, 16) / 255) * 100);
       setOpacity(alphaPercent);
     } else {

@@ -1,7 +1,7 @@
 import * as React__default from 'react';
 import React__default__default, { createContext, memo, forwardRef, createElement, useRef, useCallback, useContext, useState, useEffect, useMemo, Component, useLayoutEffect } from 'react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
-import { fieldsPlugin, Puck, Render, FieldLabel } from '@puckeditor/core';
+import { blocksPlugin, outlinePlugin, fieldsPlugin, Puck, Render, FieldLabel } from '@puckeditor/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -431,7 +431,9 @@ var TecofEditor = ({
     ] }) });
   }
   const plugins = [
-    ...fieldsPlugin ? [fieldsPlugin({ desktopSideBar: "left" })] : [],
+    { ...blocksPlugin(), label: "Bloklar" },
+    { ...outlinePlugin(), label: "Anahat" },
+    { ...fieldsPlugin({ desktopSideBar: "right" }), label: "Alanlar" },
     ...extraPlugins || []
   ];
   const mergedOverrides = {
@@ -450,7 +452,8 @@ var TecofEditor = ({
         data: initialData,
         onPublish: handlePuckPublish,
         onChange: handleChange,
-        overrides: mergedOverrides
+        overrides: mergedOverrides,
+        metadata: { editMode: true }
       }
     ),
     saving && /* @__PURE__ */ jsx("div", { className: "tecof-editor-save-indicator", children: saveStatus === "error" ? "Save failed" : "Saving..." })
@@ -23982,6 +23985,25 @@ var normalizeHex = (hex) => {
   }
   return v2;
 };
+var toHex = (val) => {
+  if (!val) return "";
+  const trimmed = val.trim();
+  if (trimmed.startsWith("#")) return trimmed;
+  const rgbaMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/i);
+  if (rgbaMatch) {
+    const r2 = parseInt(rgbaMatch[1], 10);
+    const g = parseInt(rgbaMatch[2], 10);
+    const b = parseInt(rgbaMatch[3], 10);
+    const a2 = rgbaMatch[4] !== void 0 ? parseFloat(rgbaMatch[4]) : 1;
+    const hex = `#${[r2, g, b].map((c2) => c2.toString(16).padStart(2, "0")).join("")}`;
+    if (a2 < 1) {
+      const alphaHex = Math.round(a2 * 255).toString(16).padStart(2, "0");
+      return hex + alphaHex;
+    }
+    return hex;
+  }
+  return trimmed;
+};
 var ColorField = ({
   value,
   onChange,
@@ -23991,14 +24013,15 @@ var ColorField = ({
   placeholder = "#000000",
   showReset = true
 }) => {
-  const [hexInput, setHexInput] = useState(value || "");
+  const [hexInput, setHexInput] = useState(() => toHex(value || ""));
   const [opacity, setOpacity2] = useState(100);
   const [focused, setFocused] = useState(false);
   const inputRef = useRef(null);
   useEffect(() => {
-    setHexInput(value || "");
-    if (value && value.length === 9) {
-      const alphaHex = value.slice(7, 9);
+    const hex = toHex(value || "");
+    setHexInput(hex);
+    if (hex && hex.length === 9) {
+      const alphaHex = hex.slice(7, 9);
       const alphaPercent = Math.round(parseInt(alphaHex, 16) / 255 * 100);
       setOpacity2(alphaPercent);
     } else {

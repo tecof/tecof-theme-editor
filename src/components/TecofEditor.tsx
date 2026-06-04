@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Puck, fieldsPlugin, type Data, type Config } from '@puckeditor/core';
+import { Puck, blocksPlugin, outlinePlugin, fieldsPlugin, type Data, type Config } from '@puckeditor/core';
 import { useTecof } from './TecofProvider';
 import type { TecofEditorProps, PuckPageData } from '../types';
 import type { TecofApiClient } from '../api';
@@ -261,7 +261,9 @@ export const TecofEditor = ({
 
   /* ── Plugins & Overrides ── */
   const plugins = [
-    ...(fieldsPlugin ? [fieldsPlugin({ desktopSideBar: 'left' })] : []),
+    { ...blocksPlugin(), label: 'Bloklar' },
+    { ...outlinePlugin(), label: 'Anahat' },
+    { ...fieldsPlugin({ desktopSideBar: 'right' }), label: 'Alanlar' },
     ...(extraPlugins || []),
   ];
 
@@ -282,6 +284,7 @@ export const TecofEditor = ({
         onPublish={handlePuckPublish}
         onChange={handleChange}
         overrides={mergedOverrides}
+        metadata={{ editMode: true }}
       />
       {saving && (
         <div className="tecof-editor-save-indicator">
