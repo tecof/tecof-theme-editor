@@ -459,9 +459,16 @@ var TecofEditor = ({
     saving && /* @__PURE__ */ jsx("div", { className: "tecof-editor-save-indicator", children: saveStatus === "error" ? "Save failed" : "Saving..." })
   ] });
 };
-var TecofRender = ({ data: data3, config: config3, className }) => {
+var TecofRender = ({ data: data3, config: config3, className, cmsData }) => {
   if (!data3) return null;
-  return /* @__PURE__ */ jsx("div", { className, children: /* @__PURE__ */ jsx(Render, { config: config3, data: data3 }) });
+  return /* @__PURE__ */ jsx("div", { className, children: /* @__PURE__ */ jsx(
+    Render,
+    {
+      config: config3,
+      data: data3,
+      metadata: { cmsData: cmsData || null }
+    }
+  ) });
 };
 var IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic"];
 var VIDEO_EXTENSIONS = ["mp4", "webm", "ogg", "avi", "mov", "quicktime"];
@@ -727,34 +734,38 @@ var createLucideIcon = (iconName, iconNode) => {
 var __iconNode = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
 var Check = createLucideIcon("check", __iconNode);
 
+// node_modules/lucide-react/dist/esm/icons/chevron-down.js
+var __iconNode2 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+var ChevronDown = createLucideIcon("chevron-down", __iconNode2);
+
 // node_modules/lucide-react/dist/esm/icons/chevron-right.js
-var __iconNode2 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-var ChevronRight = createLucideIcon("chevron-right", __iconNode2);
+var __iconNode3 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+var ChevronRight = createLucideIcon("chevron-right", __iconNode3);
 
 // node_modules/lucide-react/dist/esm/icons/code.js
-var __iconNode3 = [
+var __iconNode4 = [
   ["path", { d: "m16 18 6-6-6-6", key: "eg8j8" }],
   ["path", { d: "m8 6-6 6 6 6", key: "ppft3o" }]
 ];
-var Code = createLucideIcon("code", __iconNode3);
+var Code = createLucideIcon("code", __iconNode4);
 
 // node_modules/lucide-react/dist/esm/icons/copy.js
-var __iconNode4 = [
+var __iconNode5 = [
   ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
   ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
 ];
-var Copy = createLucideIcon("copy", __iconNode4);
+var Copy = createLucideIcon("copy", __iconNode5);
 
 // node_modules/lucide-react/dist/esm/icons/external-link.js
-var __iconNode5 = [
+var __iconNode6 = [
   ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
   ["path", { d: "M10 14 21 3", key: "gplh6r" }],
   ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ];
-var ExternalLink = createLucideIcon("external-link", __iconNode5);
+var ExternalLink = createLucideIcon("external-link", __iconNode6);
 
 // node_modules/lucide-react/dist/esm/icons/file-text.js
-var __iconNode6 = [
+var __iconNode7 = [
   [
     "path",
     {
@@ -767,10 +778,10 @@ var __iconNode6 = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-var FileText = createLucideIcon("file-text", __iconNode6);
+var FileText = createLucideIcon("file-text", __iconNode7);
 
 // node_modules/lucide-react/dist/esm/icons/file.js
-var __iconNode7 = [
+var __iconNode8 = [
   [
     "path",
     {
@@ -780,10 +791,10 @@ var __iconNode7 = [
   ],
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
 ];
-var File2 = createLucideIcon("file", __iconNode7);
+var File2 = createLucideIcon("file", __iconNode8);
 
 // node_modules/lucide-react/dist/esm/icons/folder-open.js
-var __iconNode8 = [
+var __iconNode9 = [
   [
     "path",
     {
@@ -792,36 +803,47 @@ var __iconNode8 = [
     }
   ]
 ];
-var FolderOpen = createLucideIcon("folder-open", __iconNode8);
+var FolderOpen = createLucideIcon("folder-open", __iconNode9);
 
 // node_modules/lucide-react/dist/esm/icons/globe.js
-var __iconNode9 = [
+var __iconNode10 = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-var Globe = createLucideIcon("globe", __iconNode9);
+var Globe = createLucideIcon("globe", __iconNode10);
+
+// node_modules/lucide-react/dist/esm/icons/grip-vertical.js
+var __iconNode11 = [
+  ["circle", { cx: "9", cy: "12", r: "1", key: "1vctgf" }],
+  ["circle", { cx: "9", cy: "5", r: "1", key: "hp0tcf" }],
+  ["circle", { cx: "9", cy: "19", r: "1", key: "fkjjf6" }],
+  ["circle", { cx: "15", cy: "12", r: "1", key: "1tmaij" }],
+  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
+  ["circle", { cx: "15", cy: "19", r: "1", key: "f4zoj3" }]
+];
+var GripVertical = createLucideIcon("grip-vertical", __iconNode11);
 
 // node_modules/lucide-react/dist/esm/icons/image-plus.js
-var __iconNode10 = [
+var __iconNode12 = [
   ["path", { d: "M16 5h6", key: "1vod17" }],
   ["path", { d: "M19 2v6", key: "4bpg5p" }],
   ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
 ];
-var ImagePlus = createLucideIcon("image-plus", __iconNode10);
+var ImagePlus = createLucideIcon("image-plus", __iconNode12);
 
 // node_modules/lucide-react/dist/esm/icons/image.js
-var __iconNode11 = [
+var __iconNode13 = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
 ];
-var Image2 = createLucideIcon("image", __iconNode11);
+var Image2 = createLucideIcon("image", __iconNode13);
 
 // node_modules/lucide-react/dist/esm/icons/languages.js
-var __iconNode12 = [
+var __iconNode14 = [
   ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
   ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
   ["path", { d: "M2 5h12", key: "or177f" }],
@@ -829,21 +851,21 @@ var __iconNode12 = [
   ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
   ["path", { d: "M14 18h6", key: "1m8k6r" }]
 ];
-var Languages = createLucideIcon("languages", __iconNode12);
+var Languages = createLucideIcon("languages", __iconNode14);
 
 // node_modules/lucide-react/dist/esm/icons/link.js
-var __iconNode13 = [
+var __iconNode15 = [
   ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
   ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
 ];
-var Link = createLucideIcon("link", __iconNode13);
+var Link = createLucideIcon("link", __iconNode15);
 
 // node_modules/lucide-react/dist/esm/icons/loader-circle.js
-var __iconNode14 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-var LoaderCircle = createLucideIcon("loader-circle", __iconNode14);
+var __iconNode16 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+var LoaderCircle = createLucideIcon("loader-circle", __iconNode16);
 
 // node_modules/lucide-react/dist/esm/icons/pencil.js
-var __iconNode15 = [
+var __iconNode17 = [
   [
     "path",
     {
@@ -853,55 +875,62 @@ var __iconNode15 = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-var Pencil = createLucideIcon("pencil", __iconNode15);
+var Pencil = createLucideIcon("pencil", __iconNode17);
+
+// node_modules/lucide-react/dist/esm/icons/plus.js
+var __iconNode18 = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+var Plus = createLucideIcon("plus", __iconNode18);
 
 // node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
-var __iconNode16 = [
+var __iconNode19 = [
   ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
   ["path", { d: "M16 16h5v5", key: "ccwih5" }]
 ];
-var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode16);
+var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode19);
 
 // node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
-var __iconNode17 = [
+var __iconNode20 = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
 ];
-var RotateCcw = createLucideIcon("rotate-ccw", __iconNode17);
+var RotateCcw = createLucideIcon("rotate-ccw", __iconNode20);
 
 // node_modules/lucide-react/dist/esm/icons/search.js
-var __iconNode18 = [
+var __iconNode21 = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-var Search = createLucideIcon("search", __iconNode18);
+var Search = createLucideIcon("search", __iconNode21);
 
 // node_modules/lucide-react/dist/esm/icons/trash-2.js
-var __iconNode19 = [
+var __iconNode22 = [
   ["path", { d: "M10 11v6", key: "nco0om" }],
   ["path", { d: "M14 11v6", key: "outv1u" }],
   ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
   ["path", { d: "M3 6h18", key: "d0wm0j" }],
   ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
 ];
-var Trash2 = createLucideIcon("trash-2", __iconNode19);
+var Trash2 = createLucideIcon("trash-2", __iconNode22);
 
 // node_modules/lucide-react/dist/esm/icons/upload.js
-var __iconNode20 = [
+var __iconNode23 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-var Upload = createLucideIcon("upload", __iconNode20);
+var Upload = createLucideIcon("upload", __iconNode23);
 
 // node_modules/lucide-react/dist/esm/icons/x.js
-var __iconNode21 = [
+var __iconNode24 = [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ];
-var X = createLucideIcon("x", __iconNode21);
+var X = createLucideIcon("x", __iconNode24);
 var FieldErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
@@ -24177,6 +24206,308 @@ var createColorField = (options = {}) => {
     ) }) })
   };
 };
+var RepeaterRow = ({
+  row,
+  rowIndex,
+  subFields,
+  isExpanded,
+  onToggle,
+  onRemove,
+  onDuplicate,
+  onMoveUp,
+  onMoveDown,
+  onChange,
+  canRemove,
+  canMoveUp,
+  canMoveDown,
+  readOnly
+}) => {
+  const previewLabel = useMemo(() => {
+    const keys = Object.keys(subFields);
+    if (keys.length === 0) return `Sat\u0131r ${rowIndex + 1}`;
+    const firstKey = keys[0];
+    const val = row[firstKey];
+    if (!val) return `Sat\u0131r ${rowIndex + 1}`;
+    if (Array.isArray(val) && val.length > 0 && typeof val[0] === "object" && "value" in val[0]) {
+      const text2 = val[0]?.value;
+      if (typeof text2 === "string" && text2.trim()) {
+        return text2.length > 40 ? text2.substring(0, 40) + "\u2026" : text2;
+      }
+    }
+    if (typeof val === "string" && val.trim()) {
+      return val.length > 40 ? val.substring(0, 40) + "\u2026" : val;
+    }
+    return `Sat\u0131r ${rowIndex + 1}`;
+  }, [row, subFields, rowIndex]);
+  return /* @__PURE__ */ jsxs("div", { className: `tecof-repeater-row ${isExpanded ? "expanded" : ""}`, children: [
+    /* @__PURE__ */ jsxs("div", { className: "tecof-repeater-row-header", onClick: onToggle, children: [
+      /* @__PURE__ */ jsxs("div", { className: "tecof-repeater-row-left", children: [
+        /* @__PURE__ */ jsx(GripVertical, { size: 14, className: "tecof-repeater-grip" }),
+        /* @__PURE__ */ jsx("span", { className: "tecof-repeater-row-index", children: rowIndex + 1 }),
+        /* @__PURE__ */ jsx("span", { className: "tecof-repeater-row-preview", children: previewLabel })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "tecof-repeater-row-actions", children: [
+        !readOnly && /* @__PURE__ */ jsxs(Fragment, { children: [
+          canMoveUp && /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: "tecof-repeater-action-btn",
+              onClick: (e3) => {
+                e3.stopPropagation();
+                onMoveUp();
+              },
+              title: "Yukar\u0131 Ta\u015F\u0131",
+              children: "\u25B2"
+            }
+          ),
+          canMoveDown && /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: "tecof-repeater-action-btn",
+              onClick: (e3) => {
+                e3.stopPropagation();
+                onMoveDown();
+              },
+              title: "A\u015Fa\u011F\u0131 Ta\u015F\u0131",
+              children: "\u25BC"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: "tecof-repeater-action-btn",
+              onClick: (e3) => {
+                e3.stopPropagation();
+                onDuplicate();
+              },
+              title: "Kopyala",
+              children: /* @__PURE__ */ jsx(Copy, { size: 13 })
+            }
+          ),
+          canRemove && /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: "tecof-repeater-action-btn tecof-repeater-action-btn-danger",
+              onClick: (e3) => {
+                e3.stopPropagation();
+                onRemove();
+              },
+              title: "Sil",
+              children: /* @__PURE__ */ jsx(Trash2, { size: 13 })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx(
+          ChevronDown,
+          {
+            size: 16,
+            className: `tecof-repeater-chevron ${isExpanded ? "rotated" : ""}`
+          }
+        )
+      ] })
+    ] }),
+    isExpanded && /* @__PURE__ */ jsx("div", { className: "tecof-repeater-row-content", children: Object.entries(subFields).map(([key, fieldDef]) => {
+      const fieldValue = row[key];
+      const renderFn = fieldDef?.render;
+      if (typeof renderFn !== "function") return null;
+      return /* @__PURE__ */ jsx("div", { className: "tecof-repeater-subfield", children: renderFn({
+        field: fieldDef,
+        name: `${key}_${rowIndex}`,
+        id: `repeater-${rowIndex}-${key}`,
+        value: fieldValue,
+        onChange: (val) => onChange(key, val),
+        readOnly
+      }) }, key);
+    }) })
+  ] });
+};
+var RepeaterField = ({
+  value: rawValue,
+  onChange,
+  readOnly,
+  subFields = {},
+  minItems = 0,
+  maxItems,
+  defaultRow
+}) => {
+  const items = useMemo(() => Array.isArray(rawValue) ? rawValue : [], [rawValue]);
+  const [expandedRows, setExpandedRows] = useState(() => new Set(items.length > 0 ? [0] : []));
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const canAdd = maxItems == null || items.length < maxItems;
+  const canRemove = items.length > minItems;
+  const buildDefaultRow = useCallback(() => {
+    if (defaultRow) return { ...defaultRow };
+    const row = {};
+    for (const [key, fieldDef] of Object.entries(subFields)) {
+      const ft = fieldDef?._fieldType;
+      if (ft === "language" || ft === "editor") {
+        row[key] = [];
+      } else if (ft === "upload") {
+        row[key] = [];
+      } else if (ft === "link") {
+        row[key] = [];
+      } else if (ft === "color") {
+        row[key] = "#000000";
+      } else {
+        row[key] = "";
+      }
+    }
+    return row;
+  }, [subFields, defaultRow]);
+  const handleAdd = useCallback(() => {
+    if (!canAdd) return;
+    const newRow = buildDefaultRow();
+    const newItems = [...items, newRow];
+    onChangeRef.current(newItems);
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.add(newItems.length - 1);
+      return next;
+    });
+  }, [canAdd, buildDefaultRow, items]);
+  const handleRemove = useCallback((index2) => {
+    if (!canRemove) return;
+    const newItems = items.filter((_2, i2) => i2 !== index2);
+    onChangeRef.current(newItems);
+    setExpandedRows((prev) => {
+      const next = /* @__PURE__ */ new Set();
+      prev.forEach((idx) => {
+        if (idx < index2) next.add(idx);
+        else if (idx > index2) next.add(idx - 1);
+      });
+      return next;
+    });
+  }, [canRemove, items]);
+  const handleDuplicate = useCallback((index2) => {
+    if (!canAdd) return;
+    const newItems = [...items];
+    const cloned = JSON.parse(JSON.stringify(items[index2]));
+    newItems.splice(index2 + 1, 0, cloned);
+    onChangeRef.current(newItems);
+    setExpandedRows((prev) => {
+      const next = /* @__PURE__ */ new Set();
+      prev.forEach((idx) => {
+        if (idx <= index2) next.add(idx);
+        else next.add(idx + 1);
+      });
+      next.add(index2 + 1);
+      return next;
+    });
+  }, [canAdd, items]);
+  const handleMove = useCallback((index2, direction) => {
+    const target = direction === "up" ? index2 - 1 : index2 + 1;
+    if (target < 0 || target >= items.length) return;
+    const newItems = [...items];
+    [newItems[index2], newItems[target]] = [newItems[target], newItems[index2]];
+    onChangeRef.current(newItems);
+    setExpandedRows((prev) => {
+      const next = /* @__PURE__ */ new Set();
+      prev.forEach((idx) => {
+        if (idx === index2) next.add(target);
+        else if (idx === target) next.add(index2);
+        else next.add(idx);
+      });
+      return next;
+    });
+  }, [items]);
+  const handleSubFieldChange = useCallback((rowIndex, key, val) => {
+    const newItems = items.map((row, i2) => {
+      if (i2 !== rowIndex) return row;
+      return { ...row, [key]: val };
+    });
+    onChangeRef.current(newItems);
+  }, [items]);
+  const toggleRow = useCallback((index2) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(index2)) next.delete(index2);
+      else next.add(index2);
+      return next;
+    });
+  }, []);
+  return /* @__PURE__ */ jsxs("div", { className: "tecof-repeater-container", children: [
+    /* @__PURE__ */ jsx("div", { className: "tecof-repeater-header", children: /* @__PURE__ */ jsxs("span", { className: "tecof-repeater-count", children: [
+      items.length,
+      " sat\u0131r",
+      maxItems != null && ` / ${maxItems}`
+    ] }) }),
+    items.length === 0 && !readOnly && /* @__PURE__ */ jsxs("div", { className: "tecof-repeater-empty", children: [
+      /* @__PURE__ */ jsx("p", { className: "tecof-repeater-empty-text", children: "Hen\xFCz sat\u0131r eklenmemi\u015F" }),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tecof-repeater-add-btn",
+          onClick: handleAdd,
+          children: [
+            /* @__PURE__ */ jsx(Plus, { size: 14 }),
+            " \u0130lk Sat\u0131r\u0131 Ekle"
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "tecof-repeater-rows", children: items.map((row, idx) => /* @__PURE__ */ jsx(
+      RepeaterRow,
+      {
+        row,
+        rowIndex: idx,
+        subFields,
+        isExpanded: expandedRows.has(idx),
+        onToggle: () => toggleRow(idx),
+        onRemove: () => handleRemove(idx),
+        onDuplicate: () => handleDuplicate(idx),
+        onMoveUp: () => handleMove(idx, "up"),
+        onMoveDown: () => handleMove(idx, "down"),
+        onChange: (key, val) => handleSubFieldChange(idx, key, val),
+        canRemove,
+        canMoveUp: idx > 0,
+        canMoveDown: idx < items.length - 1,
+        readOnly
+      },
+      idx
+    )) }),
+    items.length > 0 && !readOnly && canAdd && /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        className: "tecof-repeater-add-btn-bottom",
+        onClick: handleAdd,
+        children: [
+          /* @__PURE__ */ jsx(Plus, { size: 14 }),
+          " Sat\u0131r Ekle"
+        ]
+      }
+    )
+  ] });
+};
+RepeaterField.displayName = "RepeaterField";
+var createRepeaterField = (options) => {
+  const { label, labelIcon, visible, ...fieldOptions } = options;
+  return {
+    type: "custom",
+    _fieldType: "repeater",
+    label,
+    labelIcon,
+    visible,
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
+      RepeaterField,
+      {
+        field,
+        name: name3,
+        id,
+        value: value || [],
+        onChange,
+        readOnly,
+        ...fieldOptions
+      }
+    ) }) })
+  };
+};
 
 // src/utils/index.ts
 function hexToHsl(hex) {
@@ -24336,6 +24667,7 @@ lucide-react/dist/esm/context.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
 lucide-react/dist/esm/icons/check.js:
+lucide-react/dist/esm/icons/chevron-down.js:
 lucide-react/dist/esm/icons/chevron-right.js:
 lucide-react/dist/esm/icons/code.js:
 lucide-react/dist/esm/icons/copy.js:
@@ -24344,12 +24676,14 @@ lucide-react/dist/esm/icons/file-text.js:
 lucide-react/dist/esm/icons/file.js:
 lucide-react/dist/esm/icons/folder-open.js:
 lucide-react/dist/esm/icons/globe.js:
+lucide-react/dist/esm/icons/grip-vertical.js:
 lucide-react/dist/esm/icons/image-plus.js:
 lucide-react/dist/esm/icons/image.js:
 lucide-react/dist/esm/icons/languages.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
+lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/refresh-ccw.js:
 lucide-react/dist/esm/icons/rotate-ccw.js:
 lucide-react/dist/esm/icons/search.js:
@@ -24439,6 +24773,6 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
    *)
 */
 
-export { CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UploadField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, RepeaterField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UploadField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

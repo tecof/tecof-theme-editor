@@ -16,5 +16,8 @@ export type { LinkFieldProps, LinkFieldOptions } from './LinkField';
 export { ColorField, createColorField } from './ColorField';
 export type { ColorFieldProps, ColorFieldOptions } from './ColorField';
 
+export { RepeaterField, createRepeaterField } from './RepeaterField';
+export type { RepeaterFieldProps, RepeaterFieldOptions } from './RepeaterField';
+
 export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';

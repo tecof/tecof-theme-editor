@@ -1802,3 +1802,233 @@
   background: #fef2f2;
   border-color: #f87171;
 }
+
+/* ─── RepeaterField ─── */
+
+.tecof-repeater-container {
+  width: 100%;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.tecof-repeater-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.tecof-repeater-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a1a1aa;
+  letter-spacing: 0.02em;
+}
+
+/* ── Empty State ── */
+
+.tecof-repeater-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  background: #fafafa;
+  border: 1px dashed #e4e4e7;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.tecof-repeater-empty-text {
+  font-size: 12px;
+  color: #a1a1aa;
+  margin: 0;
+}
+
+/* ── Rows ── */
+
+.tecof-repeater-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tecof-repeater-row {
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tecof-repeater-row:hover {
+  border-color: #d4d4d8;
+}
+
+.tecof-repeater-row.expanded {
+  border-color: var(--tecof-primary-500, #3b82f6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+}
+
+/* ── Row Header ── */
+
+.tecof-repeater-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+  min-height: 40px;
+}
+
+.tecof-repeater-row-header:hover {
+  background-color: #fafafa;
+}
+
+.tecof-repeater-row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tecof-repeater-grip {
+  color: #d4d4d8;
+  flex-shrink: 0;
+  cursor: grab;
+}
+
+.tecof-repeater-row-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tecof-primary-600, #2563eb);
+  background: var(--tecof-primary-50, #eff6ff);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.tecof-repeater-row-preview {
+  font-size: 13px;
+  font-weight: 500;
+  color: #3f3f46;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ── Row Actions ── */
+
+.tecof-repeater-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.tecof-repeater-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #a1a1aa;
+  font-size: 10px;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.tecof-repeater-action-btn:hover {
+  background-color: #f4f4f5;
+  color: #52525b;
+}
+
+.tecof-repeater-action-btn-danger:hover {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+/* ── Chevron ── */
+
+.tecof-repeater-chevron {
+  color: #a1a1aa;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tecof-repeater-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+/* ── Row Content (expanded sub-fields) ── */
+
+.tecof-repeater-row-content {
+  padding: 12px 14px 16px;
+  border-top: 1px solid #f4f4f5;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fafbfc;
+}
+
+.tecof-repeater-subfield {
+  width: 100%;
+}
+
+/* ── Add Buttons ── */
+
+.tecof-repeater-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tecof-primary-600, #2563eb);
+  background: var(--tecof-primary-50, #eff6ff);
+  border: 1px solid var(--tecof-primary-200, #bfdbfe);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tecof-repeater-add-btn:hover {
+  background: var(--tecof-primary-100, #dbeafe);
+  border-color: var(--tecof-primary-300, #93c5fd);
+}
+
+.tecof-repeater-add-btn-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #a1a1aa;
+  background: none;
+  border: 1px dashed #e4e4e7;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tecof-repeater-add-btn-bottom:hover {
+  color: var(--tecof-primary-600, #2563eb);
+  border-color: var(--tecof-primary-400, #60a5fa);
+  background: var(--tecof-primary-50, #eff6ff);
+}

@@ -136,6 +136,8 @@ export interface TecofRenderProps {
   config: any;
   /** Additional class name */
   className?: string;
+  /** Raw CMS item data (only present for CMS template pages) */
+  cmsData?: Record<string, any> | null;
 }
 
 /* ─── Merchant Info ─── */

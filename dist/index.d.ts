@@ -111,6 +111,8 @@ interface TecofRenderProps {
     config: any;
     /** Additional class name */
     className?: string;
+    /** Raw CMS item data (only present for CMS template pages) */
+    cmsData?: Record<string, any> | null;
 }
 interface MerchantInfoData {
     /** Available language codes (e.g. ["tr", "en", "de"]) */
@@ -250,9 +252,12 @@ declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, ove
  * TecofRender — Puck page renderer.
  *
  * Pass `data` (PuckPageData) and `config` (Puck Config) directly.
+ * Optionally pass `cmsData` to make CMS item data available to all
+ * Puck components via `puck.metadata.cmsData`.
+ *
  * No API fetch, no provider required.
  */
-declare const TecofRender: ({ data, config, className }: TecofRenderProps) => react_jsx_runtime.JSX.Element | null;
+declare const TecofRender: ({ data, config, className, cmsData }: TecofRenderProps) => react_jsx_runtime.JSX.Element | null;
 
 type PictureSize = 'thumbnail' | 'medium' | 'large' | 'full';
 interface TecofPictureProps {
@@ -578,6 +583,43 @@ declare const createColorField: (options?: ColorFieldOptions) => {
     render: ({ value, onChange, readOnly, field, name, id }: ColorFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
+interface RepeaterFieldProps {
+    field: any;
+    name: string;
+    id: string;
+    value: Record<string, any>[];
+    onChange: (value: Record<string, any>[]) => void;
+    readOnly?: boolean;
+}
+interface RepeaterFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
+    /** Sub-fields definition — each key maps to a createXxxField() result */
+    subFields: Record<string, any>;
+    /** Minimum number of rows */
+    minItems?: number;
+    /** Maximum number of rows */
+    maxItems?: number;
+    /** Default values for a new row */
+    defaultRow?: Record<string, any>;
+}
+declare const RepeaterField: {
+    ({ value: rawValue, onChange, readOnly, subFields, minItems, maxItems, defaultRow, }: RepeaterFieldProps & RepeaterFieldOptions): react_jsx_runtime.JSX.Element;
+    displayName: string;
+};
+declare const createRepeaterField: (options: RepeaterFieldOptions) => {
+    type: "custom";
+    _fieldType: "repeater";
+    label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
+    render: ({ value, onChange, readOnly, field, name, id }: RepeaterFieldProps) => react_jsx_runtime.JSX.Element;
+};
+
 interface FieldErrorBoundaryProps {
     /** The field name (for error reporting) */
     fieldName?: string;
@@ -619,4 +661,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
