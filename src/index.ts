@@ -12,6 +12,7 @@ export { CodeEditorField, createCodeEditorField } from './components/fields';
 export { LinkField, createLinkField } from './components/fields';
 export { ColorField, createColorField } from './components/fields';
 export { RepeaterField, createRepeaterField } from './components/fields';
+export { CmsCollectionField, createCmsCollectionField } from './components/fields';
 export { FieldErrorBoundary } from './components/fields';
 
 /* ─── API Client ─── */

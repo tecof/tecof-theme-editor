@@ -246,6 +246,54 @@ export class TecofApiClient {
     }
   }
 
+  /**
+   * Fetch CMS collections list (for CmsCollectionField)
+   * Returns: [{ _id, name, slug, fields, ... }]
+   */
+  async getCmsCollections(): Promise<ApiResponse<any[]>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/cms/collections`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({}),
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch collections',
+      };
+    }
+  }
+
+  /**
+   * Fetch items from a CMS collection by slug
+   * Returns: { items: [...], totalData: N }
+   */
+  async getCmsCollectionItems(
+    collectionSlug: string,
+    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; locale?: string }
+  ): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/cms/collections/${encodeURIComponent(collectionSlug)}/items`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({
+          page: options?.page || 1,
+          limit: options?.limit || 50,
+          sort: options?.sort || 'newest',
+          locale: options?.locale,
+        }),
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch collection items',
+      };
+    }
+  }
+
   /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl(): string {
     return this.customCdnUrl || this.apiUrl;

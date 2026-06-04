@@ -19,5 +19,8 @@ export type { ColorFieldProps, ColorFieldOptions } from './ColorField';
 export { RepeaterField, createRepeaterField } from './RepeaterField';
 export type { RepeaterFieldProps, RepeaterFieldOptions } from './RepeaterField';
 
+export { CmsCollectionField, createCmsCollectionField } from './CmsCollectionField';
+export type { CmsCollectionFieldProps, CmsCollectionFieldOptions, CmsCollectionFieldValue } from './CmsCollectionField';
+
 export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';

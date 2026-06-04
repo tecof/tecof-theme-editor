@@ -16,7 +16,7 @@ import Blockquote from '@tiptap/extension-blockquote';
 import HardBreak from '@tiptap/extension-hard-break';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import TextAlign from '@tiptap/extension-text-align';
-import Link2 from '@tiptap/extension-link';
+import Link3 from '@tiptap/extension-link';
 import Code2 from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
 import * as ReactDOM from 'react-dom';
@@ -219,6 +219,49 @@ var TecofApiClient = class {
       return blobUrl;
     } catch {
       return null;
+    }
+  }
+  /**
+   * Fetch CMS collections list (for CmsCollectionField)
+   * Returns: [{ _id, name, slug, fields, ... }]
+   */
+  async getCmsCollections() {
+    try {
+      const res2 = await fetch(`${this.apiUrl}/api/store/cms/collections`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify({})
+      });
+      return await res2.json();
+    } catch (error2) {
+      return {
+        success: false,
+        message: error2 instanceof Error ? error2.message : "Failed to fetch collections"
+      };
+    }
+  }
+  /**
+   * Fetch items from a CMS collection by slug
+   * Returns: { items: [...], totalData: N }
+   */
+  async getCmsCollectionItems(collectionSlug, options) {
+    try {
+      const res2 = await fetch(`${this.apiUrl}/api/store/cms/collections/${encodeURIComponent(collectionSlug)}/items`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify({
+          page: options?.page || 1,
+          limit: options?.limit || 50,
+          sort: options?.sort || "newest",
+          locale: options?.locale
+        })
+      });
+      return await res2.json();
+    } catch (error2) {
+      return {
+        success: false,
+        message: error2 instanceof Error ? error2.message : "Failed to fetch collection items"
+      };
     }
   }
   /** CDN base URL (defaults to apiUrl if not set) */
@@ -756,16 +799,24 @@ var __iconNode5 = [
 ];
 var Copy = createLucideIcon("copy", __iconNode5);
 
-// node_modules/lucide-react/dist/esm/icons/external-link.js
+// node_modules/lucide-react/dist/esm/icons/database.js
 var __iconNode6 = [
+  ["ellipse", { cx: "12", cy: "5", rx: "9", ry: "3", key: "msslwz" }],
+  ["path", { d: "M3 5V19A9 3 0 0 0 21 19V5", key: "1wlel7" }],
+  ["path", { d: "M3 12A9 3 0 0 0 21 12", key: "mv7ke4" }]
+];
+var Database = createLucideIcon("database", __iconNode6);
+
+// node_modules/lucide-react/dist/esm/icons/external-link.js
+var __iconNode7 = [
   ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
   ["path", { d: "M10 14 21 3", key: "gplh6r" }],
   ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
 ];
-var ExternalLink = createLucideIcon("external-link", __iconNode6);
+var ExternalLink = createLucideIcon("external-link", __iconNode7);
 
 // node_modules/lucide-react/dist/esm/icons/file-text.js
-var __iconNode7 = [
+var __iconNode8 = [
   [
     "path",
     {
@@ -778,10 +829,10 @@ var __iconNode7 = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-var FileText = createLucideIcon("file-text", __iconNode7);
+var FileText = createLucideIcon("file-text", __iconNode8);
 
 // node_modules/lucide-react/dist/esm/icons/file.js
-var __iconNode8 = [
+var __iconNode9 = [
   [
     "path",
     {
@@ -791,10 +842,10 @@ var __iconNode8 = [
   ],
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
 ];
-var File2 = createLucideIcon("file", __iconNode8);
+var File2 = createLucideIcon("file", __iconNode9);
 
 // node_modules/lucide-react/dist/esm/icons/folder-open.js
-var __iconNode9 = [
+var __iconNode10 = [
   [
     "path",
     {
@@ -803,18 +854,18 @@ var __iconNode9 = [
     }
   ]
 ];
-var FolderOpen = createLucideIcon("folder-open", __iconNode9);
+var FolderOpen = createLucideIcon("folder-open", __iconNode10);
 
 // node_modules/lucide-react/dist/esm/icons/globe.js
-var __iconNode10 = [
+var __iconNode11 = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-var Globe = createLucideIcon("globe", __iconNode10);
+var Globe = createLucideIcon("globe", __iconNode11);
 
 // node_modules/lucide-react/dist/esm/icons/grip-vertical.js
-var __iconNode11 = [
+var __iconNode12 = [
   ["circle", { cx: "9", cy: "12", r: "1", key: "1vctgf" }],
   ["circle", { cx: "9", cy: "5", r: "1", key: "hp0tcf" }],
   ["circle", { cx: "9", cy: "19", r: "1", key: "fkjjf6" }],
@@ -822,28 +873,28 @@ var __iconNode11 = [
   ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
   ["circle", { cx: "15", cy: "19", r: "1", key: "f4zoj3" }]
 ];
-var GripVertical = createLucideIcon("grip-vertical", __iconNode11);
+var GripVertical = createLucideIcon("grip-vertical", __iconNode12);
 
 // node_modules/lucide-react/dist/esm/icons/image-plus.js
-var __iconNode12 = [
+var __iconNode13 = [
   ["path", { d: "M16 5h6", key: "1vod17" }],
   ["path", { d: "M19 2v6", key: "4bpg5p" }],
   ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
 ];
-var ImagePlus = createLucideIcon("image-plus", __iconNode12);
+var ImagePlus = createLucideIcon("image-plus", __iconNode13);
 
 // node_modules/lucide-react/dist/esm/icons/image.js
-var __iconNode13 = [
+var __iconNode14 = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
   ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
   ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
 ];
-var Image2 = createLucideIcon("image", __iconNode13);
+var Image2 = createLucideIcon("image", __iconNode14);
 
 // node_modules/lucide-react/dist/esm/icons/languages.js
-var __iconNode14 = [
+var __iconNode15 = [
   ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
   ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
   ["path", { d: "M2 5h12", key: "or177f" }],
@@ -851,21 +902,29 @@ var __iconNode14 = [
   ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
   ["path", { d: "M14 18h6", key: "1m8k6r" }]
 ];
-var Languages = createLucideIcon("languages", __iconNode14);
+var Languages = createLucideIcon("languages", __iconNode15);
+
+// node_modules/lucide-react/dist/esm/icons/link-2.js
+var __iconNode16 = [
+  ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
+  ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
+  ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
+];
+var Link2 = createLucideIcon("link-2", __iconNode16);
 
 // node_modules/lucide-react/dist/esm/icons/link.js
-var __iconNode15 = [
+var __iconNode17 = [
   ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
   ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
 ];
-var Link = createLucideIcon("link", __iconNode15);
+var Link = createLucideIcon("link", __iconNode17);
 
 // node_modules/lucide-react/dist/esm/icons/loader-circle.js
-var __iconNode16 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-var LoaderCircle = createLucideIcon("loader-circle", __iconNode16);
+var __iconNode18 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+var LoaderCircle = createLucideIcon("loader-circle", __iconNode18);
 
 // node_modules/lucide-react/dist/esm/icons/pencil.js
-var __iconNode17 = [
+var __iconNode19 = [
   [
     "path",
     {
@@ -875,62 +934,71 @@ var __iconNode17 = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-var Pencil = createLucideIcon("pencil", __iconNode17);
+var Pencil = createLucideIcon("pencil", __iconNode19);
 
 // node_modules/lucide-react/dist/esm/icons/plus.js
-var __iconNode18 = [
+var __iconNode20 = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-var Plus = createLucideIcon("plus", __iconNode18);
+var Plus = createLucideIcon("plus", __iconNode20);
 
 // node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
-var __iconNode19 = [
+var __iconNode21 = [
   ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
   ["path", { d: "M16 16h5v5", key: "ccwih5" }]
 ];
-var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode19);
+var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode21);
+
+// node_modules/lucide-react/dist/esm/icons/refresh-cw.js
+var __iconNode22 = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+var RefreshCw = createLucideIcon("refresh-cw", __iconNode22);
 
 // node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
-var __iconNode20 = [
+var __iconNode23 = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
 ];
-var RotateCcw = createLucideIcon("rotate-ccw", __iconNode20);
+var RotateCcw = createLucideIcon("rotate-ccw", __iconNode23);
 
 // node_modules/lucide-react/dist/esm/icons/search.js
-var __iconNode21 = [
+var __iconNode24 = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-var Search = createLucideIcon("search", __iconNode21);
+var Search = createLucideIcon("search", __iconNode24);
 
 // node_modules/lucide-react/dist/esm/icons/trash-2.js
-var __iconNode22 = [
+var __iconNode25 = [
   ["path", { d: "M10 11v6", key: "nco0om" }],
   ["path", { d: "M14 11v6", key: "outv1u" }],
   ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
   ["path", { d: "M3 6h18", key: "d0wm0j" }],
   ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
 ];
-var Trash2 = createLucideIcon("trash-2", __iconNode22);
+var Trash2 = createLucideIcon("trash-2", __iconNode25);
 
 // node_modules/lucide-react/dist/esm/icons/upload.js
-var __iconNode23 = [
+var __iconNode26 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-var Upload = createLucideIcon("upload", __iconNode23);
+var Upload = createLucideIcon("upload", __iconNode26);
 
 // node_modules/lucide-react/dist/esm/icons/x.js
-var __iconNode24 = [
+var __iconNode27 = [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
 ];
-var X = createLucideIcon("x", __iconNode24);
+var X = createLucideIcon("x", __iconNode27);
 var FieldErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
@@ -1265,7 +1333,7 @@ var createExtensions = () => [
   Code2,
   CodeBlock,
   TextAlign.configure({ types: ["heading", "paragraph"] }),
-  Link2.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } })
+  Link3.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } })
 ];
 var ToolbarBtn = ({
   onClick,
@@ -24508,6 +24576,297 @@ var createRepeaterField = (options) => {
     ) }) })
   };
 };
+var CmsCollectionField = ({
+  value,
+  onChange,
+  readOnly,
+  defaultLimit = 10,
+  showLimit = true,
+  showSort = true,
+  slots
+}) => {
+  const { apiClient } = useTecof();
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error2, setError] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const fetchCollections = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res2 = await apiClient.getCmsCollections();
+      if (res2.success && Array.isArray(res2.data)) {
+        setCollections(res2.data);
+      } else {
+        setError(res2.message || "Koleksiyonlar y\xFCklenemedi");
+      }
+    } catch (err) {
+      setError(err.message || "Ba\u011Flant\u0131 hatas\u0131");
+    } finally {
+      setLoading(false);
+    }
+  }, [apiClient]);
+  useEffect(() => {
+    fetchCollections();
+  }, [fetchCollections]);
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClick = (e3) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e3.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [dropdownOpen]);
+  const selectedCollection = useMemo(() => {
+    if (!value?.collectionSlug) return null;
+    return collections.find((c2) => c2.slug === value.collectionSlug) || null;
+  }, [value?.collectionSlug, collections]);
+  const collectionFields = useMemo(() => {
+    return selectedCollection?.fields || [];
+  }, [selectedCollection]);
+  const handleSelect = useCallback((col) => {
+    onChangeRef.current({
+      collectionSlug: col.slug,
+      collectionName: col.name,
+      limit: value?.limit || defaultLimit,
+      sort: value?.sort || "newest",
+      fieldMap: value?.fieldMap || {}
+    });
+    setDropdownOpen(false);
+    setSearchQuery("");
+  }, [value, defaultLimit]);
+  const handleClear = useCallback(() => {
+    onChangeRef.current(null);
+  }, []);
+  const handleLimitChange = useCallback((e3) => {
+    const num = parseInt(e3.target.value, 10);
+    if (!value) return;
+    onChangeRef.current({
+      ...value,
+      limit: isNaN(num) ? defaultLimit : Math.max(1, Math.min(100, num))
+    });
+  }, [value, defaultLimit]);
+  const handleSortChange = useCallback((sort) => {
+    if (!value) return;
+    onChangeRef.current({ ...value, sort });
+  }, [value]);
+  const handleFieldMapChange = useCallback((slotKey, fieldShortcode) => {
+    if (!value) return;
+    onChangeRef.current({
+      ...value,
+      fieldMap: {
+        ...value.fieldMap,
+        [slotKey]: fieldShortcode
+      }
+    });
+  }, [value]);
+  const filteredCollections = useMemo(() => {
+    if (!searchQuery.trim()) return collections;
+    const q = searchQuery.toLowerCase();
+    return collections.filter(
+      (c2) => c2.name.toLowerCase().includes(q) || c2.slug.toLowerCase().includes(q)
+    );
+  }, [collections, searchQuery]);
+  if (loading) {
+    return /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-loading", children: [
+      /* @__PURE__ */ jsx(LoaderCircle, { size: 16, className: "tecof-spin" }),
+      /* @__PURE__ */ jsx("span", { children: "Koleksiyonlar y\xFCkleniyor\u2026" })
+    ] });
+  }
+  if (error2) {
+    return /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-error", children: [
+      /* @__PURE__ */ jsx("span", { children: error2 }),
+      /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-cms-col-retry", onClick: fetchCollections, children: [
+        /* @__PURE__ */ jsx(RefreshCw, { size: 12 }),
+        " Tekrar Dene"
+      ] })
+    ] });
+  }
+  const hasSlots = slots && Object.keys(slots).length > 0;
+  return /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-container", children: [
+    /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-selector", ref: dropdownRef, children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: `tecof-cms-col-trigger ${dropdownOpen ? "open" : ""}`,
+          onClick: () => !readOnly && setDropdownOpen(!dropdownOpen),
+          disabled: readOnly,
+          children: [
+            /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-trigger-left", children: [
+              /* @__PURE__ */ jsx(Database, { size: 14 }),
+              /* @__PURE__ */ jsx("span", { children: value?.collectionName || value?.collectionSlug || "Koleksiyon Se\xE7in" })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-trigger-right", children: [
+              value && !readOnly && /* @__PURE__ */ jsx(
+                "button",
+                {
+                  type: "button",
+                  className: "tecof-cms-col-clear",
+                  onClick: (e3) => {
+                    e3.stopPropagation();
+                    handleClear();
+                  },
+                  title: "Temizle",
+                  children: /* @__PURE__ */ jsx(X, { size: 12 })
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                ChevronDown,
+                {
+                  size: 14,
+                  className: `tecof-cms-col-chevron ${dropdownOpen ? "rotated" : ""}`
+                }
+              )
+            ] })
+          ]
+        }
+      ),
+      dropdownOpen && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-dropdown", children: [
+        /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-search", children: [
+          /* @__PURE__ */ jsx(Search, { size: 13 }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "text",
+              value: searchQuery,
+              onChange: (e3) => setSearchQuery(e3.target.value),
+              placeholder: "Koleksiyon ara\u2026",
+              className: "tecof-cms-col-search-input",
+              autoFocus: true
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "tecof-cms-col-options", children: filteredCollections.length === 0 ? /* @__PURE__ */ jsx("div", { className: "tecof-cms-col-empty", children: "Koleksiyon bulunamad\u0131" }) : filteredCollections.map((col) => /* @__PURE__ */ jsxs(
+          "button",
+          {
+            type: "button",
+            className: `tecof-cms-col-option ${value?.collectionSlug === col.slug ? "selected" : ""}`,
+            onClick: () => handleSelect(col),
+            children: [
+              /* @__PURE__ */ jsx(Database, { size: 13 }),
+              /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-option-info", children: [
+                /* @__PURE__ */ jsx("span", { className: "tecof-cms-col-option-name", children: col.name }),
+                /* @__PURE__ */ jsx("span", { className: "tecof-cms-col-option-slug", children: col.slug })
+              ] })
+            ]
+          },
+          col._id
+        )) })
+      ] })
+    ] }),
+    value?.collectionSlug && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-settings", children: [
+      showLimit && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-setting", children: [
+        /* @__PURE__ */ jsx("label", { className: "tecof-cms-col-setting-label", children: "Limit" }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "number",
+            min: 1,
+            max: 100,
+            value: value.limit || defaultLimit,
+            onChange: handleLimitChange,
+            className: "tecof-cms-col-setting-input",
+            disabled: readOnly
+          }
+        )
+      ] }),
+      showSort && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-setting", children: [
+        /* @__PURE__ */ jsx("label", { className: "tecof-cms-col-setting-label", children: "S\u0131ralama" }),
+        /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-sort-btns", children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: `tecof-cms-col-sort-btn ${(value.sort || "newest") === "newest" ? "active" : ""}`,
+              onClick: () => handleSortChange("newest"),
+              disabled: readOnly,
+              children: "Yeni\u2192Eski"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: `tecof-cms-col-sort-btn ${value.sort === "oldest" ? "active" : ""}`,
+              onClick: () => handleSortChange("oldest"),
+              disabled: readOnly,
+              children: "Eski\u2192Yeni"
+            }
+          )
+        ] })
+      ] })
+    ] }),
+    value?.collectionSlug && hasSlots && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping", children: [
+      /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping-header", children: [
+        /* @__PURE__ */ jsx(Link2, { size: 12 }),
+        /* @__PURE__ */ jsx("span", { children: "Alan E\u015Fle\u015Ftirme" })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tecof-cms-col-mapping-rows", children: Object.entries(slots).map(([slotKey, slotDef]) => {
+        const currentMapping = value.fieldMap?.[slotKey] || "";
+        const availableFields = slotDef.fieldTypes ? collectionFields.filter((f2) => slotDef.fieldTypes.includes(f2.type)) : collectionFields;
+        return /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping-row", children: [
+          /* @__PURE__ */ jsx("label", { className: "tecof-cms-col-mapping-label", children: slotDef.label }),
+          /* @__PURE__ */ jsxs(
+            "select",
+            {
+              className: "tecof-cms-col-mapping-select",
+              value: currentMapping,
+              onChange: (e3) => handleFieldMapChange(slotKey, e3.target.value),
+              disabled: readOnly,
+              children: [
+                /* @__PURE__ */ jsx("option", { value: "", children: "\u2014 Se\xE7in \u2014" }),
+                availableFields.map((f2) => /* @__PURE__ */ jsxs("option", { value: f2.shortcode, children: [
+                  f2.name,
+                  " (",
+                  f2.shortcode,
+                  ")"
+                ] }, f2.shortcode))
+              ]
+            }
+          )
+        ] }, slotKey);
+      }) })
+    ] }),
+    selectedCollection && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-badge", children: [
+      /* @__PURE__ */ jsx(Database, { size: 11 }),
+      /* @__PURE__ */ jsx("span", { children: selectedCollection.name }),
+      selectedCollection.fields && /* @__PURE__ */ jsxs("span", { className: "tecof-cms-col-badge-count", children: [
+        selectedCollection.fields.length,
+        " alan"
+      ] })
+    ] })
+  ] });
+};
+CmsCollectionField.displayName = "CmsCollectionField";
+var createCmsCollectionField = (options = {}) => {
+  const { label, labelIcon, visible, ...fieldOptions } = options;
+  return {
+    type: "custom",
+    _fieldType: "cmsCollection",
+    label,
+    labelIcon,
+    visible,
+    render: ({ value, onChange, readOnly, field, name: name3, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name3, children: /* @__PURE__ */ jsx(
+      CmsCollectionField,
+      {
+        field,
+        name: name3,
+        id,
+        value: value || null,
+        onChange,
+        readOnly,
+        ...fieldOptions
+      }
+    ) }) })
+  };
+};
 
 // src/utils/index.ts
 function hexToHsl(hex) {
@@ -24671,6 +25030,7 @@ lucide-react/dist/esm/icons/chevron-down.js:
 lucide-react/dist/esm/icons/chevron-right.js:
 lucide-react/dist/esm/icons/code.js:
 lucide-react/dist/esm/icons/copy.js:
+lucide-react/dist/esm/icons/database.js:
 lucide-react/dist/esm/icons/external-link.js:
 lucide-react/dist/esm/icons/file-text.js:
 lucide-react/dist/esm/icons/file.js:
@@ -24680,11 +25040,13 @@ lucide-react/dist/esm/icons/grip-vertical.js:
 lucide-react/dist/esm/icons/image-plus.js:
 lucide-react/dist/esm/icons/image.js:
 lucide-react/dist/esm/icons/languages.js:
+lucide-react/dist/esm/icons/link-2.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/plus.js:
 lucide-react/dist/esm/icons/refresh-ccw.js:
+lucide-react/dist/esm/icons/refresh-cw.js:
 lucide-react/dist/esm/icons/rotate-ccw.js:
 lucide-react/dist/esm/icons/search.js:
 lucide-react/dist/esm/icons/trash-2.js:
@@ -24773,6 +25135,6 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
    *)
 */
 
-export { CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, RepeaterField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UploadField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, RepeaterField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UploadField, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

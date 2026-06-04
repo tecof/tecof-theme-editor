@@ -216,6 +216,21 @@ declare class TecofApiClient {
      */
     private previewBlobCache;
     getComponentPreview(domain: string, componentName: string): Promise<string | null>;
+    /**
+     * Fetch CMS collections list (for CmsCollectionField)
+     * Returns: [{ _id, name, slug, fields, ... }]
+     */
+    getCmsCollections(): Promise<ApiResponse<any[]>>;
+    /**
+     * Fetch items from a CMS collection by slug
+     * Returns: { items: [...], totalData: N }
+     */
+    getCmsCollectionItems(collectionSlug: string, options?: {
+        page?: number;
+        limit?: number;
+        sort?: 'newest' | 'oldest';
+        locale?: string;
+    }): Promise<ApiResponse<any>>;
     /** CDN base URL (defaults to apiUrl if not set) */
     get cdnUrl(): string;
 }
@@ -620,6 +635,66 @@ declare const createRepeaterField: (options: RepeaterFieldOptions) => {
     render: ({ value, onChange, readOnly, field, name, id }: RepeaterFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
+/** Slot definition: describes a data slot the component needs */
+interface CmsSlotDefinition {
+    /** Label shown in the editor (e.g. "Başlık") */
+    label: string;
+    /** Optional: filter to specific CMS field types */
+    fieldTypes?: string[];
+}
+interface CmsCollectionFieldValue {
+    /** Selected collection slug */
+    collectionSlug: string;
+    /** Collection name (for display) */
+    collectionName?: string;
+    /** Max items to fetch */
+    limit?: number;
+    /** Sort order */
+    sort?: 'newest' | 'oldest';
+    /** Field mapping: slotKey → CMS field shortcode */
+    fieldMap?: Record<string, string>;
+}
+interface CmsCollectionFieldProps {
+    field: any;
+    name: string;
+    id: string;
+    value: CmsCollectionFieldValue | null;
+    onChange: (value: CmsCollectionFieldValue | null) => void;
+    readOnly?: boolean;
+}
+interface CmsCollectionFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label */
+    labelIcon?: ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
+    /** Default limit for items */
+    defaultLimit?: number;
+    /** Show limit control */
+    showLimit?: boolean;
+    /** Show sort control */
+    showSort?: boolean;
+    /**
+     * Mappable slots: defines what data the component needs.
+     * Key = slot name used in code, Value = slot definition.
+     * Example: { title: { label: "Başlık" }, image: { label: "Görsel" } }
+     */
+    slots?: Record<string, CmsSlotDefinition>;
+}
+declare const CmsCollectionField: {
+    ({ value, onChange, readOnly, defaultLimit, showLimit, showSort, slots, }: CmsCollectionFieldProps & CmsCollectionFieldOptions): react_jsx_runtime.JSX.Element;
+    displayName: string;
+};
+declare const createCmsCollectionField: (options?: CmsCollectionFieldOptions) => {
+    type: "custom";
+    _fieldType: "cmsCollection";
+    label: string | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
+    render: ({ value, onChange, readOnly, field, name, id }: CmsCollectionFieldProps) => react_jsx_runtime.JSX.Element;
+};
+
 interface FieldErrorBoundaryProps {
     /** The field name (for error reporting) */
     fieldName?: string;
@@ -661,4 +736,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
