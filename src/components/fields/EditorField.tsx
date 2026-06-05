@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -17,11 +17,15 @@ import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Code from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
+import Image from '@tiptap/extension-image';
 import { FieldLabel } from '@puckeditor/core';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useLanguages } from './useLanguages';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
+import { MediaDrawer } from './MediaDrawer';
+import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
+import type { UploadedFile } from '../../types';
 
 /* ─── Extensions preset ─── */
 
@@ -45,6 +49,7 @@ const createExtensions = () => [
   CodeBlock,
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
   Link.configure({ openOnClick: false, HTMLAttributes: { target: '_blank' } }),
+  Image.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: 'tecof-editor-image' } }),
 ];
 
 /* ─── Toolbar Button ─── */
@@ -73,7 +78,7 @@ const ToolbarBtn = ({
 
 /* ─── Toolbar ─── */
 
-const EditorToolbar = ({ editor }: { editor: any }) => {
+const EditorToolbar = ({ editor, onImageClick }: { editor: any; onImageClick?: () => void }) => {
   if (!editor) return null;
 
   return (
@@ -183,6 +188,15 @@ const EditorToolbar = ({ editor }: { editor: any }) => {
       >
         🔗
       </ToolbarBtn>
+      {onImageClick && (
+        <ToolbarBtn
+          onClick={onImageClick}
+          isActive={false}
+          title="Resim Ekle"
+        >
+          🖼️
+        </ToolbarBtn>
+      )}
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         isActive={editor.isActive('blockquote')}
@@ -209,12 +223,15 @@ const TipTapInstance = ({
   content,
   onUpdate,
   readOnly,
+  cdnUrl,
 }: {
   content: string;
   onUpdate: (html: string) => void;
   readOnly?: boolean;
+  cdnUrl: string;
 }) => {
   const isMountedRef = useRef(false);
+  const [mediaDrawerOpen, setMediaDrawerOpen] = useState(false);
 
   const editor = useEditor({
     extensions: createExtensions(),
@@ -248,10 +265,30 @@ const TipTapInstance = ({
     }
   }, [content, editor]);
 
+  // Handle image selection from media library
+  const handleImageSelect = useCallback((file: UploadedFile) => {
+    if (!editor) return;
+    const src = `${cdnUrl}/${file.name}`;
+    const alt = file.meta?.originalName || file.name;
+    editor.chain().focus().setImage({ src, alt }).run();
+  }, [editor, cdnUrl]);
+
   return (
     <div>
-      <EditorToolbar editor={editor} />
+      <EditorToolbar
+        editor={editor}
+        onImageClick={readOnly ? undefined : () => setMediaDrawerOpen(true)}
+      />
       <EditorContent editor={editor} />
+
+      {/* Media Library Drawer for image insertion */}
+      <MediaDrawer
+        open={mediaDrawerOpen}
+        onOpenChange={setMediaDrawerOpen}
+        onSelect={handleImageSelect}
+        filterImages
+        title="Resim Ekle"
+      />
     </div>
   );
 };
@@ -295,6 +332,7 @@ export const EditorField = ({
   readOnly,
 }: EditorFieldProps & EditorFieldOptions) => {
   const { merchantInfo, loading, error, activeTab, setActiveTab } = useLanguages();
+  const { cdnUrl } = useTecof();
 
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
@@ -350,6 +388,7 @@ export const EditorField = ({
               content={currentValue}
               onUpdate={(html) => handleChange(code, html)}
               readOnly={readOnly}
+              cdnUrl={cdnUrl || ''}
             />
           </div>
         );

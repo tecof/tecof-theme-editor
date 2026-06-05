@@ -20,6 +20,7 @@ var TextAlign = require('@tiptap/extension-text-align');
 var Link3 = require('@tiptap/extension-link');
 var Code2 = require('@tiptap/extension-code');
 var CodeBlock = require('@tiptap/extension-code-block');
+var Image3 = require('@tiptap/extension-image');
 var ReactDOM = require('react-dom');
 
 function _interopDefault (e) { return e && e.__esModule ? e : { default: e }; }
@@ -58,6 +59,7 @@ var TextAlign__default = /*#__PURE__*/_interopDefault(TextAlign);
 var Link3__default = /*#__PURE__*/_interopDefault(Link3);
 var Code2__default = /*#__PURE__*/_interopDefault(Code2);
 var CodeBlock__default = /*#__PURE__*/_interopDefault(CodeBlock);
+var Image3__default = /*#__PURE__*/_interopDefault(Image3);
 var ReactDOM__namespace = /*#__PURE__*/_interopNamespace(ReactDOM);
 
 // src/components/TecofProvider.tsx
@@ -601,7 +603,7 @@ var TecofPicture = React__default.memo(({
   const buildPath = (fileName) => data3?.folder && data3.folder !== "/" ? `${data3.folder.replace(/^\//, "")}/${fileName}` : fileName;
   const isExternal = data3?.type === "external" || data3?.provider === "external";
   const fileURL = isExternal ? data3?.url || "" : `${cdnUrl}/${buildPath(data3?.name)}`;
-  const isImageType2 = isExternal ? true : isImage(data3?.type);
+  const isImageType3 = isExternal ? true : isImage(data3?.type);
   const isVideoType = isExternal ? false : isVideo(data3?.type);
   if (!fileURL) return null;
   const imgWidth = width || data3?.meta?.width || 500;
@@ -653,7 +655,7 @@ var TecofPicture = React__default.memo(({
     );
   };
   const containerClassName = `tecof-picture-wrapper ${fill ? "fill" : ""} ${className || ""}`.trim();
-  if (fancybox && (isImageType2 || isVideoType)) {
+  if (fancybox && (isImageType3 || isVideoType)) {
     return /* @__PURE__ */ jsxRuntime.jsx(
       "a",
       {
@@ -667,7 +669,7 @@ var TecofPicture = React__default.memo(({
   if (isVideoType) {
     return /* @__PURE__ */ jsxRuntime.jsx("div", { style, className: containerClassName, children: renderVideo() });
   }
-  if (isImageType2) {
+  if (isImageType3) {
     return /* @__PURE__ */ jsxRuntime.jsx("div", { style, className: containerClassName, children: renderImg() });
   }
   return null;
@@ -1352,6 +1354,3604 @@ var createLanguageField = (options = {}) => {
     ) }) })
   };
 };
+function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
+  return function handleEvent(event) {
+    originalEventHandler?.(event);
+    if (checkForDefaultPrevented === false || !event.defaultPrevented) {
+      return ourEventHandler?.(event);
+    }
+  };
+}
+function setRef(ref, value) {
+  if (typeof ref === "function") {
+    return ref(value);
+  } else if (ref !== null && ref !== void 0) {
+    ref.current = value;
+  }
+}
+function composeRefs(...refs) {
+  return (node) => {
+    let hasCleanup = false;
+    const cleanups = refs.map((ref) => {
+      const cleanup = setRef(ref, node);
+      if (!hasCleanup && typeof cleanup == "function") {
+        hasCleanup = true;
+      }
+      return cleanup;
+    });
+    if (hasCleanup) {
+      return () => {
+        for (let i2 = 0; i2 < cleanups.length; i2++) {
+          const cleanup = cleanups[i2];
+          if (typeof cleanup == "function") {
+            cleanup();
+          } else {
+            setRef(refs[i2], null);
+          }
+        }
+      };
+    }
+  };
+}
+function useComposedRefs(...refs) {
+  return React__default__namespace.useCallback(composeRefs(...refs), refs);
+}
+function createContext22(rootComponentName, defaultContext) {
+  const Context = React__default__namespace.createContext(defaultContext);
+  const Provider = (props) => {
+    const { children, ...context } = props;
+    const value = React__default__namespace.useMemo(() => context, Object.values(context));
+    return /* @__PURE__ */ jsxRuntime.jsx(Context.Provider, { value, children });
+  };
+  Provider.displayName = rootComponentName + "Provider";
+  function useContext22(consumerName) {
+    const context = React__default__namespace.useContext(Context);
+    if (context) return context;
+    if (defaultContext !== void 0) return defaultContext;
+    throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+  }
+  return [Provider, useContext22];
+}
+function createContextScope(scopeName, createContextScopeDeps = []) {
+  let defaultContexts = [];
+  function createContext32(rootComponentName, defaultContext) {
+    const BaseContext = React__default__namespace.createContext(defaultContext);
+    const index2 = defaultContexts.length;
+    defaultContexts = [...defaultContexts, defaultContext];
+    const Provider = (props) => {
+      const { scope, children, ...context } = props;
+      const Context = scope?.[scopeName]?.[index2] || BaseContext;
+      const value = React__default__namespace.useMemo(() => context, Object.values(context));
+      return /* @__PURE__ */ jsxRuntime.jsx(Context.Provider, { value, children });
+    };
+    Provider.displayName = rootComponentName + "Provider";
+    function useContext22(consumerName, scope) {
+      const Context = scope?.[scopeName]?.[index2] || BaseContext;
+      const context = React__default__namespace.useContext(Context);
+      if (context) return context;
+      if (defaultContext !== void 0) return defaultContext;
+      throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
+    }
+    return [Provider, useContext22];
+  }
+  const createScope = () => {
+    const scopeContexts = defaultContexts.map((defaultContext) => {
+      return React__default__namespace.createContext(defaultContext);
+    });
+    return function useScope(scope) {
+      const contexts = scope?.[scopeName] || scopeContexts;
+      return React__default__namespace.useMemo(
+        () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
+        [scope, contexts]
+      );
+    };
+  };
+  createScope.scopeName = scopeName;
+  return [createContext32, composeContextScopes(createScope, ...createContextScopeDeps)];
+}
+function composeContextScopes(...scopes) {
+  const baseScope = scopes[0];
+  if (scopes.length === 1) return baseScope;
+  const createScope = () => {
+    const scopeHooks = scopes.map((createScope2) => ({
+      useScope: createScope2(),
+      scopeName: createScope2.scopeName
+    }));
+    return function useComposedScopes(overrideScopes) {
+      const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
+        const scopeProps = useScope(overrideScopes);
+        const currentScope = scopeProps[`__scope${scopeName}`];
+        return { ...nextScopes2, ...currentScope };
+      }, {});
+      return React__default__namespace.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+    };
+  };
+  createScope.scopeName = baseScope.scopeName;
+  return createScope;
+}
+var useLayoutEffect2 = globalThis?.document ? React__default__namespace.useLayoutEffect : () => {
+};
+
+// node_modules/@radix-ui/react-id/dist/index.mjs
+var useReactId = React__default__namespace[" useId ".trim().toString()] || (() => void 0);
+var count = 0;
+function useId(deterministicId) {
+  const [id, setId] = React__default__namespace.useState(useReactId());
+  useLayoutEffect2(() => {
+    setId((reactId) => reactId ?? String(count++));
+  }, [deterministicId]);
+  return deterministicId || (id ? `radix-${id}` : "");
+}
+var useInsertionEffect = React__default__namespace[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+function useControllableState({
+  prop,
+  defaultProp,
+  onChange = () => {
+  },
+  caller
+}) {
+  const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
+    defaultProp,
+    onChange
+  });
+  const isControlled = prop !== void 0;
+  const value = isControlled ? prop : uncontrolledProp;
+  {
+    const isControlledRef = React__default__namespace.useRef(prop !== void 0);
+    React__default__namespace.useEffect(() => {
+      const wasControlled = isControlledRef.current;
+      if (wasControlled !== isControlled) {
+        const from = wasControlled ? "controlled" : "uncontrolled";
+        const to = isControlled ? "controlled" : "uncontrolled";
+        console.warn(
+          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
+        );
+      }
+      isControlledRef.current = isControlled;
+    }, [isControlled, caller]);
+  }
+  const setValue = React__default__namespace.useCallback(
+    (nextValue) => {
+      if (isControlled) {
+        const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
+        if (value2 !== prop) {
+          onChangeRef.current?.(value2);
+        }
+      } else {
+        setUncontrolledProp(nextValue);
+      }
+    },
+    [isControlled, prop, setUncontrolledProp, onChangeRef]
+  );
+  return [value, setValue];
+}
+function useUncontrolledState({
+  defaultProp,
+  onChange
+}) {
+  const [value, setValue] = React__default__namespace.useState(defaultProp);
+  const prevValueRef = React__default__namespace.useRef(value);
+  const onChangeRef = React__default__namespace.useRef(onChange);
+  useInsertionEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  React__default__namespace.useEffect(() => {
+    if (prevValueRef.current !== value) {
+      onChangeRef.current?.(value);
+      prevValueRef.current = value;
+    }
+  }, [value, prevValueRef]);
+  return [value, setValue, onChangeRef];
+}
+function isFunction(value) {
+  return typeof value === "function";
+}
+// @__NO_SIDE_EFFECTS__
+function createSlot(ownerName) {
+  const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
+  const Slot2 = React__default__namespace.forwardRef((props, forwardedRef) => {
+    const { children, ...slotProps } = props;
+    const childrenArray = React__default__namespace.Children.toArray(children);
+    const slottable = childrenArray.find(isSlottable);
+    if (slottable) {
+      const newElement = slottable.props.children;
+      const newChildren = childrenArray.map((child) => {
+        if (child === slottable) {
+          if (React__default__namespace.Children.count(newElement) > 1) return React__default__namespace.Children.only(null);
+          return React__default__namespace.isValidElement(newElement) ? newElement.props.children : null;
+        } else {
+          return child;
+        }
+      });
+      return /* @__PURE__ */ jsxRuntime.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: React__default__namespace.isValidElement(newElement) ? React__default__namespace.cloneElement(newElement, void 0, newChildren) : null });
+    }
+    return /* @__PURE__ */ jsxRuntime.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
+  });
+  Slot2.displayName = `${ownerName}.Slot`;
+  return Slot2;
+}
+// @__NO_SIDE_EFFECTS__
+function createSlotClone(ownerName) {
+  const SlotClone = React__default__namespace.forwardRef((props, forwardedRef) => {
+    const { children, ...slotProps } = props;
+    if (React__default__namespace.isValidElement(children)) {
+      const childrenRef = getElementRef(children);
+      const props2 = mergeProps(slotProps, children.props);
+      if (children.type !== React__default__namespace.Fragment) {
+        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
+      }
+      return React__default__namespace.cloneElement(children, props2);
+    }
+    return React__default__namespace.Children.count(children) > 1 ? React__default__namespace.Children.only(null) : null;
+  });
+  SlotClone.displayName = `${ownerName}.SlotClone`;
+  return SlotClone;
+}
+var SLOTTABLE_IDENTIFIER = /* @__PURE__ */ Symbol("radix.slottable");
+function isSlottable(child) {
+  return React__default__namespace.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+}
+function mergeProps(slotProps, childProps) {
+  const overrideProps = { ...childProps };
+  for (const propName in childProps) {
+    const slotPropValue = slotProps[propName];
+    const childPropValue = childProps[propName];
+    const isHandler = /^on[A-Z]/.test(propName);
+    if (isHandler) {
+      if (slotPropValue && childPropValue) {
+        overrideProps[propName] = (...args) => {
+          const result = childPropValue(...args);
+          slotPropValue(...args);
+          return result;
+        };
+      } else if (slotPropValue) {
+        overrideProps[propName] = slotPropValue;
+      }
+    } else if (propName === "style") {
+      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
+    } else if (propName === "className") {
+      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
+    }
+  }
+  return { ...slotProps, ...overrideProps };
+}
+function getElementRef(element) {
+  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
+var NODES = [
+  "a",
+  "button",
+  "div",
+  "form",
+  "h2",
+  "h3",
+  "img",
+  "input",
+  "label",
+  "li",
+  "nav",
+  "ol",
+  "p",
+  "select",
+  "span",
+  "svg",
+  "ul"
+];
+var Primitive = NODES.reduce((primitive, node) => {
+  const Slot2 = createSlot(`Primitive.${node}`);
+  const Node2 = React__default__namespace.forwardRef((props, forwardedRef) => {
+    const { asChild, ...primitiveProps } = props;
+    const Comp = asChild ? Slot2 : node;
+    if (typeof window !== "undefined") {
+      window[/* @__PURE__ */ Symbol.for("radix-ui")] = true;
+    }
+    return /* @__PURE__ */ jsxRuntime.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+  });
+  Node2.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node2 };
+}, {});
+function dispatchDiscreteCustomEvent(target, event) {
+  if (target) ReactDOM__namespace.flushSync(() => target.dispatchEvent(event));
+}
+function useCallbackRef(callback) {
+  const callbackRef = React__default__namespace.useRef(callback);
+  React__default__namespace.useEffect(() => {
+    callbackRef.current = callback;
+  });
+  return React__default__namespace.useMemo(() => (...args) => callbackRef.current?.(...args), []);
+}
+function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
+  const onEscapeKeyDown = useCallbackRef(onEscapeKeyDownProp);
+  React__default__namespace.useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onEscapeKeyDown(event);
+      }
+    };
+    ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [onEscapeKeyDown, ownerDocument]);
+}
+var DISMISSABLE_LAYER_NAME = "DismissableLayer";
+var CONTEXT_UPDATE = "dismissableLayer.update";
+var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
+var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
+var originalBodyPointerEvents;
+var DismissableLayerContext = React__default__namespace.createContext({
+  layers: /* @__PURE__ */ new Set(),
+  layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
+  branches: /* @__PURE__ */ new Set()
+});
+var DismissableLayer = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      disableOutsidePointerEvents = false,
+      onEscapeKeyDown,
+      onPointerDownOutside,
+      onFocusOutside,
+      onInteractOutside,
+      onDismiss,
+      ...layerProps
+    } = props;
+    const context = React__default__namespace.useContext(DismissableLayerContext);
+    const [node, setNode] = React__default__namespace.useState(null);
+    const ownerDocument = node?.ownerDocument ?? globalThis?.document;
+    const [, force] = React__default__namespace.useState({});
+    const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
+    const layers = Array.from(context.layers);
+    const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
+    const highestLayerWithOutsidePointerEventsDisabledIndex = layers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
+    const index2 = node ? layers.indexOf(node) : -1;
+    const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
+    const isPointerEventsEnabled = index2 >= highestLayerWithOutsidePointerEventsDisabledIndex;
+    const pointerDownOutside = usePointerDownOutside((event) => {
+      const target = event.target;
+      const isPointerDownOnBranch = [...context.branches].some((branch) => branch.contains(target));
+      if (!isPointerEventsEnabled || isPointerDownOnBranch) return;
+      onPointerDownOutside?.(event);
+      onInteractOutside?.(event);
+      if (!event.defaultPrevented) onDismiss?.();
+    }, ownerDocument);
+    const focusOutside = useFocusOutside((event) => {
+      const target = event.target;
+      const isFocusInBranch = [...context.branches].some((branch) => branch.contains(target));
+      if (isFocusInBranch) return;
+      onFocusOutside?.(event);
+      onInteractOutside?.(event);
+      if (!event.defaultPrevented) onDismiss?.();
+    }, ownerDocument);
+    useEscapeKeydown((event) => {
+      const isHighestLayer = index2 === context.layers.size - 1;
+      if (!isHighestLayer) return;
+      onEscapeKeyDown?.(event);
+      if (!event.defaultPrevented && onDismiss) {
+        event.preventDefault();
+        onDismiss();
+      }
+    }, ownerDocument);
+    React__default__namespace.useEffect(() => {
+      if (!node) return;
+      if (disableOutsidePointerEvents) {
+        if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
+          originalBodyPointerEvents = ownerDocument.body.style.pointerEvents;
+          ownerDocument.body.style.pointerEvents = "none";
+        }
+        context.layersWithOutsidePointerEventsDisabled.add(node);
+      }
+      context.layers.add(node);
+      dispatchUpdate();
+      return () => {
+        if (disableOutsidePointerEvents && context.layersWithOutsidePointerEventsDisabled.size === 1) {
+          ownerDocument.body.style.pointerEvents = originalBodyPointerEvents;
+        }
+      };
+    }, [node, ownerDocument, disableOutsidePointerEvents, context]);
+    React__default__namespace.useEffect(() => {
+      return () => {
+        if (!node) return;
+        context.layers.delete(node);
+        context.layersWithOutsidePointerEventsDisabled.delete(node);
+        dispatchUpdate();
+      };
+    }, [node, context]);
+    React__default__namespace.useEffect(() => {
+      const handleUpdate = () => force({});
+      document.addEventListener(CONTEXT_UPDATE, handleUpdate);
+      return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
+    }, []);
+    return /* @__PURE__ */ jsxRuntime.jsx(
+      Primitive.div,
+      {
+        ...layerProps,
+        ref: composedRefs,
+        style: {
+          pointerEvents: isBodyPointerEventsDisabled ? isPointerEventsEnabled ? "auto" : "none" : void 0,
+          ...props.style
+        },
+        onFocusCapture: composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture),
+        onBlurCapture: composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture),
+        onPointerDownCapture: composeEventHandlers(
+          props.onPointerDownCapture,
+          pointerDownOutside.onPointerDownCapture
+        )
+      }
+    );
+  }
+);
+DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
+var BRANCH_NAME = "DismissableLayerBranch";
+var DismissableLayerBranch = React__default__namespace.forwardRef((props, forwardedRef) => {
+  const context = React__default__namespace.useContext(DismissableLayerContext);
+  const ref = React__default__namespace.useRef(null);
+  const composedRefs = useComposedRefs(forwardedRef, ref);
+  React__default__namespace.useEffect(() => {
+    const node = ref.current;
+    if (node) {
+      context.branches.add(node);
+      return () => {
+        context.branches.delete(node);
+      };
+    }
+  }, [context.branches]);
+  return /* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { ...props, ref: composedRefs });
+});
+DismissableLayerBranch.displayName = BRANCH_NAME;
+function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
+  const handlePointerDownOutside = useCallbackRef(onPointerDownOutside);
+  const isPointerInsideReactTreeRef = React__default__namespace.useRef(false);
+  const handleClickRef = React__default__namespace.useRef(() => {
+  });
+  React__default__namespace.useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (event.target && !isPointerInsideReactTreeRef.current) {
+        let handleAndDispatchPointerDownOutsideEvent2 = function() {
+          handleAndDispatchCustomEvent(
+            POINTER_DOWN_OUTSIDE,
+            handlePointerDownOutside,
+            eventDetail,
+            { discrete: true }
+          );
+        };
+        const eventDetail = { originalEvent: event };
+        if (event.pointerType === "touch") {
+          ownerDocument.removeEventListener("click", handleClickRef.current);
+          handleClickRef.current = handleAndDispatchPointerDownOutsideEvent2;
+          ownerDocument.addEventListener("click", handleClickRef.current, { once: true });
+        } else {
+          handleAndDispatchPointerDownOutsideEvent2();
+        }
+      } else {
+        ownerDocument.removeEventListener("click", handleClickRef.current);
+      }
+      isPointerInsideReactTreeRef.current = false;
+    };
+    const timerId = window.setTimeout(() => {
+      ownerDocument.addEventListener("pointerdown", handlePointerDown);
+    }, 0);
+    return () => {
+      window.clearTimeout(timerId);
+      ownerDocument.removeEventListener("pointerdown", handlePointerDown);
+      ownerDocument.removeEventListener("click", handleClickRef.current);
+    };
+  }, [ownerDocument, handlePointerDownOutside]);
+  return {
+    // ensures we check React component tree (not just DOM tree)
+    onPointerDownCapture: () => isPointerInsideReactTreeRef.current = true
+  };
+}
+function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
+  const handleFocusOutside = useCallbackRef(onFocusOutside);
+  const isFocusInsideReactTreeRef = React__default__namespace.useRef(false);
+  React__default__namespace.useEffect(() => {
+    const handleFocus = (event) => {
+      if (event.target && !isFocusInsideReactTreeRef.current) {
+        const eventDetail = { originalEvent: event };
+        handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, eventDetail, {
+          discrete: false
+        });
+      }
+    };
+    ownerDocument.addEventListener("focusin", handleFocus);
+    return () => ownerDocument.removeEventListener("focusin", handleFocus);
+  }, [ownerDocument, handleFocusOutside]);
+  return {
+    onFocusCapture: () => isFocusInsideReactTreeRef.current = true,
+    onBlurCapture: () => isFocusInsideReactTreeRef.current = false
+  };
+}
+function dispatchUpdate() {
+  const event = new CustomEvent(CONTEXT_UPDATE);
+  document.dispatchEvent(event);
+}
+function handleAndDispatchCustomEvent(name3, handler, detail, { discrete }) {
+  const target = detail.originalEvent.target;
+  const event = new CustomEvent(name3, { bubbles: false, cancelable: true, detail });
+  if (handler) target.addEventListener(name3, handler, { once: true });
+  if (discrete) {
+    dispatchDiscreteCustomEvent(target, event);
+  } else {
+    target.dispatchEvent(event);
+  }
+}
+var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
+var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
+var EVENT_OPTIONS = { bubbles: false, cancelable: true };
+var FOCUS_SCOPE_NAME = "FocusScope";
+var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
+  const {
+    loop = false,
+    trapped = false,
+    onMountAutoFocus: onMountAutoFocusProp,
+    onUnmountAutoFocus: onUnmountAutoFocusProp,
+    ...scopeProps
+  } = props;
+  const [container, setContainer] = React__default__namespace.useState(null);
+  const onMountAutoFocus = useCallbackRef(onMountAutoFocusProp);
+  const onUnmountAutoFocus = useCallbackRef(onUnmountAutoFocusProp);
+  const lastFocusedElementRef = React__default__namespace.useRef(null);
+  const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
+  const focusScope = React__default__namespace.useRef({
+    paused: false,
+    pause() {
+      this.paused = true;
+    },
+    resume() {
+      this.paused = false;
+    }
+  }).current;
+  React__default__namespace.useEffect(() => {
+    if (trapped) {
+      let handleFocusIn2 = function(event) {
+        if (focusScope.paused || !container) return;
+        const target = event.target;
+        if (container.contains(target)) {
+          lastFocusedElementRef.current = target;
+        } else {
+          focus(lastFocusedElementRef.current, { select: true });
+        }
+      }, handleFocusOut2 = function(event) {
+        if (focusScope.paused || !container) return;
+        const relatedTarget = event.relatedTarget;
+        if (relatedTarget === null) return;
+        if (!container.contains(relatedTarget)) {
+          focus(lastFocusedElementRef.current, { select: true });
+        }
+      }, handleMutations2 = function(mutations) {
+        const focusedElement = document.activeElement;
+        if (focusedElement !== document.body) return;
+        for (const mutation of mutations) {
+          if (mutation.removedNodes.length > 0) focus(container);
+        }
+      };
+      document.addEventListener("focusin", handleFocusIn2);
+      document.addEventListener("focusout", handleFocusOut2);
+      const mutationObserver = new MutationObserver(handleMutations2);
+      if (container) mutationObserver.observe(container, { childList: true, subtree: true });
+      return () => {
+        document.removeEventListener("focusin", handleFocusIn2);
+        document.removeEventListener("focusout", handleFocusOut2);
+        mutationObserver.disconnect();
+      };
+    }
+  }, [trapped, container, focusScope.paused]);
+  React__default__namespace.useEffect(() => {
+    if (container) {
+      focusScopesStack.add(focusScope);
+      const previouslyFocusedElement = document.activeElement;
+      const hasFocusedCandidate = container.contains(previouslyFocusedElement);
+      if (!hasFocusedCandidate) {
+        const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS);
+        container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
+        container.dispatchEvent(mountEvent);
+        if (!mountEvent.defaultPrevented) {
+          focusFirst(removeLinks(getTabbableCandidates(container)), { select: true });
+          if (document.activeElement === previouslyFocusedElement) {
+            focus(container);
+          }
+        }
+      }
+      return () => {
+        container.removeEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
+        setTimeout(() => {
+          const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS);
+          container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
+          container.dispatchEvent(unmountEvent);
+          if (!unmountEvent.defaultPrevented) {
+            focus(previouslyFocusedElement ?? document.body, { select: true });
+          }
+          container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
+          focusScopesStack.remove(focusScope);
+        }, 0);
+      };
+    }
+  }, [container, onMountAutoFocus, onUnmountAutoFocus, focusScope]);
+  const handleKeyDown = React__default__namespace.useCallback(
+    (event) => {
+      if (!loop && !trapped) return;
+      if (focusScope.paused) return;
+      const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
+      const focusedElement = document.activeElement;
+      if (isTabKey && focusedElement) {
+        const container2 = event.currentTarget;
+        const [first, last] = getTabbableEdges(container2);
+        const hasTabbableElementsInside = first && last;
+        if (!hasTabbableElementsInside) {
+          if (focusedElement === container2) event.preventDefault();
+        } else {
+          if (!event.shiftKey && focusedElement === last) {
+            event.preventDefault();
+            if (loop) focus(first, { select: true });
+          } else if (event.shiftKey && focusedElement === first) {
+            event.preventDefault();
+            if (loop) focus(last, { select: true });
+          }
+        }
+      }
+    },
+    [loop, trapped, focusScope.paused]
+  );
+  return /* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
+});
+FocusScope.displayName = FOCUS_SCOPE_NAME;
+function focusFirst(candidates, { select = false } = {}) {
+  const previouslyFocusedElement = document.activeElement;
+  for (const candidate of candidates) {
+    focus(candidate, { select });
+    if (document.activeElement !== previouslyFocusedElement) return;
+  }
+}
+function getTabbableEdges(container) {
+  const candidates = getTabbableCandidates(container);
+  const first = findVisible(candidates, container);
+  const last = findVisible(candidates.reverse(), container);
+  return [first, last];
+}
+function getTabbableCandidates(container) {
+  const nodes = [];
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
+    acceptNode: (node) => {
+      const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
+      if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
+      return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    }
+  });
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  return nodes;
+}
+function findVisible(elements, container) {
+  for (const element of elements) {
+    if (!isHidden(element, { upTo: container })) return element;
+  }
+}
+function isHidden(node, { upTo }) {
+  if (getComputedStyle(node).visibility === "hidden") return true;
+  while (node) {
+    if (upTo !== void 0 && node === upTo) return false;
+    if (getComputedStyle(node).display === "none") return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+function isSelectableInput(element) {
+  return element instanceof HTMLInputElement && "select" in element;
+}
+function focus(element, { select = false } = {}) {
+  if (element && element.focus) {
+    const previouslyFocusedElement = document.activeElement;
+    element.focus({ preventScroll: true });
+    if (element !== previouslyFocusedElement && isSelectableInput(element) && select)
+      element.select();
+  }
+}
+var focusScopesStack = createFocusScopesStack();
+function createFocusScopesStack() {
+  let stack = [];
+  return {
+    add(focusScope) {
+      const activeFocusScope = stack[0];
+      if (focusScope !== activeFocusScope) {
+        activeFocusScope?.pause();
+      }
+      stack = arrayRemove(stack, focusScope);
+      stack.unshift(focusScope);
+    },
+    remove(focusScope) {
+      stack = arrayRemove(stack, focusScope);
+      stack[0]?.resume();
+    }
+  };
+}
+function arrayRemove(array, item2) {
+  const updatedArray = [...array];
+  const index2 = updatedArray.indexOf(item2);
+  if (index2 !== -1) {
+    updatedArray.splice(index2, 1);
+  }
+  return updatedArray;
+}
+function removeLinks(items) {
+  return items.filter((item2) => item2.tagName !== "A");
+}
+var PORTAL_NAME = "Portal";
+var Portal = React__default__namespace.forwardRef((props, forwardedRef) => {
+  const { container: containerProp, ...portalProps } = props;
+  const [mounted, setMounted] = React__default__namespace.useState(false);
+  useLayoutEffect2(() => setMounted(true), []);
+  const container = containerProp || mounted && globalThis?.document?.body;
+  return container ? ReactDOM__namespace.default.createPortal(/* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
+});
+Portal.displayName = PORTAL_NAME;
+function useStateMachine(initialState, machine) {
+  return React__default__namespace.useReducer((state3, event) => {
+    const nextState = machine[state3][event];
+    return nextState ?? state3;
+  }, initialState);
+}
+var Presence = (props) => {
+  const { present, children } = props;
+  const presence = usePresence(present);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React__default__namespace.Children.only(children);
+  const ref = useComposedRefs(presence.ref, getElementRef2(child));
+  const forceMount = typeof children === "function";
+  return forceMount || presence.isPresent ? React__default__namespace.cloneElement(child, { ref }) : null;
+};
+Presence.displayName = "Presence";
+function usePresence(present) {
+  const [node, setNode] = React__default__namespace.useState();
+  const stylesRef = React__default__namespace.useRef(null);
+  const prevPresentRef = React__default__namespace.useRef(present);
+  const prevAnimationNameRef = React__default__namespace.useRef("none");
+  const initialState = present ? "mounted" : "unmounted";
+  const [state3, send] = useStateMachine(initialState, {
+    mounted: {
+      UNMOUNT: "unmounted",
+      ANIMATION_OUT: "unmountSuspended"
+    },
+    unmountSuspended: {
+      MOUNT: "mounted",
+      ANIMATION_END: "unmounted"
+    },
+    unmounted: {
+      MOUNT: "mounted"
+    }
+  });
+  React__default__namespace.useEffect(() => {
+    const currentAnimationName = getAnimationName(stylesRef.current);
+    prevAnimationNameRef.current = state3 === "mounted" ? currentAnimationName : "none";
+  }, [state3]);
+  useLayoutEffect2(() => {
+    const styles3 = stylesRef.current;
+    const wasPresent = prevPresentRef.current;
+    const hasPresentChanged = wasPresent !== present;
+    if (hasPresentChanged) {
+      const prevAnimationName = prevAnimationNameRef.current;
+      const currentAnimationName = getAnimationName(styles3);
+      if (present) {
+        send("MOUNT");
+      } else if (currentAnimationName === "none" || styles3?.display === "none") {
+        send("UNMOUNT");
+      } else {
+        const isAnimating = prevAnimationName !== currentAnimationName;
+        if (wasPresent && isAnimating) {
+          send("ANIMATION_OUT");
+        } else {
+          send("UNMOUNT");
+        }
+      }
+      prevPresentRef.current = present;
+    }
+  }, [present, send]);
+  useLayoutEffect2(() => {
+    if (node) {
+      let timeoutId;
+      const ownerWindow = node.ownerDocument.defaultView ?? window;
+      const handleAnimationEnd = (event) => {
+        const currentAnimationName = getAnimationName(stylesRef.current);
+        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
+        if (event.target === node && isCurrentAnimation) {
+          send("ANIMATION_END");
+          if (!prevPresentRef.current) {
+            const currentFillMode = node.style.animationFillMode;
+            node.style.animationFillMode = "forwards";
+            timeoutId = ownerWindow.setTimeout(() => {
+              if (node.style.animationFillMode === "forwards") {
+                node.style.animationFillMode = currentFillMode;
+              }
+            });
+          }
+        }
+      };
+      const handleAnimationStart = (event) => {
+        if (event.target === node) {
+          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
+        }
+      };
+      node.addEventListener("animationstart", handleAnimationStart);
+      node.addEventListener("animationcancel", handleAnimationEnd);
+      node.addEventListener("animationend", handleAnimationEnd);
+      return () => {
+        ownerWindow.clearTimeout(timeoutId);
+        node.removeEventListener("animationstart", handleAnimationStart);
+        node.removeEventListener("animationcancel", handleAnimationEnd);
+        node.removeEventListener("animationend", handleAnimationEnd);
+      };
+    } else {
+      send("ANIMATION_END");
+    }
+  }, [node, send]);
+  return {
+    isPresent: ["mounted", "unmountSuspended"].includes(state3),
+    ref: React__default__namespace.useCallback((node2) => {
+      stylesRef.current = node2 ? getComputedStyle(node2) : null;
+      setNode(node2);
+    }, [])
+  };
+}
+function getAnimationName(styles3) {
+  return styles3?.animationName || "none";
+}
+function getElementRef2(element) {
+  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
+  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.ref;
+  }
+  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
+  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
+  if (mayWarn) {
+    return element.props.ref;
+  }
+  return element.props.ref || element.ref;
+}
+var count2 = 0;
+function useFocusGuards() {
+  React__default__namespace.useEffect(() => {
+    const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
+    document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
+    document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
+    count2++;
+    return () => {
+      if (count2 === 1) {
+        document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
+      }
+      count2--;
+    };
+  }, []);
+}
+function createFocusGuard() {
+  const element = document.createElement("span");
+  element.setAttribute("data-radix-focus-guard", "");
+  element.tabIndex = 0;
+  element.style.outline = "none";
+  element.style.opacity = "0";
+  element.style.position = "fixed";
+  element.style.pointerEvents = "none";
+  return element;
+}
+
+// node_modules/tslib/tslib.es6.mjs
+var __assign = function() {
+  __assign = Object.assign || function __assign2(t2) {
+    for (var s2, i2 = 1, n = arguments.length; i2 < n; i2++) {
+      s2 = arguments[i2];
+      for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p)) t2[p] = s2[p];
+    }
+    return t2;
+  };
+  return __assign.apply(this, arguments);
+};
+function __rest(s2, e3) {
+  var t2 = {};
+  for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p) && e3.indexOf(p) < 0)
+    t2[p] = s2[p];
+  if (s2 != null && typeof Object.getOwnPropertySymbols === "function")
+    for (var i2 = 0, p = Object.getOwnPropertySymbols(s2); i2 < p.length; i2++) {
+      if (e3.indexOf(p[i2]) < 0 && Object.prototype.propertyIsEnumerable.call(s2, p[i2]))
+        t2[p[i2]] = s2[p[i2]];
+    }
+  return t2;
+}
+function __spreadArray(to, from, pack) {
+  for (var i2 = 0, l3 = from.length, ar; i2 < l3; i2++) {
+    if (ar || !(i2 in from)) {
+      if (!ar) ar = Array.prototype.slice.call(from, 0, i2);
+      ar[i2] = from[i2];
+    }
+  }
+  return to.concat(ar || Array.prototype.slice.call(from));
+}
+
+// node_modules/react-remove-scroll-bar/dist/es2015/constants.js
+var zeroRightClassName = "right-scroll-bar-position";
+var fullWidthClassName = "width-before-scroll-bar";
+var noScrollbarsClassName = "with-scroll-bars-hidden";
+var removedBarSizeVariable = "--removed-body-scroll-bar-size";
+
+// node_modules/use-callback-ref/dist/es2015/assignRef.js
+function assignRef(ref, value) {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
+  return ref;
+}
+function useCallbackRef2(initialValue, callback) {
+  var ref = React__default.useState(function() {
+    return {
+      // value
+      value: initialValue,
+      // last callback
+      callback,
+      // "memoized" public interface
+      facade: {
+        get current() {
+          return ref.value;
+        },
+        set current(value) {
+          var last = ref.value;
+          if (last !== value) {
+            ref.value = value;
+            ref.callback(value, last);
+          }
+        }
+      }
+    };
+  })[0];
+  ref.callback = callback;
+  return ref.facade;
+}
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? React__default__namespace.useLayoutEffect : React__default__namespace.useEffect;
+var currentValues = /* @__PURE__ */ new WeakMap();
+function useMergeRefs(refs, defaultValue) {
+  var callbackRef = useCallbackRef2(null, function(newValue) {
+    return refs.forEach(function(ref) {
+      return assignRef(ref, newValue);
+    });
+  });
+  useIsomorphicLayoutEffect(function() {
+    var oldValue = currentValues.get(callbackRef);
+    if (oldValue) {
+      var prevRefs_1 = new Set(oldValue);
+      var nextRefs_1 = new Set(refs);
+      var current_1 = callbackRef.current;
+      prevRefs_1.forEach(function(ref) {
+        if (!nextRefs_1.has(ref)) {
+          assignRef(ref, null);
+        }
+      });
+      nextRefs_1.forEach(function(ref) {
+        if (!prevRefs_1.has(ref)) {
+          assignRef(ref, current_1);
+        }
+      });
+    }
+    currentValues.set(callbackRef, refs);
+  }, [refs]);
+  return callbackRef;
+}
+
+// node_modules/use-sidecar/dist/es2015/medium.js
+function ItoI(a2) {
+  return a2;
+}
+function innerCreateMedium(defaults3, middleware) {
+  if (middleware === void 0) {
+    middleware = ItoI;
+  }
+  var buffer = [];
+  var assigned = false;
+  var medium = {
+    read: function() {
+      if (assigned) {
+        throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
+      }
+      if (buffer.length) {
+        return buffer[buffer.length - 1];
+      }
+      return defaults3;
+    },
+    useMedium: function(data3) {
+      var item2 = middleware(data3, assigned);
+      buffer.push(item2);
+      return function() {
+        buffer = buffer.filter(function(x) {
+          return x !== item2;
+        });
+      };
+    },
+    assignSyncMedium: function(cb) {
+      assigned = true;
+      while (buffer.length) {
+        var cbs = buffer;
+        buffer = [];
+        cbs.forEach(cb);
+      }
+      buffer = {
+        push: function(x) {
+          return cb(x);
+        },
+        filter: function() {
+          return buffer;
+        }
+      };
+    },
+    assignMedium: function(cb) {
+      assigned = true;
+      var pendingQueue = [];
+      if (buffer.length) {
+        var cbs = buffer;
+        buffer = [];
+        cbs.forEach(cb);
+        pendingQueue = buffer;
+      }
+      var executeQueue = function() {
+        var cbs2 = pendingQueue;
+        pendingQueue = [];
+        cbs2.forEach(cb);
+      };
+      var cycle = function() {
+        return Promise.resolve().then(executeQueue);
+      };
+      cycle();
+      buffer = {
+        push: function(x) {
+          pendingQueue.push(x);
+          cycle();
+        },
+        filter: function(filter) {
+          pendingQueue = pendingQueue.filter(filter);
+          return buffer;
+        }
+      };
+    }
+  };
+  return medium;
+}
+function createSidecarMedium(options) {
+  if (options === void 0) {
+    options = {};
+  }
+  var medium = innerCreateMedium(null);
+  medium.options = __assign({ async: true, ssr: false }, options);
+  return medium;
+}
+var SideCar = function(_a) {
+  var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
+  if (!sideCar) {
+    throw new Error("Sidecar: please provide `sideCar` property to import the right car");
+  }
+  var Target = sideCar.read();
+  if (!Target) {
+    throw new Error("Sidecar medium not found");
+  }
+  return React__default__namespace.createElement(Target, __assign({}, rest));
+};
+SideCar.isSideCarExport = true;
+function exportSidecar(medium, exported) {
+  medium.useMedium(exported);
+  return SideCar;
+}
+
+// node_modules/react-remove-scroll/dist/es2015/medium.js
+var effectCar = createSidecarMedium();
+
+// node_modules/react-remove-scroll/dist/es2015/UI.js
+var nothing = function() {
+  return;
+};
+var RemoveScroll = React__default__namespace.forwardRef(function(props, parentRef) {
+  var ref = React__default__namespace.useRef(null);
+  var _a = React__default__namespace.useState({
+    onScrollCapture: nothing,
+    onWheelCapture: nothing,
+    onTouchMoveCapture: nothing
+  }), callbacks = _a[0], setCallbacks = _a[1];
+  var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b = props.as, Container = _b === void 0 ? "div" : _b, gapMode = props.gapMode, rest = __rest(props, ["forwardProps", "children", "className", "removeScrollBar", "enabled", "shards", "sideCar", "noRelative", "noIsolation", "inert", "allowPinchZoom", "as", "gapMode"]);
+  var SideCar2 = sideCar;
+  var containerRef = useMergeRefs([ref, parentRef]);
+  var containerProps = __assign(__assign({}, rest), callbacks);
+  return React__default__namespace.createElement(
+    React__default__namespace.Fragment,
+    null,
+    enabled && React__default__namespace.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
+    forwardProps ? React__default__namespace.cloneElement(React__default__namespace.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : React__default__namespace.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
+  );
+});
+RemoveScroll.defaultProps = {
+  enabled: true,
+  removeScrollBar: true,
+  inert: false
+};
+RemoveScroll.classNames = {
+  fullWidth: fullWidthClassName,
+  zeroRight: zeroRightClassName
+};
+var getNonce = function() {
+  if (typeof __webpack_nonce__ !== "undefined") {
+    return __webpack_nonce__;
+  }
+  return void 0;
+};
+
+// node_modules/react-style-singleton/dist/es2015/singleton.js
+function makeStyleTag() {
+  if (!document)
+    return null;
+  var tag = document.createElement("style");
+  tag.type = "text/css";
+  var nonce = getNonce();
+  if (nonce) {
+    tag.setAttribute("nonce", nonce);
+  }
+  return tag;
+}
+function injectStyles(tag, css) {
+  if (tag.styleSheet) {
+    tag.styleSheet.cssText = css;
+  } else {
+    tag.appendChild(document.createTextNode(css));
+  }
+}
+function insertStyleTag(tag) {
+  var head = document.head || document.getElementsByTagName("head")[0];
+  head.appendChild(tag);
+}
+var stylesheetSingleton = function() {
+  var counter = 0;
+  var stylesheet = null;
+  return {
+    add: function(style) {
+      if (counter == 0) {
+        if (stylesheet = makeStyleTag()) {
+          injectStyles(stylesheet, style);
+          insertStyleTag(stylesheet);
+        }
+      }
+      counter++;
+    },
+    remove: function() {
+      counter--;
+      if (!counter && stylesheet) {
+        stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
+        stylesheet = null;
+      }
+    }
+  };
+};
+
+// node_modules/react-style-singleton/dist/es2015/hook.js
+var styleHookSingleton = function() {
+  var sheet = stylesheetSingleton();
+  return function(styles3, isDynamic) {
+    React__default__namespace.useEffect(function() {
+      sheet.add(styles3);
+      return function() {
+        sheet.remove();
+      };
+    }, [styles3 && isDynamic]);
+  };
+};
+
+// node_modules/react-style-singleton/dist/es2015/component.js
+var styleSingleton = function() {
+  var useStyle = styleHookSingleton();
+  var Sheet = function(_a) {
+    var styles3 = _a.styles, dynamic = _a.dynamic;
+    useStyle(styles3, dynamic);
+    return null;
+  };
+  return Sheet;
+};
+
+// node_modules/react-remove-scroll-bar/dist/es2015/utils.js
+var zeroGap = {
+  left: 0,
+  top: 0,
+  right: 0,
+  gap: 0
+};
+var parse = function(x) {
+  return parseInt(x || "", 10) || 0;
+};
+var getOffset = function(gapMode) {
+  var cs = window.getComputedStyle(document.body);
+  var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
+  var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
+  var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
+  return [parse(left), parse(top), parse(right)];
+};
+var getGapWidth = function(gapMode) {
+  if (gapMode === void 0) {
+    gapMode = "margin";
+  }
+  if (typeof window === "undefined") {
+    return zeroGap;
+  }
+  var offsets = getOffset(gapMode);
+  var documentWidth = document.documentElement.clientWidth;
+  var windowWidth = window.innerWidth;
+  return {
+    left: offsets[0],
+    top: offsets[1],
+    right: offsets[2],
+    gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
+  };
+};
+
+// node_modules/react-remove-scroll-bar/dist/es2015/component.js
+var Style = styleSingleton();
+var lockAttribute = "data-scroll-locked";
+var getStyles = function(_a, allowRelative, gapMode, important) {
+  var left = _a.left, top = _a.top, right = _a.right, gap = _a.gap;
+  if (gapMode === void 0) {
+    gapMode = "margin";
+  }
+  return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
+    allowRelative && "position: relative ".concat(important, ";"),
+    gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
+    gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
+  ].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
+};
+var getCurrentUseCounter = function() {
+  var counter = parseInt(document.body.getAttribute(lockAttribute) || "0", 10);
+  return isFinite(counter) ? counter : 0;
+};
+var useLockAttribute = function() {
+  React__default__namespace.useEffect(function() {
+    document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
+    return function() {
+      var newCounter = getCurrentUseCounter() - 1;
+      if (newCounter <= 0) {
+        document.body.removeAttribute(lockAttribute);
+      } else {
+        document.body.setAttribute(lockAttribute, newCounter.toString());
+      }
+    };
+  }, []);
+};
+var RemoveScrollBar = function(_a) {
+  var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
+  useLockAttribute();
+  var gap = React__default__namespace.useMemo(function() {
+    return getGapWidth(gapMode);
+  }, [gapMode]);
+  return React__default__namespace.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
+};
+
+// node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
+var passiveSupported = false;
+if (typeof window !== "undefined") {
+  try {
+    options = Object.defineProperty({}, "passive", {
+      get: function() {
+        passiveSupported = true;
+        return true;
+      }
+    });
+    window.addEventListener("test", options, options);
+    window.removeEventListener("test", options, options);
+  } catch (err) {
+    passiveSupported = false;
+  }
+}
+var options;
+var nonPassive = passiveSupported ? { passive: false } : false;
+
+// node_modules/react-remove-scroll/dist/es2015/handleScroll.js
+var alwaysContainsScroll = function(node) {
+  return node.tagName === "TEXTAREA";
+};
+var elementCanBeScrolled = function(node, overflow) {
+  if (!(node instanceof Element)) {
+    return false;
+  }
+  var styles3 = window.getComputedStyle(node);
+  return (
+    // not-not-scrollable
+    styles3[overflow] !== "hidden" && // contains scroll inside self
+    !(styles3.overflowY === styles3.overflowX && !alwaysContainsScroll(node) && styles3[overflow] === "visible")
+  );
+};
+var elementCouldBeVScrolled = function(node) {
+  return elementCanBeScrolled(node, "overflowY");
+};
+var elementCouldBeHScrolled = function(node) {
+  return elementCanBeScrolled(node, "overflowX");
+};
+var locationCouldBeScrolled = function(axis, node) {
+  var ownerDocument = node.ownerDocument;
+  var current = node;
+  do {
+    if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) {
+      current = current.host;
+    }
+    var isScrollable2 = elementCouldBeScrolled(axis, current);
+    if (isScrollable2) {
+      var _a = getScrollVariables(axis, current), scrollHeight = _a[1], clientHeight = _a[2];
+      if (scrollHeight > clientHeight) {
+        return true;
+      }
+    }
+    current = current.parentNode;
+  } while (current && current !== ownerDocument.body);
+  return false;
+};
+var getVScrollVariables = function(_a) {
+  var scrollTop = _a.scrollTop, scrollHeight = _a.scrollHeight, clientHeight = _a.clientHeight;
+  return [
+    scrollTop,
+    scrollHeight,
+    clientHeight
+  ];
+};
+var getHScrollVariables = function(_a) {
+  var scrollLeft = _a.scrollLeft, scrollWidth = _a.scrollWidth, clientWidth = _a.clientWidth;
+  return [
+    scrollLeft,
+    scrollWidth,
+    clientWidth
+  ];
+};
+var elementCouldBeScrolled = function(axis, node) {
+  return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
+};
+var getScrollVariables = function(axis, node) {
+  return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
+};
+var getDirectionFactor = function(axis, direction) {
+  return axis === "h" && direction === "rtl" ? -1 : 1;
+};
+var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
+  var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
+  var delta = directionFactor * sourceDelta;
+  var target = event.target;
+  var targetInLock = endTarget.contains(target);
+  var shouldCancelScroll = false;
+  var isDeltaPositive = delta > 0;
+  var availableScroll = 0;
+  var availableScrollTop = 0;
+  do {
+    if (!target) {
+      break;
+    }
+    var _a = getScrollVariables(axis, target), position = _a[0], scroll_1 = _a[1], capacity = _a[2];
+    var elementScroll = scroll_1 - capacity - directionFactor * position;
+    if (position || elementScroll) {
+      if (elementCouldBeScrolled(axis, target)) {
+        availableScroll += elementScroll;
+        availableScrollTop += position;
+      }
+    }
+    var parent_1 = target.parentNode;
+    target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
+  } while (
+    // portaled content
+    !targetInLock && target !== document.body || // self content
+    targetInLock && (endTarget.contains(target) || endTarget === target)
+  );
+  if (isDeltaPositive && (Math.abs(availableScroll) < 1 || false)) {
+    shouldCancelScroll = true;
+  } else if (!isDeltaPositive && (Math.abs(availableScrollTop) < 1 || false)) {
+    shouldCancelScroll = true;
+  }
+  return shouldCancelScroll;
+};
+
+// node_modules/react-remove-scroll/dist/es2015/SideEffect.js
+var getTouchXY = function(event) {
+  return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
+};
+var getDeltaXY = function(event) {
+  return [event.deltaX, event.deltaY];
+};
+var extractRef = function(ref) {
+  return ref && "current" in ref ? ref.current : ref;
+};
+var deltaCompare = function(x, y) {
+  return x[0] === y[0] && x[1] === y[1];
+};
+var generateStyle = function(id) {
+  return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
+};
+var idCounter = 0;
+var lockStack = [];
+function RemoveScrollSideCar(props) {
+  var shouldPreventQueue = React__default__namespace.useRef([]);
+  var touchStartRef = React__default__namespace.useRef([0, 0]);
+  var activeAxis = React__default__namespace.useRef();
+  var id = React__default__namespace.useState(idCounter++)[0];
+  var Style2 = React__default__namespace.useState(styleSingleton)[0];
+  var lastProps = React__default__namespace.useRef(props);
+  React__default__namespace.useEffect(function() {
+    lastProps.current = props;
+  }, [props]);
+  React__default__namespace.useEffect(function() {
+    if (props.inert) {
+      document.body.classList.add("block-interactivity-".concat(id));
+      var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef)).filter(Boolean);
+      allow_1.forEach(function(el) {
+        return el.classList.add("allow-interactivity-".concat(id));
+      });
+      return function() {
+        document.body.classList.remove("block-interactivity-".concat(id));
+        allow_1.forEach(function(el) {
+          return el.classList.remove("allow-interactivity-".concat(id));
+        });
+      };
+    }
+    return;
+  }, [props.inert, props.lockRef.current, props.shards]);
+  var shouldCancelEvent = React__default__namespace.useCallback(function(event, parent) {
+    if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) {
+      return !lastProps.current.allowPinchZoom;
+    }
+    var touch = getTouchXY(event);
+    var touchStart = touchStartRef.current;
+    var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
+    var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
+    var currentAxis;
+    var target = event.target;
+    var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
+    if ("touches" in event && moveDirection === "h" && target.type === "range") {
+      return false;
+    }
+    var selection = window.getSelection();
+    var anchorNode = selection && selection.anchorNode;
+    var isTouchingSelection = anchorNode ? anchorNode === target || anchorNode.contains(target) : false;
+    if (isTouchingSelection) {
+      return false;
+    }
+    var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+    if (!canBeScrolledInMainDirection) {
+      return true;
+    }
+    if (canBeScrolledInMainDirection) {
+      currentAxis = moveDirection;
+    } else {
+      currentAxis = moveDirection === "v" ? "h" : "v";
+      canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
+    }
+    if (!canBeScrolledInMainDirection) {
+      return false;
+    }
+    if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) {
+      activeAxis.current = currentAxis;
+    }
+    if (!currentAxis) {
+      return true;
+    }
+    var cancelingAxis = activeAxis.current || currentAxis;
+    return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY);
+  }, []);
+  var shouldPrevent = React__default__namespace.useCallback(function(_event) {
+    var event = _event;
+    if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
+      return;
+    }
+    var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
+    var sourceEvent = shouldPreventQueue.current.filter(function(e3) {
+      return e3.name === event.type && (e3.target === event.target || event.target === e3.shadowParent) && deltaCompare(e3.delta, delta);
+    })[0];
+    if (sourceEvent && sourceEvent.should) {
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (!sourceEvent) {
+      var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
+        return node.contains(event.target);
+      });
+      var shouldStop = shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation;
+      if (shouldStop) {
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+      }
+    }
+  }, []);
+  var shouldCancel = React__default__namespace.useCallback(function(name3, delta, target, should) {
+    var event = { name: name3, delta, target, should, shadowParent: getOutermostShadowParent(target) };
+    shouldPreventQueue.current.push(event);
+    setTimeout(function() {
+      shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e3) {
+        return e3 !== event;
+      });
+    }, 1);
+  }, []);
+  var scrollTouchStart = React__default__namespace.useCallback(function(event) {
+    touchStartRef.current = getTouchXY(event);
+    activeAxis.current = void 0;
+  }, []);
+  var scrollWheel = React__default__namespace.useCallback(function(event) {
+    shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+  }, []);
+  var scrollTouchMove = React__default__namespace.useCallback(function(event) {
+    shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
+  }, []);
+  React__default__namespace.useEffect(function() {
+    lockStack.push(Style2);
+    props.setCallbacks({
+      onScrollCapture: scrollWheel,
+      onWheelCapture: scrollWheel,
+      onTouchMoveCapture: scrollTouchMove
+    });
+    document.addEventListener("wheel", shouldPrevent, nonPassive);
+    document.addEventListener("touchmove", shouldPrevent, nonPassive);
+    document.addEventListener("touchstart", scrollTouchStart, nonPassive);
+    return function() {
+      lockStack = lockStack.filter(function(inst) {
+        return inst !== Style2;
+      });
+      document.removeEventListener("wheel", shouldPrevent, nonPassive);
+      document.removeEventListener("touchmove", shouldPrevent, nonPassive);
+      document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
+    };
+  }, []);
+  var removeScrollBar = props.removeScrollBar, inert = props.inert;
+  return React__default__namespace.createElement(
+    React__default__namespace.Fragment,
+    null,
+    inert ? React__default__namespace.createElement(Style2, { styles: generateStyle(id) }) : null,
+    removeScrollBar ? React__default__namespace.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
+  );
+}
+function getOutermostShadowParent(node) {
+  var shadowParent = null;
+  while (node !== null) {
+    if (node instanceof ShadowRoot) {
+      shadowParent = node.host;
+      node = node.host;
+    }
+    node = node.parentNode;
+  }
+  return shadowParent;
+}
+
+// node_modules/react-remove-scroll/dist/es2015/sidecar.js
+var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
+
+// node_modules/react-remove-scroll/dist/es2015/Combination.js
+var ReactRemoveScroll = React__default__namespace.forwardRef(function(props, ref) {
+  return React__default__namespace.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: sidecar_default }));
+});
+ReactRemoveScroll.classNames = RemoveScroll.classNames;
+var Combination_default = ReactRemoveScroll;
+
+// node_modules/aria-hidden/dist/es2015/index.js
+var getDefaultParent = function(originalTarget) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  var sampleTarget = Array.isArray(originalTarget) ? originalTarget[0] : originalTarget;
+  return sampleTarget.ownerDocument.body;
+};
+var counterMap = /* @__PURE__ */ new WeakMap();
+var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+var markerMap = {};
+var lockCount = 0;
+var unwrapHost = function(node) {
+  return node && (node.host || unwrapHost(node.parentNode));
+};
+var correctTargets = function(parent, targets) {
+  return targets.map(function(target) {
+    if (parent.contains(target)) {
+      return target;
+    }
+    var correctedTarget = unwrapHost(target);
+    if (correctedTarget && parent.contains(correctedTarget)) {
+      return correctedTarget;
+    }
+    console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
+    return null;
+  }).filter(function(x) {
+    return Boolean(x);
+  });
+};
+var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
+  var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+  if (!markerMap[markerName]) {
+    markerMap[markerName] = /* @__PURE__ */ new WeakMap();
+  }
+  var markerCounter = markerMap[markerName];
+  var hiddenNodes = [];
+  var elementsToKeep = /* @__PURE__ */ new Set();
+  var elementsToStop = new Set(targets);
+  var keep = function(el) {
+    if (!el || elementsToKeep.has(el)) {
+      return;
+    }
+    elementsToKeep.add(el);
+    keep(el.parentNode);
+  };
+  targets.forEach(keep);
+  var deep = function(parent) {
+    if (!parent || elementsToStop.has(parent)) {
+      return;
+    }
+    Array.prototype.forEach.call(parent.children, function(node) {
+      if (elementsToKeep.has(node)) {
+        deep(node);
+      } else {
+        try {
+          var attr3 = node.getAttribute(controlAttribute);
+          var alreadyHidden = attr3 !== null && attr3 !== "false";
+          var counterValue = (counterMap.get(node) || 0) + 1;
+          var markerValue = (markerCounter.get(node) || 0) + 1;
+          counterMap.set(node, counterValue);
+          markerCounter.set(node, markerValue);
+          hiddenNodes.push(node);
+          if (counterValue === 1 && alreadyHidden) {
+            uncontrolledNodes.set(node, true);
+          }
+          if (markerValue === 1) {
+            node.setAttribute(markerName, "true");
+          }
+          if (!alreadyHidden) {
+            node.setAttribute(controlAttribute, "true");
+          }
+        } catch (e3) {
+          console.error("aria-hidden: cannot operate on ", node, e3);
+        }
+      }
+    });
+  };
+  deep(parentNode);
+  elementsToKeep.clear();
+  lockCount++;
+  return function() {
+    hiddenNodes.forEach(function(node) {
+      var counterValue = counterMap.get(node) - 1;
+      var markerValue = markerCounter.get(node) - 1;
+      counterMap.set(node, counterValue);
+      markerCounter.set(node, markerValue);
+      if (!counterValue) {
+        if (!uncontrolledNodes.has(node)) {
+          node.removeAttribute(controlAttribute);
+        }
+        uncontrolledNodes.delete(node);
+      }
+      if (!markerValue) {
+        node.removeAttribute(markerName);
+      }
+    });
+    lockCount--;
+    if (!lockCount) {
+      counterMap = /* @__PURE__ */ new WeakMap();
+      counterMap = /* @__PURE__ */ new WeakMap();
+      uncontrolledNodes = /* @__PURE__ */ new WeakMap();
+      markerMap = {};
+    }
+  };
+};
+var hideOthers = function(originalTarget, parentNode, markerName) {
+  if (markerName === void 0) {
+    markerName = "data-aria-hidden";
+  }
+  var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
+  var activeParentNode = getDefaultParent(originalTarget);
+  if (!activeParentNode) {
+    return function() {
+      return null;
+    };
+  }
+  targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
+  return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
+};
+var DIALOG_NAME = "Dialog";
+var [createDialogContext] = createContextScope(DIALOG_NAME);
+var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
+var Dialog = (props) => {
+  const {
+    __scopeDialog,
+    children,
+    open: openProp,
+    defaultOpen,
+    onOpenChange,
+    modal = true
+  } = props;
+  const triggerRef = React__default__namespace.useRef(null);
+  const contentRef = React__default__namespace.useRef(null);
+  const [open, setOpen] = useControllableState({
+    prop: openProp,
+    defaultProp: defaultOpen ?? false,
+    onChange: onOpenChange,
+    caller: DIALOG_NAME
+  });
+  return /* @__PURE__ */ jsxRuntime.jsx(
+    DialogProvider,
+    {
+      scope: __scopeDialog,
+      triggerRef,
+      contentRef,
+      contentId: useId(),
+      titleId: useId(),
+      descriptionId: useId(),
+      open,
+      onOpenChange: setOpen,
+      onOpenToggle: React__default__namespace.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+      modal,
+      children
+    }
+  );
+};
+Dialog.displayName = DIALOG_NAME;
+var TRIGGER_NAME = "DialogTrigger";
+var DialogTrigger = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...triggerProps } = props;
+    const context = useDialogContext(TRIGGER_NAME, __scopeDialog);
+    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
+    return /* @__PURE__ */ jsxRuntime.jsx(
+      Primitive.button,
+      {
+        type: "button",
+        "aria-haspopup": "dialog",
+        "aria-expanded": context.open,
+        "aria-controls": context.contentId,
+        "data-state": getState(context.open),
+        ...triggerProps,
+        ref: composedTriggerRef,
+        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
+      }
+    );
+  }
+);
+DialogTrigger.displayName = TRIGGER_NAME;
+var PORTAL_NAME2 = "DialogPortal";
+var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME2, {
+  forceMount: void 0
+});
+var DialogPortal = (props) => {
+  const { __scopeDialog, forceMount, children, container } = props;
+  const context = useDialogContext(PORTAL_NAME2, __scopeDialog);
+  return /* @__PURE__ */ jsxRuntime.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: React__default__namespace.Children.map(children, (child) => /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntime.jsx(Portal, { asChild: true, container, children: child }) })) });
+};
+DialogPortal.displayName = PORTAL_NAME2;
+var OVERLAY_NAME = "DialogOverlay";
+var DialogOverlay = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
+    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
+    const context = useDialogContext(OVERLAY_NAME, props.__scopeDialog);
+    return context.modal ? /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntime.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
+  }
+);
+DialogOverlay.displayName = OVERLAY_NAME;
+var Slot = createSlot("DialogOverlay.RemoveScroll");
+var DialogOverlayImpl = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...overlayProps } = props;
+    const context = useDialogContext(OVERLAY_NAME, __scopeDialog);
+    return (
+      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
+      // ie. when `Overlay` and `Content` are siblings
+      /* @__PURE__ */ jsxRuntime.jsx(Combination_default, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntime.jsx(
+        Primitive.div,
+        {
+          "data-state": getState(context.open),
+          ...overlayProps,
+          ref: forwardedRef,
+          style: { pointerEvents: "auto", ...overlayProps.style }
+        }
+      ) })
+    );
+  }
+);
+var CONTENT_NAME = "DialogContent";
+var DialogContent = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const portalContext = usePortalContext(CONTENT_NAME, props.__scopeDialog);
+    const { forceMount = portalContext.forceMount, ...contentProps } = props;
+    const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
+    return /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntime.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntime.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
+  }
+);
+DialogContent.displayName = CONTENT_NAME;
+var DialogContentModal = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
+    const contentRef = React__default__namespace.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
+    React__default__namespace.useEffect(() => {
+      const content = contentRef.current;
+      if (content) return hideOthers(content);
+    }, []);
+    return /* @__PURE__ */ jsxRuntime.jsx(
+      DialogContentImpl,
+      {
+        ...props,
+        ref: composedRefs,
+        trapFocus: context.open,
+        disableOutsidePointerEvents: true,
+        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
+          event.preventDefault();
+          context.triggerRef.current?.focus();
+        }),
+        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
+          const originalEvent = event.detail.originalEvent;
+          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
+          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
+          if (isRightClick) event.preventDefault();
+        }),
+        onFocusOutside: composeEventHandlers(
+          props.onFocusOutside,
+          (event) => event.preventDefault()
+        )
+      }
+    );
+  }
+);
+var DialogContentNonModal = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
+    const hasInteractedOutsideRef = React__default__namespace.useRef(false);
+    const hasPointerDownOutsideRef = React__default__namespace.useRef(false);
+    return /* @__PURE__ */ jsxRuntime.jsx(
+      DialogContentImpl,
+      {
+        ...props,
+        ref: forwardedRef,
+        trapFocus: false,
+        disableOutsidePointerEvents: false,
+        onCloseAutoFocus: (event) => {
+          props.onCloseAutoFocus?.(event);
+          if (!event.defaultPrevented) {
+            if (!hasInteractedOutsideRef.current) context.triggerRef.current?.focus();
+            event.preventDefault();
+          }
+          hasInteractedOutsideRef.current = false;
+          hasPointerDownOutsideRef.current = false;
+        },
+        onInteractOutside: (event) => {
+          props.onInteractOutside?.(event);
+          if (!event.defaultPrevented) {
+            hasInteractedOutsideRef.current = true;
+            if (event.detail.originalEvent.type === "pointerdown") {
+              hasPointerDownOutsideRef.current = true;
+            }
+          }
+          const target = event.target;
+          const targetIsTrigger = context.triggerRef.current?.contains(target);
+          if (targetIsTrigger) event.preventDefault();
+          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
+            event.preventDefault();
+          }
+        }
+      }
+    );
+  }
+);
+var DialogContentImpl = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
+    const context = useDialogContext(CONTENT_NAME, __scopeDialog);
+    const contentRef = React__default__namespace.useRef(null);
+    const composedRefs = useComposedRefs(forwardedRef, contentRef);
+    useFocusGuards();
+    return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(
+        FocusScope,
+        {
+          asChild: true,
+          loop: true,
+          trapped: trapFocus,
+          onMountAutoFocus: onOpenAutoFocus,
+          onUnmountAutoFocus: onCloseAutoFocus,
+          children: /* @__PURE__ */ jsxRuntime.jsx(
+            DismissableLayer,
+            {
+              role: "dialog",
+              id: context.contentId,
+              "aria-describedby": context.descriptionId,
+              "aria-labelledby": context.titleId,
+              "data-state": getState(context.open),
+              ...contentProps,
+              ref: composedRefs,
+              onDismiss: () => context.onOpenChange(false)
+            }
+          )
+        }
+      ),
+      /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(TitleWarning, { titleId: context.titleId }),
+        /* @__PURE__ */ jsxRuntime.jsx(DescriptionWarning, { contentRef, descriptionId: context.descriptionId })
+      ] })
+    ] });
+  }
+);
+var TITLE_NAME = "DialogTitle";
+var DialogTitle = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...titleProps } = props;
+    const context = useDialogContext(TITLE_NAME, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntime.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
+  }
+);
+DialogTitle.displayName = TITLE_NAME;
+var DESCRIPTION_NAME = "DialogDescription";
+var DialogDescription = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...descriptionProps } = props;
+    const context = useDialogContext(DESCRIPTION_NAME, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntime.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
+  }
+);
+DialogDescription.displayName = DESCRIPTION_NAME;
+var CLOSE_NAME = "DialogClose";
+var DialogClose = React__default__namespace.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeDialog, ...closeProps } = props;
+    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
+    return /* @__PURE__ */ jsxRuntime.jsx(
+      Primitive.button,
+      {
+        type: "button",
+        ...closeProps,
+        ref: forwardedRef,
+        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
+      }
+    );
+  }
+);
+DialogClose.displayName = CLOSE_NAME;
+function getState(open) {
+  return open ? "open" : "closed";
+}
+var TITLE_WARNING_NAME = "DialogTitleWarning";
+var [WarningProvider, useWarningContext] = createContext22(TITLE_WARNING_NAME, {
+  contentName: CONTENT_NAME,
+  titleName: TITLE_NAME,
+  docsSlug: "dialog"
+});
+var TitleWarning = ({ titleId }) => {
+  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
+  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
+
+If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
+  React__default__namespace.useEffect(() => {
+    if (titleId) {
+      const hasTitle = document.getElementById(titleId);
+      if (!hasTitle) console.error(MESSAGE);
+    }
+  }, [MESSAGE, titleId]);
+  return null;
+};
+var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
+var DescriptionWarning = ({ contentRef, descriptionId }) => {
+  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
+  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
+  React__default__namespace.useEffect(() => {
+    const describedById = contentRef.current?.getAttribute("aria-describedby");
+    if (descriptionId && describedById) {
+      const hasDescription = document.getElementById(descriptionId);
+      if (!hasDescription) console.warn(MESSAGE);
+    }
+  }, [MESSAGE, contentRef, descriptionId]);
+  return null;
+};
+var Root = Dialog;
+var Portal2 = DialogPortal;
+var Overlay = DialogOverlay;
+var Content = DialogContent;
+var Title = DialogTitle;
+var Description = DialogDescription;
+function __insertCSS(code) {
+  if (typeof document == "undefined") return;
+  let head = document.head || document.getElementsByTagName("head")[0];
+  let style = document.createElement("style");
+  style.type = "text/css";
+  head.appendChild(style);
+  style.styleSheet ? style.styleSheet.cssText = code : style.appendChild(document.createTextNode(code));
+}
+var DrawerContext = React__default__namespace.default.createContext({
+  drawerRef: {
+    current: null
+  },
+  overlayRef: {
+    current: null
+  },
+  onPress: () => {
+  },
+  onRelease: () => {
+  },
+  onDrag: () => {
+  },
+  onNestedDrag: () => {
+  },
+  onNestedOpenChange: () => {
+  },
+  onNestedRelease: () => {
+  },
+  openProp: void 0,
+  dismissible: false,
+  isOpen: false,
+  isDragging: false,
+  keyboardIsOpen: {
+    current: false
+  },
+  snapPointsOffset: null,
+  snapPoints: null,
+  handleOnly: false,
+  modal: false,
+  shouldFade: false,
+  activeSnapPoint: null,
+  onOpenChange: () => {
+  },
+  setActiveSnapPoint: () => {
+  },
+  closeDrawer: () => {
+  },
+  direction: "bottom",
+  shouldAnimate: {
+    current: true
+  },
+  shouldScaleBackground: false,
+  setBackgroundColorOnScale: true,
+  noBodyStyles: false,
+  container: null,
+  autoFocus: false
+});
+var useDrawerContext = () => {
+  const context = React__default__namespace.default.useContext(DrawerContext);
+  if (!context) {
+    throw new Error("useDrawerContext must be used within a Drawer.Root");
+  }
+  return context;
+};
+__insertCSS("[data-vaul-drawer]{touch-action:none;will-change:transform;transition:transform .5s cubic-bezier(.32, .72, 0, 1);animation-duration:.5s;animation-timing-function:cubic-bezier(0.32,0.72,0,1)}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=bottom][data-state=open]{animation-name:slideFromBottom}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=bottom][data-state=closed]{animation-name:slideToBottom}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=top][data-state=open]{animation-name:slideFromTop}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=top][data-state=closed]{animation-name:slideToTop}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=left][data-state=open]{animation-name:slideFromLeft}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=left][data-state=closed]{animation-name:slideToLeft}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=right][data-state=open]{animation-name:slideFromRight}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=right][data-state=closed]{animation-name:slideToRight}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=bottom]{transform:translate3d(0,var(--initial-transform,100%),0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=top]{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=left]{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=right]{transform:translate3d(var(--initial-transform,100%),0,0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=top]{transform:translate3d(0,var(--snap-point-height,0),0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=bottom]{transform:translate3d(0,var(--snap-point-height,0),0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=left]{transform:translate3d(var(--snap-point-height,0),0,0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=right]{transform:translate3d(var(--snap-point-height,0),0,0)}[data-vaul-overlay][data-vaul-snap-points=false]{animation-duration:.5s;animation-timing-function:cubic-bezier(0.32,0.72,0,1)}[data-vaul-overlay][data-vaul-snap-points=false][data-state=open]{animation-name:fadeIn}[data-vaul-overlay][data-state=closed]{animation-name:fadeOut}[data-vaul-animate=false]{animation:none!important}[data-vaul-overlay][data-vaul-snap-points=true]{opacity:0;transition:opacity .5s cubic-bezier(.32, .72, 0, 1)}[data-vaul-overlay][data-vaul-snap-points=true]{opacity:1}[data-vaul-drawer]:not([data-vaul-custom-container=true])::after{content:'';position:absolute;background:inherit;background-color:inherit}[data-vaul-drawer][data-vaul-drawer-direction=top]::after{top:initial;bottom:100%;left:0;right:0;height:200%}[data-vaul-drawer][data-vaul-drawer-direction=bottom]::after{top:100%;bottom:initial;left:0;right:0;height:200%}[data-vaul-drawer][data-vaul-drawer-direction=left]::after{left:initial;right:100%;top:0;bottom:0;width:200%}[data-vaul-drawer][data-vaul-drawer-direction=right]::after{left:100%;right:initial;top:0;bottom:0;width:200%}[data-vaul-overlay][data-vaul-snap-points=true]:not([data-vaul-snap-points-overlay=true]):not(\n[data-state=closed]\n){opacity:0}[data-vaul-overlay][data-vaul-snap-points-overlay=true]{opacity:1}[data-vaul-handle]{display:block;position:relative;opacity:.7;background:#e2e2e4;margin-left:auto;margin-right:auto;height:5px;width:32px;border-radius:1rem;touch-action:pan-y}[data-vaul-handle]:active,[data-vaul-handle]:hover{opacity:1}[data-vaul-handle-hitarea]{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100%,2.75rem);height:max(100%,2.75rem);touch-action:inherit}@media (hover:hover) and (pointer:fine){[data-vaul-drawer]{user-select:none}}@media (pointer:fine){[data-vaul-handle-hitarea]:{width:100%;height:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes fadeOut{to{opacity:0}}@keyframes slideFromBottom{from{transform:translate3d(0,var(--initial-transform,100%),0)}to{transform:translate3d(0,0,0)}}@keyframes slideToBottom{to{transform:translate3d(0,var(--initial-transform,100%),0)}}@keyframes slideFromTop{from{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}to{transform:translate3d(0,0,0)}}@keyframes slideToTop{to{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}}@keyframes slideFromLeft{from{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}to{transform:translate3d(0,0,0)}}@keyframes slideToLeft{to{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}}@keyframes slideFromRight{from{transform:translate3d(var(--initial-transform,100%),0,0)}to{transform:translate3d(0,0,0)}}@keyframes slideToRight{to{transform:translate3d(var(--initial-transform,100%),0,0)}}");
+function isMobileFirefox() {
+  const userAgent = navigator.userAgent;
+  return typeof window !== "undefined" && (/Firefox/.test(userAgent) && /Mobile/.test(userAgent) || // Android Firefox
+  /FxiOS/.test(userAgent));
+}
+function isMac() {
+  return testPlatform(/^Mac/);
+}
+function isIPhone() {
+  return testPlatform(/^iPhone/);
+}
+function isSafari() {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+function isIPad() {
+  return testPlatform(/^iPad/) || // iPadOS 13 lies and says it's a Mac, but we can distinguish by detecting touch support.
+  isMac() && navigator.maxTouchPoints > 1;
+}
+function isIOS() {
+  return isIPhone() || isIPad();
+}
+function testPlatform(re2) {
+  return typeof window !== "undefined" && window.navigator != null ? re2.test(window.navigator.platform) : void 0;
+}
+var KEYBOARD_BUFFER = 24;
+var useIsomorphicLayoutEffect2 = typeof window !== "undefined" ? React__default.useLayoutEffect : React__default.useEffect;
+function chain$1(...callbacks) {
+  return (...args) => {
+    for (let callback of callbacks) {
+      if (typeof callback === "function") {
+        callback(...args);
+      }
+    }
+  };
+}
+var visualViewport = typeof document !== "undefined" && window.visualViewport;
+function isScrollable(node) {
+  let style = window.getComputedStyle(node);
+  return /(auto|scroll)/.test(style.overflow + style.overflowX + style.overflowY);
+}
+function getScrollParent(node) {
+  if (isScrollable(node)) {
+    node = node.parentElement;
+  }
+  while (node && !isScrollable(node)) {
+    node = node.parentElement;
+  }
+  return node || document.scrollingElement || document.documentElement;
+}
+var nonTextInputTypes = /* @__PURE__ */ new Set([
+  "checkbox",
+  "radio",
+  "range",
+  "color",
+  "file",
+  "image",
+  "button",
+  "submit",
+  "reset"
+]);
+var preventScrollCount = 0;
+var restore;
+function usePreventScroll(options = {}) {
+  let { isDisabled } = options;
+  useIsomorphicLayoutEffect2(() => {
+    if (isDisabled) {
+      return;
+    }
+    preventScrollCount++;
+    if (preventScrollCount === 1) {
+      if (isIOS()) {
+        restore = preventScrollMobileSafari();
+      }
+    }
+    return () => {
+      preventScrollCount--;
+      if (preventScrollCount === 0) {
+        restore == null ? void 0 : restore();
+      }
+    };
+  }, [
+    isDisabled
+  ]);
+}
+function preventScrollMobileSafari() {
+  let scrollable;
+  let lastY = 0;
+  let onTouchStart = (e3) => {
+    scrollable = getScrollParent(e3.target);
+    if (scrollable === document.documentElement && scrollable === document.body) {
+      return;
+    }
+    lastY = e3.changedTouches[0].pageY;
+  };
+  let onTouchMove = (e3) => {
+    if (!scrollable || scrollable === document.documentElement || scrollable === document.body) {
+      e3.preventDefault();
+      return;
+    }
+    let y = e3.changedTouches[0].pageY;
+    let scrollTop = scrollable.scrollTop;
+    let bottom = scrollable.scrollHeight - scrollable.clientHeight;
+    if (bottom === 0) {
+      return;
+    }
+    if (scrollTop <= 0 && y > lastY || scrollTop >= bottom && y < lastY) {
+      e3.preventDefault();
+    }
+    lastY = y;
+  };
+  let onTouchEnd = (e3) => {
+    let target = e3.target;
+    if (isInput(target) && target !== document.activeElement) {
+      e3.preventDefault();
+      target.style.transform = "translateY(-2000px)";
+      target.focus();
+      requestAnimationFrame(() => {
+        target.style.transform = "";
+      });
+    }
+  };
+  let onFocus = (e3) => {
+    let target = e3.target;
+    if (isInput(target)) {
+      target.style.transform = "translateY(-2000px)";
+      requestAnimationFrame(() => {
+        target.style.transform = "";
+        if (visualViewport) {
+          if (visualViewport.height < window.innerHeight) {
+            requestAnimationFrame(() => {
+              scrollIntoView(target);
+            });
+          } else {
+            visualViewport.addEventListener("resize", () => scrollIntoView(target), {
+              once: true
+            });
+          }
+        }
+      });
+    }
+  };
+  let onWindowScroll = () => {
+    window.scrollTo(0, 0);
+  };
+  let scrollX = window.pageXOffset;
+  let scrollY = window.pageYOffset;
+  let restoreStyles = chain$1(setStyle(document.documentElement, "paddingRight", `${window.innerWidth - document.documentElement.clientWidth}px`));
+  window.scrollTo(0, 0);
+  let removeEvents = chain$1(addEvent(document, "touchstart", onTouchStart, {
+    passive: false,
+    capture: true
+  }), addEvent(document, "touchmove", onTouchMove, {
+    passive: false,
+    capture: true
+  }), addEvent(document, "touchend", onTouchEnd, {
+    passive: false,
+    capture: true
+  }), addEvent(document, "focus", onFocus, true), addEvent(window, "scroll", onWindowScroll));
+  return () => {
+    restoreStyles();
+    removeEvents();
+    window.scrollTo(scrollX, scrollY);
+  };
+}
+function setStyle(element, style, value) {
+  let cur = element.style[style];
+  element.style[style] = value;
+  return () => {
+    element.style[style] = cur;
+  };
+}
+function addEvent(target, event, handler, options) {
+  target.addEventListener(event, handler, options);
+  return () => {
+    target.removeEventListener(event, handler, options);
+  };
+}
+function scrollIntoView(target) {
+  let root3 = document.scrollingElement || document.documentElement;
+  while (target && target !== root3) {
+    let scrollable = getScrollParent(target);
+    if (scrollable !== document.documentElement && scrollable !== document.body && scrollable !== target) {
+      let scrollableTop = scrollable.getBoundingClientRect().top;
+      let targetTop = target.getBoundingClientRect().top;
+      let targetBottom = target.getBoundingClientRect().bottom;
+      const keyboardHeight = scrollable.getBoundingClientRect().bottom + KEYBOARD_BUFFER;
+      if (targetBottom > keyboardHeight) {
+        scrollable.scrollTop += targetTop - scrollableTop;
+      }
+    }
+    target = scrollable.parentElement;
+  }
+}
+function isInput(target) {
+  return target instanceof HTMLInputElement && !nonTextInputTypes.has(target.type) || target instanceof HTMLTextAreaElement || target instanceof HTMLElement && target.isContentEditable;
+}
+function setRef2(ref, value) {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref !== null && ref !== void 0) {
+    ref.current = value;
+  }
+}
+function composeRefs2(...refs) {
+  return (node) => refs.forEach((ref) => setRef2(ref, node));
+}
+function useComposedRefs2(...refs) {
+  return React__default__namespace.useCallback(composeRefs2(...refs), refs);
+}
+var cache = /* @__PURE__ */ new WeakMap();
+function set(el, styles3, ignoreCache = false) {
+  if (!el || !(el instanceof HTMLElement)) return;
+  let originalStyles = {};
+  Object.entries(styles3).forEach(([key, value]) => {
+    if (key.startsWith("--")) {
+      el.style.setProperty(key, value);
+      return;
+    }
+    originalStyles[key] = el.style[key];
+    el.style[key] = value;
+  });
+  if (ignoreCache) return;
+  cache.set(el, originalStyles);
+}
+function reset(el, prop) {
+  if (!el || !(el instanceof HTMLElement)) return;
+  let originalStyles = cache.get(el);
+  if (!originalStyles) {
+    return;
+  }
+  {
+    el.style[prop] = originalStyles[prop];
+  }
+}
+var isVertical = (direction) => {
+  switch (direction) {
+    case "top":
+    case "bottom":
+      return true;
+    case "left":
+    case "right":
+      return false;
+    default:
+      return direction;
+  }
+};
+function getTranslate(element, direction) {
+  if (!element) {
+    return null;
+  }
+  const style = window.getComputedStyle(element);
+  const transform = (
+    // @ts-ignore
+    style.transform || style.webkitTransform || style.mozTransform
+  );
+  let mat = transform.match(/^matrix3d\((.+)\)$/);
+  if (mat) {
+    return parseFloat(mat[1].split(", ")[isVertical(direction) ? 13 : 12]);
+  }
+  mat = transform.match(/^matrix\((.+)\)$/);
+  return mat ? parseFloat(mat[1].split(", ")[isVertical(direction) ? 5 : 4]) : null;
+}
+function dampenValue(v2) {
+  return 8 * (Math.log(v2 + 1) - 2);
+}
+function assignStyle(element, style) {
+  if (!element) return () => {
+  };
+  const prevStyle = element.style.cssText;
+  Object.assign(element.style, style);
+  return () => {
+    element.style.cssText = prevStyle;
+  };
+}
+function chain(...fns) {
+  return (...args) => {
+    for (const fn3 of fns) {
+      if (typeof fn3 === "function") {
+        fn3(...args);
+      }
+    }
+  };
+}
+var TRANSITIONS = {
+  DURATION: 0.5,
+  EASE: [
+    0.32,
+    0.72,
+    0,
+    1
+  ]
+};
+var VELOCITY_THRESHOLD = 0.4;
+var CLOSE_THRESHOLD = 0.25;
+var SCROLL_LOCK_TIMEOUT = 100;
+var BORDER_RADIUS = 8;
+var NESTED_DISPLACEMENT = 16;
+var WINDOW_TOP_OFFSET = 26;
+var DRAG_CLASS = "vaul-dragging";
+function useCallbackRef3(callback) {
+  const callbackRef = React__default__namespace.default.useRef(callback);
+  React__default__namespace.default.useEffect(() => {
+    callbackRef.current = callback;
+  });
+  return React__default__namespace.default.useMemo(() => (...args) => callbackRef.current == null ? void 0 : callbackRef.current.call(callbackRef, ...args), []);
+}
+function useUncontrolledState2({ defaultProp, onChange }) {
+  const uncontrolledState = React__default__namespace.default.useState(defaultProp);
+  const [value] = uncontrolledState;
+  const prevValueRef = React__default__namespace.default.useRef(value);
+  const handleChange = useCallbackRef3(onChange);
+  React__default__namespace.default.useEffect(() => {
+    if (prevValueRef.current !== value) {
+      handleChange(value);
+      prevValueRef.current = value;
+    }
+  }, [
+    value,
+    prevValueRef,
+    handleChange
+  ]);
+  return uncontrolledState;
+}
+function useControllableState2({ prop, defaultProp, onChange = () => {
+} }) {
+  const [uncontrolledProp, setUncontrolledProp] = useUncontrolledState2({
+    defaultProp,
+    onChange
+  });
+  const isControlled = prop !== void 0;
+  const value = isControlled ? prop : uncontrolledProp;
+  const handleChange = useCallbackRef3(onChange);
+  const setValue = React__default__namespace.default.useCallback((nextValue) => {
+    if (isControlled) {
+      const setter = nextValue;
+      const value2 = typeof nextValue === "function" ? setter(prop) : nextValue;
+      if (value2 !== prop) handleChange(value2);
+    } else {
+      setUncontrolledProp(nextValue);
+    }
+  }, [
+    isControlled,
+    prop,
+    setUncontrolledProp,
+    handleChange
+  ]);
+  return [
+    value,
+    setValue
+  ];
+}
+function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints, drawerRef, overlayRef, fadeFromIndex, onSnapPointChange, direction = "bottom", container, snapToSequentialPoint }) {
+  const [activeSnapPoint, setActiveSnapPoint] = useControllableState2({
+    prop: activeSnapPointProp,
+    defaultProp: snapPoints == null ? void 0 : snapPoints[0],
+    onChange: setActiveSnapPointProp
+  });
+  const [windowDimensions, setWindowDimensions] = React__default__namespace.default.useState(typeof window !== "undefined" ? {
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight
+  } : void 0);
+  React__default__namespace.default.useEffect(() => {
+    function onResize() {
+      setWindowDimensions({
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight
+      });
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const isLastSnapPoint = React__default__namespace.default.useMemo(() => activeSnapPoint === (snapPoints == null ? void 0 : snapPoints[snapPoints.length - 1]) || null, [
+    snapPoints,
+    activeSnapPoint
+  ]);
+  const activeSnapPointIndex = React__default__namespace.default.useMemo(() => {
+    var _snapPoints_findIndex;
+    return (_snapPoints_findIndex = snapPoints == null ? void 0 : snapPoints.findIndex((snapPoint) => snapPoint === activeSnapPoint)) != null ? _snapPoints_findIndex : null;
+  }, [
+    snapPoints,
+    activeSnapPoint
+  ]);
+  const shouldFade = snapPoints && snapPoints.length > 0 && (fadeFromIndex || fadeFromIndex === 0) && !Number.isNaN(fadeFromIndex) && snapPoints[fadeFromIndex] === activeSnapPoint || !snapPoints;
+  const snapPointsOffset = React__default__namespace.default.useMemo(() => {
+    const containerSize = container ? {
+      width: container.getBoundingClientRect().width,
+      height: container.getBoundingClientRect().height
+    } : typeof window !== "undefined" ? {
+      width: window.innerWidth,
+      height: window.innerHeight
+    } : {
+      width: 0,
+      height: 0
+    };
+    var _snapPoints_map;
+    return (_snapPoints_map = snapPoints == null ? void 0 : snapPoints.map((snapPoint) => {
+      const isPx = typeof snapPoint === "string";
+      let snapPointAsNumber = 0;
+      if (isPx) {
+        snapPointAsNumber = parseInt(snapPoint, 10);
+      }
+      if (isVertical(direction)) {
+        const height = isPx ? snapPointAsNumber : windowDimensions ? snapPoint * containerSize.height : 0;
+        if (windowDimensions) {
+          return direction === "bottom" ? containerSize.height - height : -containerSize.height + height;
+        }
+        return height;
+      }
+      const width = isPx ? snapPointAsNumber : windowDimensions ? snapPoint * containerSize.width : 0;
+      if (windowDimensions) {
+        return direction === "right" ? containerSize.width - width : -containerSize.width + width;
+      }
+      return width;
+    })) != null ? _snapPoints_map : [];
+  }, [
+    snapPoints,
+    windowDimensions,
+    container
+  ]);
+  const activeSnapPointOffset = React__default__namespace.default.useMemo(() => activeSnapPointIndex !== null ? snapPointsOffset == null ? void 0 : snapPointsOffset[activeSnapPointIndex] : null, [
+    snapPointsOffset,
+    activeSnapPointIndex
+  ]);
+  const snapToPoint = React__default__namespace.default.useCallback((dimension) => {
+    var _snapPointsOffset_findIndex;
+    const newSnapPointIndex = (_snapPointsOffset_findIndex = snapPointsOffset == null ? void 0 : snapPointsOffset.findIndex((snapPointDim) => snapPointDim === dimension)) != null ? _snapPointsOffset_findIndex : null;
+    onSnapPointChange(newSnapPointIndex);
+    set(drawerRef.current, {
+      transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
+      transform: isVertical(direction) ? `translate3d(0, ${dimension}px, 0)` : `translate3d(${dimension}px, 0, 0)`
+    });
+    if (snapPointsOffset && newSnapPointIndex !== snapPointsOffset.length - 1 && fadeFromIndex !== void 0 && newSnapPointIndex !== fadeFromIndex && newSnapPointIndex < fadeFromIndex) {
+      set(overlayRef.current, {
+        transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
+        opacity: "0"
+      });
+    } else {
+      set(overlayRef.current, {
+        transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
+        opacity: "1"
+      });
+    }
+    setActiveSnapPoint(snapPoints == null ? void 0 : snapPoints[Math.max(newSnapPointIndex, 0)]);
+  }, [
+    drawerRef.current,
+    snapPoints,
+    snapPointsOffset,
+    fadeFromIndex,
+    overlayRef,
+    setActiveSnapPoint
+  ]);
+  React__default__namespace.default.useEffect(() => {
+    if (activeSnapPoint || activeSnapPointProp) {
+      var _snapPoints_findIndex;
+      const newIndex = (_snapPoints_findIndex = snapPoints == null ? void 0 : snapPoints.findIndex((snapPoint) => snapPoint === activeSnapPointProp || snapPoint === activeSnapPoint)) != null ? _snapPoints_findIndex : -1;
+      if (snapPointsOffset && newIndex !== -1 && typeof snapPointsOffset[newIndex] === "number") {
+        snapToPoint(snapPointsOffset[newIndex]);
+      }
+    }
+  }, [
+    activeSnapPoint,
+    activeSnapPointProp,
+    snapPoints,
+    snapPointsOffset,
+    snapToPoint
+  ]);
+  function onRelease({ draggedDistance, closeDrawer, velocity, dismissible }) {
+    if (fadeFromIndex === void 0) return;
+    const currentPosition = direction === "bottom" || direction === "right" ? (activeSnapPointOffset != null ? activeSnapPointOffset : 0) - draggedDistance : (activeSnapPointOffset != null ? activeSnapPointOffset : 0) + draggedDistance;
+    const isOverlaySnapPoint = activeSnapPointIndex === fadeFromIndex - 1;
+    const isFirst = activeSnapPointIndex === 0;
+    const hasDraggedUp = draggedDistance > 0;
+    if (isOverlaySnapPoint) {
+      set(overlayRef.current, {
+        transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`
+      });
+    }
+    if (!snapToSequentialPoint && velocity > 2 && !hasDraggedUp) {
+      if (dismissible) closeDrawer();
+      else snapToPoint(snapPointsOffset[0]);
+      return;
+    }
+    if (!snapToSequentialPoint && velocity > 2 && hasDraggedUp && snapPointsOffset && snapPoints) {
+      snapToPoint(snapPointsOffset[snapPoints.length - 1]);
+      return;
+    }
+    const closestSnapPoint = snapPointsOffset == null ? void 0 : snapPointsOffset.reduce((prev, curr) => {
+      if (typeof prev !== "number" || typeof curr !== "number") return prev;
+      return Math.abs(curr - currentPosition) < Math.abs(prev - currentPosition) ? curr : prev;
+    });
+    const dim = isVertical(direction) ? window.innerHeight : window.innerWidth;
+    if (velocity > VELOCITY_THRESHOLD && Math.abs(draggedDistance) < dim * 0.4) {
+      const dragDirection = hasDraggedUp ? 1 : -1;
+      if (dragDirection > 0 && isLastSnapPoint && snapPoints) {
+        snapToPoint(snapPointsOffset[snapPoints.length - 1]);
+        return;
+      }
+      if (isFirst && dragDirection < 0 && dismissible) {
+        closeDrawer();
+      }
+      if (activeSnapPointIndex === null) return;
+      snapToPoint(snapPointsOffset[activeSnapPointIndex + dragDirection]);
+      return;
+    }
+    snapToPoint(closestSnapPoint);
+  }
+  function onDrag({ draggedDistance }) {
+    if (activeSnapPointOffset === null) return;
+    const newValue = direction === "bottom" || direction === "right" ? activeSnapPointOffset - draggedDistance : activeSnapPointOffset + draggedDistance;
+    if ((direction === "bottom" || direction === "right") && newValue < snapPointsOffset[snapPointsOffset.length - 1]) {
+      return;
+    }
+    if ((direction === "top" || direction === "left") && newValue > snapPointsOffset[snapPointsOffset.length - 1]) {
+      return;
+    }
+    set(drawerRef.current, {
+      transform: isVertical(direction) ? `translate3d(0, ${newValue}px, 0)` : `translate3d(${newValue}px, 0, 0)`
+    });
+  }
+  function getPercentageDragged(absDraggedDistance, isDraggingDown) {
+    if (!snapPoints || typeof activeSnapPointIndex !== "number" || !snapPointsOffset || fadeFromIndex === void 0) return null;
+    const isOverlaySnapPoint = activeSnapPointIndex === fadeFromIndex - 1;
+    const isOverlaySnapPointOrHigher = activeSnapPointIndex >= fadeFromIndex;
+    if (isOverlaySnapPointOrHigher && isDraggingDown) {
+      return 0;
+    }
+    if (isOverlaySnapPoint && !isDraggingDown) return 1;
+    if (!shouldFade && !isOverlaySnapPoint) return null;
+    const targetSnapPointIndex = isOverlaySnapPoint ? activeSnapPointIndex + 1 : activeSnapPointIndex - 1;
+    const snapPointDistance = isOverlaySnapPoint ? snapPointsOffset[targetSnapPointIndex] - snapPointsOffset[targetSnapPointIndex - 1] : snapPointsOffset[targetSnapPointIndex + 1] - snapPointsOffset[targetSnapPointIndex];
+    const percentageDragged = absDraggedDistance / Math.abs(snapPointDistance);
+    if (isOverlaySnapPoint) {
+      return 1 - percentageDragged;
+    } else {
+      return percentageDragged;
+    }
+  }
+  return {
+    isLastSnapPoint,
+    activeSnapPoint,
+    shouldFade,
+    getPercentageDragged,
+    setActiveSnapPoint,
+    activeSnapPointIndex,
+    onRelease,
+    onDrag,
+    snapPointsOffset
+  };
+}
+var noop = () => () => {
+};
+function useScaleBackground() {
+  const { direction, isOpen, shouldScaleBackground, setBackgroundColorOnScale, noBodyStyles } = useDrawerContext();
+  const timeoutIdRef = React__default__namespace.default.useRef(null);
+  const initialBackgroundColor = React__default.useMemo(() => document.body.style.backgroundColor, []);
+  function getScale() {
+    return (window.innerWidth - WINDOW_TOP_OFFSET) / window.innerWidth;
+  }
+  React__default__namespace.default.useEffect(() => {
+    if (isOpen && shouldScaleBackground) {
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]") || document.querySelector("[vaul-drawer-wrapper]");
+      if (!wrapper2) return;
+      chain(setBackgroundColorOnScale && !noBodyStyles ? assignStyle(document.body, {
+        background: "black"
+      }) : noop, assignStyle(wrapper2, {
+        transformOrigin: isVertical(direction) ? "top" : "left",
+        transitionProperty: "transform, border-radius",
+        transitionDuration: `${TRANSITIONS.DURATION}s`,
+        transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(",")})`
+      }));
+      const wrapperStylesCleanup = assignStyle(wrapper2, {
+        borderRadius: `${BORDER_RADIUS}px`,
+        overflow: "hidden",
+        ...isVertical(direction) ? {
+          transform: `scale(${getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`
+        } : {
+          transform: `scale(${getScale()}) translate3d(calc(env(safe-area-inset-top) + 14px), 0, 0)`
+        }
+      });
+      return () => {
+        wrapperStylesCleanup();
+        timeoutIdRef.current = window.setTimeout(() => {
+          if (initialBackgroundColor) {
+            document.body.style.background = initialBackgroundColor;
+          } else {
+            document.body.style.removeProperty("background");
+          }
+        }, TRANSITIONS.DURATION * 1e3);
+      };
+    }
+  }, [
+    isOpen,
+    shouldScaleBackground,
+    initialBackgroundColor
+  ]);
+}
+var previousBodyPosition = null;
+function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollRestoration, noBodyStyles }) {
+  const [activeUrl, setActiveUrl] = React__default__namespace.default.useState(() => typeof window !== "undefined" ? window.location.href : "");
+  const scrollPos = React__default__namespace.default.useRef(0);
+  const setPositionFixed = React__default__namespace.default.useCallback(() => {
+    if (!isSafari()) return;
+    if (previousBodyPosition === null && isOpen && !noBodyStyles) {
+      previousBodyPosition = {
+        position: document.body.style.position,
+        top: document.body.style.top,
+        left: document.body.style.left,
+        height: document.body.style.height,
+        right: "unset"
+      };
+      const { scrollX, innerHeight } = window;
+      document.body.style.setProperty("position", "fixed", "important");
+      Object.assign(document.body.style, {
+        top: `${-scrollPos.current}px`,
+        left: `${-scrollX}px`,
+        right: "0px",
+        height: "auto"
+      });
+      window.setTimeout(() => window.requestAnimationFrame(() => {
+        const bottomBarHeight = innerHeight - window.innerHeight;
+        if (bottomBarHeight && scrollPos.current >= innerHeight) {
+          document.body.style.top = `${-(scrollPos.current + bottomBarHeight)}px`;
+        }
+      }), 300);
+    }
+  }, [
+    isOpen
+  ]);
+  const restorePositionSetting = React__default__namespace.default.useCallback(() => {
+    if (!isSafari()) return;
+    if (previousBodyPosition !== null && !noBodyStyles) {
+      const y = -parseInt(document.body.style.top, 10);
+      const x = -parseInt(document.body.style.left, 10);
+      Object.assign(document.body.style, previousBodyPosition);
+      window.requestAnimationFrame(() => {
+        if (preventScrollRestoration && activeUrl !== window.location.href) {
+          setActiveUrl(window.location.href);
+          return;
+        }
+        window.scrollTo(x, y);
+      });
+      previousBodyPosition = null;
+    }
+  }, [
+    activeUrl
+  ]);
+  React__default__namespace.default.useEffect(() => {
+    function onScroll() {
+      scrollPos.current = window.scrollY;
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+  React__default__namespace.default.useEffect(() => {
+    if (!modal) return;
+    return () => {
+      if (typeof document === "undefined") return;
+      const hasDrawerOpened = !!document.querySelector("[data-vaul-drawer]");
+      if (hasDrawerOpened) return;
+      restorePositionSetting();
+    };
+  }, [
+    modal,
+    restorePositionSetting
+  ]);
+  React__default__namespace.default.useEffect(() => {
+    if (nested || !hasBeenOpened) return;
+    if (isOpen) {
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+      !isStandalone && setPositionFixed();
+      if (!modal) {
+        window.setTimeout(() => {
+          restorePositionSetting();
+        }, 500);
+      }
+    } else {
+      restorePositionSetting();
+    }
+  }, [
+    isOpen,
+    hasBeenOpened,
+    activeUrl,
+    modal,
+    nested,
+    setPositionFixed,
+    restorePositionSetting
+  ]);
+  return {
+    restorePositionSetting
+  };
+}
+function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRelease: onReleaseProp, snapPoints, shouldScaleBackground = false, setBackgroundColorOnScale = true, closeThreshold = CLOSE_THRESHOLD, scrollLockTimeout = SCROLL_LOCK_TIMEOUT, dismissible = true, handleOnly = false, fadeFromIndex = snapPoints && snapPoints.length - 1, activeSnapPoint: activeSnapPointProp, setActiveSnapPoint: setActiveSnapPointProp, fixed, modal = true, onClose, nested, noBodyStyles = false, direction = "bottom", defaultOpen = false, disablePreventScroll = true, snapToSequentialPoint = false, preventScrollRestoration = false, repositionInputs = true, onAnimationEnd, container, autoFocus = false }) {
+  var _drawerRef_current, _drawerRef_current1;
+  const [isOpen = false, setIsOpen] = useControllableState2({
+    defaultProp: defaultOpen,
+    prop: openProp,
+    onChange: (o2) => {
+      onOpenChange == null ? void 0 : onOpenChange(o2);
+      if (!o2 && !nested) {
+        restorePositionSetting();
+      }
+      setTimeout(() => {
+        onAnimationEnd == null ? void 0 : onAnimationEnd(o2);
+      }, TRANSITIONS.DURATION * 1e3);
+      if (o2 && !modal) {
+        if (typeof window !== "undefined") {
+          window.requestAnimationFrame(() => {
+            document.body.style.pointerEvents = "auto";
+          });
+        }
+      }
+      if (!o2) {
+        document.body.style.pointerEvents = "auto";
+      }
+    }
+  });
+  const [hasBeenOpened, setHasBeenOpened] = React__default__namespace.default.useState(false);
+  const [isDragging, setIsDragging] = React__default__namespace.default.useState(false);
+  const [justReleased, setJustReleased] = React__default__namespace.default.useState(false);
+  const overlayRef = React__default__namespace.default.useRef(null);
+  const openTime = React__default__namespace.default.useRef(null);
+  const dragStartTime = React__default__namespace.default.useRef(null);
+  const dragEndTime = React__default__namespace.default.useRef(null);
+  const lastTimeDragPrevented = React__default__namespace.default.useRef(null);
+  const isAllowedToDrag = React__default__namespace.default.useRef(false);
+  const nestedOpenChangeTimer = React__default__namespace.default.useRef(null);
+  const pointerStart = React__default__namespace.default.useRef(0);
+  const keyboardIsOpen = React__default__namespace.default.useRef(false);
+  const shouldAnimate = React__default__namespace.default.useRef(!defaultOpen);
+  const previousDiffFromInitial = React__default__namespace.default.useRef(0);
+  const drawerRef = React__default__namespace.default.useRef(null);
+  const drawerHeightRef = React__default__namespace.default.useRef(((_drawerRef_current = drawerRef.current) == null ? void 0 : _drawerRef_current.getBoundingClientRect().height) || 0);
+  const drawerWidthRef = React__default__namespace.default.useRef(((_drawerRef_current1 = drawerRef.current) == null ? void 0 : _drawerRef_current1.getBoundingClientRect().width) || 0);
+  const initialDrawerHeight = React__default__namespace.default.useRef(0);
+  const onSnapPointChange = React__default__namespace.default.useCallback((activeSnapPointIndex2) => {
+    if (snapPoints && activeSnapPointIndex2 === snapPointsOffset.length - 1) openTime.current = /* @__PURE__ */ new Date();
+  }, []);
+  const { activeSnapPoint, activeSnapPointIndex, setActiveSnapPoint, onRelease: onReleaseSnapPoints, snapPointsOffset, onDrag: onDragSnapPoints, shouldFade, getPercentageDragged: getSnapPointsPercentageDragged } = useSnapPoints({
+    snapPoints,
+    activeSnapPointProp,
+    setActiveSnapPointProp,
+    drawerRef,
+    fadeFromIndex,
+    overlayRef,
+    onSnapPointChange,
+    direction,
+    container,
+    snapToSequentialPoint
+  });
+  usePreventScroll({
+    isDisabled: !isOpen || isDragging || !modal || justReleased || !hasBeenOpened || !repositionInputs || !disablePreventScroll
+  });
+  const { restorePositionSetting } = usePositionFixed({
+    isOpen,
+    modal,
+    nested: nested != null ? nested : false,
+    hasBeenOpened,
+    preventScrollRestoration,
+    noBodyStyles
+  });
+  function getScale() {
+    return (window.innerWidth - WINDOW_TOP_OFFSET) / window.innerWidth;
+  }
+  function onPress(event) {
+    var _drawerRef_current2, _drawerRef_current12;
+    if (!dismissible && !snapPoints) return;
+    if (drawerRef.current && !drawerRef.current.contains(event.target)) return;
+    drawerHeightRef.current = ((_drawerRef_current2 = drawerRef.current) == null ? void 0 : _drawerRef_current2.getBoundingClientRect().height) || 0;
+    drawerWidthRef.current = ((_drawerRef_current12 = drawerRef.current) == null ? void 0 : _drawerRef_current12.getBoundingClientRect().width) || 0;
+    setIsDragging(true);
+    dragStartTime.current = /* @__PURE__ */ new Date();
+    if (isIOS()) {
+      window.addEventListener("touchend", () => isAllowedToDrag.current = false, {
+        once: true
+      });
+    }
+    event.target.setPointerCapture(event.pointerId);
+    pointerStart.current = isVertical(direction) ? event.pageY : event.pageX;
+  }
+  function shouldDrag(el, isDraggingInDirection) {
+    var _window_getSelection;
+    let element = el;
+    const highlightedText = (_window_getSelection = window.getSelection()) == null ? void 0 : _window_getSelection.toString();
+    const swipeAmount = drawerRef.current ? getTranslate(drawerRef.current, direction) : null;
+    const date = /* @__PURE__ */ new Date();
+    if (element.tagName === "SELECT") {
+      return false;
+    }
+    if (element.hasAttribute("data-vaul-no-drag") || element.closest("[data-vaul-no-drag]")) {
+      return false;
+    }
+    if (direction === "right" || direction === "left") {
+      return true;
+    }
+    if (openTime.current && date.getTime() - openTime.current.getTime() < 500) {
+      return false;
+    }
+    if (swipeAmount !== null) {
+      if (direction === "bottom" ? swipeAmount > 0 : swipeAmount < 0) {
+        return true;
+      }
+    }
+    if (highlightedText && highlightedText.length > 0) {
+      return false;
+    }
+    if (lastTimeDragPrevented.current && date.getTime() - lastTimeDragPrevented.current.getTime() < scrollLockTimeout && swipeAmount === 0) {
+      lastTimeDragPrevented.current = date;
+      return false;
+    }
+    if (isDraggingInDirection) {
+      lastTimeDragPrevented.current = date;
+      return false;
+    }
+    while (element) {
+      if (element.scrollHeight > element.clientHeight) {
+        if (element.scrollTop !== 0) {
+          lastTimeDragPrevented.current = /* @__PURE__ */ new Date();
+          return false;
+        }
+        if (element.getAttribute("role") === "dialog") {
+          return true;
+        }
+      }
+      element = element.parentNode;
+    }
+    return true;
+  }
+  function onDrag(event) {
+    if (!drawerRef.current) {
+      return;
+    }
+    if (isDragging) {
+      const directionMultiplier = direction === "bottom" || direction === "right" ? 1 : -1;
+      const draggedDistance = (pointerStart.current - (isVertical(direction) ? event.pageY : event.pageX)) * directionMultiplier;
+      const isDraggingInDirection = draggedDistance > 0;
+      const noCloseSnapPointsPreCondition = snapPoints && !dismissible && !isDraggingInDirection;
+      if (noCloseSnapPointsPreCondition && activeSnapPointIndex === 0) return;
+      const absDraggedDistance = Math.abs(draggedDistance);
+      const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]");
+      const drawerDimension = direction === "bottom" || direction === "top" ? drawerHeightRef.current : drawerWidthRef.current;
+      let percentageDragged = absDraggedDistance / drawerDimension;
+      const snapPointPercentageDragged = getSnapPointsPercentageDragged(absDraggedDistance, isDraggingInDirection);
+      if (snapPointPercentageDragged !== null) {
+        percentageDragged = snapPointPercentageDragged;
+      }
+      if (noCloseSnapPointsPreCondition && percentageDragged >= 1) {
+        return;
+      }
+      if (!isAllowedToDrag.current && !shouldDrag(event.target, isDraggingInDirection)) return;
+      drawerRef.current.classList.add(DRAG_CLASS);
+      isAllowedToDrag.current = true;
+      set(drawerRef.current, {
+        transition: "none"
+      });
+      set(overlayRef.current, {
+        transition: "none"
+      });
+      if (snapPoints) {
+        onDragSnapPoints({
+          draggedDistance
+        });
+      }
+      if (isDraggingInDirection && !snapPoints) {
+        const dampenedDraggedDistance = dampenValue(draggedDistance);
+        const translateValue = Math.min(dampenedDraggedDistance * -1, 0) * directionMultiplier;
+        set(drawerRef.current, {
+          transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
+        });
+        return;
+      }
+      const opacityValue = 1 - percentageDragged;
+      if (shouldFade || fadeFromIndex && activeSnapPointIndex === fadeFromIndex - 1) {
+        onDragProp == null ? void 0 : onDragProp(event, percentageDragged);
+        set(overlayRef.current, {
+          opacity: `${opacityValue}`,
+          transition: "none"
+        }, true);
+      }
+      if (wrapper2 && overlayRef.current && shouldScaleBackground) {
+        const scaleValue = Math.min(getScale() + percentageDragged * (1 - getScale()), 1);
+        const borderRadiusValue = 8 - percentageDragged * 8;
+        const translateValue = Math.max(0, 14 - percentageDragged * 14);
+        set(wrapper2, {
+          borderRadius: `${borderRadiusValue}px`,
+          transform: isVertical(direction) ? `scale(${scaleValue}) translate3d(0, ${translateValue}px, 0)` : `scale(${scaleValue}) translate3d(${translateValue}px, 0, 0)`,
+          transition: "none"
+        }, true);
+      }
+      if (!snapPoints) {
+        const translateValue = absDraggedDistance * directionMultiplier;
+        set(drawerRef.current, {
+          transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
+        });
+      }
+    }
+  }
+  React__default__namespace.default.useEffect(() => {
+    window.requestAnimationFrame(() => {
+      shouldAnimate.current = true;
+    });
+  }, []);
+  React__default__namespace.default.useEffect(() => {
+    var _window_visualViewport;
+    function onVisualViewportChange() {
+      if (!drawerRef.current || !repositionInputs) return;
+      const focusedElement = document.activeElement;
+      if (isInput(focusedElement) || keyboardIsOpen.current) {
+        var _window_visualViewport2;
+        const visualViewportHeight = ((_window_visualViewport2 = window.visualViewport) == null ? void 0 : _window_visualViewport2.height) || 0;
+        const totalHeight = window.innerHeight;
+        let diffFromInitial = totalHeight - visualViewportHeight;
+        const drawerHeight = drawerRef.current.getBoundingClientRect().height || 0;
+        const isTallEnough = drawerHeight > totalHeight * 0.8;
+        if (!initialDrawerHeight.current) {
+          initialDrawerHeight.current = drawerHeight;
+        }
+        const offsetFromTop = drawerRef.current.getBoundingClientRect().top;
+        if (Math.abs(previousDiffFromInitial.current - diffFromInitial) > 60) {
+          keyboardIsOpen.current = !keyboardIsOpen.current;
+        }
+        if (snapPoints && snapPoints.length > 0 && snapPointsOffset && activeSnapPointIndex) {
+          const activeSnapPointHeight = snapPointsOffset[activeSnapPointIndex] || 0;
+          diffFromInitial += activeSnapPointHeight;
+        }
+        previousDiffFromInitial.current = diffFromInitial;
+        if (drawerHeight > visualViewportHeight || keyboardIsOpen.current) {
+          const height = drawerRef.current.getBoundingClientRect().height;
+          let newDrawerHeight = height;
+          if (height > visualViewportHeight) {
+            newDrawerHeight = visualViewportHeight - (isTallEnough ? offsetFromTop : WINDOW_TOP_OFFSET);
+          }
+          if (fixed) {
+            drawerRef.current.style.height = `${height - Math.max(diffFromInitial, 0)}px`;
+          } else {
+            drawerRef.current.style.height = `${Math.max(newDrawerHeight, visualViewportHeight - offsetFromTop)}px`;
+          }
+        } else if (!isMobileFirefox()) {
+          drawerRef.current.style.height = `${initialDrawerHeight.current}px`;
+        }
+        if (snapPoints && snapPoints.length > 0 && !keyboardIsOpen.current) {
+          drawerRef.current.style.bottom = `0px`;
+        } else {
+          drawerRef.current.style.bottom = `${Math.max(diffFromInitial, 0)}px`;
+        }
+      }
+    }
+    (_window_visualViewport = window.visualViewport) == null ? void 0 : _window_visualViewport.addEventListener("resize", onVisualViewportChange);
+    return () => {
+      var _window_visualViewport2;
+      return (_window_visualViewport2 = window.visualViewport) == null ? void 0 : _window_visualViewport2.removeEventListener("resize", onVisualViewportChange);
+    };
+  }, [
+    activeSnapPointIndex,
+    snapPoints,
+    snapPointsOffset
+  ]);
+  function closeDrawer(fromWithin) {
+    cancelDrag();
+    onClose == null ? void 0 : onClose();
+    if (!fromWithin) {
+      setIsOpen(false);
+    }
+    setTimeout(() => {
+      if (snapPoints) {
+        setActiveSnapPoint(snapPoints[0]);
+      }
+    }, TRANSITIONS.DURATION * 1e3);
+  }
+  function resetDrawer() {
+    if (!drawerRef.current) return;
+    const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]");
+    const currentSwipeAmount = getTranslate(drawerRef.current, direction);
+    set(drawerRef.current, {
+      transform: "translate3d(0, 0, 0)",
+      transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`
+    });
+    set(overlayRef.current, {
+      transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
+      opacity: "1"
+    });
+    if (shouldScaleBackground && currentSwipeAmount && currentSwipeAmount > 0 && isOpen) {
+      set(wrapper2, {
+        borderRadius: `${BORDER_RADIUS}px`,
+        overflow: "hidden",
+        ...isVertical(direction) ? {
+          transform: `scale(${getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`,
+          transformOrigin: "top"
+        } : {
+          transform: `scale(${getScale()}) translate3d(calc(env(safe-area-inset-top) + 14px), 0, 0)`,
+          transformOrigin: "left"
+        },
+        transitionProperty: "transform, border-radius",
+        transitionDuration: `${TRANSITIONS.DURATION}s`,
+        transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(",")})`
+      }, true);
+    }
+  }
+  function cancelDrag() {
+    if (!isDragging || !drawerRef.current) return;
+    drawerRef.current.classList.remove(DRAG_CLASS);
+    isAllowedToDrag.current = false;
+    setIsDragging(false);
+    dragEndTime.current = /* @__PURE__ */ new Date();
+  }
+  function onRelease(event) {
+    if (!isDragging || !drawerRef.current) return;
+    drawerRef.current.classList.remove(DRAG_CLASS);
+    isAllowedToDrag.current = false;
+    setIsDragging(false);
+    dragEndTime.current = /* @__PURE__ */ new Date();
+    const swipeAmount = getTranslate(drawerRef.current, direction);
+    if (!event || !shouldDrag(event.target, false) || !swipeAmount || Number.isNaN(swipeAmount)) return;
+    if (dragStartTime.current === null) return;
+    const timeTaken = dragEndTime.current.getTime() - dragStartTime.current.getTime();
+    const distMoved = pointerStart.current - (isVertical(direction) ? event.pageY : event.pageX);
+    const velocity = Math.abs(distMoved) / timeTaken;
+    if (velocity > 0.05) {
+      setJustReleased(true);
+      setTimeout(() => {
+        setJustReleased(false);
+      }, 200);
+    }
+    if (snapPoints) {
+      const directionMultiplier = direction === "bottom" || direction === "right" ? 1 : -1;
+      onReleaseSnapPoints({
+        draggedDistance: distMoved * directionMultiplier,
+        closeDrawer,
+        velocity,
+        dismissible
+      });
+      onReleaseProp == null ? void 0 : onReleaseProp(event, true);
+      return;
+    }
+    if (direction === "bottom" || direction === "right" ? distMoved > 0 : distMoved < 0) {
+      resetDrawer();
+      onReleaseProp == null ? void 0 : onReleaseProp(event, true);
+      return;
+    }
+    if (velocity > VELOCITY_THRESHOLD) {
+      closeDrawer();
+      onReleaseProp == null ? void 0 : onReleaseProp(event, false);
+      return;
+    }
+    var _drawerRef_current_getBoundingClientRect_height;
+    const visibleDrawerHeight = Math.min((_drawerRef_current_getBoundingClientRect_height = drawerRef.current.getBoundingClientRect().height) != null ? _drawerRef_current_getBoundingClientRect_height : 0, window.innerHeight);
+    var _drawerRef_current_getBoundingClientRect_width;
+    const visibleDrawerWidth = Math.min((_drawerRef_current_getBoundingClientRect_width = drawerRef.current.getBoundingClientRect().width) != null ? _drawerRef_current_getBoundingClientRect_width : 0, window.innerWidth);
+    const isHorizontalSwipe = direction === "left" || direction === "right";
+    if (Math.abs(swipeAmount) >= (isHorizontalSwipe ? visibleDrawerWidth : visibleDrawerHeight) * closeThreshold) {
+      closeDrawer();
+      onReleaseProp == null ? void 0 : onReleaseProp(event, false);
+      return;
+    }
+    onReleaseProp == null ? void 0 : onReleaseProp(event, true);
+    resetDrawer();
+  }
+  React__default__namespace.default.useEffect(() => {
+    if (isOpen) {
+      set(document.documentElement, {
+        scrollBehavior: "auto"
+      });
+      openTime.current = /* @__PURE__ */ new Date();
+    }
+    return () => {
+      reset(document.documentElement, "scrollBehavior");
+    };
+  }, [
+    isOpen
+  ]);
+  function onNestedOpenChange(o2) {
+    const scale2 = o2 ? (window.innerWidth - NESTED_DISPLACEMENT) / window.innerWidth : 1;
+    const initialTranslate = o2 ? -NESTED_DISPLACEMENT : 0;
+    if (nestedOpenChangeTimer.current) {
+      window.clearTimeout(nestedOpenChangeTimer.current);
+    }
+    set(drawerRef.current, {
+      transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
+      transform: isVertical(direction) ? `scale(${scale2}) translate3d(0, ${initialTranslate}px, 0)` : `scale(${scale2}) translate3d(${initialTranslate}px, 0, 0)`
+    });
+    if (!o2 && drawerRef.current) {
+      nestedOpenChangeTimer.current = setTimeout(() => {
+        const translateValue = getTranslate(drawerRef.current, direction);
+        set(drawerRef.current, {
+          transition: "none",
+          transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
+        });
+      }, 500);
+    }
+  }
+  function onNestedDrag(_event, percentageDragged) {
+    if (percentageDragged < 0) return;
+    const initialScale = (window.innerWidth - NESTED_DISPLACEMENT) / window.innerWidth;
+    const newScale = initialScale + percentageDragged * (1 - initialScale);
+    const newTranslate = -NESTED_DISPLACEMENT + percentageDragged * NESTED_DISPLACEMENT;
+    set(drawerRef.current, {
+      transform: isVertical(direction) ? `scale(${newScale}) translate3d(0, ${newTranslate}px, 0)` : `scale(${newScale}) translate3d(${newTranslate}px, 0, 0)`,
+      transition: "none"
+    });
+  }
+  function onNestedRelease(_event, o2) {
+    const dim = isVertical(direction) ? window.innerHeight : window.innerWidth;
+    const scale2 = o2 ? (dim - NESTED_DISPLACEMENT) / dim : 1;
+    const translate2 = o2 ? -NESTED_DISPLACEMENT : 0;
+    if (o2) {
+      set(drawerRef.current, {
+        transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
+        transform: isVertical(direction) ? `scale(${scale2}) translate3d(0, ${translate2}px, 0)` : `scale(${scale2}) translate3d(${translate2}px, 0, 0)`
+      });
+    }
+  }
+  React__default__namespace.default.useEffect(() => {
+    if (!modal) {
+      window.requestAnimationFrame(() => {
+        document.body.style.pointerEvents = "auto";
+      });
+    }
+  }, [
+    modal
+  ]);
+  return /* @__PURE__ */ React__default__namespace.default.createElement(Root, {
+    defaultOpen,
+    onOpenChange: (open) => {
+      if (!dismissible && !open) return;
+      if (open) {
+        setHasBeenOpened(true);
+      } else {
+        closeDrawer(true);
+      }
+      setIsOpen(open);
+    },
+    open: isOpen
+  }, /* @__PURE__ */ React__default__namespace.default.createElement(DrawerContext.Provider, {
+    value: {
+      activeSnapPoint,
+      snapPoints,
+      setActiveSnapPoint,
+      drawerRef,
+      overlayRef,
+      onOpenChange,
+      onPress,
+      onRelease,
+      onDrag,
+      dismissible,
+      shouldAnimate,
+      handleOnly,
+      isOpen,
+      isDragging,
+      shouldFade,
+      closeDrawer,
+      onNestedDrag,
+      onNestedOpenChange,
+      onNestedRelease,
+      keyboardIsOpen,
+      modal,
+      snapPointsOffset,
+      activeSnapPointIndex,
+      direction,
+      shouldScaleBackground,
+      setBackgroundColorOnScale,
+      noBodyStyles,
+      container,
+      autoFocus
+    }
+  }, children));
+}
+var Overlay2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ ...rest }, ref) {
+  const { overlayRef, snapPoints, onRelease, shouldFade, isOpen, modal, shouldAnimate } = useDrawerContext();
+  const composedRef = useComposedRefs2(ref, overlayRef);
+  const hasSnapPoints = snapPoints && snapPoints.length > 0;
+  if (!modal) {
+    return null;
+  }
+  const onMouseUp = React__default__namespace.default.useCallback((event) => onRelease(event), [
+    onRelease
+  ]);
+  return /* @__PURE__ */ React__default__namespace.default.createElement(Overlay, {
+    onMouseUp,
+    ref: composedRef,
+    "data-vaul-overlay": "",
+    "data-vaul-snap-points": isOpen && hasSnapPoints ? "true" : "false",
+    "data-vaul-snap-points-overlay": isOpen && shouldFade ? "true" : "false",
+    "data-vaul-animate": (shouldAnimate == null ? void 0 : shouldAnimate.current) ? "true" : "false",
+    ...rest
+  });
+});
+Overlay2.displayName = "Drawer.Overlay";
+var Content2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ onPointerDownOutside, style, onOpenAutoFocus, ...rest }, ref) {
+  const { drawerRef, onPress, onRelease, onDrag, keyboardIsOpen, snapPointsOffset, activeSnapPointIndex, modal, isOpen, direction, snapPoints, container, handleOnly, shouldAnimate, autoFocus } = useDrawerContext();
+  const [delayedSnapPoints, setDelayedSnapPoints] = React__default__namespace.default.useState(false);
+  const composedRef = useComposedRefs2(ref, drawerRef);
+  const pointerStartRef = React__default__namespace.default.useRef(null);
+  const lastKnownPointerEventRef = React__default__namespace.default.useRef(null);
+  const wasBeyondThePointRef = React__default__namespace.default.useRef(false);
+  const hasSnapPoints = snapPoints && snapPoints.length > 0;
+  useScaleBackground();
+  const isDeltaInDirection = (delta, direction2, threshold = 0) => {
+    if (wasBeyondThePointRef.current) return true;
+    const deltaY = Math.abs(delta.y);
+    const deltaX = Math.abs(delta.x);
+    const isDeltaX = deltaX > deltaY;
+    const dFactor = [
+      "bottom",
+      "right"
+    ].includes(direction2) ? 1 : -1;
+    if (direction2 === "left" || direction2 === "right") {
+      const isReverseDirection = delta.x * dFactor < 0;
+      if (!isReverseDirection && deltaX >= 0 && deltaX <= threshold) {
+        return isDeltaX;
+      }
+    } else {
+      const isReverseDirection = delta.y * dFactor < 0;
+      if (!isReverseDirection && deltaY >= 0 && deltaY <= threshold) {
+        return !isDeltaX;
+      }
+    }
+    wasBeyondThePointRef.current = true;
+    return true;
+  };
+  React__default__namespace.default.useEffect(() => {
+    if (hasSnapPoints) {
+      window.requestAnimationFrame(() => {
+        setDelayedSnapPoints(true);
+      });
+    }
+  }, []);
+  function handleOnPointerUp(event) {
+    pointerStartRef.current = null;
+    wasBeyondThePointRef.current = false;
+    onRelease(event);
+  }
+  return /* @__PURE__ */ React__default__namespace.default.createElement(Content, {
+    "data-vaul-drawer-direction": direction,
+    "data-vaul-drawer": "",
+    "data-vaul-delayed-snap-points": delayedSnapPoints ? "true" : "false",
+    "data-vaul-snap-points": isOpen && hasSnapPoints ? "true" : "false",
+    "data-vaul-custom-container": container ? "true" : "false",
+    "data-vaul-animate": (shouldAnimate == null ? void 0 : shouldAnimate.current) ? "true" : "false",
+    ...rest,
+    ref: composedRef,
+    style: snapPointsOffset && snapPointsOffset.length > 0 ? {
+      "--snap-point-height": `${snapPointsOffset[activeSnapPointIndex != null ? activeSnapPointIndex : 0]}px`,
+      ...style
+    } : style,
+    onPointerDown: (event) => {
+      if (handleOnly) return;
+      rest.onPointerDown == null ? void 0 : rest.onPointerDown.call(rest, event);
+      pointerStartRef.current = {
+        x: event.pageX,
+        y: event.pageY
+      };
+      onPress(event);
+    },
+    onOpenAutoFocus: (e3) => {
+      onOpenAutoFocus == null ? void 0 : onOpenAutoFocus(e3);
+      if (!autoFocus) {
+        e3.preventDefault();
+      }
+    },
+    onPointerDownOutside: (e3) => {
+      onPointerDownOutside == null ? void 0 : onPointerDownOutside(e3);
+      if (!modal || e3.defaultPrevented) {
+        e3.preventDefault();
+        return;
+      }
+      if (keyboardIsOpen.current) {
+        keyboardIsOpen.current = false;
+      }
+    },
+    onFocusOutside: (e3) => {
+      if (!modal) {
+        e3.preventDefault();
+        return;
+      }
+    },
+    onPointerMove: (event) => {
+      lastKnownPointerEventRef.current = event;
+      if (handleOnly) return;
+      rest.onPointerMove == null ? void 0 : rest.onPointerMove.call(rest, event);
+      if (!pointerStartRef.current) return;
+      const yPosition = event.pageY - pointerStartRef.current.y;
+      const xPosition = event.pageX - pointerStartRef.current.x;
+      const swipeStartThreshold = event.pointerType === "touch" ? 10 : 2;
+      const delta = {
+        x: xPosition,
+        y: yPosition
+      };
+      const isAllowedToSwipe = isDeltaInDirection(delta, direction, swipeStartThreshold);
+      if (isAllowedToSwipe) onDrag(event);
+      else if (Math.abs(xPosition) > swipeStartThreshold || Math.abs(yPosition) > swipeStartThreshold) {
+        pointerStartRef.current = null;
+      }
+    },
+    onPointerUp: (event) => {
+      rest.onPointerUp == null ? void 0 : rest.onPointerUp.call(rest, event);
+      pointerStartRef.current = null;
+      wasBeyondThePointRef.current = false;
+      onRelease(event);
+    },
+    onPointerOut: (event) => {
+      rest.onPointerOut == null ? void 0 : rest.onPointerOut.call(rest, event);
+      handleOnPointerUp(lastKnownPointerEventRef.current);
+    },
+    onContextMenu: (event) => {
+      rest.onContextMenu == null ? void 0 : rest.onContextMenu.call(rest, event);
+      if (lastKnownPointerEventRef.current) {
+        handleOnPointerUp(lastKnownPointerEventRef.current);
+      }
+    }
+  });
+});
+Content2.displayName = "Drawer.Content";
+var LONG_HANDLE_PRESS_TIMEOUT = 250;
+var DOUBLE_TAP_TIMEOUT = 120;
+var Handle = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ preventCycle = false, children, ...rest }, ref) {
+  const { closeDrawer, isDragging, snapPoints, activeSnapPoint, setActiveSnapPoint, dismissible, handleOnly, isOpen, onPress, onDrag } = useDrawerContext();
+  const closeTimeoutIdRef = React__default__namespace.default.useRef(null);
+  const shouldCancelInteractionRef = React__default__namespace.default.useRef(false);
+  function handleStartCycle() {
+    if (shouldCancelInteractionRef.current) {
+      handleCancelInteraction();
+      return;
+    }
+    window.setTimeout(() => {
+      handleCycleSnapPoints();
+    }, DOUBLE_TAP_TIMEOUT);
+  }
+  function handleCycleSnapPoints() {
+    if (isDragging || preventCycle || shouldCancelInteractionRef.current) {
+      handleCancelInteraction();
+      return;
+    }
+    handleCancelInteraction();
+    if (!snapPoints || snapPoints.length === 0) {
+      if (!dismissible) {
+        closeDrawer();
+      }
+      return;
+    }
+    const isLastSnapPoint = activeSnapPoint === snapPoints[snapPoints.length - 1];
+    if (isLastSnapPoint && dismissible) {
+      closeDrawer();
+      return;
+    }
+    const currentSnapIndex = snapPoints.findIndex((point) => point === activeSnapPoint);
+    if (currentSnapIndex === -1) return;
+    const nextSnapPoint = snapPoints[currentSnapIndex + 1];
+    setActiveSnapPoint(nextSnapPoint);
+  }
+  function handleStartInteraction() {
+    closeTimeoutIdRef.current = window.setTimeout(() => {
+      shouldCancelInteractionRef.current = true;
+    }, LONG_HANDLE_PRESS_TIMEOUT);
+  }
+  function handleCancelInteraction() {
+    if (closeTimeoutIdRef.current) {
+      window.clearTimeout(closeTimeoutIdRef.current);
+    }
+    shouldCancelInteractionRef.current = false;
+  }
+  return /* @__PURE__ */ React__default__namespace.default.createElement("div", {
+    onClick: handleStartCycle,
+    onPointerCancel: handleCancelInteraction,
+    onPointerDown: (e3) => {
+      if (handleOnly) onPress(e3);
+      handleStartInteraction();
+    },
+    onPointerMove: (e3) => {
+      if (handleOnly) onDrag(e3);
+    },
+    // onPointerUp is already handled by the content component
+    ref,
+    "data-vaul-drawer-visible": isOpen ? "true" : "false",
+    "data-vaul-handle": "",
+    "aria-hidden": "true",
+    ...rest
+  }, /* @__PURE__ */ React__default__namespace.default.createElement("span", {
+    "data-vaul-handle-hitarea": "",
+    "aria-hidden": "true"
+  }, children));
+});
+Handle.displayName = "Drawer.Handle";
+function Portal3(props) {
+  const context = useDrawerContext();
+  const { container = context.container, ...portalProps } = props;
+  return /* @__PURE__ */ React__default__namespace.default.createElement(Portal2, {
+    container,
+    ...portalProps
+  });
+}
+var Drawer = {
+  Root: Root2,
+  Content: Content2,
+  Overlay: Overlay2,
+  Portal: Portal3,
+  Title,
+  Description
+};
+var isImageType = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
+  (t2) => type?.toLowerCase().includes(t2)
+);
+var MediaDrawer = ({
+  open,
+  onOpenChange,
+  onSelect,
+  selectedIds = [],
+  allowMultiple = false,
+  filterImages = false,
+  title = "Medya K\xFCt\xFCphanesi"
+}) => {
+  const { apiClient } = useTecof();
+  const [galleryFiles, setGalleryFiles] = React__default.useState([]);
+  const [loading, setLoading] = React__default.useState(false);
+  const [refreshKey, setRefreshKey] = React__default.useState(0);
+  const [gallerySearch, setGallerySearch] = React__default.useState("");
+  React__default.useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    apiClient.getUploads(1, 100).then((res2) => {
+      if (res2.success && res2.data) {
+        setGalleryFiles(res2.data);
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [open, refreshKey, apiClient]);
+  const handleSelect = React__default.useCallback((file2) => {
+    onSelect(file2);
+    if (!allowMultiple) {
+      onOpenChange(false);
+    }
+  }, [onSelect, allowMultiple, onOpenChange]);
+  const filteredGallery = React__default.useMemo(() => {
+    let files = galleryFiles;
+    if (filterImages) {
+      files = files.filter((f2) => isImageType(f2.type));
+    }
+    if (gallerySearch.trim()) {
+      const q = gallerySearch.toLowerCase();
+      files = files.filter(
+        (f2) => f2.name?.toLowerCase().includes(q) || f2.meta?.originalName?.toLowerCase().includes(q)
+      );
+    }
+    return files;
+  }, [galleryFiles, filterImages, gallerySearch]);
+  return /* @__PURE__ */ jsxRuntime.jsx(Drawer.Root, { open, onOpenChange: (o2) => {
+    onOpenChange(o2);
+    if (!o2) setGallerySearch("");
+  }, children: /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Portal, { children: [
+    /* @__PURE__ */ jsxRuntime.jsx(Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
+    /* @__PURE__ */ jsxRuntime.jsxs(Drawer.Content, { className: "tecof-upload-drawer-content", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(Drawer.Title, { className: "tecof-sr-only", children: title }),
+      /* @__PURE__ */ jsxRuntime.jsx(Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-drawer-handle" }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-inner", children: [
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header", children: [
+          /* @__PURE__ */ jsxRuntime.jsx("h2", { className: "tecof-upload-drawer-title", children: title }),
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header-actions", children: [
+            /* @__PURE__ */ jsxRuntime.jsx(
+              "button",
+              {
+                className: "tecof-upload-drawer-action-btn",
+                onClick: () => setRefreshKey((k2) => k2 + 1),
+                disabled: loading,
+                title: "Yenile",
+                children: /* @__PURE__ */ jsxRuntime.jsx(RefreshCcw, { size: 15, className: loading ? "tecof-upload-spin" : "" })
+              }
+            ),
+            /* @__PURE__ */ jsxRuntime.jsx(
+              "button",
+              {
+                className: "tecof-upload-drawer-action-btn",
+                onClick: () => onOpenChange(false),
+                title: "Kapat",
+                children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 15 })
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-search-box", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(Search, { size: 15, color: "#a1a1aa" }),
+          /* @__PURE__ */ jsxRuntime.jsx(
+            "input",
+            {
+              type: "text",
+              placeholder: "Dosya ara...",
+              value: gallerySearch,
+              onChange: (e3) => setGallerySearch(e3.target.value),
+              className: "tecof-upload-search-input"
+            }
+          ),
+          gallerySearch && /* @__PURE__ */ jsxRuntime.jsx(
+            "button",
+            {
+              type: "button",
+              className: "tecof-upload-action-btn tecof-upload-clear-search-btn",
+              onClick: () => setGallerySearch(""),
+              children: /* @__PURE__ */ jsxRuntime.jsx(X, { size: 13 })
+            }
+          )
+        ] }),
+        loading ? /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-gallery-empty", children: [
+          /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(RefreshCcw, { size: 24, color: "#a1a1aa", className: "tecof-upload-spin" }) }),
+          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-loading-text", children: "Y\xFCkleniyor..." })
+        ] }) : filteredGallery.length === 0 ? /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-gallery-empty", children: [
+          /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(Image2, { size: 24, color: "#a1a1aa" }) }),
+          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-heading", children: gallerySearch ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz dosya yok" }),
+          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-subheading", children: gallerySearch ? "Farkl\u0131 bir arama terimi deneyin" : "Dosyalar\u0131n\u0131z burada g\xF6r\xFCnecek" })
+        ] }) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-grid", children: filteredGallery.map((file2) => {
+          const selected = selectedIds.includes(file2._id ?? "");
+          return /* @__PURE__ */ jsxRuntime.jsxs(
+            "div",
+            {
+              className: `tecof-upload-gallery-item ${selected ? "selected" : ""}`,
+              onClick: () => handleSelect(file2),
+              children: [
+                selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(Check, { size: 12, strokeWidth: 3 }) }),
+                isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+                  TecofPicture,
+                  {
+                    data: file2,
+                    alt: file2.name,
+                    size: "thumbnail",
+                    className: "tecof-upload-gallery-thumb",
+                    imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }
+                  }
+                ) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsxRuntime.jsx(File2, { size: 24, color: "#a1a1aa" }) }),
+                /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-gallery-file-name", children: file2.meta?.originalName || file2.name })
+              ]
+            },
+            file2._id
+          );
+        }) })
+      ] })
+    ] })
+  ] }) });
+};
 var createExtensions = () => [
   Document__default.default,
   Paragraph__default.default,
@@ -1371,7 +4971,8 @@ var createExtensions = () => [
   Code2__default.default,
   CodeBlock__default.default,
   TextAlign__default.default.configure({ types: ["heading", "paragraph"] }),
-  Link3__default.default.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } })
+  Link3__default.default.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } }),
+  Image3__default.default.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: "tecof-editor-image" } })
 ];
 var ToolbarBtn = ({
   onClick,
@@ -1389,7 +4990,7 @@ var ToolbarBtn = ({
     children
   }
 );
-var EditorToolbar = ({ editor: editor2 }) => {
+var EditorToolbar = ({ editor: editor2, onImageClick }) => {
   if (!editor2) return null;
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-editor-toolbar", children: [
     /* @__PURE__ */ jsxRuntime.jsx(
@@ -1513,6 +5114,15 @@ var EditorToolbar = ({ editor: editor2 }) => {
         children: "\u{1F517}"
       }
     ),
+    onImageClick && /* @__PURE__ */ jsxRuntime.jsx(
+      ToolbarBtn,
+      {
+        onClick: onImageClick,
+        isActive: false,
+        title: "Resim Ekle",
+        children: "\u{1F5BC}\uFE0F"
+      }
+    ),
     /* @__PURE__ */ jsxRuntime.jsx(
       ToolbarBtn,
       {
@@ -1530,9 +5140,11 @@ var EditorToolbar = ({ editor: editor2 }) => {
 var TipTapInstance = ({
   content,
   onUpdate,
-  readOnly
+  readOnly,
+  cdnUrl
 }) => {
   const isMountedRef = React__default.useRef(false);
+  const [mediaDrawerOpen, setMediaDrawerOpen] = React__default.useState(false);
   const editor2 = react.useEditor({
     extensions: createExtensions(),
     content: content || "",
@@ -1564,9 +5176,31 @@ var TipTapInstance = ({
       }
     }
   }, [content, editor2]);
+  const handleImageSelect = React__default.useCallback((file2) => {
+    if (!editor2) return;
+    const src = `${cdnUrl}/${file2.name}`;
+    const alt = file2.meta?.originalName || file2.name;
+    editor2.chain().focus().setImage({ src, alt }).run();
+  }, [editor2, cdnUrl]);
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(EditorToolbar, { editor: editor2 }),
-    /* @__PURE__ */ jsxRuntime.jsx(react.EditorContent, { editor: editor2 })
+    /* @__PURE__ */ jsxRuntime.jsx(
+      EditorToolbar,
+      {
+        editor: editor2,
+        onImageClick: readOnly ? void 0 : () => setMediaDrawerOpen(true)
+      }
+    ),
+    /* @__PURE__ */ jsxRuntime.jsx(react.EditorContent, { editor: editor2 }),
+    /* @__PURE__ */ jsxRuntime.jsx(
+      MediaDrawer,
+      {
+        open: mediaDrawerOpen,
+        onOpenChange: setMediaDrawerOpen,
+        onSelect: handleImageSelect,
+        filterImages: true,
+        title: "Resim Ekle"
+      }
+    )
   ] });
 };
 var EditorField = ({
@@ -1575,6 +5209,7 @@ var EditorField = ({
   readOnly
 }) => {
   const { merchantInfo, loading, error: error2, activeTab, setActiveTab } = useLanguages();
+  const { cdnUrl } = useTecof();
   const values = React__default.useMemo(() => {
     if (!merchantInfo) return value || [];
     const current = value || [];
@@ -1620,7 +5255,8 @@ var EditorField = ({
         {
           content: currentValue,
           onUpdate: (html) => handleChange(code, html),
-          readOnly
+          readOnly,
+          cdnUrl: cdnUrl || ""
         }
       ) }, code);
     })
@@ -1738,7 +5374,7 @@ var attr = (node, name3, value = null) => {
 var ns = "http://www.w3.org/2000/svg";
 var svgElements = ["svg", "path"];
 var isSVGElement = (tag) => svgElements.includes(tag);
-var createElement4 = (tag, className, attributes = {}) => {
+var createElement9 = (tag, className, attributes = {}) => {
   if (typeof className === "object") {
     attributes = className;
     className = null;
@@ -1780,7 +5416,7 @@ var removeChildView = (parent, childViews) => (view) => {
 };
 var IS_BROWSER = (() => typeof window !== "undefined" && typeof window.document !== "undefined")();
 var isBrowser = () => IS_BROWSER;
-var testElement = isBrowser() ? createElement4("svg") : {};
+var testElement = isBrowser() ? createElement9("svg") : {};
 var getChildCount = "children" in testElement ? (el) => el.children.length : (el) => el.childNodes.length;
 var getViewRect = (elementRect, childViews, offset, scale2) => {
   const left = offset[0] || elementRect.left;
@@ -2033,7 +5669,7 @@ var animations = ({ mixinConfig, viewProps, viewInternalAPI, viewExternalAPI }) 
     }
   };
 };
-var addEvent = (element) => (type, fn3) => {
+var addEvent2 = (element) => (type, fn3) => {
   element.addEventListener(type, fn3);
 };
 var removeEvent = (element) => (type, fn3) => {
@@ -2048,7 +5684,7 @@ var listeners = ({
   view
 }) => {
   const events = [];
-  const add = addEvent(view.element);
+  const add = addEvent2(view.element);
   const remove = removeEvent(view.element);
   viewExternalAPI.on = (type, fn3) => {
     events.push({
@@ -2239,7 +5875,7 @@ var createView = (
     // mixins
     mixins = []
   } = {}) => (store, props = {}) => {
-    const element = createElement4(tag, `filepond--${name3}`, attributes);
+    const element = createElement9(tag, `filepond--${name3}`, attributes);
     const style = window.getComputedStyle(element, null);
     const rect = updateRect();
     let frameRect = null;
@@ -2538,7 +6174,7 @@ var toBytes = (value, base = 1e3) => {
   }
   return toInt(naturalFileSize);
 };
-var isFunction = (value) => typeof value === "function";
+var isFunction2 = (value) => typeof value === "function";
 var toFunctionReference = (string) => {
   let ref = self;
   let levels = string.split(".");
@@ -2636,7 +6272,7 @@ var conversionTable = {
   number: toFloat,
   float: toFloat,
   bytes: toBytes,
-  string: (value) => isFunction(value) ? value : toString(value),
+  string: (value) => isFunction2(value) ? value : toString(value),
   function: (value) => toFunctionReference(value),
   serverapi: toServerAPI,
   object: (value) => {
@@ -2738,7 +6374,7 @@ var InteractionMethod = {
   NONE: 5
 };
 var getUniqueId = () => Math.random().toString(36).substring(2, 11);
-var arrayRemove = (arr, index2) => arr.splice(index2, 1);
+var arrayRemove2 = (arr, index2) => arr.splice(index2, 1);
 var run = (cb, sync) => {
   if (sync) {
     cb();
@@ -2751,7 +6387,7 @@ var run = (cb, sync) => {
 var on = () => {
   const listeners3 = [];
   const off = (event, cb) => {
-    arrayRemove(
+    arrayRemove2(
       listeners3,
       listeners3.findIndex((listener) => listener.event === event && (listener.cb === cb || !cb))
     );
@@ -2811,7 +6447,7 @@ var createItemAPI = (item2) => {
 var removeReleasedItems = (items) => {
   items.forEach((item2, index2) => {
     if (item2.released) {
-      arrayRemove(items, index2);
+      arrayRemove2(items, index2);
     }
   });
 };
@@ -3135,7 +6771,7 @@ var ITEM_READY = [ItemStatus.PROCESSING_COMPLETE];
 var isItemInErrorState = (item2) => ITEM_ERROR.includes(item2.status);
 var isItemInBusyState = (item2) => ITEM_BUSY.includes(item2.status);
 var isItemInReadyState = (item2) => ITEM_READY.includes(item2.status);
-var isAsync = (state3) => isObject(state3.options.server) && (isObject(state3.options.server.process) || isFunction(state3.options.server.process));
+var isAsync = (state3) => isObject(state3.options.server) && (isObject(state3.options.server.process) || isFunction2(state3.options.server.process));
 var queries = (state3) => ({
   GET_STATUS: () => {
     const items = getActiveItems(state3.items);
@@ -4384,7 +8020,7 @@ var getDomainFromURL = (url) => {
   return url.toLowerCase().replace("blob:", "").replace(/([a-z])?:\/\//, "$1").split("/")[0];
 };
 var isExternalURL = (url) => (url.indexOf(":") > -1 || url.indexOf("//") > -1) && getDomainFromURL(location.href) !== getDomainFromURL(url);
-var dynamicLabel = (label) => (...params) => isFunction(label) ? label(...params) : label;
+var dynamicLabel = (label) => (...params) => isFunction2(label) ? label(...params) : label;
 var isMockItem = (item2) => !isFile(item2.file);
 var listUpdated = (dispatch, state3) => {
   clearTimeout(state3.listUpdateTimeout);
@@ -4644,7 +8280,7 @@ var actions = (dispatch, query, state3) => ({
       index2 = itemInsertLocation === "before" ? -1 : state3.items.length;
     }
     insertItem(state3.items, item2, index2);
-    if (isFunction(itemInsertLocation) && source) {
+    if (isFunction2(itemInsertLocation) && source) {
       sortItems(state3, itemInsertLocation);
     }
     const id = item2.id;
@@ -4847,7 +8483,7 @@ var actions = (dispatch, query, state3) => ({
   COMPLETE_LOAD_ITEM: ({ item: item2, data: data3 }) => {
     const { success, source } = data3;
     const itemInsertLocation = query("GET_ITEM_INSERT_LOCATION");
-    if (isFunction(itemInsertLocation) && source) {
+    if (isFunction2(itemInsertLocation) && source) {
       sortItems(state3, itemInsertLocation);
     }
     dispatch("DID_LOAD_ITEM", {
@@ -4950,7 +8586,7 @@ var actions = (dispatch, query, state3) => ({
       processNext();
       const server = state3.options.server;
       const instantUpload = state3.options.instantUpload;
-      if (instantUpload && item2.origin === FileOrigin.LOCAL && isFunction(server.remove)) {
+      if (instantUpload && item2.origin === FileOrigin.LOCAL && isFunction2(server.remove)) {
         const noop2 = () => {
         };
         item2.origin = FileOrigin.LIMBO;
@@ -5015,7 +8651,7 @@ var actions = (dispatch, query, state3) => ({
       success(createItemAPI(item2));
     };
     const server = state3.options.server;
-    if (item2.origin === FileOrigin.LOCAL && server && isFunction(server.remove) && options.remove !== false) {
+    if (item2.origin === FileOrigin.LOCAL && server && isFunction2(server.remove) && options.remove !== false) {
       dispatch("DID_START_ITEM_REMOVE", { id: item2.id });
       server.remove(
         item2.source,
@@ -5161,8 +8797,8 @@ var create = ({ root: root3, props }) => {
   props.spin = false;
   props.progress = 0;
   props.opacity = 0;
-  const svg4 = createElement4("svg");
-  root3.ref.path = createElement4("path", {
+  const svg4 = createElement9("svg");
+  root3.ref.path = createElement9("path", {
     "stroke-width": 2,
     "stroke-linecap": "round"
   });
@@ -7144,7 +10780,7 @@ var listen = (cb) => {
   document.addEventListener("paste", handlePaste);
 };
 var unlisten = (listener) => {
-  arrayRemove(listeners$1, listeners$1.indexOf(listener));
+  arrayRemove2(listeners$1, listeners$1.indexOf(listener));
   if (listeners$1.length === 0) {
     document.removeEventListener("paste", handlePaste);
     listening = false;
@@ -8350,7 +11986,7 @@ var fn = () => {
 var OptionTypes = {};
 var create$f = fn;
 var destroy = fn;
-var parse = fn;
+var parse2 = fn;
 var find = fn;
 var registerPlugin = fn;
 var getOptions$1 = fn;
@@ -8371,7 +12007,7 @@ if (supported()) {
           supported,
           create: create$f,
           destroy,
-          parse,
+          parse: parse2,
           find,
           registerPlugin,
           setOptions: setOptions$1
@@ -8405,7 +12041,7 @@ if (supported()) {
     }
     return false;
   };
-  parse = (context) => {
+  parse2 = (context) => {
     const matchedHooks = Array.from(context.querySelectorAll(`.${name}`));
     const newHooks = matchedHooks.filter(
       (newHook) => !state.apps.find((app) => app.isAttachedTo(newHook))
@@ -11385,7 +15021,7 @@ var loadImage3 = (url) => new Promise((resolve, reject) => {
   };
   img.src = url;
 });
-var chain = (funcs) => funcs.reduce(
+var chain2 = (funcs) => funcs.reduce(
   (promise, func) => promise.then((result) => func().then(Array.prototype.concat.bind(result))),
   Promise.resolve([])
 );
@@ -11401,7 +15037,7 @@ var canvasApplyMarkup = (canvas, markup) => new Promise((resolve) => {
       if (result) resolve2();
     })
   );
-  chain(drawers).then(() => resolve(canvas));
+  chain2(drawers).then(() => resolve(canvas));
 });
 var applyMarkupStyles = (ctx, styles3) => {
   ctx.beginPath();
@@ -11694,7 +15330,7 @@ if (typeof window !== "undefined" && typeof window.document !== "undefined") {
   }
 }
 var isBrowser8 = typeof window !== "undefined" && typeof window.document !== "undefined";
-var isIOS = isBrowser8 && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+var isIOS2 = isBrowser8 && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 var plugin7 = ({ addFilter: addFilter2, utils }) => {
   const { Type: Type3, forin: forin3, getFileFromBlob: getFileFromBlob3, isFile: isFile2 } = utils;
   const TRANSFORM_LIST = ["crop", "resize", "filter", "markup", "output"];
@@ -11921,7 +15557,7 @@ var plugin7 = ({ addFilter: addFilter2, utils }) => {
       // expects promise resolved with blob
       imageTransformAfterCreateBlob: [null, Type3.FUNCTION],
       // canvas memory limit
-      imageTransformCanvasMemoryLimit: [isBrowser8 && isIOS ? 4096 * 4096 : null, Type3.INT],
+      imageTransformCanvasMemoryLimit: [isBrowser8 && isIOS2 ? 4096 * 4096 : null, Type3.INT],
       // background image of the output canvas
       imageTransformCanvasBackgroundColor: [null, Type3.STRING]
     }
@@ -12310,7 +15946,7 @@ var svgElements2 = ["svg", "path"];
 var isSVGElement2 = function(e3) {
   return svgElements2.includes(e3);
 };
-var createElement6 = function(e3, t2) {
+var createElement11 = function(e3, t2) {
   var r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : {};
   "object" === _typeof(t2) && (r2 = t2, t2 = null);
   var n = isSVGElement2(e3) ? document.createElementNS(ns4, e3) : document.createElement(e3);
@@ -12432,7 +16068,7 @@ var animations2 = function(e3) {
   }, destroy: function() {
   } };
 };
-var addEvent2 = function(e3) {
+var addEvent3 = function(e3) {
   return function(t2, r2) {
     e3.addEventListener(t2, r2);
   };
@@ -12443,7 +16079,7 @@ var removeEvent2 = function(e3) {
   };
 };
 var listeners2 = function(e3) {
-  var t2 = e3.viewExternalAPI, r2 = e3.view, n = [], i2 = addEvent2(r2.element), o2 = removeEvent2(r2.element);
+  var t2 = e3.viewExternalAPI, r2 = e3.view, n = [], i2 = addEvent3(r2.element), o2 = removeEvent2(r2.element);
   return t2.on = function(e4, t3) {
     n.push({ type: e4, fn: t3 }), i2(e4, t3);
   }, t2.off = function(e4, t3) {
@@ -12496,7 +16132,7 @@ var IS_BROWSER4 = "undefined" != typeof window && void 0 !== window.document;
 var isBrowser10 = function() {
   return IS_BROWSER4;
 };
-var testElement2 = isBrowser10() ? createElement6("svg") : {};
+var testElement2 = isBrowser10() ? createElement11("svg") : {};
 var getChildCount2 = "children" in testElement2 ? function(e3) {
   return e3.children.length;
 } : function(e3) {
@@ -12515,7 +16151,7 @@ var createView2 = function() {
     return true;
   } : _2, w = e3.ignoreRect, A = void 0 !== w && w, I = e3.ignoreRectUpdate, S2 = void 0 !== I && I, C2 = e3.mixins, O = void 0 === C2 ? [] : C2;
   return function(e4) {
-    var t3 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, n2 = createElement6(r2, i2 ? "doka--".concat(i2) : null, a2), o3 = window.getComputedStyle(n2, null), c3 = updateRect4(), u2 = null, d2 = false, f3 = [], g2 = [], v3 = {}, E2 = {}, _3 = [s2], w2 = [l3], I2 = [h2], C3 = function() {
+    var t3 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, n2 = createElement11(r2, i2 ? "doka--".concat(i2) : null, a2), o3 = window.getComputedStyle(n2, null), c3 = updateRect4(), u2 = null, d2 = false, f3 = [], g2 = [], v3 = {}, E2 = {}, _3 = [s2], w2 = [l3], I2 = [h2], C3 = function() {
       return n2;
     }, x = function() {
       return [].concat(f3);
@@ -12680,7 +16316,7 @@ var toBytes2 = function(e3) {
   var t2 = toString2(e3).trim();
   return /MB$/i.test(t2) ? (t2 = t2.replace(/MB$i/, "").trim(), 1e3 * toInt2(t2) * 1e3) : /KB/i.test(t2) ? (t2 = t2.replace(/KB$i/, "").trim(), 1e3 * toInt2(t2)) : toInt2(t2);
 };
-var isFunction2 = function(e3) {
+var isFunction3 = function(e3) {
   return "function" == typeof e3;
 };
 var toFunctionReference2 = function(e3) {
@@ -12699,7 +16335,7 @@ var replaceSingleQuotes2 = function(e3) {
 var conversionTable2 = { array: toArray2, boolean: toBoolean2, int: function(e3) {
   return "bytes" === getType2(e3) ? toBytes2(e3) : toInt2(e3);
 }, float: toFloat2, bytes: toBytes2, number: toFloat2, string: function(e3) {
-  return isFunction2(e3) ? e3 : toString2(e3);
+  return isFunction3(e3) ? e3 : toString2(e3);
 }, object: function(e3) {
   try {
     return JSON.parse(replaceSingleQuotes2(e3));
@@ -12792,12 +16428,12 @@ var createOptionQueries2 = function(e3) {
 var getUniqueId3 = function() {
   return Math.random().toString(36).substr(2, 9);
 };
-var arrayRemove2 = function(e3, t2) {
+var arrayRemove3 = function(e3, t2) {
   return e3.splice(t2, 1);
 };
 var on2 = function() {
   var e3 = [], t2 = function(t3, r2) {
-    arrayRemove2(e3, e3.findIndex(function(e4) {
+    arrayRemove3(e3, e3.findIndex(function(e4) {
       return e4.event === t3 && (e4.cb === r2 || !r2);
     }));
   };
@@ -12822,7 +16458,7 @@ var on2 = function() {
 };
 var Type2 = { BOOLEAN: "boolean", INT: "int", NUMBER: "number", STRING: "string", ARRAY: "array", OBJECT: "object", FUNCTION: "function", FILE: "file" };
 var testResult = null;
-var isIOS2 = function() {
+var isIOS3 = function() {
   return null === testResult && (testResult = (/iPad|iPhone|iPod/.test(navigator.userAgent) || "MacIntel" === navigator.platform && navigator.maxTouchPoints > 1) && !window.MSStream), testResult;
 };
 var getOptions2 = function() {
@@ -12839,7 +16475,7 @@ var correctDeprecatedOption = function(e3) {
 var setOption = function(e3, t2) {
   e3 = correctDeprecatedOption(e3), defaultOptions2[e3][0] = getValueByType2(t2, defaultOptions2[e3][0], defaultOptions2[e3][1]);
 };
-var defaultOptions2 = { id: [null, Type2.STRING], className: [null, Type2.STRING], src: [null, Type2.FILE], storageName: ["doka", Type2.STRING], maxImagePreviewWidth: [1500, Type2.INT], maxImagePreviewHeight: [1500, Type2.INT], imagePreviewScaleMode: ["stage", Type2.STRING], allowPreviewFitToView: [true, Type2.BOOLEAN], allowButtonCancel: [true, Type2.BOOLEAN], allowButtonConfirm: [true, Type2.BOOLEAN], allowButtonReset: [true, Type2.BOOLEAN], allowDropFiles: [false, Type2.BOOLEAN], allowBrowseFiles: [true, Type2.BOOLEAN], allowAutoClose: [true, Type2.BOOLEAN], allowAutoDestroy: [false, Type2.BOOLEAN], utils: [["crop", "filter", "color", "markup"], Type2.ARRAY], util: [null, Type2.STRING], initialState: [null, Type2.OBJECT], outputData: [false, Type2.BOOLEAN], outputFile: [true, Type2.BOOLEAN], outputCorrectImageExifOrientation: [true, Type2.BOOLEAN], outputStripImageHead: [true, Type2.BOOLEAN], outputType: [null, Type2.STRING], outputQuality: [null, Type2.INT], outputFit: ["cover", Type2.STRING], outputUpscale: [true, Type2.BOOLEAN], outputWidth: [null, Type2.INT], outputHeight: [null, Type2.INT], outputCanvasBackgroundColor: [null, Type2.STRING], outputCanvasMemoryLimit: [isBrowser10() && isIOS2() ? 16777216 : null, Type2.INT], outputCanvasSyncTarget: [null, Type2.OBJECT], size: [null, Type2.OBJECT], sizeMin: [{ width: 1, height: 1 }, Type2.OBJECT], sizeMax: [{ width: 9999, height: 9999 }, Type2.OBJECT], filter: [null, Type2.OBJECT], filters: [{ original: { label: "Original", matrix: function() {
+var defaultOptions2 = { id: [null, Type2.STRING], className: [null, Type2.STRING], src: [null, Type2.FILE], storageName: ["doka", Type2.STRING], maxImagePreviewWidth: [1500, Type2.INT], maxImagePreviewHeight: [1500, Type2.INT], imagePreviewScaleMode: ["stage", Type2.STRING], allowPreviewFitToView: [true, Type2.BOOLEAN], allowButtonCancel: [true, Type2.BOOLEAN], allowButtonConfirm: [true, Type2.BOOLEAN], allowButtonReset: [true, Type2.BOOLEAN], allowDropFiles: [false, Type2.BOOLEAN], allowBrowseFiles: [true, Type2.BOOLEAN], allowAutoClose: [true, Type2.BOOLEAN], allowAutoDestroy: [false, Type2.BOOLEAN], utils: [["crop", "filter", "color", "markup"], Type2.ARRAY], util: [null, Type2.STRING], initialState: [null, Type2.OBJECT], outputData: [false, Type2.BOOLEAN], outputFile: [true, Type2.BOOLEAN], outputCorrectImageExifOrientation: [true, Type2.BOOLEAN], outputStripImageHead: [true, Type2.BOOLEAN], outputType: [null, Type2.STRING], outputQuality: [null, Type2.INT], outputFit: ["cover", Type2.STRING], outputUpscale: [true, Type2.BOOLEAN], outputWidth: [null, Type2.INT], outputHeight: [null, Type2.INT], outputCanvasBackgroundColor: [null, Type2.STRING], outputCanvasMemoryLimit: [isBrowser10() && isIOS3() ? 16777216 : null, Type2.INT], outputCanvasSyncTarget: [null, Type2.OBJECT], size: [null, Type2.OBJECT], sizeMin: [{ width: 1, height: 1 }, Type2.OBJECT], sizeMax: [{ width: 9999, height: 9999 }, Type2.OBJECT], filter: [null, Type2.OBJECT], filters: [{ original: { label: "Original", matrix: function() {
   return null;
 } }, chrome: { label: "Chrome", matrix: function() {
   return [1.398, -0.316, 0.065, -0.273, 0.201, -0.051, 1.278, -0.08, -0.273, 0.201, -0.051, 0.119, 1.151, -0.29, 0.215, 0, 0, 0, 1, 0];
@@ -13580,7 +17216,7 @@ var loadImage4 = function(e3) {
     }, n.src = e3;
   });
 };
-var chain2 = function(e3) {
+var chain3 = function(e3) {
   return e3.reduce(function(e4, t2) {
     return e4.then(function(e5) {
       return t2().then(Array.prototype.concat.bind(e5));
@@ -13596,7 +17232,7 @@ var canvasApplyMarkup2 = function(e3, t2) {
         });
       };
     });
-    chain2(o2).then(function() {
+    chain3(o2).then(function() {
       return r2(e3);
     });
   });
@@ -14133,7 +17769,7 @@ var resetCrop = function(e3, t2) {
     o2 ? e3.crop.aspectRatio = o2 : a2 && i2.length ? e3.crop.aspectRatio = null : e3.crop.aspectRatio = t2("GET_CROP_ASPECT_RATIO"), e3.crop.isDirty = false;
   }
 };
-var reset = function(e3, t2, r2) {
+var reset2 = function(e3, t2, r2) {
   if (null !== e3.stage) {
     clearCenterTimeout(e3), e3.size.width = !!e3.instructions.size && e3.instructions.size.width, e3.size.height = !!e3.instructions.size && e3.instructions.size.height, e3.size.aspectRatioLocked = true, e3.size.aspectRatioPrevious = false;
     var n = void 0 === e3.instructions.crop.scaleToFit ? void 0 === e3.crop.limitToImageBounds ? e3.options.cropLimitToImageBounds : e3.crop.limitToImageBounds : e3.instructions.crop.scaleToFit;
@@ -14374,7 +18010,7 @@ var actions2 = function(e3, t2, r2) {
       r2.stage = createRect(0, 0, l3.width, l3.height), r2.stageOffset = createVector3(r2.stageOffset.x + l3.x, r2.stageOffset.y + l3.y);
     }
     if (c2) {
-      if (reset(r2, t2, e3), e3("DID_SHOW_IMAGE", { image: { size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: r2.image.orientation, width: r2.image.naturalWidth, height: r2.image.naturalHeight } }), !r2.filePromise.resolveOnConfirm) {
+      if (reset2(r2, t2, e3), e3("DID_SHOW_IMAGE", { image: { size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: r2.image.orientation, width: r2.image.naturalWidth, height: r2.image.naturalHeight } }), !r2.filePromise.resolveOnConfirm) {
         var u = getCropFromStateRounded(r2.image, r2.crop), s2 = getOutputSize(t2);
         r2.filePromise.success({ crop: u, image: { orientation: r2.file.orientation }, size: s2, output: { type: t2("GET_OUTPUT_TYPE"), quality: t2("GET_OUTPUT_QUALITY") } });
       }
@@ -14683,7 +18319,7 @@ var actions2 = function(e3, t2, r2) {
       u(t3);
     });
   }, EDIT_RESET: function() {
-    clearCenterTimeout(r2), reset(r2, t2, e3);
+    clearCenterTimeout(r2), reset2(r2, t2, e3);
   }, EDIT_CONFIRM: function() {
     if (r2.file && r2.stage) {
       clearCenterTimeout(r2), e3("CROP_ZOOM");
@@ -14993,7 +18629,7 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
   } })), (t2.query("IS_ACTIVE_VIEW", "markup") || t2.query("IS_ACTIVE_VIEW", "sticker")) && (t2.element.dataset.active = true), t2.ref.drawInput = null, t2.ref.drawState = { lineColor: null, lineWidth: null, lineStyle: null, points: [] };
   var T = svg$1("path", { fill: "none", class: "doka--draw-path" });
   t2.ref.drawPath = T, c2.appendChild(T);
-  var _2 = createElement6("div", "doka--image-markup-clip");
+  var _2 = createElement11("div", "doka--image-markup-clip");
   _2.appendChild(u), _2.appendChild(c2), t2.ref.clip = _2, t2.element.appendChild(_2), "draw" === t2.query("GET_MARKUP_UTIL") && activateMarkupUtil(t2, r2, "draw");
 }, destroy: function(e3) {
   var t2 = e3.root;
@@ -15094,7 +18730,7 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
                 var B2 = t2.markupY + MARKUP_MARGIN, V2 = t2.markupY + t2.markupHeight - MARKUP_MARGIN, N2 = t2.markupX + MARKUP_MARGIN, F2 = t2.markupX + t2.markupWidth - MARKUP_MARGIN;
                 if (L2 < B2 ? L2 = B2 : L2 + b2 > V2 && (L2 = V2 - b2), M2 < N2 ? M2 = N2 : M2 + x2 > F2 && (M2 = F2 - x2), P2 || (E.element.dataset.active = "false"), E.element.setAttribute("style", "transform: translate3d(".concat(M2, "px, ").concat(L2, "px, 0)")), "text" === o3 && P2 && R2) {
                   var z2 = P2.width + 65, W3 = t2.markupWidth - P2.x, q2 = "\n                        width: ".concat(Math.min(z2, W3), "px;\n                        height: ").concat(P2.height, "px;\n                        color: ").concat(C3.getAttribute("fill"), ";\n                        font-family: ").concat(C3.getAttribute("font-family"), ";\n                        font-size: ").concat(C3.getAttribute("font-size").replace(/px/, ""), "px;\n                        font-weight: ").concat(C3.getAttribute("font-weight") || "normal", ";\n                    ");
-                  isIOS2() ? q2 += "\n                            left: ".concat(Math.round(t2.markupX + P2.x), "px;\n                            top: ").concat(Math.round(t2.markupY + P2.y), "px;\n                        ") : q2 += "\n                            transform: translate3d(".concat(Math.round(t2.markupX + P2.x), "px,").concat(Math.round(t2.markupY + P2.y), "px,0);\n                        "), t2.ref.input.setAttribute("style", q2), C3.setAttribute("fill", "none");
+                  isIOS3() ? q2 += "\n                            left: ".concat(Math.round(t2.markupX + P2.x), "px;\n                            top: ").concat(Math.round(t2.markupY + P2.y), "px;\n                        ") : q2 += "\n                            transform: translate3d(".concat(Math.round(t2.markupX + P2.x), "px,").concat(Math.round(t2.markupY + P2.y), "px,0);\n                        "), t2.ref.input.setAttribute("style", q2), C3.setAttribute("fill", "none");
                 }
                 if ("text" === o3) return;
                 if (!_3) return;
@@ -15413,7 +19049,7 @@ var imageGL = createView2({ name: "image-gl", ignoreRect: true, ignoreRectUpdate
     9 === e4.keyCode && (t2.element.dataset.showInteractionIndicator = true);
   }, t2.ref.handleBlur = function(e4) {
     t2.element.dataset.showInteractionIndicator = false;
-  }, addEvent2(t2.element)("keyup", t2.ref.handleFocus), addEvent2(t2.element)("blur", t2.ref.handleBlur);
+  }, addEvent3(t2.element)("keyup", t2.ref.handleFocus), addEvent3(t2.element)("blur", t2.ref.handleBlur);
 }, destroy: function(e3) {
   var t2 = e3.root;
   t2.ref.gl && (t2.ref.gl.release(), t2.ref.gl = null), t2.ref.dragger.destroy(), removeEvent2(t2.element)("keyup", t2.ref.handleFocus), removeEvent2(t2.element)("blur", t2.ref.handleBlur);
@@ -15759,13 +19395,13 @@ var updateText$1 = function(e3, t2) {
 };
 var sizeSpring = { type: "spring", stiffness: 0.25, damping: 0.1, mass: 1 };
 var cropSize = createView2({ ignoreRect: true, name: "crop-size", mixins: { styles: ["translateX", "translateY", "opacity"], animations: { translateX: "spring", translateY: "spring", opacity: "spring", sizeWidth: sizeSpring, sizeHeight: sizeSpring }, apis: ["sizeWidth", "sizeHeight"], listeners: true }, create: function(e3) {
-  var t2 = e3.root, r2 = createElement6("span");
+  var t2 = e3.root, r2 = createElement11("span");
   r2.className = "doka--crop-size-info doka--crop-resize-percentage", t2.ref.resizePercentage = r2, t2.appendChild(r2);
-  var n = createElement6("span");
+  var n = createElement11("span");
   n.className = "doka--crop-size-info";
-  var i2 = createElement6("span");
+  var i2 = createElement11("span");
   i2.className = "doka--crop-size-multiply", i2.textContent = "\xD7";
-  var o2 = createElement6("span"), a2 = createElement6("span");
+  var o2 = createElement11("span"), a2 = createElement11("span");
   t2.ref.outputWidth = o2, t2.ref.outputHeight = a2, n.appendChild(o2), n.appendChild(i2), n.appendChild(a2), t2.appendChild(n), t2.ref.previousValues = { width: 0, height: 0, percentage: 0 };
 }, write: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = e3.timestamp;
@@ -16088,7 +19724,7 @@ var cropRoot = createView2({ name: "crop", ignoreRect: true, mixins: { apis: ["v
 var sizeInput = createView2({ name: "size-input", mixins: { listeners: true, apis: ["id", "value", "placeholder", "getValue", "setValue", "setPlaceholder", "hasFocus", "onChange"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = r2.id, i2 = r2.min, o2 = r2.max, a2 = r2.value, c2 = r2.placeholder, l3 = r2.onChange, u = void 0 === l3 ? function() {
   } : l3, s2 = r2.onBlur, d = void 0 === s2 ? function() {
-  } : s2, p = "doka--".concat(n, "-").concat(getUniqueId3()), f2 = createElement6("input", { type: "number", step: 1, id: p, min: i2, max: o2, value: a2, placeholder: c2 }), h2 = f2.getAttribute("max").length, g = createElement6("label", { for: p });
+  } : s2, p = "doka--".concat(n, "-").concat(getUniqueId3()), f2 = createElement11("input", { type: "number", step: 1, id: p, min: i2, max: o2, value: a2, placeholder: c2 }), h2 = f2.getAttribute("max").length, g = createElement11("label", { for: p });
   g.textContent = r2.label;
   var m = function(e4, t3, r3) {
     return isString2(e4) ? ((e4 = e4.replace(/[^0-9]/g, "")).length > h2 && (e4 = e4.slice(0, h2)), e4 = parseInt(e4, 10)) : e4 = Math.round(e4), isNaN(e4) ? null : limit2(e4, t3, r3);
@@ -16115,9 +19751,9 @@ var sizeInput = createView2({ name: "size-input", mixins: { listeners: true, api
 var checkboxInput = createView2({ name: "checkable", tag: "span", mixins: { listeners: true, apis: ["id", "checked", "onChange", "onSetValue", "setValue", "getValue"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = r2.id, i2 = r2.checked, o2 = r2.onChange, a2 = void 0 === o2 ? function() {
   } : o2, c2 = r2.onSetValue, l3 = void 0 === c2 ? function() {
-  } : c2, u = "doka--".concat(n, "-").concat(getUniqueId3()), s2 = createElement6("input", { type: "checkbox", value: 1, id: u });
+  } : c2, u = "doka--".concat(n, "-").concat(getUniqueId3()), s2 = createElement11("input", { type: "checkbox", value: 1, id: u });
   s2.checked = i2, t2.ref.input = s2;
-  var d = createElement6("label", { for: u });
+  var d = createElement11("label", { for: u });
   d.innerHTML = r2.label, t2.appendChild(s2), t2.appendChild(d), t2.ref.handleChange = function() {
     l3(s2.checked), a2(s2.checked);
   }, s2.addEventListener("change", t2.ref.handleChange), r2.getValue = function() {
@@ -16137,7 +19773,7 @@ var isAndroid = function() {
 };
 var resizeForm = createView2({ ignoreRect: true, name: "resize-form", tag: "form", mixins: { styles: ["opacity"], animations: { opacity: { type: "spring", mass: 15, delay: 150 } } }, create: function(e3) {
   var t2 = e3.root;
-  t2.element.setAttribute("novalidate", "novalidate"), t2.element.setAttribute("action", "#"), t2.ref.shouldBlurKeyboard = isIOS2() || isAndroid();
+  t2.element.setAttribute("novalidate", "novalidate"), t2.element.setAttribute("action", "#"), t2.ref.shouldBlurKeyboard = isIOS3() || isAndroid();
   var r2 = t2.query("GET_SIZE_MAX"), n = t2.query("GET_SIZE_MIN"), i2 = function() {
     var e4 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, i3 = e4.axisLock, o3 = void 0 === i3 ? "none" : i3, a2 = e4.enforceLimits, c2 = void 0 !== a2 && a2, l3 = t2.ref, u = l3.inputImageWidth, s2 = l3.inputImageHeight, d = l3.buttonConfirm, p = t2.query("GET_SIZE_ASPECT_RATIO_LOCK"), f2 = t2.query("GET_CROP_RECTANGLE_ASPECT_RATIO"), h2 = { width: u.getValue(), height: s2.getValue() }, g = limitSize(h2, c2 ? n : { width: 1, height: 1 }, c2 ? r2 : { width: 999999, height: 999999 }, p ? f2 : null, o3);
     if (p) "width" === o3 ? s2.setValue(g.width / f2) : "height" === o3 ? u.setValue(g.height * f2) : (u.setValue(g.width || g.height * f2), s2.setValue(g.height || g.width / f2));
@@ -16209,7 +19845,7 @@ var resizeForm = createView2({ ignoreRect: true, name: "resize-form", tag: "form
 }) });
 var createFieldGroup = function(e3, t2) {
   return createView2({ tag: "fieldset", create: function(r2) {
-    var n = r2.root, i2 = createElement6("legend");
+    var n = r2.root, i2 = createElement11("legend");
     i2.textContent = e3, n.element.appendChild(i2), t2({ root: n });
   } });
 };
@@ -16237,17 +19873,17 @@ var resizeRoot = createView2({ name: "resize", ignoreRect: true, mixins: { apis:
 }) });
 var rangeInput = createView2({ name: "range-input", tag: "span", mixins: { listeners: true, apis: ["onUpdate", "setValue", "getValue", "setAllowInteraction"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props, n = r2.id, i2 = r2.min, o2 = r2.max, a2 = r2.step, c2 = r2.value, l3 = r2.onUpdate, u = void 0 === l3 ? function() {
-  } : l3, s2 = "doka--".concat(n, "-").concat(getUniqueId3()), d = createElement6("input", { type: "range", id: s2, min: i2, max: o2, step: a2 });
+  } : l3, s2 = "doka--".concat(n, "-").concat(getUniqueId3()), d = createElement11("input", { type: "range", id: s2, min: i2, max: o2, step: a2 });
   d.value = c2, t2.ref.input = d;
-  var p = createElement6("span");
+  var p = createElement11("span");
   p.className = "doka--range-input-inner";
-  var f2 = createElement6("label", { for: s2 });
+  var f2 = createElement11("label", { for: s2 });
   f2.innerHTML = r2.label;
   var h2 = i2 + 0.5 * (o2 - i2);
   t2.element.dataset.centered = c2 === h2, t2.ref.handleRecenter = function() {
     r2.setValue(h2), t2.ref.handleChange();
   };
-  var g = createElement6("button", { type: "button" });
+  var g = createElement11("button", { type: "button" });
   g.textContent = "center", g.addEventListener("click", t2.ref.handleRecenter), t2.ref.recenter = g, p.appendChild(d), p.appendChild(g), t2.appendChild(f2), t2.appendChild(p), t2.ref.handleChange = function() {
     var e4 = r2.getValue();
     t2.element.dataset.centered = e4 === h2, u(e4);
@@ -16308,19 +19944,19 @@ var colorEquals = function(e3, t2) {
 };
 var createFilterTile = function(e3) {
   return createView2({ ignoreRect: true, tag: "li", name: "filter-tile", mixins: { styles: ["opacity", "translateY"], animations: { translateY: { type: "spring", delay: 10 * e3 }, opacity: { type: "spring", delay: 30 * e3 } } }, create: function(e4) {
-    var t2 = e4.root, r2 = e4.props, n = "doka--filter-".concat(r2.style, "-").concat(getUniqueId3()), i2 = createElement6("input", { id: n, type: "radio", name: "filter" });
+    var t2 = e4.root, r2 = e4.props, n = "doka--filter-".concat(r2.style, "-").concat(getUniqueId3()), i2 = createElement11("input", { id: n, type: "radio", name: "filter" });
     t2.appendChild(i2), i2.checked = r2.selected, i2.value = r2.style, i2.addEventListener("change", function() {
       i2.checked && r2.onSelect();
     });
-    var o2 = createElement6("label", { for: n });
+    var o2 = createElement11("label", { for: n });
     o2.textContent = r2.label, t2.appendChild(o2);
-    var a2 = r2.imageData, c2 = Math.min(a2.width, a2.height), l3 = c2, u = createElement6("canvas");
+    var a2 = r2.imageData, c2 = Math.min(a2.width, a2.height), l3 = c2, u = createElement11("canvas");
     u.width = c2, u.height = l3;
     var s2 = u.getContext("2d");
     t2.ref.image = u;
-    var d = createElement6("div");
+    var d = createElement11("div");
     t2.ref.imageOverlay = d;
-    var p = { x: 0.5 * c2 - 0.5 * a2.width, y: 0.5 * l3 - 0.5 * a2.height }, f2 = createElement6("div");
+    var p = { x: 0.5 * c2 - 0.5 * a2.width, y: 0.5 * l3 - 0.5 * a2.height }, f2 = createElement11("div");
     f2.appendChild(u), f2.appendChild(d), t2.appendChild(f2), t2.ref.imageWrapper = f2, r2.matrix ? (tilePreviewWorker || (tilePreviewWorker = createWorker3(TransformWorker2)), clearTimeout(tilePreviewWorkerTerminationTimeout), tilePreviewWorker.post({ transforms: [{ type: "filter", data: r2.matrix }], imageData: a2 }, function(e5) {
       s2.putImageData(e5, p.x, p.y), clearTimeout(tilePreviewWorkerTerminationTimeout), tilePreviewWorkerTerminationTimeout = setTimeout(function() {
         tilePreviewWorker.terminate(), tilePreviewWorker = null;
@@ -16456,7 +20092,7 @@ var colorRoot = createView2({ name: "color", ignoreRect: true, mixins: { apis: [
 }) });
 var supportsColorPicker = function() {
   try {
-    var e3 = createElement6("input", { type: "color" }), t2 = "color" === e3.type;
+    var e3 = createElement11("input", { type: "color" }), t2 = "color" === e3.type;
     return /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ? t2 : t2 && "number" != typeof e3.selectionStart;
   } catch (e4) {
     return false;
@@ -16484,14 +20120,14 @@ var markupColor = createView2({ ignoreRect: true, tag: "div", name: "markup-colo
   t2.ref.handleChange = function(e4) {
     o2(e4.target.value), e4.stopPropagation();
   }, t2.element.addEventListener("change", t2.ref.handleChange);
-  var a2 = createElement6("ul");
+  var a2 = createElement11("ul");
   if (t2.ref.inputs = n.map(function(e4) {
-    var t3 = "doka--color-" + getUniqueId3(), r3 = createElement6("li"), n2 = createElement6("input", { id: t3, name: i2, type: "radio", value: e4[1] }), o3 = createElement6("label", { for: t3, title: e4[0], style: "background-color: " + (e4[2] || e4[1]) });
+    var t3 = "doka--color-" + getUniqueId3(), r3 = createElement11("li"), n2 = createElement11("input", { id: t3, name: i2, type: "radio", value: e4[1] }), o3 = createElement11("label", { for: t3, title: e4[0], style: "background-color: " + (e4[2] || e4[1]) });
     return o3.textContent = e4[0], appendChild2(r3)(n2), appendChild2(r3)(o3), appendChild2(a2)(r3), n2;
   }), t2.element.appendChild(a2), t2.query("GET_MARKUP_ALLOW_CUSTOM_COLOR") && supportsColorPicker()) {
-    var c2 = createElement6("div", { class: "doka--color-input" }), l3 = "doka--color-" + getUniqueId3(), u = createElement6("label", { for: l3 });
+    var c2 = createElement11("div", { class: "doka--color-input" }), l3 = "doka--color-" + getUniqueId3(), u = createElement11("label", { for: l3 });
     u.textContent = "Choose color";
-    var s2 = createElement6("input", { id: l3, name: i2, type: "color" }), d = createElement6("span", { class: "doka--color-visualizer" }), p = createElement6("span", { class: "doka--color-brightness" });
+    var s2 = createElement11("input", { id: l3, name: i2, type: "color" }), d = createElement11("span", { class: "doka--color-visualizer" }), p = createElement11("span", { class: "doka--color-brightness" });
     t2.ref.handleCustomColorChange = function() {
       var e4 = toRGBColorArray(s2.value), t3 = toHSL.apply(void 0, _toConsumableArray(e4)), r3 = 360 * t3[0] - 90, n2 = 0.625 * t3[1], i3 = 1 - t3[2];
       d.style.backgroundColor = s2.value, d.style.transform = "rotateZ(".concat(r3, "deg) translateX(").concat(n2, "em)"), p.style.opacity = i3, o2(s2.value);
@@ -16605,12 +20241,12 @@ var markupRoot = createView2({ name: "markup", ignoreRect: true, mixins: { apis:
   var t2 = e3.root, r2 = e3.props;
   r2.viewId = "markup", r2.hidden = false, t2.ref.isHiding = false;
   var n = [["select", { label: t2.query("GET_LABEL_MARKUP_TOOL_SELECT"), icon: createIcon('<g fill="none" fill-rule="evenodd"><path d="M7 13H5a1 1 0 01-1-1V5a1 1 0 011-1h7a1 1 0 011 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10.22 8.914l12.58 5.18a1 1 0 01.012 1.844l-4.444 1.904a1 1 0 00-.526.526l-1.904 4.444a1 1 0 01-1.844-.013l-5.18-12.58a1 1 0 011.305-1.305z" fill="currentColor"/></g>', 26) }], ["draw", { label: t2.query("GET_LABEL_MARKUP_TOOL_DRAW"), icon: createIcon('<g fill="currentColor"><path d="M17.86 5.71a2.425 2.425 0 013.43 3.43L9.715 20.714 5 22l1.286-4.715L17.86 5.71z"/></g>', 26) }], ["line", { label: t2.query("GET_LABEL_MARKUP_TOOL_LINE"), icon: createIcon('<g transform="translate(3 4.5)" fill-rule="nonzero" fill="currentColor" stroke="none"><path d="M15.414 9.414l-6.01 6.01a2 2 0 1 1-2.829-2.828L9.172 10H2a2 2 0 1 1 0-4h7.172L6.575 3.404A2 2 0 1 1 9.404.575l6.01 6.01c.362.363.586.863.586 1.415s-.224 1.052-.586 1.414z"/></g>', 26) }], ["text", { label: t2.query("GET_LABEL_MARKUP_TOOL_TEXT"), icon: createIcon('<g transform="translate(5 5)" fill="currentColor" fill-rule="evenodd"><path d="M10 4v11a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4H1a1 1 0 0 1-1-1V1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-5z"/></g>', 26) }], ["rect", { label: t2.query("GET_LABEL_MARKUP_TOOL_RECT"), icon: createIcon('<g fill="currentColor"><rect x="5" y="5" width="16" height="16" rx="2"/></g>', 26) }], ["ellipse", { label: t2.query("GET_LABEL_MARKUP_TOOL_ELLIPSE"), icon: createIcon('<g fill="currentColor"><circle cx="13" cy="13" r="9"/></g>', 26) }]];
-  t2.ref.utils = createElement6("fieldset"), t2.ref.utils.className = "doka--markup-utils", t2.ref.utilsList = createElement6("ul");
+  t2.ref.utils = createElement11("fieldset"), t2.ref.utils.className = "doka--markup-utils", t2.ref.utilsList = createElement11("ul");
   var i2 = "markup-utils-".concat(getUniqueId3());
   t2.ref.inputs = n.map(function(e4) {
-    var r3 = e4[0], n2 = e4[1], o3 = "doka--markup-tool-" + getUniqueId3(), a2 = createElement6("li"), c2 = createElement6("input");
+    var r3 = e4[0], n2 = e4[1], o3 = "doka--markup-tool-" + getUniqueId3(), a2 = createElement11("li"), c2 = createElement11("input");
     c2.id = o3, c2.checked = t2.query("GET_MARKUP_UTIL") === r3, c2.setAttribute("type", "radio"), c2.setAttribute("name", i2), c2.value = r3;
-    var l3 = createElement6("label");
+    var l3 = createElement11("label");
     return l3.setAttribute("for", o3), l3.className = "doka--button-tool", l3.innerHTML = n2.icon + "<span>" + n2.label + "</span>", l3.title = n2.label, a2.appendChild(c2), a2.appendChild(l3), t2.ref.utilsList.appendChild(a2), c2;
   }), t2.ref.utils.appendChild(t2.ref.utilsList), t2.ref.utilsList.addEventListener("change", function(e4) {
     t2.dispatch("SET_MARKUP_UTIL", { value: e4.target.value });
@@ -16704,18 +20340,18 @@ var stickerList = createView2({ ignoreRect: true, tag: "ul", name: "sticker-list
     t2.element.innerHTML = "", e4.forEach(function(e5, r3) {
       var n2, i2;
       "string" == typeof e5 || Array.isArray(e5) ? (n2 = "", i2 = e5) : (n2 = e5.alt || "", i2 = e5.sticker);
-      var o2, a2 = createElement6("button"), c2 = "string" == typeof i2, l3 = c2 && isEmoji(i2);
+      var o2, a2 = createElement11("button"), c2 = "string" == typeof i2, l3 = c2 && isEmoji(i2);
       if (c2 && !l3) (o2 = new Image()).src = i2;
       else {
         var u, s2;
-        o2 = createElement6("svg", { viewBox: "0 0 100 100", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink" }), l3 ? (u = "text", s2 = { text: i2 }) : (u = i2[0], s2 = _objectSpread({}, i2[1])), "text" === u && (s2.fontColor = s2.fontColor || "#000000", s2.fontSize = s2.fontSize || 0.3125);
+        o2 = createElement11("svg", { viewBox: "0 0 100 100", xmlns: "http://www.w3.org/2000/svg", "xmlns:xlink": "http://www.w3.org/1999/xlink" }), l3 ? (u = "text", s2 = { text: i2 }) : (u = i2[0], s2 = _objectSpread({}, i2[1])), "text" === u && (s2.fontColor = s2.fontColor || "#000000", s2.fontSize = s2.fontSize || 0.3125);
         var d = createMarkupByType3(u, s2);
         updateMarkupByType3(d, u, s2, { width: 200, height: 200 }), d.removeAttribute("id");
         var p = "text" === u ? 6 : 0;
         "ellipse" === u ? (d.setAttribute("cx", "50"), d.setAttribute("cy", "50")) : (d.setAttribute("x", 50 - 0.5 * d.getAttribute("width")), d.setAttribute("y", 50 - 0.5 * d.getAttribute("height"))), "text" === u && (d.setAttribute("x", "50"), d.setAttribute("y", 50 + p), d.setAttribute("text-anchor", "middle"), d.setAttribute("dominant-baseline", "middle")), o2.appendChild(d);
       }
       n2 && (a2.innerHTML = "<span>".concat(n2, "</span>")), a2.appendChild(o2), a2.dataset.index = r3, a2.setAttribute("type", "button"), a2.className = "doka--button doka--button-tool";
-      var f2 = createElement6("li");
+      var f2 = createElement11("li");
       f2.appendChild(a2), t2.element.appendChild(f2);
     });
   };
@@ -16943,7 +20579,7 @@ var prevent2 = function(e3) {
 };
 var editor = createView2({ name: "editor", ignoreRect: true, mixins: { styles: ["opacity"], animations: { opacity: { type: "tween", duration: 350 } }, apis: ["markedForRemoval"] }, create: function(e3) {
   var t2 = e3.root, r2 = e3.props;
-  r2.markedForRemoval = false, isIOS2() && (t2.element.addEventListener("touchmove", prevent2, { passive: false }), t2.element.addEventListener("gesturestart", prevent2)), t2.ref.pointerPolyfill = createPointerEvents("root" === t2.query("GET_POINTER_EVENTS_POLYFILL_SCOPE") ? t2.element : document.documentElement), t2.appendChildView(t2.createChildView(editContainer, _objectSpread({}, r2)));
+  r2.markedForRemoval = false, isIOS3() && (t2.element.addEventListener("touchmove", prevent2, { passive: false }), t2.element.addEventListener("gesturestart", prevent2)), t2.ref.pointerPolyfill = createPointerEvents("root" === t2.query("GET_POINTER_EVENTS_POLYFILL_SCOPE") ? t2.element : document.documentElement), t2.appendChildView(t2.createChildView(editContainer, _objectSpread({}, r2)));
 }, destroy: function(e3) {
   var t2 = e3.root;
   t2.ref.pointerPolyfill.destroy(), t2.element.removeEventListener("touchmove", prevent2, true), t2.element.removeEventListener("gesturestart", prevent2);
@@ -17019,13 +20655,13 @@ var preventNavSwipe = function(e3) {
 };
 var setupFullscreenMode = function(e3) {
   var t2 = e3.element, r2 = e3.ref, n = r2.handleFullscreenUpdate, i2 = r2.handleEscapeKey;
-  t2.setAttribute("tabindex", -1), n(), e3.ref.focusTrap = createFocusTrap(t2), t2.addEventListener("keydown", i2), isIOS2() && t2.addEventListener("touchstart", preventNavSwipe), window.addEventListener("resize", n), window.innerWidth - document.documentElement.clientWidth > 0 && document.body.classList.add("doka--parent"), document.body.appendChild(t2);
+  t2.setAttribute("tabindex", -1), n(), e3.ref.focusTrap = createFocusTrap(t2), t2.addEventListener("keydown", i2), isIOS3() && t2.addEventListener("touchstart", preventNavSwipe), window.addEventListener("resize", n), window.innerWidth - document.documentElement.clientWidth > 0 && document.body.classList.add("doka--parent"), document.body.appendChild(t2);
   var o2 = document.querySelector("meta[name=viewport]");
   e3.ref.defaultViewportContent = o2 ? o2.getAttribute("content") : null, o2 || ((o2 = document.createElement("meta")).setAttribute("name", "viewport"), document.head.appendChild(o2)), o2.setAttribute("content", "width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=0"), e3.opacity = 1, contains(e3.element, document.activeElement) || t2.focus(), e3.dispatch("INVALIDATE_VIEWPORT"), e3.ref.isFullscreen = true;
 };
 var cleanFullscreenMode = function(e3) {
   var t2 = e3.element, r2 = e3.ref, n = r2.handleFullscreenUpdate, i2 = r2.focusTrap, o2 = r2.handleEscapeKey;
-  t2.removeAttribute("tabindex"), i2.destroy(), t2.removeEventListener("keydown", o2), isIOS2() && t2.removeEventListener("touchstart", preventNavSwipe), window.removeEventListener("resize", n), document.body.classList.remove("doka--parent");
+  t2.removeAttribute("tabindex"), i2.destroy(), t2.removeEventListener("keydown", o2), isIOS3() && t2.removeEventListener("touchstart", preventNavSwipe), window.removeEventListener("resize", n), document.body.classList.remove("doka--parent");
   var a2 = document.querySelector("meta[name=viewport]");
   e3.ref.defaultViewportContent ? (a2.setAttribute("content", e3.ref.defaultViewportContent), e3.ref.defaultViewportContent = null) : a2.parentNode.removeChild(a2), e3.ref.isFullscreen = false;
 };
@@ -17300,7 +20936,7 @@ var fn2 = function() {
 var OptionTypes2 = {};
 var create$12 = fn2;
 var destroy2 = fn2;
-var parse2 = fn2;
+var parse3 = fn2;
 var find2 = fn2;
 var getOptions$12 = fn2;
 var setOptions$12 = fn2;
@@ -17315,7 +20951,7 @@ if (supported2()) {
     });
   });
   dispatch = function e3() {
-    document.dispatchEvent(new CustomEvent("doka:loaded", { detail: { supported: supported2, create: create$12, destroy: destroy2, parse: parse2, find: find2, setOptions: setOptions$12 } })), document.removeEventListener("DOMContentLoaded", e3);
+    document.dispatchEvent(new CustomEvent("doka:loaded", { detail: { supported: supported2, create: create$12, destroy: destroy2, parse: parse3, find: find2, setOptions: setOptions$12 } })), document.removeEventListener("DOMContentLoaded", e3);
   };
   "loading" !== document.readyState ? setTimeout(function() {
     return dispatch();
@@ -17333,7 +20969,7 @@ if (supported2()) {
       return t3.isAttachedTo(e3);
     });
     return t2 >= 0 && (state2.apps.splice(t2, 1)[0].restoreElement(), true);
-  }, parse2 = function(e3) {
+  }, parse3 = function(e3) {
     return Array.from(e3.querySelectorAll(".".concat(name2))).filter(function(e4) {
       return !state2.apps.find(function(t2) {
         return t2.isAttachedTo(e4);
@@ -18754,8 +22390,8 @@ function drawImageInCanvas(e3, t2) {
   const { width: r2, height: i2 } = approximateBelowMaximumCanvasSizeOfBrowser(e3.width, e3.height), [o2, a2] = getNewCanvasAndCtx(r2, i2);
   return t2 && /jpe?g/.test(t2) && (a2.fillStyle = "white", a2.fillRect(0, 0, o2.width, o2.height)), a2.drawImage(e3, 0, 0, o2.width, o2.height), o2;
 }
-function isIOS3() {
-  return void 0 !== isIOS3.cachedResult || (isIOS3.cachedResult = ["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"].includes(navigator.platform) || navigator.userAgent.includes("Mac") && "undefined" != typeof document && "ontouchend" in document), isIOS3.cachedResult;
+function isIOS4() {
+  return void 0 !== isIOS4.cachedResult || (isIOS4.cachedResult = ["iPad Simulator", "iPhone Simulator", "iPod Simulator", "iPad", "iPhone", "iPod"].includes(navigator.platform) || navigator.userAgent.includes("Mac") && "undefined" != typeof document && "ontouchend" in document), isIOS4.cachedResult;
 }
 function drawFileInCanvas(e3, t2 = {}) {
   return new Promise((function(r2, o2) {
@@ -18805,7 +22441,7 @@ function drawFileInCanvas(e3, t2 = {}) {
       }
     };
     try {
-      if (isIOS3() || [i.DESKTOP_SAFARI, i.MOBILE_SAFARI].includes(getBrowserName())) throw new Error("Skip createImageBitmap on IOS and Safari");
+      if (isIOS4() || [i.DESKTOP_SAFARI, i.MOBILE_SAFARI].includes(getBrowserName())) throw new Error("Skip createImageBitmap on IOS and Safari");
       return createImageBitmap(e3).then((function(e4) {
         try {
           return a2 = e4, $Try_2_Post();
@@ -19116,3466 +22752,6 @@ function imageCompression(e3, t2) {
   }));
 }
 imageCompression.getDataUrlFromFile = getDataUrlFromFile, imageCompression.getFilefromDataUrl = getFilefromDataUrl, imageCompression.loadImage = loadImage5, imageCompression.drawImageInCanvas = drawImageInCanvas, imageCompression.drawFileInCanvas = drawFileInCanvas, imageCompression.canvasToFile = canvasToFile, imageCompression.getExifOrientation = getExifOrientation, imageCompression.handleMaxWidthOrHeight = handleMaxWidthOrHeight, imageCompression.followExifOrientation = followExifOrientation, imageCompression.cleanupCanvasMemory = cleanupCanvasMemory, imageCompression.isAutoOrientationInBrowser = isAutoOrientationInBrowser, imageCompression.approximateBelowMaximumCanvasSizeOfBrowser = approximateBelowMaximumCanvasSizeOfBrowser, imageCompression.copyExifWithoutOrientation = copyExifWithoutOrientation, imageCompression.getBrowserName = getBrowserName, imageCompression.version = "2.0.2";
-function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
-  return function handleEvent(event) {
-    originalEventHandler?.(event);
-    if (checkForDefaultPrevented === false || !event.defaultPrevented) {
-      return ourEventHandler?.(event);
-    }
-  };
-}
-function setRef(ref, value) {
-  if (typeof ref === "function") {
-    return ref(value);
-  } else if (ref !== null && ref !== void 0) {
-    ref.current = value;
-  }
-}
-function composeRefs(...refs) {
-  return (node) => {
-    let hasCleanup = false;
-    const cleanups = refs.map((ref) => {
-      const cleanup = setRef(ref, node);
-      if (!hasCleanup && typeof cleanup == "function") {
-        hasCleanup = true;
-      }
-      return cleanup;
-    });
-    if (hasCleanup) {
-      return () => {
-        for (let i2 = 0; i2 < cleanups.length; i2++) {
-          const cleanup = cleanups[i2];
-          if (typeof cleanup == "function") {
-            cleanup();
-          } else {
-            setRef(refs[i2], null);
-          }
-        }
-      };
-    }
-  };
-}
-function useComposedRefs(...refs) {
-  return React__default__namespace.useCallback(composeRefs(...refs), refs);
-}
-function createContext22(rootComponentName, defaultContext) {
-  const Context = React__default__namespace.createContext(defaultContext);
-  const Provider = (props) => {
-    const { children, ...context } = props;
-    const value = React__default__namespace.useMemo(() => context, Object.values(context));
-    return /* @__PURE__ */ jsxRuntime.jsx(Context.Provider, { value, children });
-  };
-  Provider.displayName = rootComponentName + "Provider";
-  function useContext22(consumerName) {
-    const context = React__default__namespace.useContext(Context);
-    if (context) return context;
-    if (defaultContext !== void 0) return defaultContext;
-    throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-  }
-  return [Provider, useContext22];
-}
-function createContextScope(scopeName, createContextScopeDeps = []) {
-  let defaultContexts = [];
-  function createContext32(rootComponentName, defaultContext) {
-    const BaseContext = React__default__namespace.createContext(defaultContext);
-    const index2 = defaultContexts.length;
-    defaultContexts = [...defaultContexts, defaultContext];
-    const Provider = (props) => {
-      const { scope, children, ...context } = props;
-      const Context = scope?.[scopeName]?.[index2] || BaseContext;
-      const value = React__default__namespace.useMemo(() => context, Object.values(context));
-      return /* @__PURE__ */ jsxRuntime.jsx(Context.Provider, { value, children });
-    };
-    Provider.displayName = rootComponentName + "Provider";
-    function useContext22(consumerName, scope) {
-      const Context = scope?.[scopeName]?.[index2] || BaseContext;
-      const context = React__default__namespace.useContext(Context);
-      if (context) return context;
-      if (defaultContext !== void 0) return defaultContext;
-      throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
-    }
-    return [Provider, useContext22];
-  }
-  const createScope = () => {
-    const scopeContexts = defaultContexts.map((defaultContext) => {
-      return React__default__namespace.createContext(defaultContext);
-    });
-    return function useScope(scope) {
-      const contexts = scope?.[scopeName] || scopeContexts;
-      return React__default__namespace.useMemo(
-        () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
-        [scope, contexts]
-      );
-    };
-  };
-  createScope.scopeName = scopeName;
-  return [createContext32, composeContextScopes(createScope, ...createContextScopeDeps)];
-}
-function composeContextScopes(...scopes) {
-  const baseScope = scopes[0];
-  if (scopes.length === 1) return baseScope;
-  const createScope = () => {
-    const scopeHooks = scopes.map((createScope2) => ({
-      useScope: createScope2(),
-      scopeName: createScope2.scopeName
-    }));
-    return function useComposedScopes(overrideScopes) {
-      const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
-        const scopeProps = useScope(overrideScopes);
-        const currentScope = scopeProps[`__scope${scopeName}`];
-        return { ...nextScopes2, ...currentScope };
-      }, {});
-      return React__default__namespace.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
-    };
-  };
-  createScope.scopeName = baseScope.scopeName;
-  return createScope;
-}
-var useLayoutEffect2 = globalThis?.document ? React__default__namespace.useLayoutEffect : () => {
-};
-
-// node_modules/@radix-ui/react-id/dist/index.mjs
-var useReactId = React__default__namespace[" useId ".trim().toString()] || (() => void 0);
-var count = 0;
-function useId(deterministicId) {
-  const [id, setId] = React__default__namespace.useState(useReactId());
-  useLayoutEffect2(() => {
-    setId((reactId) => reactId ?? String(count++));
-  }, [deterministicId]);
-  return deterministicId || (id ? `radix-${id}` : "");
-}
-var useInsertionEffect = React__default__namespace[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
-function useControllableState({
-  prop,
-  defaultProp,
-  onChange = () => {
-  },
-  caller
-}) {
-  const [uncontrolledProp, setUncontrolledProp, onChangeRef] = useUncontrolledState({
-    defaultProp,
-    onChange
-  });
-  const isControlled = prop !== void 0;
-  const value = isControlled ? prop : uncontrolledProp;
-  {
-    const isControlledRef = React__default__namespace.useRef(prop !== void 0);
-    React__default__namespace.useEffect(() => {
-      const wasControlled = isControlledRef.current;
-      if (wasControlled !== isControlled) {
-        const from = wasControlled ? "controlled" : "uncontrolled";
-        const to = isControlled ? "controlled" : "uncontrolled";
-        console.warn(
-          `${caller} is changing from ${from} to ${to}. Components should not switch from controlled to uncontrolled (or vice versa). Decide between using a controlled or uncontrolled value for the lifetime of the component.`
-        );
-      }
-      isControlledRef.current = isControlled;
-    }, [isControlled, caller]);
-  }
-  const setValue = React__default__namespace.useCallback(
-    (nextValue) => {
-      if (isControlled) {
-        const value2 = isFunction3(nextValue) ? nextValue(prop) : nextValue;
-        if (value2 !== prop) {
-          onChangeRef.current?.(value2);
-        }
-      } else {
-        setUncontrolledProp(nextValue);
-      }
-    },
-    [isControlled, prop, setUncontrolledProp, onChangeRef]
-  );
-  return [value, setValue];
-}
-function useUncontrolledState({
-  defaultProp,
-  onChange
-}) {
-  const [value, setValue] = React__default__namespace.useState(defaultProp);
-  const prevValueRef = React__default__namespace.useRef(value);
-  const onChangeRef = React__default__namespace.useRef(onChange);
-  useInsertionEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-  React__default__namespace.useEffect(() => {
-    if (prevValueRef.current !== value) {
-      onChangeRef.current?.(value);
-      prevValueRef.current = value;
-    }
-  }, [value, prevValueRef]);
-  return [value, setValue, onChangeRef];
-}
-function isFunction3(value) {
-  return typeof value === "function";
-}
-// @__NO_SIDE_EFFECTS__
-function createSlot(ownerName) {
-  const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
-  const Slot2 = React__default__namespace.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    const childrenArray = React__default__namespace.Children.toArray(children);
-    const slottable = childrenArray.find(isSlottable);
-    if (slottable) {
-      const newElement = slottable.props.children;
-      const newChildren = childrenArray.map((child) => {
-        if (child === slottable) {
-          if (React__default__namespace.Children.count(newElement) > 1) return React__default__namespace.Children.only(null);
-          return React__default__namespace.isValidElement(newElement) ? newElement.props.children : null;
-        } else {
-          return child;
-        }
-      });
-      return /* @__PURE__ */ jsxRuntime.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: React__default__namespace.isValidElement(newElement) ? React__default__namespace.cloneElement(newElement, void 0, newChildren) : null });
-    }
-    return /* @__PURE__ */ jsxRuntime.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
-  });
-  Slot2.displayName = `${ownerName}.Slot`;
-  return Slot2;
-}
-// @__NO_SIDE_EFFECTS__
-function createSlotClone(ownerName) {
-  const SlotClone = React__default__namespace.forwardRef((props, forwardedRef) => {
-    const { children, ...slotProps } = props;
-    if (React__default__namespace.isValidElement(children)) {
-      const childrenRef = getElementRef(children);
-      const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== React__default__namespace.Fragment) {
-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-      }
-      return React__default__namespace.cloneElement(children, props2);
-    }
-    return React__default__namespace.Children.count(children) > 1 ? React__default__namespace.Children.only(null) : null;
-  });
-  SlotClone.displayName = `${ownerName}.SlotClone`;
-  return SlotClone;
-}
-var SLOTTABLE_IDENTIFIER = /* @__PURE__ */ Symbol("radix.slottable");
-function isSlottable(child) {
-  return React__default__namespace.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
-}
-function mergeProps(slotProps, childProps) {
-  const overrideProps = { ...childProps };
-  for (const propName in childProps) {
-    const slotPropValue = slotProps[propName];
-    const childPropValue = childProps[propName];
-    const isHandler = /^on[A-Z]/.test(propName);
-    if (isHandler) {
-      if (slotPropValue && childPropValue) {
-        overrideProps[propName] = (...args) => {
-          const result = childPropValue(...args);
-          slotPropValue(...args);
-          return result;
-        };
-      } else if (slotPropValue) {
-        overrideProps[propName] = slotPropValue;
-      }
-    } else if (propName === "style") {
-      overrideProps[propName] = { ...slotPropValue, ...childPropValue };
-    } else if (propName === "className") {
-      overrideProps[propName] = [slotPropValue, childPropValue].filter(Boolean).join(" ");
-    }
-  }
-  return { ...slotProps, ...overrideProps };
-}
-function getElementRef(element) {
-  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-var NODES = [
-  "a",
-  "button",
-  "div",
-  "form",
-  "h2",
-  "h3",
-  "img",
-  "input",
-  "label",
-  "li",
-  "nav",
-  "ol",
-  "p",
-  "select",
-  "span",
-  "svg",
-  "ul"
-];
-var Primitive = NODES.reduce((primitive, node) => {
-  const Slot2 = createSlot(`Primitive.${node}`);
-  const Node2 = React__default__namespace.forwardRef((props, forwardedRef) => {
-    const { asChild, ...primitiveProps } = props;
-    const Comp = asChild ? Slot2 : node;
-    if (typeof window !== "undefined") {
-      window[/* @__PURE__ */ Symbol.for("radix-ui")] = true;
-    }
-    return /* @__PURE__ */ jsxRuntime.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
-  });
-  Node2.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node2 };
-}, {});
-function dispatchDiscreteCustomEvent(target, event) {
-  if (target) ReactDOM__namespace.flushSync(() => target.dispatchEvent(event));
-}
-function useCallbackRef(callback) {
-  const callbackRef = React__default__namespace.useRef(callback);
-  React__default__namespace.useEffect(() => {
-    callbackRef.current = callback;
-  });
-  return React__default__namespace.useMemo(() => (...args) => callbackRef.current?.(...args), []);
-}
-function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
-  const onEscapeKeyDown = useCallbackRef(onEscapeKeyDownProp);
-  React__default__namespace.useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        onEscapeKeyDown(event);
-      }
-    };
-    ownerDocument.addEventListener("keydown", handleKeyDown, { capture: true });
-    return () => ownerDocument.removeEventListener("keydown", handleKeyDown, { capture: true });
-  }, [onEscapeKeyDown, ownerDocument]);
-}
-var DISMISSABLE_LAYER_NAME = "DismissableLayer";
-var CONTEXT_UPDATE = "dismissableLayer.update";
-var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
-var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
-var originalBodyPointerEvents;
-var DismissableLayerContext = React__default__namespace.createContext({
-  layers: /* @__PURE__ */ new Set(),
-  layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
-  branches: /* @__PURE__ */ new Set()
-});
-var DismissableLayer = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      disableOutsidePointerEvents = false,
-      onEscapeKeyDown,
-      onPointerDownOutside,
-      onFocusOutside,
-      onInteractOutside,
-      onDismiss,
-      ...layerProps
-    } = props;
-    const context = React__default__namespace.useContext(DismissableLayerContext);
-    const [node, setNode] = React__default__namespace.useState(null);
-    const ownerDocument = node?.ownerDocument ?? globalThis?.document;
-    const [, force] = React__default__namespace.useState({});
-    const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
-    const layers = Array.from(context.layers);
-    const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
-    const highestLayerWithOutsidePointerEventsDisabledIndex = layers.indexOf(highestLayerWithOutsidePointerEventsDisabled);
-    const index2 = node ? layers.indexOf(node) : -1;
-    const isBodyPointerEventsDisabled = context.layersWithOutsidePointerEventsDisabled.size > 0;
-    const isPointerEventsEnabled = index2 >= highestLayerWithOutsidePointerEventsDisabledIndex;
-    const pointerDownOutside = usePointerDownOutside((event) => {
-      const target = event.target;
-      const isPointerDownOnBranch = [...context.branches].some((branch) => branch.contains(target));
-      if (!isPointerEventsEnabled || isPointerDownOnBranch) return;
-      onPointerDownOutside?.(event);
-      onInteractOutside?.(event);
-      if (!event.defaultPrevented) onDismiss?.();
-    }, ownerDocument);
-    const focusOutside = useFocusOutside((event) => {
-      const target = event.target;
-      const isFocusInBranch = [...context.branches].some((branch) => branch.contains(target));
-      if (isFocusInBranch) return;
-      onFocusOutside?.(event);
-      onInteractOutside?.(event);
-      if (!event.defaultPrevented) onDismiss?.();
-    }, ownerDocument);
-    useEscapeKeydown((event) => {
-      const isHighestLayer = index2 === context.layers.size - 1;
-      if (!isHighestLayer) return;
-      onEscapeKeyDown?.(event);
-      if (!event.defaultPrevented && onDismiss) {
-        event.preventDefault();
-        onDismiss();
-      }
-    }, ownerDocument);
-    React__default__namespace.useEffect(() => {
-      if (!node) return;
-      if (disableOutsidePointerEvents) {
-        if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
-          originalBodyPointerEvents = ownerDocument.body.style.pointerEvents;
-          ownerDocument.body.style.pointerEvents = "none";
-        }
-        context.layersWithOutsidePointerEventsDisabled.add(node);
-      }
-      context.layers.add(node);
-      dispatchUpdate();
-      return () => {
-        if (disableOutsidePointerEvents && context.layersWithOutsidePointerEventsDisabled.size === 1) {
-          ownerDocument.body.style.pointerEvents = originalBodyPointerEvents;
-        }
-      };
-    }, [node, ownerDocument, disableOutsidePointerEvents, context]);
-    React__default__namespace.useEffect(() => {
-      return () => {
-        if (!node) return;
-        context.layers.delete(node);
-        context.layersWithOutsidePointerEventsDisabled.delete(node);
-        dispatchUpdate();
-      };
-    }, [node, context]);
-    React__default__namespace.useEffect(() => {
-      const handleUpdate = () => force({});
-      document.addEventListener(CONTEXT_UPDATE, handleUpdate);
-      return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
-    }, []);
-    return /* @__PURE__ */ jsxRuntime.jsx(
-      Primitive.div,
-      {
-        ...layerProps,
-        ref: composedRefs,
-        style: {
-          pointerEvents: isBodyPointerEventsDisabled ? isPointerEventsEnabled ? "auto" : "none" : void 0,
-          ...props.style
-        },
-        onFocusCapture: composeEventHandlers(props.onFocusCapture, focusOutside.onFocusCapture),
-        onBlurCapture: composeEventHandlers(props.onBlurCapture, focusOutside.onBlurCapture),
-        onPointerDownCapture: composeEventHandlers(
-          props.onPointerDownCapture,
-          pointerDownOutside.onPointerDownCapture
-        )
-      }
-    );
-  }
-);
-DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
-var BRANCH_NAME = "DismissableLayerBranch";
-var DismissableLayerBranch = React__default__namespace.forwardRef((props, forwardedRef) => {
-  const context = React__default__namespace.useContext(DismissableLayerContext);
-  const ref = React__default__namespace.useRef(null);
-  const composedRefs = useComposedRefs(forwardedRef, ref);
-  React__default__namespace.useEffect(() => {
-    const node = ref.current;
-    if (node) {
-      context.branches.add(node);
-      return () => {
-        context.branches.delete(node);
-      };
-    }
-  }, [context.branches]);
-  return /* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { ...props, ref: composedRefs });
-});
-DismissableLayerBranch.displayName = BRANCH_NAME;
-function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
-  const handlePointerDownOutside = useCallbackRef(onPointerDownOutside);
-  const isPointerInsideReactTreeRef = React__default__namespace.useRef(false);
-  const handleClickRef = React__default__namespace.useRef(() => {
-  });
-  React__default__namespace.useEffect(() => {
-    const handlePointerDown = (event) => {
-      if (event.target && !isPointerInsideReactTreeRef.current) {
-        let handleAndDispatchPointerDownOutsideEvent2 = function() {
-          handleAndDispatchCustomEvent(
-            POINTER_DOWN_OUTSIDE,
-            handlePointerDownOutside,
-            eventDetail,
-            { discrete: true }
-          );
-        };
-        const eventDetail = { originalEvent: event };
-        if (event.pointerType === "touch") {
-          ownerDocument.removeEventListener("click", handleClickRef.current);
-          handleClickRef.current = handleAndDispatchPointerDownOutsideEvent2;
-          ownerDocument.addEventListener("click", handleClickRef.current, { once: true });
-        } else {
-          handleAndDispatchPointerDownOutsideEvent2();
-        }
-      } else {
-        ownerDocument.removeEventListener("click", handleClickRef.current);
-      }
-      isPointerInsideReactTreeRef.current = false;
-    };
-    const timerId = window.setTimeout(() => {
-      ownerDocument.addEventListener("pointerdown", handlePointerDown);
-    }, 0);
-    return () => {
-      window.clearTimeout(timerId);
-      ownerDocument.removeEventListener("pointerdown", handlePointerDown);
-      ownerDocument.removeEventListener("click", handleClickRef.current);
-    };
-  }, [ownerDocument, handlePointerDownOutside]);
-  return {
-    // ensures we check React component tree (not just DOM tree)
-    onPointerDownCapture: () => isPointerInsideReactTreeRef.current = true
-  };
-}
-function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
-  const handleFocusOutside = useCallbackRef(onFocusOutside);
-  const isFocusInsideReactTreeRef = React__default__namespace.useRef(false);
-  React__default__namespace.useEffect(() => {
-    const handleFocus = (event) => {
-      if (event.target && !isFocusInsideReactTreeRef.current) {
-        const eventDetail = { originalEvent: event };
-        handleAndDispatchCustomEvent(FOCUS_OUTSIDE, handleFocusOutside, eventDetail, {
-          discrete: false
-        });
-      }
-    };
-    ownerDocument.addEventListener("focusin", handleFocus);
-    return () => ownerDocument.removeEventListener("focusin", handleFocus);
-  }, [ownerDocument, handleFocusOutside]);
-  return {
-    onFocusCapture: () => isFocusInsideReactTreeRef.current = true,
-    onBlurCapture: () => isFocusInsideReactTreeRef.current = false
-  };
-}
-function dispatchUpdate() {
-  const event = new CustomEvent(CONTEXT_UPDATE);
-  document.dispatchEvent(event);
-}
-function handleAndDispatchCustomEvent(name3, handler, detail, { discrete }) {
-  const target = detail.originalEvent.target;
-  const event = new CustomEvent(name3, { bubbles: false, cancelable: true, detail });
-  if (handler) target.addEventListener(name3, handler, { once: true });
-  if (discrete) {
-    dispatchDiscreteCustomEvent(target, event);
-  } else {
-    target.dispatchEvent(event);
-  }
-}
-var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
-var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
-var EVENT_OPTIONS = { bubbles: false, cancelable: true };
-var FOCUS_SCOPE_NAME = "FocusScope";
-var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
-  const {
-    loop = false,
-    trapped = false,
-    onMountAutoFocus: onMountAutoFocusProp,
-    onUnmountAutoFocus: onUnmountAutoFocusProp,
-    ...scopeProps
-  } = props;
-  const [container, setContainer] = React__default__namespace.useState(null);
-  const onMountAutoFocus = useCallbackRef(onMountAutoFocusProp);
-  const onUnmountAutoFocus = useCallbackRef(onUnmountAutoFocusProp);
-  const lastFocusedElementRef = React__default__namespace.useRef(null);
-  const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
-  const focusScope = React__default__namespace.useRef({
-    paused: false,
-    pause() {
-      this.paused = true;
-    },
-    resume() {
-      this.paused = false;
-    }
-  }).current;
-  React__default__namespace.useEffect(() => {
-    if (trapped) {
-      let handleFocusIn2 = function(event) {
-        if (focusScope.paused || !container) return;
-        const target = event.target;
-        if (container.contains(target)) {
-          lastFocusedElementRef.current = target;
-        } else {
-          focus(lastFocusedElementRef.current, { select: true });
-        }
-      }, handleFocusOut2 = function(event) {
-        if (focusScope.paused || !container) return;
-        const relatedTarget = event.relatedTarget;
-        if (relatedTarget === null) return;
-        if (!container.contains(relatedTarget)) {
-          focus(lastFocusedElementRef.current, { select: true });
-        }
-      }, handleMutations2 = function(mutations) {
-        const focusedElement = document.activeElement;
-        if (focusedElement !== document.body) return;
-        for (const mutation of mutations) {
-          if (mutation.removedNodes.length > 0) focus(container);
-        }
-      };
-      document.addEventListener("focusin", handleFocusIn2);
-      document.addEventListener("focusout", handleFocusOut2);
-      const mutationObserver = new MutationObserver(handleMutations2);
-      if (container) mutationObserver.observe(container, { childList: true, subtree: true });
-      return () => {
-        document.removeEventListener("focusin", handleFocusIn2);
-        document.removeEventListener("focusout", handleFocusOut2);
-        mutationObserver.disconnect();
-      };
-    }
-  }, [trapped, container, focusScope.paused]);
-  React__default__namespace.useEffect(() => {
-    if (container) {
-      focusScopesStack.add(focusScope);
-      const previouslyFocusedElement = document.activeElement;
-      const hasFocusedCandidate = container.contains(previouslyFocusedElement);
-      if (!hasFocusedCandidate) {
-        const mountEvent = new CustomEvent(AUTOFOCUS_ON_MOUNT, EVENT_OPTIONS);
-        container.addEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
-        container.dispatchEvent(mountEvent);
-        if (!mountEvent.defaultPrevented) {
-          focusFirst(removeLinks(getTabbableCandidates(container)), { select: true });
-          if (document.activeElement === previouslyFocusedElement) {
-            focus(container);
-          }
-        }
-      }
-      return () => {
-        container.removeEventListener(AUTOFOCUS_ON_MOUNT, onMountAutoFocus);
-        setTimeout(() => {
-          const unmountEvent = new CustomEvent(AUTOFOCUS_ON_UNMOUNT, EVENT_OPTIONS);
-          container.addEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
-          container.dispatchEvent(unmountEvent);
-          if (!unmountEvent.defaultPrevented) {
-            focus(previouslyFocusedElement ?? document.body, { select: true });
-          }
-          container.removeEventListener(AUTOFOCUS_ON_UNMOUNT, onUnmountAutoFocus);
-          focusScopesStack.remove(focusScope);
-        }, 0);
-      };
-    }
-  }, [container, onMountAutoFocus, onUnmountAutoFocus, focusScope]);
-  const handleKeyDown = React__default__namespace.useCallback(
-    (event) => {
-      if (!loop && !trapped) return;
-      if (focusScope.paused) return;
-      const isTabKey = event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey;
-      const focusedElement = document.activeElement;
-      if (isTabKey && focusedElement) {
-        const container2 = event.currentTarget;
-        const [first, last] = getTabbableEdges(container2);
-        const hasTabbableElementsInside = first && last;
-        if (!hasTabbableElementsInside) {
-          if (focusedElement === container2) event.preventDefault();
-        } else {
-          if (!event.shiftKey && focusedElement === last) {
-            event.preventDefault();
-            if (loop) focus(first, { select: true });
-          } else if (event.shiftKey && focusedElement === first) {
-            event.preventDefault();
-            if (loop) focus(last, { select: true });
-          }
-        }
-      }
-    },
-    [loop, trapped, focusScope.paused]
-  );
-  return /* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
-});
-FocusScope.displayName = FOCUS_SCOPE_NAME;
-function focusFirst(candidates, { select = false } = {}) {
-  const previouslyFocusedElement = document.activeElement;
-  for (const candidate of candidates) {
-    focus(candidate, { select });
-    if (document.activeElement !== previouslyFocusedElement) return;
-  }
-}
-function getTabbableEdges(container) {
-  const candidates = getTabbableCandidates(container);
-  const first = findVisible(candidates, container);
-  const last = findVisible(candidates.reverse(), container);
-  return [first, last];
-}
-function getTabbableCandidates(container) {
-  const nodes = [];
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT, {
-    acceptNode: (node) => {
-      const isHiddenInput = node.tagName === "INPUT" && node.type === "hidden";
-      if (node.disabled || node.hidden || isHiddenInput) return NodeFilter.FILTER_SKIP;
-      return node.tabIndex >= 0 ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-    }
-  });
-  while (walker.nextNode()) nodes.push(walker.currentNode);
-  return nodes;
-}
-function findVisible(elements, container) {
-  for (const element of elements) {
-    if (!isHidden(element, { upTo: container })) return element;
-  }
-}
-function isHidden(node, { upTo }) {
-  if (getComputedStyle(node).visibility === "hidden") return true;
-  while (node) {
-    if (upTo !== void 0 && node === upTo) return false;
-    if (getComputedStyle(node).display === "none") return true;
-    node = node.parentElement;
-  }
-  return false;
-}
-function isSelectableInput(element) {
-  return element instanceof HTMLInputElement && "select" in element;
-}
-function focus(element, { select = false } = {}) {
-  if (element && element.focus) {
-    const previouslyFocusedElement = document.activeElement;
-    element.focus({ preventScroll: true });
-    if (element !== previouslyFocusedElement && isSelectableInput(element) && select)
-      element.select();
-  }
-}
-var focusScopesStack = createFocusScopesStack();
-function createFocusScopesStack() {
-  let stack = [];
-  return {
-    add(focusScope) {
-      const activeFocusScope = stack[0];
-      if (focusScope !== activeFocusScope) {
-        activeFocusScope?.pause();
-      }
-      stack = arrayRemove3(stack, focusScope);
-      stack.unshift(focusScope);
-    },
-    remove(focusScope) {
-      stack = arrayRemove3(stack, focusScope);
-      stack[0]?.resume();
-    }
-  };
-}
-function arrayRemove3(array, item2) {
-  const updatedArray = [...array];
-  const index2 = updatedArray.indexOf(item2);
-  if (index2 !== -1) {
-    updatedArray.splice(index2, 1);
-  }
-  return updatedArray;
-}
-function removeLinks(items) {
-  return items.filter((item2) => item2.tagName !== "A");
-}
-var PORTAL_NAME = "Portal";
-var Portal = React__default__namespace.forwardRef((props, forwardedRef) => {
-  const { container: containerProp, ...portalProps } = props;
-  const [mounted, setMounted] = React__default__namespace.useState(false);
-  useLayoutEffect2(() => setMounted(true), []);
-  const container = containerProp || mounted && globalThis?.document?.body;
-  return container ? ReactDOM__namespace.default.createPortal(/* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
-});
-Portal.displayName = PORTAL_NAME;
-function useStateMachine(initialState, machine) {
-  return React__default__namespace.useReducer((state3, event) => {
-    const nextState = machine[state3][event];
-    return nextState ?? state3;
-  }, initialState);
-}
-var Presence = (props) => {
-  const { present, children } = props;
-  const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React__default__namespace.Children.only(children);
-  const ref = useComposedRefs(presence.ref, getElementRef2(child));
-  const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? React__default__namespace.cloneElement(child, { ref }) : null;
-};
-Presence.displayName = "Presence";
-function usePresence(present) {
-  const [node, setNode] = React__default__namespace.useState();
-  const stylesRef = React__default__namespace.useRef(null);
-  const prevPresentRef = React__default__namespace.useRef(present);
-  const prevAnimationNameRef = React__default__namespace.useRef("none");
-  const initialState = present ? "mounted" : "unmounted";
-  const [state3, send] = useStateMachine(initialState, {
-    mounted: {
-      UNMOUNT: "unmounted",
-      ANIMATION_OUT: "unmountSuspended"
-    },
-    unmountSuspended: {
-      MOUNT: "mounted",
-      ANIMATION_END: "unmounted"
-    },
-    unmounted: {
-      MOUNT: "mounted"
-    }
-  });
-  React__default__namespace.useEffect(() => {
-    const currentAnimationName = getAnimationName(stylesRef.current);
-    prevAnimationNameRef.current = state3 === "mounted" ? currentAnimationName : "none";
-  }, [state3]);
-  useLayoutEffect2(() => {
-    const styles3 = stylesRef.current;
-    const wasPresent = prevPresentRef.current;
-    const hasPresentChanged = wasPresent !== present;
-    if (hasPresentChanged) {
-      const prevAnimationName = prevAnimationNameRef.current;
-      const currentAnimationName = getAnimationName(styles3);
-      if (present) {
-        send("MOUNT");
-      } else if (currentAnimationName === "none" || styles3?.display === "none") {
-        send("UNMOUNT");
-      } else {
-        const isAnimating = prevAnimationName !== currentAnimationName;
-        if (wasPresent && isAnimating) {
-          send("ANIMATION_OUT");
-        } else {
-          send("UNMOUNT");
-        }
-      }
-      prevPresentRef.current = present;
-    }
-  }, [present, send]);
-  useLayoutEffect2(() => {
-    if (node) {
-      let timeoutId;
-      const ownerWindow = node.ownerDocument.defaultView ?? window;
-      const handleAnimationEnd = (event) => {
-        const currentAnimationName = getAnimationName(stylesRef.current);
-        const isCurrentAnimation = currentAnimationName.includes(CSS.escape(event.animationName));
-        if (event.target === node && isCurrentAnimation) {
-          send("ANIMATION_END");
-          if (!prevPresentRef.current) {
-            const currentFillMode = node.style.animationFillMode;
-            node.style.animationFillMode = "forwards";
-            timeoutId = ownerWindow.setTimeout(() => {
-              if (node.style.animationFillMode === "forwards") {
-                node.style.animationFillMode = currentFillMode;
-              }
-            });
-          }
-        }
-      };
-      const handleAnimationStart = (event) => {
-        if (event.target === node) {
-          prevAnimationNameRef.current = getAnimationName(stylesRef.current);
-        }
-      };
-      node.addEventListener("animationstart", handleAnimationStart);
-      node.addEventListener("animationcancel", handleAnimationEnd);
-      node.addEventListener("animationend", handleAnimationEnd);
-      return () => {
-        ownerWindow.clearTimeout(timeoutId);
-        node.removeEventListener("animationstart", handleAnimationStart);
-        node.removeEventListener("animationcancel", handleAnimationEnd);
-        node.removeEventListener("animationend", handleAnimationEnd);
-      };
-    } else {
-      send("ANIMATION_END");
-    }
-  }, [node, send]);
-  return {
-    isPresent: ["mounted", "unmountSuspended"].includes(state3),
-    ref: React__default__namespace.useCallback((node2) => {
-      stylesRef.current = node2 ? getComputedStyle(node2) : null;
-      setNode(node2);
-    }, [])
-  };
-}
-function getAnimationName(styles3) {
-  return styles3?.animationName || "none";
-}
-function getElementRef2(element) {
-  let getter = Object.getOwnPropertyDescriptor(element.props, "ref")?.get;
-  let mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.ref;
-  }
-  getter = Object.getOwnPropertyDescriptor(element, "ref")?.get;
-  mayWarn = getter && "isReactWarning" in getter && getter.isReactWarning;
-  if (mayWarn) {
-    return element.props.ref;
-  }
-  return element.props.ref || element.ref;
-}
-var count2 = 0;
-function useFocusGuards() {
-  React__default__namespace.useEffect(() => {
-    const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
-    document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
-    document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
-    count2++;
-    return () => {
-      if (count2 === 1) {
-        document.querySelectorAll("[data-radix-focus-guard]").forEach((node) => node.remove());
-      }
-      count2--;
-    };
-  }, []);
-}
-function createFocusGuard() {
-  const element = document.createElement("span");
-  element.setAttribute("data-radix-focus-guard", "");
-  element.tabIndex = 0;
-  element.style.outline = "none";
-  element.style.opacity = "0";
-  element.style.position = "fixed";
-  element.style.pointerEvents = "none";
-  return element;
-}
-
-// node_modules/tslib/tslib.es6.mjs
-var __assign = function() {
-  __assign = Object.assign || function __assign2(t2) {
-    for (var s2, i2 = 1, n = arguments.length; i2 < n; i2++) {
-      s2 = arguments[i2];
-      for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p)) t2[p] = s2[p];
-    }
-    return t2;
-  };
-  return __assign.apply(this, arguments);
-};
-function __rest(s2, e3) {
-  var t2 = {};
-  for (var p in s2) if (Object.prototype.hasOwnProperty.call(s2, p) && e3.indexOf(p) < 0)
-    t2[p] = s2[p];
-  if (s2 != null && typeof Object.getOwnPropertySymbols === "function")
-    for (var i2 = 0, p = Object.getOwnPropertySymbols(s2); i2 < p.length; i2++) {
-      if (e3.indexOf(p[i2]) < 0 && Object.prototype.propertyIsEnumerable.call(s2, p[i2]))
-        t2[p[i2]] = s2[p[i2]];
-    }
-  return t2;
-}
-function __spreadArray(to, from, pack) {
-  for (var i2 = 0, l3 = from.length, ar; i2 < l3; i2++) {
-    if (ar || !(i2 in from)) {
-      if (!ar) ar = Array.prototype.slice.call(from, 0, i2);
-      ar[i2] = from[i2];
-    }
-  }
-  return to.concat(ar || Array.prototype.slice.call(from));
-}
-
-// node_modules/react-remove-scroll-bar/dist/es2015/constants.js
-var zeroRightClassName = "right-scroll-bar-position";
-var fullWidthClassName = "width-before-scroll-bar";
-var noScrollbarsClassName = "with-scroll-bars-hidden";
-var removedBarSizeVariable = "--removed-body-scroll-bar-size";
-
-// node_modules/use-callback-ref/dist/es2015/assignRef.js
-function assignRef(ref, value) {
-  if (typeof ref === "function") {
-    ref(value);
-  } else if (ref) {
-    ref.current = value;
-  }
-  return ref;
-}
-function useCallbackRef2(initialValue, callback) {
-  var ref = React__default.useState(function() {
-    return {
-      // value
-      value: initialValue,
-      // last callback
-      callback,
-      // "memoized" public interface
-      facade: {
-        get current() {
-          return ref.value;
-        },
-        set current(value) {
-          var last = ref.value;
-          if (last !== value) {
-            ref.value = value;
-            ref.callback(value, last);
-          }
-        }
-      }
-    };
-  })[0];
-  ref.callback = callback;
-  return ref.facade;
-}
-var useIsomorphicLayoutEffect = typeof window !== "undefined" ? React__default__namespace.useLayoutEffect : React__default__namespace.useEffect;
-var currentValues = /* @__PURE__ */ new WeakMap();
-function useMergeRefs(refs, defaultValue) {
-  var callbackRef = useCallbackRef2(null, function(newValue) {
-    return refs.forEach(function(ref) {
-      return assignRef(ref, newValue);
-    });
-  });
-  useIsomorphicLayoutEffect(function() {
-    var oldValue = currentValues.get(callbackRef);
-    if (oldValue) {
-      var prevRefs_1 = new Set(oldValue);
-      var nextRefs_1 = new Set(refs);
-      var current_1 = callbackRef.current;
-      prevRefs_1.forEach(function(ref) {
-        if (!nextRefs_1.has(ref)) {
-          assignRef(ref, null);
-        }
-      });
-      nextRefs_1.forEach(function(ref) {
-        if (!prevRefs_1.has(ref)) {
-          assignRef(ref, current_1);
-        }
-      });
-    }
-    currentValues.set(callbackRef, refs);
-  }, [refs]);
-  return callbackRef;
-}
-
-// node_modules/use-sidecar/dist/es2015/medium.js
-function ItoI(a2) {
-  return a2;
-}
-function innerCreateMedium(defaults3, middleware) {
-  if (middleware === void 0) {
-    middleware = ItoI;
-  }
-  var buffer = [];
-  var assigned = false;
-  var medium = {
-    read: function() {
-      if (assigned) {
-        throw new Error("Sidecar: could not `read` from an `assigned` medium. `read` could be used only with `useMedium`.");
-      }
-      if (buffer.length) {
-        return buffer[buffer.length - 1];
-      }
-      return defaults3;
-    },
-    useMedium: function(data3) {
-      var item2 = middleware(data3, assigned);
-      buffer.push(item2);
-      return function() {
-        buffer = buffer.filter(function(x) {
-          return x !== item2;
-        });
-      };
-    },
-    assignSyncMedium: function(cb) {
-      assigned = true;
-      while (buffer.length) {
-        var cbs = buffer;
-        buffer = [];
-        cbs.forEach(cb);
-      }
-      buffer = {
-        push: function(x) {
-          return cb(x);
-        },
-        filter: function() {
-          return buffer;
-        }
-      };
-    },
-    assignMedium: function(cb) {
-      assigned = true;
-      var pendingQueue = [];
-      if (buffer.length) {
-        var cbs = buffer;
-        buffer = [];
-        cbs.forEach(cb);
-        pendingQueue = buffer;
-      }
-      var executeQueue = function() {
-        var cbs2 = pendingQueue;
-        pendingQueue = [];
-        cbs2.forEach(cb);
-      };
-      var cycle = function() {
-        return Promise.resolve().then(executeQueue);
-      };
-      cycle();
-      buffer = {
-        push: function(x) {
-          pendingQueue.push(x);
-          cycle();
-        },
-        filter: function(filter) {
-          pendingQueue = pendingQueue.filter(filter);
-          return buffer;
-        }
-      };
-    }
-  };
-  return medium;
-}
-function createSidecarMedium(options) {
-  if (options === void 0) {
-    options = {};
-  }
-  var medium = innerCreateMedium(null);
-  medium.options = __assign({ async: true, ssr: false }, options);
-  return medium;
-}
-var SideCar = function(_a) {
-  var sideCar = _a.sideCar, rest = __rest(_a, ["sideCar"]);
-  if (!sideCar) {
-    throw new Error("Sidecar: please provide `sideCar` property to import the right car");
-  }
-  var Target = sideCar.read();
-  if (!Target) {
-    throw new Error("Sidecar medium not found");
-  }
-  return React__default__namespace.createElement(Target, __assign({}, rest));
-};
-SideCar.isSideCarExport = true;
-function exportSidecar(medium, exported) {
-  medium.useMedium(exported);
-  return SideCar;
-}
-
-// node_modules/react-remove-scroll/dist/es2015/medium.js
-var effectCar = createSidecarMedium();
-
-// node_modules/react-remove-scroll/dist/es2015/UI.js
-var nothing = function() {
-  return;
-};
-var RemoveScroll = React__default__namespace.forwardRef(function(props, parentRef) {
-  var ref = React__default__namespace.useRef(null);
-  var _a = React__default__namespace.useState({
-    onScrollCapture: nothing,
-    onWheelCapture: nothing,
-    onTouchMoveCapture: nothing
-  }), callbacks = _a[0], setCallbacks = _a[1];
-  var forwardProps = props.forwardProps, children = props.children, className = props.className, removeScrollBar = props.removeScrollBar, enabled = props.enabled, shards = props.shards, sideCar = props.sideCar, noRelative = props.noRelative, noIsolation = props.noIsolation, inert = props.inert, allowPinchZoom = props.allowPinchZoom, _b = props.as, Container = _b === void 0 ? "div" : _b, gapMode = props.gapMode, rest = __rest(props, ["forwardProps", "children", "className", "removeScrollBar", "enabled", "shards", "sideCar", "noRelative", "noIsolation", "inert", "allowPinchZoom", "as", "gapMode"]);
-  var SideCar2 = sideCar;
-  var containerRef = useMergeRefs([ref, parentRef]);
-  var containerProps = __assign(__assign({}, rest), callbacks);
-  return React__default__namespace.createElement(
-    React__default__namespace.Fragment,
-    null,
-    enabled && React__default__namespace.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
-    forwardProps ? React__default__namespace.cloneElement(React__default__namespace.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : React__default__namespace.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
-  );
-});
-RemoveScroll.defaultProps = {
-  enabled: true,
-  removeScrollBar: true,
-  inert: false
-};
-RemoveScroll.classNames = {
-  fullWidth: fullWidthClassName,
-  zeroRight: zeroRightClassName
-};
-var getNonce = function() {
-  if (typeof __webpack_nonce__ !== "undefined") {
-    return __webpack_nonce__;
-  }
-  return void 0;
-};
-
-// node_modules/react-style-singleton/dist/es2015/singleton.js
-function makeStyleTag() {
-  if (!document)
-    return null;
-  var tag = document.createElement("style");
-  tag.type = "text/css";
-  var nonce = getNonce();
-  if (nonce) {
-    tag.setAttribute("nonce", nonce);
-  }
-  return tag;
-}
-function injectStyles(tag, css) {
-  if (tag.styleSheet) {
-    tag.styleSheet.cssText = css;
-  } else {
-    tag.appendChild(document.createTextNode(css));
-  }
-}
-function insertStyleTag(tag) {
-  var head = document.head || document.getElementsByTagName("head")[0];
-  head.appendChild(tag);
-}
-var stylesheetSingleton = function() {
-  var counter = 0;
-  var stylesheet = null;
-  return {
-    add: function(style) {
-      if (counter == 0) {
-        if (stylesheet = makeStyleTag()) {
-          injectStyles(stylesheet, style);
-          insertStyleTag(stylesheet);
-        }
-      }
-      counter++;
-    },
-    remove: function() {
-      counter--;
-      if (!counter && stylesheet) {
-        stylesheet.parentNode && stylesheet.parentNode.removeChild(stylesheet);
-        stylesheet = null;
-      }
-    }
-  };
-};
-
-// node_modules/react-style-singleton/dist/es2015/hook.js
-var styleHookSingleton = function() {
-  var sheet = stylesheetSingleton();
-  return function(styles3, isDynamic) {
-    React__default__namespace.useEffect(function() {
-      sheet.add(styles3);
-      return function() {
-        sheet.remove();
-      };
-    }, [styles3 && isDynamic]);
-  };
-};
-
-// node_modules/react-style-singleton/dist/es2015/component.js
-var styleSingleton = function() {
-  var useStyle = styleHookSingleton();
-  var Sheet = function(_a) {
-    var styles3 = _a.styles, dynamic = _a.dynamic;
-    useStyle(styles3, dynamic);
-    return null;
-  };
-  return Sheet;
-};
-
-// node_modules/react-remove-scroll-bar/dist/es2015/utils.js
-var zeroGap = {
-  left: 0,
-  top: 0,
-  right: 0,
-  gap: 0
-};
-var parse3 = function(x) {
-  return parseInt(x || "", 10) || 0;
-};
-var getOffset = function(gapMode) {
-  var cs = window.getComputedStyle(document.body);
-  var left = cs[gapMode === "padding" ? "paddingLeft" : "marginLeft"];
-  var top = cs[gapMode === "padding" ? "paddingTop" : "marginTop"];
-  var right = cs[gapMode === "padding" ? "paddingRight" : "marginRight"];
-  return [parse3(left), parse3(top), parse3(right)];
-};
-var getGapWidth = function(gapMode) {
-  if (gapMode === void 0) {
-    gapMode = "margin";
-  }
-  if (typeof window === "undefined") {
-    return zeroGap;
-  }
-  var offsets = getOffset(gapMode);
-  var documentWidth = document.documentElement.clientWidth;
-  var windowWidth = window.innerWidth;
-  return {
-    left: offsets[0],
-    top: offsets[1],
-    right: offsets[2],
-    gap: Math.max(0, windowWidth - documentWidth + offsets[2] - offsets[0])
-  };
-};
-
-// node_modules/react-remove-scroll-bar/dist/es2015/component.js
-var Style = styleSingleton();
-var lockAttribute = "data-scroll-locked";
-var getStyles = function(_a, allowRelative, gapMode, important) {
-  var left = _a.left, top = _a.top, right = _a.right, gap = _a.gap;
-  if (gapMode === void 0) {
-    gapMode = "margin";
-  }
-  return "\n  .".concat(noScrollbarsClassName, " {\n   overflow: hidden ").concat(important, ";\n   padding-right: ").concat(gap, "px ").concat(important, ";\n  }\n  body[").concat(lockAttribute, "] {\n    overflow: hidden ").concat(important, ";\n    overscroll-behavior: contain;\n    ").concat([
-    allowRelative && "position: relative ".concat(important, ";"),
-    gapMode === "margin" && "\n    padding-left: ".concat(left, "px;\n    padding-top: ").concat(top, "px;\n    padding-right: ").concat(right, "px;\n    margin-left:0;\n    margin-top:0;\n    margin-right: ").concat(gap, "px ").concat(important, ";\n    "),
-    gapMode === "padding" && "padding-right: ".concat(gap, "px ").concat(important, ";")
-  ].filter(Boolean).join(""), "\n  }\n  \n  .").concat(zeroRightClassName, " {\n    right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " {\n    margin-right: ").concat(gap, "px ").concat(important, ";\n  }\n  \n  .").concat(zeroRightClassName, " .").concat(zeroRightClassName, " {\n    right: 0 ").concat(important, ";\n  }\n  \n  .").concat(fullWidthClassName, " .").concat(fullWidthClassName, " {\n    margin-right: 0 ").concat(important, ";\n  }\n  \n  body[").concat(lockAttribute, "] {\n    ").concat(removedBarSizeVariable, ": ").concat(gap, "px;\n  }\n");
-};
-var getCurrentUseCounter = function() {
-  var counter = parseInt(document.body.getAttribute(lockAttribute) || "0", 10);
-  return isFinite(counter) ? counter : 0;
-};
-var useLockAttribute = function() {
-  React__default__namespace.useEffect(function() {
-    document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
-    return function() {
-      var newCounter = getCurrentUseCounter() - 1;
-      if (newCounter <= 0) {
-        document.body.removeAttribute(lockAttribute);
-      } else {
-        document.body.setAttribute(lockAttribute, newCounter.toString());
-      }
-    };
-  }, []);
-};
-var RemoveScrollBar = function(_a) {
-  var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
-  useLockAttribute();
-  var gap = React__default__namespace.useMemo(function() {
-    return getGapWidth(gapMode);
-  }, [gapMode]);
-  return React__default__namespace.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
-};
-
-// node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
-var passiveSupported = false;
-if (typeof window !== "undefined") {
-  try {
-    options = Object.defineProperty({}, "passive", {
-      get: function() {
-        passiveSupported = true;
-        return true;
-      }
-    });
-    window.addEventListener("test", options, options);
-    window.removeEventListener("test", options, options);
-  } catch (err) {
-    passiveSupported = false;
-  }
-}
-var options;
-var nonPassive = passiveSupported ? { passive: false } : false;
-
-// node_modules/react-remove-scroll/dist/es2015/handleScroll.js
-var alwaysContainsScroll = function(node) {
-  return node.tagName === "TEXTAREA";
-};
-var elementCanBeScrolled = function(node, overflow) {
-  if (!(node instanceof Element)) {
-    return false;
-  }
-  var styles3 = window.getComputedStyle(node);
-  return (
-    // not-not-scrollable
-    styles3[overflow] !== "hidden" && // contains scroll inside self
-    !(styles3.overflowY === styles3.overflowX && !alwaysContainsScroll(node) && styles3[overflow] === "visible")
-  );
-};
-var elementCouldBeVScrolled = function(node) {
-  return elementCanBeScrolled(node, "overflowY");
-};
-var elementCouldBeHScrolled = function(node) {
-  return elementCanBeScrolled(node, "overflowX");
-};
-var locationCouldBeScrolled = function(axis, node) {
-  var ownerDocument = node.ownerDocument;
-  var current = node;
-  do {
-    if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) {
-      current = current.host;
-    }
-    var isScrollable2 = elementCouldBeScrolled(axis, current);
-    if (isScrollable2) {
-      var _a = getScrollVariables(axis, current), scrollHeight = _a[1], clientHeight = _a[2];
-      if (scrollHeight > clientHeight) {
-        return true;
-      }
-    }
-    current = current.parentNode;
-  } while (current && current !== ownerDocument.body);
-  return false;
-};
-var getVScrollVariables = function(_a) {
-  var scrollTop = _a.scrollTop, scrollHeight = _a.scrollHeight, clientHeight = _a.clientHeight;
-  return [
-    scrollTop,
-    scrollHeight,
-    clientHeight
-  ];
-};
-var getHScrollVariables = function(_a) {
-  var scrollLeft = _a.scrollLeft, scrollWidth = _a.scrollWidth, clientWidth = _a.clientWidth;
-  return [
-    scrollLeft,
-    scrollWidth,
-    clientWidth
-  ];
-};
-var elementCouldBeScrolled = function(axis, node) {
-  return axis === "v" ? elementCouldBeVScrolled(node) : elementCouldBeHScrolled(node);
-};
-var getScrollVariables = function(axis, node) {
-  return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
-};
-var getDirectionFactor = function(axis, direction) {
-  return axis === "h" && direction === "rtl" ? -1 : 1;
-};
-var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
-  var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
-  var delta = directionFactor * sourceDelta;
-  var target = event.target;
-  var targetInLock = endTarget.contains(target);
-  var shouldCancelScroll = false;
-  var isDeltaPositive = delta > 0;
-  var availableScroll = 0;
-  var availableScrollTop = 0;
-  do {
-    if (!target) {
-      break;
-    }
-    var _a = getScrollVariables(axis, target), position = _a[0], scroll_1 = _a[1], capacity = _a[2];
-    var elementScroll = scroll_1 - capacity - directionFactor * position;
-    if (position || elementScroll) {
-      if (elementCouldBeScrolled(axis, target)) {
-        availableScroll += elementScroll;
-        availableScrollTop += position;
-      }
-    }
-    var parent_1 = target.parentNode;
-    target = parent_1 && parent_1.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? parent_1.host : parent_1;
-  } while (
-    // portaled content
-    !targetInLock && target !== document.body || // self content
-    targetInLock && (endTarget.contains(target) || endTarget === target)
-  );
-  if (isDeltaPositive && (Math.abs(availableScroll) < 1 || false)) {
-    shouldCancelScroll = true;
-  } else if (!isDeltaPositive && (Math.abs(availableScrollTop) < 1 || false)) {
-    shouldCancelScroll = true;
-  }
-  return shouldCancelScroll;
-};
-
-// node_modules/react-remove-scroll/dist/es2015/SideEffect.js
-var getTouchXY = function(event) {
-  return "changedTouches" in event ? [event.changedTouches[0].clientX, event.changedTouches[0].clientY] : [0, 0];
-};
-var getDeltaXY = function(event) {
-  return [event.deltaX, event.deltaY];
-};
-var extractRef = function(ref) {
-  return ref && "current" in ref ? ref.current : ref;
-};
-var deltaCompare = function(x, y) {
-  return x[0] === y[0] && x[1] === y[1];
-};
-var generateStyle = function(id) {
-  return "\n  .block-interactivity-".concat(id, " {pointer-events: none;}\n  .allow-interactivity-").concat(id, " {pointer-events: all;}\n");
-};
-var idCounter = 0;
-var lockStack = [];
-function RemoveScrollSideCar(props) {
-  var shouldPreventQueue = React__default__namespace.useRef([]);
-  var touchStartRef = React__default__namespace.useRef([0, 0]);
-  var activeAxis = React__default__namespace.useRef();
-  var id = React__default__namespace.useState(idCounter++)[0];
-  var Style2 = React__default__namespace.useState(styleSingleton)[0];
-  var lastProps = React__default__namespace.useRef(props);
-  React__default__namespace.useEffect(function() {
-    lastProps.current = props;
-  }, [props]);
-  React__default__namespace.useEffect(function() {
-    if (props.inert) {
-      document.body.classList.add("block-interactivity-".concat(id));
-      var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef)).filter(Boolean);
-      allow_1.forEach(function(el) {
-        return el.classList.add("allow-interactivity-".concat(id));
-      });
-      return function() {
-        document.body.classList.remove("block-interactivity-".concat(id));
-        allow_1.forEach(function(el) {
-          return el.classList.remove("allow-interactivity-".concat(id));
-        });
-      };
-    }
-    return;
-  }, [props.inert, props.lockRef.current, props.shards]);
-  var shouldCancelEvent = React__default__namespace.useCallback(function(event, parent) {
-    if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) {
-      return !lastProps.current.allowPinchZoom;
-    }
-    var touch = getTouchXY(event);
-    var touchStart = touchStartRef.current;
-    var deltaX = "deltaX" in event ? event.deltaX : touchStart[0] - touch[0];
-    var deltaY = "deltaY" in event ? event.deltaY : touchStart[1] - touch[1];
-    var currentAxis;
-    var target = event.target;
-    var moveDirection = Math.abs(deltaX) > Math.abs(deltaY) ? "h" : "v";
-    if ("touches" in event && moveDirection === "h" && target.type === "range") {
-      return false;
-    }
-    var selection = window.getSelection();
-    var anchorNode = selection && selection.anchorNode;
-    var isTouchingSelection = anchorNode ? anchorNode === target || anchorNode.contains(target) : false;
-    if (isTouchingSelection) {
-      return false;
-    }
-    var canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-    if (!canBeScrolledInMainDirection) {
-      return true;
-    }
-    if (canBeScrolledInMainDirection) {
-      currentAxis = moveDirection;
-    } else {
-      currentAxis = moveDirection === "v" ? "h" : "v";
-      canBeScrolledInMainDirection = locationCouldBeScrolled(moveDirection, target);
-    }
-    if (!canBeScrolledInMainDirection) {
-      return false;
-    }
-    if (!activeAxis.current && "changedTouches" in event && (deltaX || deltaY)) {
-      activeAxis.current = currentAxis;
-    }
-    if (!currentAxis) {
-      return true;
-    }
-    var cancelingAxis = activeAxis.current || currentAxis;
-    return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY);
-  }, []);
-  var shouldPrevent = React__default__namespace.useCallback(function(_event) {
-    var event = _event;
-    if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
-      return;
-    }
-    var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
-    var sourceEvent = shouldPreventQueue.current.filter(function(e3) {
-      return e3.name === event.type && (e3.target === event.target || event.target === e3.shadowParent) && deltaCompare(e3.delta, delta);
-    })[0];
-    if (sourceEvent && sourceEvent.should) {
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-      return;
-    }
-    if (!sourceEvent) {
-      var shardNodes = (lastProps.current.shards || []).map(extractRef).filter(Boolean).filter(function(node) {
-        return node.contains(event.target);
-      });
-      var shouldStop = shardNodes.length > 0 ? shouldCancelEvent(event, shardNodes[0]) : !lastProps.current.noIsolation;
-      if (shouldStop) {
-        if (event.cancelable) {
-          event.preventDefault();
-        }
-      }
-    }
-  }, []);
-  var shouldCancel = React__default__namespace.useCallback(function(name3, delta, target, should) {
-    var event = { name: name3, delta, target, should, shadowParent: getOutermostShadowParent(target) };
-    shouldPreventQueue.current.push(event);
-    setTimeout(function() {
-      shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e3) {
-        return e3 !== event;
-      });
-    }, 1);
-  }, []);
-  var scrollTouchStart = React__default__namespace.useCallback(function(event) {
-    touchStartRef.current = getTouchXY(event);
-    activeAxis.current = void 0;
-  }, []);
-  var scrollWheel = React__default__namespace.useCallback(function(event) {
-    shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-  }, []);
-  var scrollTouchMove = React__default__namespace.useCallback(function(event) {
-    shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
-  }, []);
-  React__default__namespace.useEffect(function() {
-    lockStack.push(Style2);
-    props.setCallbacks({
-      onScrollCapture: scrollWheel,
-      onWheelCapture: scrollWheel,
-      onTouchMoveCapture: scrollTouchMove
-    });
-    document.addEventListener("wheel", shouldPrevent, nonPassive);
-    document.addEventListener("touchmove", shouldPrevent, nonPassive);
-    document.addEventListener("touchstart", scrollTouchStart, nonPassive);
-    return function() {
-      lockStack = lockStack.filter(function(inst) {
-        return inst !== Style2;
-      });
-      document.removeEventListener("wheel", shouldPrevent, nonPassive);
-      document.removeEventListener("touchmove", shouldPrevent, nonPassive);
-      document.removeEventListener("touchstart", scrollTouchStart, nonPassive);
-    };
-  }, []);
-  var removeScrollBar = props.removeScrollBar, inert = props.inert;
-  return React__default__namespace.createElement(
-    React__default__namespace.Fragment,
-    null,
-    inert ? React__default__namespace.createElement(Style2, { styles: generateStyle(id) }) : null,
-    removeScrollBar ? React__default__namespace.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
-  );
-}
-function getOutermostShadowParent(node) {
-  var shadowParent = null;
-  while (node !== null) {
-    if (node instanceof ShadowRoot) {
-      shadowParent = node.host;
-      node = node.host;
-    }
-    node = node.parentNode;
-  }
-  return shadowParent;
-}
-
-// node_modules/react-remove-scroll/dist/es2015/sidecar.js
-var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
-
-// node_modules/react-remove-scroll/dist/es2015/Combination.js
-var ReactRemoveScroll = React__default__namespace.forwardRef(function(props, ref) {
-  return React__default__namespace.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: sidecar_default }));
-});
-ReactRemoveScroll.classNames = RemoveScroll.classNames;
-var Combination_default = ReactRemoveScroll;
-
-// node_modules/aria-hidden/dist/es2015/index.js
-var getDefaultParent = function(originalTarget) {
-  if (typeof document === "undefined") {
-    return null;
-  }
-  var sampleTarget = Array.isArray(originalTarget) ? originalTarget[0] : originalTarget;
-  return sampleTarget.ownerDocument.body;
-};
-var counterMap = /* @__PURE__ */ new WeakMap();
-var uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-var markerMap = {};
-var lockCount = 0;
-var unwrapHost = function(node) {
-  return node && (node.host || unwrapHost(node.parentNode));
-};
-var correctTargets = function(parent, targets) {
-  return targets.map(function(target) {
-    if (parent.contains(target)) {
-      return target;
-    }
-    var correctedTarget = unwrapHost(target);
-    if (correctedTarget && parent.contains(correctedTarget)) {
-      return correctedTarget;
-    }
-    console.error("aria-hidden", target, "in not contained inside", parent, ". Doing nothing");
-    return null;
-  }).filter(function(x) {
-    return Boolean(x);
-  });
-};
-var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
-  var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-  if (!markerMap[markerName]) {
-    markerMap[markerName] = /* @__PURE__ */ new WeakMap();
-  }
-  var markerCounter = markerMap[markerName];
-  var hiddenNodes = [];
-  var elementsToKeep = /* @__PURE__ */ new Set();
-  var elementsToStop = new Set(targets);
-  var keep = function(el) {
-    if (!el || elementsToKeep.has(el)) {
-      return;
-    }
-    elementsToKeep.add(el);
-    keep(el.parentNode);
-  };
-  targets.forEach(keep);
-  var deep = function(parent) {
-    if (!parent || elementsToStop.has(parent)) {
-      return;
-    }
-    Array.prototype.forEach.call(parent.children, function(node) {
-      if (elementsToKeep.has(node)) {
-        deep(node);
-      } else {
-        try {
-          var attr3 = node.getAttribute(controlAttribute);
-          var alreadyHidden = attr3 !== null && attr3 !== "false";
-          var counterValue = (counterMap.get(node) || 0) + 1;
-          var markerValue = (markerCounter.get(node) || 0) + 1;
-          counterMap.set(node, counterValue);
-          markerCounter.set(node, markerValue);
-          hiddenNodes.push(node);
-          if (counterValue === 1 && alreadyHidden) {
-            uncontrolledNodes.set(node, true);
-          }
-          if (markerValue === 1) {
-            node.setAttribute(markerName, "true");
-          }
-          if (!alreadyHidden) {
-            node.setAttribute(controlAttribute, "true");
-          }
-        } catch (e3) {
-          console.error("aria-hidden: cannot operate on ", node, e3);
-        }
-      }
-    });
-  };
-  deep(parentNode);
-  elementsToKeep.clear();
-  lockCount++;
-  return function() {
-    hiddenNodes.forEach(function(node) {
-      var counterValue = counterMap.get(node) - 1;
-      var markerValue = markerCounter.get(node) - 1;
-      counterMap.set(node, counterValue);
-      markerCounter.set(node, markerValue);
-      if (!counterValue) {
-        if (!uncontrolledNodes.has(node)) {
-          node.removeAttribute(controlAttribute);
-        }
-        uncontrolledNodes.delete(node);
-      }
-      if (!markerValue) {
-        node.removeAttribute(markerName);
-      }
-    });
-    lockCount--;
-    if (!lockCount) {
-      counterMap = /* @__PURE__ */ new WeakMap();
-      counterMap = /* @__PURE__ */ new WeakMap();
-      uncontrolledNodes = /* @__PURE__ */ new WeakMap();
-      markerMap = {};
-    }
-  };
-};
-var hideOthers = function(originalTarget, parentNode, markerName) {
-  if (markerName === void 0) {
-    markerName = "data-aria-hidden";
-  }
-  var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
-  var activeParentNode = getDefaultParent(originalTarget);
-  if (!activeParentNode) {
-    return function() {
-      return null;
-    };
-  }
-  targets.push.apply(targets, Array.from(activeParentNode.querySelectorAll("[aria-live], script")));
-  return applyAttributeToOthers(targets, activeParentNode, markerName, "aria-hidden");
-};
-var DIALOG_NAME = "Dialog";
-var [createDialogContext] = createContextScope(DIALOG_NAME);
-var [DialogProvider, useDialogContext] = createDialogContext(DIALOG_NAME);
-var Dialog = (props) => {
-  const {
-    __scopeDialog,
-    children,
-    open: openProp,
-    defaultOpen,
-    onOpenChange,
-    modal = true
-  } = props;
-  const triggerRef = React__default__namespace.useRef(null);
-  const contentRef = React__default__namespace.useRef(null);
-  const [open, setOpen] = useControllableState({
-    prop: openProp,
-    defaultProp: defaultOpen ?? false,
-    onChange: onOpenChange,
-    caller: DIALOG_NAME
-  });
-  return /* @__PURE__ */ jsxRuntime.jsx(
-    DialogProvider,
-    {
-      scope: __scopeDialog,
-      triggerRef,
-      contentRef,
-      contentId: useId(),
-      titleId: useId(),
-      descriptionId: useId(),
-      open,
-      onOpenChange: setOpen,
-      onOpenToggle: React__default__namespace.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
-      modal,
-      children
-    }
-  );
-};
-Dialog.displayName = DIALOG_NAME;
-var TRIGGER_NAME = "DialogTrigger";
-var DialogTrigger = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...triggerProps } = props;
-    const context = useDialogContext(TRIGGER_NAME, __scopeDialog);
-    const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-    return /* @__PURE__ */ jsxRuntime.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        "aria-haspopup": "dialog",
-        "aria-expanded": context.open,
-        "aria-controls": context.contentId,
-        "data-state": getState(context.open),
-        ...triggerProps,
-        ref: composedTriggerRef,
-        onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
-      }
-    );
-  }
-);
-DialogTrigger.displayName = TRIGGER_NAME;
-var PORTAL_NAME2 = "DialogPortal";
-var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME2, {
-  forceMount: void 0
-});
-var DialogPortal = (props) => {
-  const { __scopeDialog, forceMount, children, container } = props;
-  const context = useDialogContext(PORTAL_NAME2, __scopeDialog);
-  return /* @__PURE__ */ jsxRuntime.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: React__default__namespace.Children.map(children, (child) => /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntime.jsx(Portal, { asChild: true, container, children: child }) })) });
-};
-DialogPortal.displayName = PORTAL_NAME2;
-var OVERLAY_NAME = "DialogOverlay";
-var DialogOverlay = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME, props.__scopeDialog);
-    return context.modal ? /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntime.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
-  }
-);
-DialogOverlay.displayName = OVERLAY_NAME;
-var Slot = createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...overlayProps } = props;
-    const context = useDialogContext(OVERLAY_NAME, __scopeDialog);
-    return (
-      // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
-      // ie. when `Overlay` and `Content` are siblings
-      /* @__PURE__ */ jsxRuntime.jsx(Combination_default, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntime.jsx(
-        Primitive.div,
-        {
-          "data-state": getState(context.open),
-          ...overlayProps,
-          ref: forwardedRef,
-          style: { pointerEvents: "auto", ...overlayProps.style }
-        }
-      ) })
-    );
-  }
-);
-var CONTENT_NAME = "DialogContent";
-var DialogContent = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const portalContext = usePortalContext(CONTENT_NAME, props.__scopeDialog);
-    const { forceMount = portalContext.forceMount, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntime.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntime.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
-  }
-);
-DialogContent.displayName = CONTENT_NAME;
-var DialogContentModal = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    const contentRef = React__default__namespace.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-    React__default__namespace.useEffect(() => {
-      const content = contentRef.current;
-      if (content) return hideOthers(content);
-    }, []);
-    return /* @__PURE__ */ jsxRuntime.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: composedRefs,
-        trapFocus: context.open,
-        disableOutsidePointerEvents: true,
-        onCloseAutoFocus: composeEventHandlers(props.onCloseAutoFocus, (event) => {
-          event.preventDefault();
-          context.triggerRef.current?.focus();
-        }),
-        onPointerDownOutside: composeEventHandlers(props.onPointerDownOutside, (event) => {
-          const originalEvent = event.detail.originalEvent;
-          const ctrlLeftClick = originalEvent.button === 0 && originalEvent.ctrlKey === true;
-          const isRightClick = originalEvent.button === 2 || ctrlLeftClick;
-          if (isRightClick) event.preventDefault();
-        }),
-        onFocusOutside: composeEventHandlers(
-          props.onFocusOutside,
-          (event) => event.preventDefault()
-        )
-      }
-    );
-  }
-);
-var DialogContentNonModal = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    const hasInteractedOutsideRef = React__default__namespace.useRef(false);
-    const hasPointerDownOutsideRef = React__default__namespace.useRef(false);
-    return /* @__PURE__ */ jsxRuntime.jsx(
-      DialogContentImpl,
-      {
-        ...props,
-        ref: forwardedRef,
-        trapFocus: false,
-        disableOutsidePointerEvents: false,
-        onCloseAutoFocus: (event) => {
-          props.onCloseAutoFocus?.(event);
-          if (!event.defaultPrevented) {
-            if (!hasInteractedOutsideRef.current) context.triggerRef.current?.focus();
-            event.preventDefault();
-          }
-          hasInteractedOutsideRef.current = false;
-          hasPointerDownOutsideRef.current = false;
-        },
-        onInteractOutside: (event) => {
-          props.onInteractOutside?.(event);
-          if (!event.defaultPrevented) {
-            hasInteractedOutsideRef.current = true;
-            if (event.detail.originalEvent.type === "pointerdown") {
-              hasPointerDownOutsideRef.current = true;
-            }
-          }
-          const target = event.target;
-          const targetIsTrigger = context.triggerRef.current?.contains(target);
-          if (targetIsTrigger) event.preventDefault();
-          if (event.detail.originalEvent.type === "focusin" && hasPointerDownOutsideRef.current) {
-            event.preventDefault();
-          }
-        }
-      }
-    );
-  }
-);
-var DialogContentImpl = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
-    const context = useDialogContext(CONTENT_NAME, __scopeDialog);
-    const contentRef = React__default__namespace.useRef(null);
-    const composedRefs = useComposedRefs(forwardedRef, contentRef);
-    useFocusGuards();
-    return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        FocusScope,
-        {
-          asChild: true,
-          loop: true,
-          trapped: trapFocus,
-          onMountAutoFocus: onOpenAutoFocus,
-          onUnmountAutoFocus: onCloseAutoFocus,
-          children: /* @__PURE__ */ jsxRuntime.jsx(
-            DismissableLayer,
-            {
-              role: "dialog",
-              id: context.contentId,
-              "aria-describedby": context.descriptionId,
-              "aria-labelledby": context.titleId,
-              "data-state": getState(context.open),
-              ...contentProps,
-              ref: composedRefs,
-              onDismiss: () => context.onOpenChange(false)
-            }
-          )
-        }
-      ),
-      /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntime.jsx(TitleWarning, { titleId: context.titleId }),
-        /* @__PURE__ */ jsxRuntime.jsx(DescriptionWarning, { contentRef, descriptionId: context.descriptionId })
-      ] })
-    ] });
-  }
-);
-var TITLE_NAME = "DialogTitle";
-var DialogTitle = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...titleProps } = props;
-    const context = useDialogContext(TITLE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
-  }
-);
-DialogTitle.displayName = TITLE_NAME;
-var DESCRIPTION_NAME = "DialogDescription";
-var DialogDescription = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...descriptionProps } = props;
-    const context = useDialogContext(DESCRIPTION_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
-  }
-);
-DialogDescription.displayName = DESCRIPTION_NAME;
-var CLOSE_NAME = "DialogClose";
-var DialogClose = React__default__namespace.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeDialog, ...closeProps } = props;
-    const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        ...closeProps,
-        ref: forwardedRef,
-        onClick: composeEventHandlers(props.onClick, () => context.onOpenChange(false))
-      }
-    );
-  }
-);
-DialogClose.displayName = CLOSE_NAME;
-function getState(open) {
-  return open ? "open" : "closed";
-}
-var TITLE_WARNING_NAME = "DialogTitleWarning";
-var [WarningProvider, useWarningContext] = createContext22(TITLE_WARNING_NAME, {
-  contentName: CONTENT_NAME,
-  titleName: TITLE_NAME,
-  docsSlug: "dialog"
-});
-var TitleWarning = ({ titleId }) => {
-  const titleWarningContext = useWarningContext(TITLE_WARNING_NAME);
-  const MESSAGE = `\`${titleWarningContext.contentName}\` requires a \`${titleWarningContext.titleName}\` for the component to be accessible for screen reader users.
-
-If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
-
-For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
-  React__default__namespace.useEffect(() => {
-    if (titleId) {
-      const hasTitle = document.getElementById(titleId);
-      if (!hasTitle) console.error(MESSAGE);
-    }
-  }, [MESSAGE, titleId]);
-  return null;
-};
-var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
-var DescriptionWarning = ({ contentRef, descriptionId }) => {
-  const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
-  const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
-  React__default__namespace.useEffect(() => {
-    const describedById = contentRef.current?.getAttribute("aria-describedby");
-    if (descriptionId && describedById) {
-      const hasDescription = document.getElementById(descriptionId);
-      if (!hasDescription) console.warn(MESSAGE);
-    }
-  }, [MESSAGE, contentRef, descriptionId]);
-  return null;
-};
-var Root = Dialog;
-var Portal2 = DialogPortal;
-var Overlay = DialogOverlay;
-var Content = DialogContent;
-var Title = DialogTitle;
-var Description = DialogDescription;
-function __insertCSS(code) {
-  if (typeof document == "undefined") return;
-  let head = document.head || document.getElementsByTagName("head")[0];
-  let style = document.createElement("style");
-  style.type = "text/css";
-  head.appendChild(style);
-  style.styleSheet ? style.styleSheet.cssText = code : style.appendChild(document.createTextNode(code));
-}
-var DrawerContext = React__default__namespace.default.createContext({
-  drawerRef: {
-    current: null
-  },
-  overlayRef: {
-    current: null
-  },
-  onPress: () => {
-  },
-  onRelease: () => {
-  },
-  onDrag: () => {
-  },
-  onNestedDrag: () => {
-  },
-  onNestedOpenChange: () => {
-  },
-  onNestedRelease: () => {
-  },
-  openProp: void 0,
-  dismissible: false,
-  isOpen: false,
-  isDragging: false,
-  keyboardIsOpen: {
-    current: false
-  },
-  snapPointsOffset: null,
-  snapPoints: null,
-  handleOnly: false,
-  modal: false,
-  shouldFade: false,
-  activeSnapPoint: null,
-  onOpenChange: () => {
-  },
-  setActiveSnapPoint: () => {
-  },
-  closeDrawer: () => {
-  },
-  direction: "bottom",
-  shouldAnimate: {
-    current: true
-  },
-  shouldScaleBackground: false,
-  setBackgroundColorOnScale: true,
-  noBodyStyles: false,
-  container: null,
-  autoFocus: false
-});
-var useDrawerContext = () => {
-  const context = React__default__namespace.default.useContext(DrawerContext);
-  if (!context) {
-    throw new Error("useDrawerContext must be used within a Drawer.Root");
-  }
-  return context;
-};
-__insertCSS("[data-vaul-drawer]{touch-action:none;will-change:transform;transition:transform .5s cubic-bezier(.32, .72, 0, 1);animation-duration:.5s;animation-timing-function:cubic-bezier(0.32,0.72,0,1)}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=bottom][data-state=open]{animation-name:slideFromBottom}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=bottom][data-state=closed]{animation-name:slideToBottom}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=top][data-state=open]{animation-name:slideFromTop}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=top][data-state=closed]{animation-name:slideToTop}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=left][data-state=open]{animation-name:slideFromLeft}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=left][data-state=closed]{animation-name:slideToLeft}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=right][data-state=open]{animation-name:slideFromRight}[data-vaul-drawer][data-vaul-snap-points=false][data-vaul-drawer-direction=right][data-state=closed]{animation-name:slideToRight}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=bottom]{transform:translate3d(0,var(--initial-transform,100%),0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=top]{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=left]{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}[data-vaul-drawer][data-vaul-snap-points=true][data-vaul-drawer-direction=right]{transform:translate3d(var(--initial-transform,100%),0,0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=top]{transform:translate3d(0,var(--snap-point-height,0),0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=bottom]{transform:translate3d(0,var(--snap-point-height,0),0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=left]{transform:translate3d(var(--snap-point-height,0),0,0)}[data-vaul-drawer][data-vaul-delayed-snap-points=true][data-vaul-drawer-direction=right]{transform:translate3d(var(--snap-point-height,0),0,0)}[data-vaul-overlay][data-vaul-snap-points=false]{animation-duration:.5s;animation-timing-function:cubic-bezier(0.32,0.72,0,1)}[data-vaul-overlay][data-vaul-snap-points=false][data-state=open]{animation-name:fadeIn}[data-vaul-overlay][data-state=closed]{animation-name:fadeOut}[data-vaul-animate=false]{animation:none!important}[data-vaul-overlay][data-vaul-snap-points=true]{opacity:0;transition:opacity .5s cubic-bezier(.32, .72, 0, 1)}[data-vaul-overlay][data-vaul-snap-points=true]{opacity:1}[data-vaul-drawer]:not([data-vaul-custom-container=true])::after{content:'';position:absolute;background:inherit;background-color:inherit}[data-vaul-drawer][data-vaul-drawer-direction=top]::after{top:initial;bottom:100%;left:0;right:0;height:200%}[data-vaul-drawer][data-vaul-drawer-direction=bottom]::after{top:100%;bottom:initial;left:0;right:0;height:200%}[data-vaul-drawer][data-vaul-drawer-direction=left]::after{left:initial;right:100%;top:0;bottom:0;width:200%}[data-vaul-drawer][data-vaul-drawer-direction=right]::after{left:100%;right:initial;top:0;bottom:0;width:200%}[data-vaul-overlay][data-vaul-snap-points=true]:not([data-vaul-snap-points-overlay=true]):not(\n[data-state=closed]\n){opacity:0}[data-vaul-overlay][data-vaul-snap-points-overlay=true]{opacity:1}[data-vaul-handle]{display:block;position:relative;opacity:.7;background:#e2e2e4;margin-left:auto;margin-right:auto;height:5px;width:32px;border-radius:1rem;touch-action:pan-y}[data-vaul-handle]:active,[data-vaul-handle]:hover{opacity:1}[data-vaul-handle-hitarea]{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100%,2.75rem);height:max(100%,2.75rem);touch-action:inherit}@media (hover:hover) and (pointer:fine){[data-vaul-drawer]{user-select:none}}@media (pointer:fine){[data-vaul-handle-hitarea]:{width:100%;height:100%}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes fadeOut{to{opacity:0}}@keyframes slideFromBottom{from{transform:translate3d(0,var(--initial-transform,100%),0)}to{transform:translate3d(0,0,0)}}@keyframes slideToBottom{to{transform:translate3d(0,var(--initial-transform,100%),0)}}@keyframes slideFromTop{from{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}to{transform:translate3d(0,0,0)}}@keyframes slideToTop{to{transform:translate3d(0,calc(var(--initial-transform,100%) * -1),0)}}@keyframes slideFromLeft{from{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}to{transform:translate3d(0,0,0)}}@keyframes slideToLeft{to{transform:translate3d(calc(var(--initial-transform,100%) * -1),0,0)}}@keyframes slideFromRight{from{transform:translate3d(var(--initial-transform,100%),0,0)}to{transform:translate3d(0,0,0)}}@keyframes slideToRight{to{transform:translate3d(var(--initial-transform,100%),0,0)}}");
-function isMobileFirefox() {
-  const userAgent = navigator.userAgent;
-  return typeof window !== "undefined" && (/Firefox/.test(userAgent) && /Mobile/.test(userAgent) || // Android Firefox
-  /FxiOS/.test(userAgent));
-}
-function isMac() {
-  return testPlatform(/^Mac/);
-}
-function isIPhone() {
-  return testPlatform(/^iPhone/);
-}
-function isSafari() {
-  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-}
-function isIPad() {
-  return testPlatform(/^iPad/) || // iPadOS 13 lies and says it's a Mac, but we can distinguish by detecting touch support.
-  isMac() && navigator.maxTouchPoints > 1;
-}
-function isIOS4() {
-  return isIPhone() || isIPad();
-}
-function testPlatform(re2) {
-  return typeof window !== "undefined" && window.navigator != null ? re2.test(window.navigator.platform) : void 0;
-}
-var KEYBOARD_BUFFER = 24;
-var useIsomorphicLayoutEffect2 = typeof window !== "undefined" ? React__default.useLayoutEffect : React__default.useEffect;
-function chain$1(...callbacks) {
-  return (...args) => {
-    for (let callback of callbacks) {
-      if (typeof callback === "function") {
-        callback(...args);
-      }
-    }
-  };
-}
-var visualViewport = typeof document !== "undefined" && window.visualViewport;
-function isScrollable(node) {
-  let style = window.getComputedStyle(node);
-  return /(auto|scroll)/.test(style.overflow + style.overflowX + style.overflowY);
-}
-function getScrollParent(node) {
-  if (isScrollable(node)) {
-    node = node.parentElement;
-  }
-  while (node && !isScrollable(node)) {
-    node = node.parentElement;
-  }
-  return node || document.scrollingElement || document.documentElement;
-}
-var nonTextInputTypes = /* @__PURE__ */ new Set([
-  "checkbox",
-  "radio",
-  "range",
-  "color",
-  "file",
-  "image",
-  "button",
-  "submit",
-  "reset"
-]);
-var preventScrollCount = 0;
-var restore;
-function usePreventScroll(options = {}) {
-  let { isDisabled } = options;
-  useIsomorphicLayoutEffect2(() => {
-    if (isDisabled) {
-      return;
-    }
-    preventScrollCount++;
-    if (preventScrollCount === 1) {
-      if (isIOS4()) {
-        restore = preventScrollMobileSafari();
-      }
-    }
-    return () => {
-      preventScrollCount--;
-      if (preventScrollCount === 0) {
-        restore == null ? void 0 : restore();
-      }
-    };
-  }, [
-    isDisabled
-  ]);
-}
-function preventScrollMobileSafari() {
-  let scrollable;
-  let lastY = 0;
-  let onTouchStart = (e3) => {
-    scrollable = getScrollParent(e3.target);
-    if (scrollable === document.documentElement && scrollable === document.body) {
-      return;
-    }
-    lastY = e3.changedTouches[0].pageY;
-  };
-  let onTouchMove = (e3) => {
-    if (!scrollable || scrollable === document.documentElement || scrollable === document.body) {
-      e3.preventDefault();
-      return;
-    }
-    let y = e3.changedTouches[0].pageY;
-    let scrollTop = scrollable.scrollTop;
-    let bottom = scrollable.scrollHeight - scrollable.clientHeight;
-    if (bottom === 0) {
-      return;
-    }
-    if (scrollTop <= 0 && y > lastY || scrollTop >= bottom && y < lastY) {
-      e3.preventDefault();
-    }
-    lastY = y;
-  };
-  let onTouchEnd = (e3) => {
-    let target = e3.target;
-    if (isInput(target) && target !== document.activeElement) {
-      e3.preventDefault();
-      target.style.transform = "translateY(-2000px)";
-      target.focus();
-      requestAnimationFrame(() => {
-        target.style.transform = "";
-      });
-    }
-  };
-  let onFocus = (e3) => {
-    let target = e3.target;
-    if (isInput(target)) {
-      target.style.transform = "translateY(-2000px)";
-      requestAnimationFrame(() => {
-        target.style.transform = "";
-        if (visualViewport) {
-          if (visualViewport.height < window.innerHeight) {
-            requestAnimationFrame(() => {
-              scrollIntoView(target);
-            });
-          } else {
-            visualViewport.addEventListener("resize", () => scrollIntoView(target), {
-              once: true
-            });
-          }
-        }
-      });
-    }
-  };
-  let onWindowScroll = () => {
-    window.scrollTo(0, 0);
-  };
-  let scrollX = window.pageXOffset;
-  let scrollY = window.pageYOffset;
-  let restoreStyles = chain$1(setStyle(document.documentElement, "paddingRight", `${window.innerWidth - document.documentElement.clientWidth}px`));
-  window.scrollTo(0, 0);
-  let removeEvents = chain$1(addEvent3(document, "touchstart", onTouchStart, {
-    passive: false,
-    capture: true
-  }), addEvent3(document, "touchmove", onTouchMove, {
-    passive: false,
-    capture: true
-  }), addEvent3(document, "touchend", onTouchEnd, {
-    passive: false,
-    capture: true
-  }), addEvent3(document, "focus", onFocus, true), addEvent3(window, "scroll", onWindowScroll));
-  return () => {
-    restoreStyles();
-    removeEvents();
-    window.scrollTo(scrollX, scrollY);
-  };
-}
-function setStyle(element, style, value) {
-  let cur = element.style[style];
-  element.style[style] = value;
-  return () => {
-    element.style[style] = cur;
-  };
-}
-function addEvent3(target, event, handler, options) {
-  target.addEventListener(event, handler, options);
-  return () => {
-    target.removeEventListener(event, handler, options);
-  };
-}
-function scrollIntoView(target) {
-  let root3 = document.scrollingElement || document.documentElement;
-  while (target && target !== root3) {
-    let scrollable = getScrollParent(target);
-    if (scrollable !== document.documentElement && scrollable !== document.body && scrollable !== target) {
-      let scrollableTop = scrollable.getBoundingClientRect().top;
-      let targetTop = target.getBoundingClientRect().top;
-      let targetBottom = target.getBoundingClientRect().bottom;
-      const keyboardHeight = scrollable.getBoundingClientRect().bottom + KEYBOARD_BUFFER;
-      if (targetBottom > keyboardHeight) {
-        scrollable.scrollTop += targetTop - scrollableTop;
-      }
-    }
-    target = scrollable.parentElement;
-  }
-}
-function isInput(target) {
-  return target instanceof HTMLInputElement && !nonTextInputTypes.has(target.type) || target instanceof HTMLTextAreaElement || target instanceof HTMLElement && target.isContentEditable;
-}
-function setRef2(ref, value) {
-  if (typeof ref === "function") {
-    ref(value);
-  } else if (ref !== null && ref !== void 0) {
-    ref.current = value;
-  }
-}
-function composeRefs2(...refs) {
-  return (node) => refs.forEach((ref) => setRef2(ref, node));
-}
-function useComposedRefs2(...refs) {
-  return React__default__namespace.useCallback(composeRefs2(...refs), refs);
-}
-var cache = /* @__PURE__ */ new WeakMap();
-function set(el, styles3, ignoreCache = false) {
-  if (!el || !(el instanceof HTMLElement)) return;
-  let originalStyles = {};
-  Object.entries(styles3).forEach(([key, value]) => {
-    if (key.startsWith("--")) {
-      el.style.setProperty(key, value);
-      return;
-    }
-    originalStyles[key] = el.style[key];
-    el.style[key] = value;
-  });
-  if (ignoreCache) return;
-  cache.set(el, originalStyles);
-}
-function reset2(el, prop) {
-  if (!el || !(el instanceof HTMLElement)) return;
-  let originalStyles = cache.get(el);
-  if (!originalStyles) {
-    return;
-  }
-  {
-    el.style[prop] = originalStyles[prop];
-  }
-}
-var isVertical = (direction) => {
-  switch (direction) {
-    case "top":
-    case "bottom":
-      return true;
-    case "left":
-    case "right":
-      return false;
-    default:
-      return direction;
-  }
-};
-function getTranslate(element, direction) {
-  if (!element) {
-    return null;
-  }
-  const style = window.getComputedStyle(element);
-  const transform = (
-    // @ts-ignore
-    style.transform || style.webkitTransform || style.mozTransform
-  );
-  let mat = transform.match(/^matrix3d\((.+)\)$/);
-  if (mat) {
-    return parseFloat(mat[1].split(", ")[isVertical(direction) ? 13 : 12]);
-  }
-  mat = transform.match(/^matrix\((.+)\)$/);
-  return mat ? parseFloat(mat[1].split(", ")[isVertical(direction) ? 5 : 4]) : null;
-}
-function dampenValue(v2) {
-  return 8 * (Math.log(v2 + 1) - 2);
-}
-function assignStyle(element, style) {
-  if (!element) return () => {
-  };
-  const prevStyle = element.style.cssText;
-  Object.assign(element.style, style);
-  return () => {
-    element.style.cssText = prevStyle;
-  };
-}
-function chain3(...fns) {
-  return (...args) => {
-    for (const fn3 of fns) {
-      if (typeof fn3 === "function") {
-        fn3(...args);
-      }
-    }
-  };
-}
-var TRANSITIONS = {
-  DURATION: 0.5,
-  EASE: [
-    0.32,
-    0.72,
-    0,
-    1
-  ]
-};
-var VELOCITY_THRESHOLD = 0.4;
-var CLOSE_THRESHOLD = 0.25;
-var SCROLL_LOCK_TIMEOUT = 100;
-var BORDER_RADIUS = 8;
-var NESTED_DISPLACEMENT = 16;
-var WINDOW_TOP_OFFSET = 26;
-var DRAG_CLASS = "vaul-dragging";
-function useCallbackRef3(callback) {
-  const callbackRef = React__default__namespace.default.useRef(callback);
-  React__default__namespace.default.useEffect(() => {
-    callbackRef.current = callback;
-  });
-  return React__default__namespace.default.useMemo(() => (...args) => callbackRef.current == null ? void 0 : callbackRef.current.call(callbackRef, ...args), []);
-}
-function useUncontrolledState2({ defaultProp, onChange }) {
-  const uncontrolledState = React__default__namespace.default.useState(defaultProp);
-  const [value] = uncontrolledState;
-  const prevValueRef = React__default__namespace.default.useRef(value);
-  const handleChange = useCallbackRef3(onChange);
-  React__default__namespace.default.useEffect(() => {
-    if (prevValueRef.current !== value) {
-      handleChange(value);
-      prevValueRef.current = value;
-    }
-  }, [
-    value,
-    prevValueRef,
-    handleChange
-  ]);
-  return uncontrolledState;
-}
-function useControllableState2({ prop, defaultProp, onChange = () => {
-} }) {
-  const [uncontrolledProp, setUncontrolledProp] = useUncontrolledState2({
-    defaultProp,
-    onChange
-  });
-  const isControlled = prop !== void 0;
-  const value = isControlled ? prop : uncontrolledProp;
-  const handleChange = useCallbackRef3(onChange);
-  const setValue = React__default__namespace.default.useCallback((nextValue) => {
-    if (isControlled) {
-      const setter = nextValue;
-      const value2 = typeof nextValue === "function" ? setter(prop) : nextValue;
-      if (value2 !== prop) handleChange(value2);
-    } else {
-      setUncontrolledProp(nextValue);
-    }
-  }, [
-    isControlled,
-    prop,
-    setUncontrolledProp,
-    handleChange
-  ]);
-  return [
-    value,
-    setValue
-  ];
-}
-function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints, drawerRef, overlayRef, fadeFromIndex, onSnapPointChange, direction = "bottom", container, snapToSequentialPoint }) {
-  const [activeSnapPoint, setActiveSnapPoint] = useControllableState2({
-    prop: activeSnapPointProp,
-    defaultProp: snapPoints == null ? void 0 : snapPoints[0],
-    onChange: setActiveSnapPointProp
-  });
-  const [windowDimensions, setWindowDimensions] = React__default__namespace.default.useState(typeof window !== "undefined" ? {
-    innerWidth: window.innerWidth,
-    innerHeight: window.innerHeight
-  } : void 0);
-  React__default__namespace.default.useEffect(() => {
-    function onResize() {
-      setWindowDimensions({
-        innerWidth: window.innerWidth,
-        innerHeight: window.innerHeight
-      });
-    }
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-  const isLastSnapPoint = React__default__namespace.default.useMemo(() => activeSnapPoint === (snapPoints == null ? void 0 : snapPoints[snapPoints.length - 1]) || null, [
-    snapPoints,
-    activeSnapPoint
-  ]);
-  const activeSnapPointIndex = React__default__namespace.default.useMemo(() => {
-    var _snapPoints_findIndex;
-    return (_snapPoints_findIndex = snapPoints == null ? void 0 : snapPoints.findIndex((snapPoint) => snapPoint === activeSnapPoint)) != null ? _snapPoints_findIndex : null;
-  }, [
-    snapPoints,
-    activeSnapPoint
-  ]);
-  const shouldFade = snapPoints && snapPoints.length > 0 && (fadeFromIndex || fadeFromIndex === 0) && !Number.isNaN(fadeFromIndex) && snapPoints[fadeFromIndex] === activeSnapPoint || !snapPoints;
-  const snapPointsOffset = React__default__namespace.default.useMemo(() => {
-    const containerSize = container ? {
-      width: container.getBoundingClientRect().width,
-      height: container.getBoundingClientRect().height
-    } : typeof window !== "undefined" ? {
-      width: window.innerWidth,
-      height: window.innerHeight
-    } : {
-      width: 0,
-      height: 0
-    };
-    var _snapPoints_map;
-    return (_snapPoints_map = snapPoints == null ? void 0 : snapPoints.map((snapPoint) => {
-      const isPx = typeof snapPoint === "string";
-      let snapPointAsNumber = 0;
-      if (isPx) {
-        snapPointAsNumber = parseInt(snapPoint, 10);
-      }
-      if (isVertical(direction)) {
-        const height = isPx ? snapPointAsNumber : windowDimensions ? snapPoint * containerSize.height : 0;
-        if (windowDimensions) {
-          return direction === "bottom" ? containerSize.height - height : -containerSize.height + height;
-        }
-        return height;
-      }
-      const width = isPx ? snapPointAsNumber : windowDimensions ? snapPoint * containerSize.width : 0;
-      if (windowDimensions) {
-        return direction === "right" ? containerSize.width - width : -containerSize.width + width;
-      }
-      return width;
-    })) != null ? _snapPoints_map : [];
-  }, [
-    snapPoints,
-    windowDimensions,
-    container
-  ]);
-  const activeSnapPointOffset = React__default__namespace.default.useMemo(() => activeSnapPointIndex !== null ? snapPointsOffset == null ? void 0 : snapPointsOffset[activeSnapPointIndex] : null, [
-    snapPointsOffset,
-    activeSnapPointIndex
-  ]);
-  const snapToPoint = React__default__namespace.default.useCallback((dimension) => {
-    var _snapPointsOffset_findIndex;
-    const newSnapPointIndex = (_snapPointsOffset_findIndex = snapPointsOffset == null ? void 0 : snapPointsOffset.findIndex((snapPointDim) => snapPointDim === dimension)) != null ? _snapPointsOffset_findIndex : null;
-    onSnapPointChange(newSnapPointIndex);
-    set(drawerRef.current, {
-      transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
-      transform: isVertical(direction) ? `translate3d(0, ${dimension}px, 0)` : `translate3d(${dimension}px, 0, 0)`
-    });
-    if (snapPointsOffset && newSnapPointIndex !== snapPointsOffset.length - 1 && fadeFromIndex !== void 0 && newSnapPointIndex !== fadeFromIndex && newSnapPointIndex < fadeFromIndex) {
-      set(overlayRef.current, {
-        transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
-        opacity: "0"
-      });
-    } else {
-      set(overlayRef.current, {
-        transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
-        opacity: "1"
-      });
-    }
-    setActiveSnapPoint(snapPoints == null ? void 0 : snapPoints[Math.max(newSnapPointIndex, 0)]);
-  }, [
-    drawerRef.current,
-    snapPoints,
-    snapPointsOffset,
-    fadeFromIndex,
-    overlayRef,
-    setActiveSnapPoint
-  ]);
-  React__default__namespace.default.useEffect(() => {
-    if (activeSnapPoint || activeSnapPointProp) {
-      var _snapPoints_findIndex;
-      const newIndex = (_snapPoints_findIndex = snapPoints == null ? void 0 : snapPoints.findIndex((snapPoint) => snapPoint === activeSnapPointProp || snapPoint === activeSnapPoint)) != null ? _snapPoints_findIndex : -1;
-      if (snapPointsOffset && newIndex !== -1 && typeof snapPointsOffset[newIndex] === "number") {
-        snapToPoint(snapPointsOffset[newIndex]);
-      }
-    }
-  }, [
-    activeSnapPoint,
-    activeSnapPointProp,
-    snapPoints,
-    snapPointsOffset,
-    snapToPoint
-  ]);
-  function onRelease({ draggedDistance, closeDrawer, velocity, dismissible }) {
-    if (fadeFromIndex === void 0) return;
-    const currentPosition = direction === "bottom" || direction === "right" ? (activeSnapPointOffset != null ? activeSnapPointOffset : 0) - draggedDistance : (activeSnapPointOffset != null ? activeSnapPointOffset : 0) + draggedDistance;
-    const isOverlaySnapPoint = activeSnapPointIndex === fadeFromIndex - 1;
-    const isFirst = activeSnapPointIndex === 0;
-    const hasDraggedUp = draggedDistance > 0;
-    if (isOverlaySnapPoint) {
-      set(overlayRef.current, {
-        transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`
-      });
-    }
-    if (!snapToSequentialPoint && velocity > 2 && !hasDraggedUp) {
-      if (dismissible) closeDrawer();
-      else snapToPoint(snapPointsOffset[0]);
-      return;
-    }
-    if (!snapToSequentialPoint && velocity > 2 && hasDraggedUp && snapPointsOffset && snapPoints) {
-      snapToPoint(snapPointsOffset[snapPoints.length - 1]);
-      return;
-    }
-    const closestSnapPoint = snapPointsOffset == null ? void 0 : snapPointsOffset.reduce((prev, curr) => {
-      if (typeof prev !== "number" || typeof curr !== "number") return prev;
-      return Math.abs(curr - currentPosition) < Math.abs(prev - currentPosition) ? curr : prev;
-    });
-    const dim = isVertical(direction) ? window.innerHeight : window.innerWidth;
-    if (velocity > VELOCITY_THRESHOLD && Math.abs(draggedDistance) < dim * 0.4) {
-      const dragDirection = hasDraggedUp ? 1 : -1;
-      if (dragDirection > 0 && isLastSnapPoint && snapPoints) {
-        snapToPoint(snapPointsOffset[snapPoints.length - 1]);
-        return;
-      }
-      if (isFirst && dragDirection < 0 && dismissible) {
-        closeDrawer();
-      }
-      if (activeSnapPointIndex === null) return;
-      snapToPoint(snapPointsOffset[activeSnapPointIndex + dragDirection]);
-      return;
-    }
-    snapToPoint(closestSnapPoint);
-  }
-  function onDrag({ draggedDistance }) {
-    if (activeSnapPointOffset === null) return;
-    const newValue = direction === "bottom" || direction === "right" ? activeSnapPointOffset - draggedDistance : activeSnapPointOffset + draggedDistance;
-    if ((direction === "bottom" || direction === "right") && newValue < snapPointsOffset[snapPointsOffset.length - 1]) {
-      return;
-    }
-    if ((direction === "top" || direction === "left") && newValue > snapPointsOffset[snapPointsOffset.length - 1]) {
-      return;
-    }
-    set(drawerRef.current, {
-      transform: isVertical(direction) ? `translate3d(0, ${newValue}px, 0)` : `translate3d(${newValue}px, 0, 0)`
-    });
-  }
-  function getPercentageDragged(absDraggedDistance, isDraggingDown) {
-    if (!snapPoints || typeof activeSnapPointIndex !== "number" || !snapPointsOffset || fadeFromIndex === void 0) return null;
-    const isOverlaySnapPoint = activeSnapPointIndex === fadeFromIndex - 1;
-    const isOverlaySnapPointOrHigher = activeSnapPointIndex >= fadeFromIndex;
-    if (isOverlaySnapPointOrHigher && isDraggingDown) {
-      return 0;
-    }
-    if (isOverlaySnapPoint && !isDraggingDown) return 1;
-    if (!shouldFade && !isOverlaySnapPoint) return null;
-    const targetSnapPointIndex = isOverlaySnapPoint ? activeSnapPointIndex + 1 : activeSnapPointIndex - 1;
-    const snapPointDistance = isOverlaySnapPoint ? snapPointsOffset[targetSnapPointIndex] - snapPointsOffset[targetSnapPointIndex - 1] : snapPointsOffset[targetSnapPointIndex + 1] - snapPointsOffset[targetSnapPointIndex];
-    const percentageDragged = absDraggedDistance / Math.abs(snapPointDistance);
-    if (isOverlaySnapPoint) {
-      return 1 - percentageDragged;
-    } else {
-      return percentageDragged;
-    }
-  }
-  return {
-    isLastSnapPoint,
-    activeSnapPoint,
-    shouldFade,
-    getPercentageDragged,
-    setActiveSnapPoint,
-    activeSnapPointIndex,
-    onRelease,
-    onDrag,
-    snapPointsOffset
-  };
-}
-var noop = () => () => {
-};
-function useScaleBackground() {
-  const { direction, isOpen, shouldScaleBackground, setBackgroundColorOnScale, noBodyStyles } = useDrawerContext();
-  const timeoutIdRef = React__default__namespace.default.useRef(null);
-  const initialBackgroundColor = React__default.useMemo(() => document.body.style.backgroundColor, []);
-  function getScale() {
-    return (window.innerWidth - WINDOW_TOP_OFFSET) / window.innerWidth;
-  }
-  React__default__namespace.default.useEffect(() => {
-    if (isOpen && shouldScaleBackground) {
-      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
-      const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]") || document.querySelector("[vaul-drawer-wrapper]");
-      if (!wrapper2) return;
-      chain3(setBackgroundColorOnScale && !noBodyStyles ? assignStyle(document.body, {
-        background: "black"
-      }) : noop, assignStyle(wrapper2, {
-        transformOrigin: isVertical(direction) ? "top" : "left",
-        transitionProperty: "transform, border-radius",
-        transitionDuration: `${TRANSITIONS.DURATION}s`,
-        transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(",")})`
-      }));
-      const wrapperStylesCleanup = assignStyle(wrapper2, {
-        borderRadius: `${BORDER_RADIUS}px`,
-        overflow: "hidden",
-        ...isVertical(direction) ? {
-          transform: `scale(${getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`
-        } : {
-          transform: `scale(${getScale()}) translate3d(calc(env(safe-area-inset-top) + 14px), 0, 0)`
-        }
-      });
-      return () => {
-        wrapperStylesCleanup();
-        timeoutIdRef.current = window.setTimeout(() => {
-          if (initialBackgroundColor) {
-            document.body.style.background = initialBackgroundColor;
-          } else {
-            document.body.style.removeProperty("background");
-          }
-        }, TRANSITIONS.DURATION * 1e3);
-      };
-    }
-  }, [
-    isOpen,
-    shouldScaleBackground,
-    initialBackgroundColor
-  ]);
-}
-var previousBodyPosition = null;
-function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollRestoration, noBodyStyles }) {
-  const [activeUrl, setActiveUrl] = React__default__namespace.default.useState(() => typeof window !== "undefined" ? window.location.href : "");
-  const scrollPos = React__default__namespace.default.useRef(0);
-  const setPositionFixed = React__default__namespace.default.useCallback(() => {
-    if (!isSafari()) return;
-    if (previousBodyPosition === null && isOpen && !noBodyStyles) {
-      previousBodyPosition = {
-        position: document.body.style.position,
-        top: document.body.style.top,
-        left: document.body.style.left,
-        height: document.body.style.height,
-        right: "unset"
-      };
-      const { scrollX, innerHeight } = window;
-      document.body.style.setProperty("position", "fixed", "important");
-      Object.assign(document.body.style, {
-        top: `${-scrollPos.current}px`,
-        left: `${-scrollX}px`,
-        right: "0px",
-        height: "auto"
-      });
-      window.setTimeout(() => window.requestAnimationFrame(() => {
-        const bottomBarHeight = innerHeight - window.innerHeight;
-        if (bottomBarHeight && scrollPos.current >= innerHeight) {
-          document.body.style.top = `${-(scrollPos.current + bottomBarHeight)}px`;
-        }
-      }), 300);
-    }
-  }, [
-    isOpen
-  ]);
-  const restorePositionSetting = React__default__namespace.default.useCallback(() => {
-    if (!isSafari()) return;
-    if (previousBodyPosition !== null && !noBodyStyles) {
-      const y = -parseInt(document.body.style.top, 10);
-      const x = -parseInt(document.body.style.left, 10);
-      Object.assign(document.body.style, previousBodyPosition);
-      window.requestAnimationFrame(() => {
-        if (preventScrollRestoration && activeUrl !== window.location.href) {
-          setActiveUrl(window.location.href);
-          return;
-        }
-        window.scrollTo(x, y);
-      });
-      previousBodyPosition = null;
-    }
-  }, [
-    activeUrl
-  ]);
-  React__default__namespace.default.useEffect(() => {
-    function onScroll() {
-      scrollPos.current = window.scrollY;
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, []);
-  React__default__namespace.default.useEffect(() => {
-    if (!modal) return;
-    return () => {
-      if (typeof document === "undefined") return;
-      const hasDrawerOpened = !!document.querySelector("[data-vaul-drawer]");
-      if (hasDrawerOpened) return;
-      restorePositionSetting();
-    };
-  }, [
-    modal,
-    restorePositionSetting
-  ]);
-  React__default__namespace.default.useEffect(() => {
-    if (nested || !hasBeenOpened) return;
-    if (isOpen) {
-      const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-      !isStandalone && setPositionFixed();
-      if (!modal) {
-        window.setTimeout(() => {
-          restorePositionSetting();
-        }, 500);
-      }
-    } else {
-      restorePositionSetting();
-    }
-  }, [
-    isOpen,
-    hasBeenOpened,
-    activeUrl,
-    modal,
-    nested,
-    setPositionFixed,
-    restorePositionSetting
-  ]);
-  return {
-    restorePositionSetting
-  };
-}
-function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRelease: onReleaseProp, snapPoints, shouldScaleBackground = false, setBackgroundColorOnScale = true, closeThreshold = CLOSE_THRESHOLD, scrollLockTimeout = SCROLL_LOCK_TIMEOUT, dismissible = true, handleOnly = false, fadeFromIndex = snapPoints && snapPoints.length - 1, activeSnapPoint: activeSnapPointProp, setActiveSnapPoint: setActiveSnapPointProp, fixed, modal = true, onClose, nested, noBodyStyles = false, direction = "bottom", defaultOpen = false, disablePreventScroll = true, snapToSequentialPoint = false, preventScrollRestoration = false, repositionInputs = true, onAnimationEnd, container, autoFocus = false }) {
-  var _drawerRef_current, _drawerRef_current1;
-  const [isOpen = false, setIsOpen] = useControllableState2({
-    defaultProp: defaultOpen,
-    prop: openProp,
-    onChange: (o2) => {
-      onOpenChange == null ? void 0 : onOpenChange(o2);
-      if (!o2 && !nested) {
-        restorePositionSetting();
-      }
-      setTimeout(() => {
-        onAnimationEnd == null ? void 0 : onAnimationEnd(o2);
-      }, TRANSITIONS.DURATION * 1e3);
-      if (o2 && !modal) {
-        if (typeof window !== "undefined") {
-          window.requestAnimationFrame(() => {
-            document.body.style.pointerEvents = "auto";
-          });
-        }
-      }
-      if (!o2) {
-        document.body.style.pointerEvents = "auto";
-      }
-    }
-  });
-  const [hasBeenOpened, setHasBeenOpened] = React__default__namespace.default.useState(false);
-  const [isDragging, setIsDragging] = React__default__namespace.default.useState(false);
-  const [justReleased, setJustReleased] = React__default__namespace.default.useState(false);
-  const overlayRef = React__default__namespace.default.useRef(null);
-  const openTime = React__default__namespace.default.useRef(null);
-  const dragStartTime = React__default__namespace.default.useRef(null);
-  const dragEndTime = React__default__namespace.default.useRef(null);
-  const lastTimeDragPrevented = React__default__namespace.default.useRef(null);
-  const isAllowedToDrag = React__default__namespace.default.useRef(false);
-  const nestedOpenChangeTimer = React__default__namespace.default.useRef(null);
-  const pointerStart = React__default__namespace.default.useRef(0);
-  const keyboardIsOpen = React__default__namespace.default.useRef(false);
-  const shouldAnimate = React__default__namespace.default.useRef(!defaultOpen);
-  const previousDiffFromInitial = React__default__namespace.default.useRef(0);
-  const drawerRef = React__default__namespace.default.useRef(null);
-  const drawerHeightRef = React__default__namespace.default.useRef(((_drawerRef_current = drawerRef.current) == null ? void 0 : _drawerRef_current.getBoundingClientRect().height) || 0);
-  const drawerWidthRef = React__default__namespace.default.useRef(((_drawerRef_current1 = drawerRef.current) == null ? void 0 : _drawerRef_current1.getBoundingClientRect().width) || 0);
-  const initialDrawerHeight = React__default__namespace.default.useRef(0);
-  const onSnapPointChange = React__default__namespace.default.useCallback((activeSnapPointIndex2) => {
-    if (snapPoints && activeSnapPointIndex2 === snapPointsOffset.length - 1) openTime.current = /* @__PURE__ */ new Date();
-  }, []);
-  const { activeSnapPoint, activeSnapPointIndex, setActiveSnapPoint, onRelease: onReleaseSnapPoints, snapPointsOffset, onDrag: onDragSnapPoints, shouldFade, getPercentageDragged: getSnapPointsPercentageDragged } = useSnapPoints({
-    snapPoints,
-    activeSnapPointProp,
-    setActiveSnapPointProp,
-    drawerRef,
-    fadeFromIndex,
-    overlayRef,
-    onSnapPointChange,
-    direction,
-    container,
-    snapToSequentialPoint
-  });
-  usePreventScroll({
-    isDisabled: !isOpen || isDragging || !modal || justReleased || !hasBeenOpened || !repositionInputs || !disablePreventScroll
-  });
-  const { restorePositionSetting } = usePositionFixed({
-    isOpen,
-    modal,
-    nested: nested != null ? nested : false,
-    hasBeenOpened,
-    preventScrollRestoration,
-    noBodyStyles
-  });
-  function getScale() {
-    return (window.innerWidth - WINDOW_TOP_OFFSET) / window.innerWidth;
-  }
-  function onPress(event) {
-    var _drawerRef_current2, _drawerRef_current12;
-    if (!dismissible && !snapPoints) return;
-    if (drawerRef.current && !drawerRef.current.contains(event.target)) return;
-    drawerHeightRef.current = ((_drawerRef_current2 = drawerRef.current) == null ? void 0 : _drawerRef_current2.getBoundingClientRect().height) || 0;
-    drawerWidthRef.current = ((_drawerRef_current12 = drawerRef.current) == null ? void 0 : _drawerRef_current12.getBoundingClientRect().width) || 0;
-    setIsDragging(true);
-    dragStartTime.current = /* @__PURE__ */ new Date();
-    if (isIOS4()) {
-      window.addEventListener("touchend", () => isAllowedToDrag.current = false, {
-        once: true
-      });
-    }
-    event.target.setPointerCapture(event.pointerId);
-    pointerStart.current = isVertical(direction) ? event.pageY : event.pageX;
-  }
-  function shouldDrag(el, isDraggingInDirection) {
-    var _window_getSelection;
-    let element = el;
-    const highlightedText = (_window_getSelection = window.getSelection()) == null ? void 0 : _window_getSelection.toString();
-    const swipeAmount = drawerRef.current ? getTranslate(drawerRef.current, direction) : null;
-    const date = /* @__PURE__ */ new Date();
-    if (element.tagName === "SELECT") {
-      return false;
-    }
-    if (element.hasAttribute("data-vaul-no-drag") || element.closest("[data-vaul-no-drag]")) {
-      return false;
-    }
-    if (direction === "right" || direction === "left") {
-      return true;
-    }
-    if (openTime.current && date.getTime() - openTime.current.getTime() < 500) {
-      return false;
-    }
-    if (swipeAmount !== null) {
-      if (direction === "bottom" ? swipeAmount > 0 : swipeAmount < 0) {
-        return true;
-      }
-    }
-    if (highlightedText && highlightedText.length > 0) {
-      return false;
-    }
-    if (lastTimeDragPrevented.current && date.getTime() - lastTimeDragPrevented.current.getTime() < scrollLockTimeout && swipeAmount === 0) {
-      lastTimeDragPrevented.current = date;
-      return false;
-    }
-    if (isDraggingInDirection) {
-      lastTimeDragPrevented.current = date;
-      return false;
-    }
-    while (element) {
-      if (element.scrollHeight > element.clientHeight) {
-        if (element.scrollTop !== 0) {
-          lastTimeDragPrevented.current = /* @__PURE__ */ new Date();
-          return false;
-        }
-        if (element.getAttribute("role") === "dialog") {
-          return true;
-        }
-      }
-      element = element.parentNode;
-    }
-    return true;
-  }
-  function onDrag(event) {
-    if (!drawerRef.current) {
-      return;
-    }
-    if (isDragging) {
-      const directionMultiplier = direction === "bottom" || direction === "right" ? 1 : -1;
-      const draggedDistance = (pointerStart.current - (isVertical(direction) ? event.pageY : event.pageX)) * directionMultiplier;
-      const isDraggingInDirection = draggedDistance > 0;
-      const noCloseSnapPointsPreCondition = snapPoints && !dismissible && !isDraggingInDirection;
-      if (noCloseSnapPointsPreCondition && activeSnapPointIndex === 0) return;
-      const absDraggedDistance = Math.abs(draggedDistance);
-      const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]");
-      const drawerDimension = direction === "bottom" || direction === "top" ? drawerHeightRef.current : drawerWidthRef.current;
-      let percentageDragged = absDraggedDistance / drawerDimension;
-      const snapPointPercentageDragged = getSnapPointsPercentageDragged(absDraggedDistance, isDraggingInDirection);
-      if (snapPointPercentageDragged !== null) {
-        percentageDragged = snapPointPercentageDragged;
-      }
-      if (noCloseSnapPointsPreCondition && percentageDragged >= 1) {
-        return;
-      }
-      if (!isAllowedToDrag.current && !shouldDrag(event.target, isDraggingInDirection)) return;
-      drawerRef.current.classList.add(DRAG_CLASS);
-      isAllowedToDrag.current = true;
-      set(drawerRef.current, {
-        transition: "none"
-      });
-      set(overlayRef.current, {
-        transition: "none"
-      });
-      if (snapPoints) {
-        onDragSnapPoints({
-          draggedDistance
-        });
-      }
-      if (isDraggingInDirection && !snapPoints) {
-        const dampenedDraggedDistance = dampenValue(draggedDistance);
-        const translateValue = Math.min(dampenedDraggedDistance * -1, 0) * directionMultiplier;
-        set(drawerRef.current, {
-          transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
-        });
-        return;
-      }
-      const opacityValue = 1 - percentageDragged;
-      if (shouldFade || fadeFromIndex && activeSnapPointIndex === fadeFromIndex - 1) {
-        onDragProp == null ? void 0 : onDragProp(event, percentageDragged);
-        set(overlayRef.current, {
-          opacity: `${opacityValue}`,
-          transition: "none"
-        }, true);
-      }
-      if (wrapper2 && overlayRef.current && shouldScaleBackground) {
-        const scaleValue = Math.min(getScale() + percentageDragged * (1 - getScale()), 1);
-        const borderRadiusValue = 8 - percentageDragged * 8;
-        const translateValue = Math.max(0, 14 - percentageDragged * 14);
-        set(wrapper2, {
-          borderRadius: `${borderRadiusValue}px`,
-          transform: isVertical(direction) ? `scale(${scaleValue}) translate3d(0, ${translateValue}px, 0)` : `scale(${scaleValue}) translate3d(${translateValue}px, 0, 0)`,
-          transition: "none"
-        }, true);
-      }
-      if (!snapPoints) {
-        const translateValue = absDraggedDistance * directionMultiplier;
-        set(drawerRef.current, {
-          transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
-        });
-      }
-    }
-  }
-  React__default__namespace.default.useEffect(() => {
-    window.requestAnimationFrame(() => {
-      shouldAnimate.current = true;
-    });
-  }, []);
-  React__default__namespace.default.useEffect(() => {
-    var _window_visualViewport;
-    function onVisualViewportChange() {
-      if (!drawerRef.current || !repositionInputs) return;
-      const focusedElement = document.activeElement;
-      if (isInput(focusedElement) || keyboardIsOpen.current) {
-        var _window_visualViewport2;
-        const visualViewportHeight = ((_window_visualViewport2 = window.visualViewport) == null ? void 0 : _window_visualViewport2.height) || 0;
-        const totalHeight = window.innerHeight;
-        let diffFromInitial = totalHeight - visualViewportHeight;
-        const drawerHeight = drawerRef.current.getBoundingClientRect().height || 0;
-        const isTallEnough = drawerHeight > totalHeight * 0.8;
-        if (!initialDrawerHeight.current) {
-          initialDrawerHeight.current = drawerHeight;
-        }
-        const offsetFromTop = drawerRef.current.getBoundingClientRect().top;
-        if (Math.abs(previousDiffFromInitial.current - diffFromInitial) > 60) {
-          keyboardIsOpen.current = !keyboardIsOpen.current;
-        }
-        if (snapPoints && snapPoints.length > 0 && snapPointsOffset && activeSnapPointIndex) {
-          const activeSnapPointHeight = snapPointsOffset[activeSnapPointIndex] || 0;
-          diffFromInitial += activeSnapPointHeight;
-        }
-        previousDiffFromInitial.current = diffFromInitial;
-        if (drawerHeight > visualViewportHeight || keyboardIsOpen.current) {
-          const height = drawerRef.current.getBoundingClientRect().height;
-          let newDrawerHeight = height;
-          if (height > visualViewportHeight) {
-            newDrawerHeight = visualViewportHeight - (isTallEnough ? offsetFromTop : WINDOW_TOP_OFFSET);
-          }
-          if (fixed) {
-            drawerRef.current.style.height = `${height - Math.max(diffFromInitial, 0)}px`;
-          } else {
-            drawerRef.current.style.height = `${Math.max(newDrawerHeight, visualViewportHeight - offsetFromTop)}px`;
-          }
-        } else if (!isMobileFirefox()) {
-          drawerRef.current.style.height = `${initialDrawerHeight.current}px`;
-        }
-        if (snapPoints && snapPoints.length > 0 && !keyboardIsOpen.current) {
-          drawerRef.current.style.bottom = `0px`;
-        } else {
-          drawerRef.current.style.bottom = `${Math.max(diffFromInitial, 0)}px`;
-        }
-      }
-    }
-    (_window_visualViewport = window.visualViewport) == null ? void 0 : _window_visualViewport.addEventListener("resize", onVisualViewportChange);
-    return () => {
-      var _window_visualViewport2;
-      return (_window_visualViewport2 = window.visualViewport) == null ? void 0 : _window_visualViewport2.removeEventListener("resize", onVisualViewportChange);
-    };
-  }, [
-    activeSnapPointIndex,
-    snapPoints,
-    snapPointsOffset
-  ]);
-  function closeDrawer(fromWithin) {
-    cancelDrag();
-    onClose == null ? void 0 : onClose();
-    if (!fromWithin) {
-      setIsOpen(false);
-    }
-    setTimeout(() => {
-      if (snapPoints) {
-        setActiveSnapPoint(snapPoints[0]);
-      }
-    }, TRANSITIONS.DURATION * 1e3);
-  }
-  function resetDrawer() {
-    if (!drawerRef.current) return;
-    const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]");
-    const currentSwipeAmount = getTranslate(drawerRef.current, direction);
-    set(drawerRef.current, {
-      transform: "translate3d(0, 0, 0)",
-      transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`
-    });
-    set(overlayRef.current, {
-      transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
-      opacity: "1"
-    });
-    if (shouldScaleBackground && currentSwipeAmount && currentSwipeAmount > 0 && isOpen) {
-      set(wrapper2, {
-        borderRadius: `${BORDER_RADIUS}px`,
-        overflow: "hidden",
-        ...isVertical(direction) ? {
-          transform: `scale(${getScale()}) translate3d(0, calc(env(safe-area-inset-top) + 14px), 0)`,
-          transformOrigin: "top"
-        } : {
-          transform: `scale(${getScale()}) translate3d(calc(env(safe-area-inset-top) + 14px), 0, 0)`,
-          transformOrigin: "left"
-        },
-        transitionProperty: "transform, border-radius",
-        transitionDuration: `${TRANSITIONS.DURATION}s`,
-        transitionTimingFunction: `cubic-bezier(${TRANSITIONS.EASE.join(",")})`
-      }, true);
-    }
-  }
-  function cancelDrag() {
-    if (!isDragging || !drawerRef.current) return;
-    drawerRef.current.classList.remove(DRAG_CLASS);
-    isAllowedToDrag.current = false;
-    setIsDragging(false);
-    dragEndTime.current = /* @__PURE__ */ new Date();
-  }
-  function onRelease(event) {
-    if (!isDragging || !drawerRef.current) return;
-    drawerRef.current.classList.remove(DRAG_CLASS);
-    isAllowedToDrag.current = false;
-    setIsDragging(false);
-    dragEndTime.current = /* @__PURE__ */ new Date();
-    const swipeAmount = getTranslate(drawerRef.current, direction);
-    if (!event || !shouldDrag(event.target, false) || !swipeAmount || Number.isNaN(swipeAmount)) return;
-    if (dragStartTime.current === null) return;
-    const timeTaken = dragEndTime.current.getTime() - dragStartTime.current.getTime();
-    const distMoved = pointerStart.current - (isVertical(direction) ? event.pageY : event.pageX);
-    const velocity = Math.abs(distMoved) / timeTaken;
-    if (velocity > 0.05) {
-      setJustReleased(true);
-      setTimeout(() => {
-        setJustReleased(false);
-      }, 200);
-    }
-    if (snapPoints) {
-      const directionMultiplier = direction === "bottom" || direction === "right" ? 1 : -1;
-      onReleaseSnapPoints({
-        draggedDistance: distMoved * directionMultiplier,
-        closeDrawer,
-        velocity,
-        dismissible
-      });
-      onReleaseProp == null ? void 0 : onReleaseProp(event, true);
-      return;
-    }
-    if (direction === "bottom" || direction === "right" ? distMoved > 0 : distMoved < 0) {
-      resetDrawer();
-      onReleaseProp == null ? void 0 : onReleaseProp(event, true);
-      return;
-    }
-    if (velocity > VELOCITY_THRESHOLD) {
-      closeDrawer();
-      onReleaseProp == null ? void 0 : onReleaseProp(event, false);
-      return;
-    }
-    var _drawerRef_current_getBoundingClientRect_height;
-    const visibleDrawerHeight = Math.min((_drawerRef_current_getBoundingClientRect_height = drawerRef.current.getBoundingClientRect().height) != null ? _drawerRef_current_getBoundingClientRect_height : 0, window.innerHeight);
-    var _drawerRef_current_getBoundingClientRect_width;
-    const visibleDrawerWidth = Math.min((_drawerRef_current_getBoundingClientRect_width = drawerRef.current.getBoundingClientRect().width) != null ? _drawerRef_current_getBoundingClientRect_width : 0, window.innerWidth);
-    const isHorizontalSwipe = direction === "left" || direction === "right";
-    if (Math.abs(swipeAmount) >= (isHorizontalSwipe ? visibleDrawerWidth : visibleDrawerHeight) * closeThreshold) {
-      closeDrawer();
-      onReleaseProp == null ? void 0 : onReleaseProp(event, false);
-      return;
-    }
-    onReleaseProp == null ? void 0 : onReleaseProp(event, true);
-    resetDrawer();
-  }
-  React__default__namespace.default.useEffect(() => {
-    if (isOpen) {
-      set(document.documentElement, {
-        scrollBehavior: "auto"
-      });
-      openTime.current = /* @__PURE__ */ new Date();
-    }
-    return () => {
-      reset2(document.documentElement, "scrollBehavior");
-    };
-  }, [
-    isOpen
-  ]);
-  function onNestedOpenChange(o2) {
-    const scale2 = o2 ? (window.innerWidth - NESTED_DISPLACEMENT) / window.innerWidth : 1;
-    const initialTranslate = o2 ? -NESTED_DISPLACEMENT : 0;
-    if (nestedOpenChangeTimer.current) {
-      window.clearTimeout(nestedOpenChangeTimer.current);
-    }
-    set(drawerRef.current, {
-      transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
-      transform: isVertical(direction) ? `scale(${scale2}) translate3d(0, ${initialTranslate}px, 0)` : `scale(${scale2}) translate3d(${initialTranslate}px, 0, 0)`
-    });
-    if (!o2 && drawerRef.current) {
-      nestedOpenChangeTimer.current = setTimeout(() => {
-        const translateValue = getTranslate(drawerRef.current, direction);
-        set(drawerRef.current, {
-          transition: "none",
-          transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
-        });
-      }, 500);
-    }
-  }
-  function onNestedDrag(_event, percentageDragged) {
-    if (percentageDragged < 0) return;
-    const initialScale = (window.innerWidth - NESTED_DISPLACEMENT) / window.innerWidth;
-    const newScale = initialScale + percentageDragged * (1 - initialScale);
-    const newTranslate = -NESTED_DISPLACEMENT + percentageDragged * NESTED_DISPLACEMENT;
-    set(drawerRef.current, {
-      transform: isVertical(direction) ? `scale(${newScale}) translate3d(0, ${newTranslate}px, 0)` : `scale(${newScale}) translate3d(${newTranslate}px, 0, 0)`,
-      transition: "none"
-    });
-  }
-  function onNestedRelease(_event, o2) {
-    const dim = isVertical(direction) ? window.innerHeight : window.innerWidth;
-    const scale2 = o2 ? (dim - NESTED_DISPLACEMENT) / dim : 1;
-    const translate2 = o2 ? -NESTED_DISPLACEMENT : 0;
-    if (o2) {
-      set(drawerRef.current, {
-        transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
-        transform: isVertical(direction) ? `scale(${scale2}) translate3d(0, ${translate2}px, 0)` : `scale(${scale2}) translate3d(${translate2}px, 0, 0)`
-      });
-    }
-  }
-  React__default__namespace.default.useEffect(() => {
-    if (!modal) {
-      window.requestAnimationFrame(() => {
-        document.body.style.pointerEvents = "auto";
-      });
-    }
-  }, [
-    modal
-  ]);
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Root, {
-    defaultOpen,
-    onOpenChange: (open) => {
-      if (!dismissible && !open) return;
-      if (open) {
-        setHasBeenOpened(true);
-      } else {
-        closeDrawer(true);
-      }
-      setIsOpen(open);
-    },
-    open: isOpen
-  }, /* @__PURE__ */ React__default__namespace.default.createElement(DrawerContext.Provider, {
-    value: {
-      activeSnapPoint,
-      snapPoints,
-      setActiveSnapPoint,
-      drawerRef,
-      overlayRef,
-      onOpenChange,
-      onPress,
-      onRelease,
-      onDrag,
-      dismissible,
-      shouldAnimate,
-      handleOnly,
-      isOpen,
-      isDragging,
-      shouldFade,
-      closeDrawer,
-      onNestedDrag,
-      onNestedOpenChange,
-      onNestedRelease,
-      keyboardIsOpen,
-      modal,
-      snapPointsOffset,
-      activeSnapPointIndex,
-      direction,
-      shouldScaleBackground,
-      setBackgroundColorOnScale,
-      noBodyStyles,
-      container,
-      autoFocus
-    }
-  }, children));
-}
-var Overlay2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ ...rest }, ref) {
-  const { overlayRef, snapPoints, onRelease, shouldFade, isOpen, modal, shouldAnimate } = useDrawerContext();
-  const composedRef = useComposedRefs2(ref, overlayRef);
-  const hasSnapPoints = snapPoints && snapPoints.length > 0;
-  if (!modal) {
-    return null;
-  }
-  const onMouseUp = React__default__namespace.default.useCallback((event) => onRelease(event), [
-    onRelease
-  ]);
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Overlay, {
-    onMouseUp,
-    ref: composedRef,
-    "data-vaul-overlay": "",
-    "data-vaul-snap-points": isOpen && hasSnapPoints ? "true" : "false",
-    "data-vaul-snap-points-overlay": isOpen && shouldFade ? "true" : "false",
-    "data-vaul-animate": (shouldAnimate == null ? void 0 : shouldAnimate.current) ? "true" : "false",
-    ...rest
-  });
-});
-Overlay2.displayName = "Drawer.Overlay";
-var Content2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ onPointerDownOutside, style, onOpenAutoFocus, ...rest }, ref) {
-  const { drawerRef, onPress, onRelease, onDrag, keyboardIsOpen, snapPointsOffset, activeSnapPointIndex, modal, isOpen, direction, snapPoints, container, handleOnly, shouldAnimate, autoFocus } = useDrawerContext();
-  const [delayedSnapPoints, setDelayedSnapPoints] = React__default__namespace.default.useState(false);
-  const composedRef = useComposedRefs2(ref, drawerRef);
-  const pointerStartRef = React__default__namespace.default.useRef(null);
-  const lastKnownPointerEventRef = React__default__namespace.default.useRef(null);
-  const wasBeyondThePointRef = React__default__namespace.default.useRef(false);
-  const hasSnapPoints = snapPoints && snapPoints.length > 0;
-  useScaleBackground();
-  const isDeltaInDirection = (delta, direction2, threshold = 0) => {
-    if (wasBeyondThePointRef.current) return true;
-    const deltaY = Math.abs(delta.y);
-    const deltaX = Math.abs(delta.x);
-    const isDeltaX = deltaX > deltaY;
-    const dFactor = [
-      "bottom",
-      "right"
-    ].includes(direction2) ? 1 : -1;
-    if (direction2 === "left" || direction2 === "right") {
-      const isReverseDirection = delta.x * dFactor < 0;
-      if (!isReverseDirection && deltaX >= 0 && deltaX <= threshold) {
-        return isDeltaX;
-      }
-    } else {
-      const isReverseDirection = delta.y * dFactor < 0;
-      if (!isReverseDirection && deltaY >= 0 && deltaY <= threshold) {
-        return !isDeltaX;
-      }
-    }
-    wasBeyondThePointRef.current = true;
-    return true;
-  };
-  React__default__namespace.default.useEffect(() => {
-    if (hasSnapPoints) {
-      window.requestAnimationFrame(() => {
-        setDelayedSnapPoints(true);
-      });
-    }
-  }, []);
-  function handleOnPointerUp(event) {
-    pointerStartRef.current = null;
-    wasBeyondThePointRef.current = false;
-    onRelease(event);
-  }
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Content, {
-    "data-vaul-drawer-direction": direction,
-    "data-vaul-drawer": "",
-    "data-vaul-delayed-snap-points": delayedSnapPoints ? "true" : "false",
-    "data-vaul-snap-points": isOpen && hasSnapPoints ? "true" : "false",
-    "data-vaul-custom-container": container ? "true" : "false",
-    "data-vaul-animate": (shouldAnimate == null ? void 0 : shouldAnimate.current) ? "true" : "false",
-    ...rest,
-    ref: composedRef,
-    style: snapPointsOffset && snapPointsOffset.length > 0 ? {
-      "--snap-point-height": `${snapPointsOffset[activeSnapPointIndex != null ? activeSnapPointIndex : 0]}px`,
-      ...style
-    } : style,
-    onPointerDown: (event) => {
-      if (handleOnly) return;
-      rest.onPointerDown == null ? void 0 : rest.onPointerDown.call(rest, event);
-      pointerStartRef.current = {
-        x: event.pageX,
-        y: event.pageY
-      };
-      onPress(event);
-    },
-    onOpenAutoFocus: (e3) => {
-      onOpenAutoFocus == null ? void 0 : onOpenAutoFocus(e3);
-      if (!autoFocus) {
-        e3.preventDefault();
-      }
-    },
-    onPointerDownOutside: (e3) => {
-      onPointerDownOutside == null ? void 0 : onPointerDownOutside(e3);
-      if (!modal || e3.defaultPrevented) {
-        e3.preventDefault();
-        return;
-      }
-      if (keyboardIsOpen.current) {
-        keyboardIsOpen.current = false;
-      }
-    },
-    onFocusOutside: (e3) => {
-      if (!modal) {
-        e3.preventDefault();
-        return;
-      }
-    },
-    onPointerMove: (event) => {
-      lastKnownPointerEventRef.current = event;
-      if (handleOnly) return;
-      rest.onPointerMove == null ? void 0 : rest.onPointerMove.call(rest, event);
-      if (!pointerStartRef.current) return;
-      const yPosition = event.pageY - pointerStartRef.current.y;
-      const xPosition = event.pageX - pointerStartRef.current.x;
-      const swipeStartThreshold = event.pointerType === "touch" ? 10 : 2;
-      const delta = {
-        x: xPosition,
-        y: yPosition
-      };
-      const isAllowedToSwipe = isDeltaInDirection(delta, direction, swipeStartThreshold);
-      if (isAllowedToSwipe) onDrag(event);
-      else if (Math.abs(xPosition) > swipeStartThreshold || Math.abs(yPosition) > swipeStartThreshold) {
-        pointerStartRef.current = null;
-      }
-    },
-    onPointerUp: (event) => {
-      rest.onPointerUp == null ? void 0 : rest.onPointerUp.call(rest, event);
-      pointerStartRef.current = null;
-      wasBeyondThePointRef.current = false;
-      onRelease(event);
-    },
-    onPointerOut: (event) => {
-      rest.onPointerOut == null ? void 0 : rest.onPointerOut.call(rest, event);
-      handleOnPointerUp(lastKnownPointerEventRef.current);
-    },
-    onContextMenu: (event) => {
-      rest.onContextMenu == null ? void 0 : rest.onContextMenu.call(rest, event);
-      if (lastKnownPointerEventRef.current) {
-        handleOnPointerUp(lastKnownPointerEventRef.current);
-      }
-    }
-  });
-});
-Content2.displayName = "Drawer.Content";
-var LONG_HANDLE_PRESS_TIMEOUT = 250;
-var DOUBLE_TAP_TIMEOUT = 120;
-var Handle = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ preventCycle = false, children, ...rest }, ref) {
-  const { closeDrawer, isDragging, snapPoints, activeSnapPoint, setActiveSnapPoint, dismissible, handleOnly, isOpen, onPress, onDrag } = useDrawerContext();
-  const closeTimeoutIdRef = React__default__namespace.default.useRef(null);
-  const shouldCancelInteractionRef = React__default__namespace.default.useRef(false);
-  function handleStartCycle() {
-    if (shouldCancelInteractionRef.current) {
-      handleCancelInteraction();
-      return;
-    }
-    window.setTimeout(() => {
-      handleCycleSnapPoints();
-    }, DOUBLE_TAP_TIMEOUT);
-  }
-  function handleCycleSnapPoints() {
-    if (isDragging || preventCycle || shouldCancelInteractionRef.current) {
-      handleCancelInteraction();
-      return;
-    }
-    handleCancelInteraction();
-    if (!snapPoints || snapPoints.length === 0) {
-      if (!dismissible) {
-        closeDrawer();
-      }
-      return;
-    }
-    const isLastSnapPoint = activeSnapPoint === snapPoints[snapPoints.length - 1];
-    if (isLastSnapPoint && dismissible) {
-      closeDrawer();
-      return;
-    }
-    const currentSnapIndex = snapPoints.findIndex((point) => point === activeSnapPoint);
-    if (currentSnapIndex === -1) return;
-    const nextSnapPoint = snapPoints[currentSnapIndex + 1];
-    setActiveSnapPoint(nextSnapPoint);
-  }
-  function handleStartInteraction() {
-    closeTimeoutIdRef.current = window.setTimeout(() => {
-      shouldCancelInteractionRef.current = true;
-    }, LONG_HANDLE_PRESS_TIMEOUT);
-  }
-  function handleCancelInteraction() {
-    if (closeTimeoutIdRef.current) {
-      window.clearTimeout(closeTimeoutIdRef.current);
-    }
-    shouldCancelInteractionRef.current = false;
-  }
-  return /* @__PURE__ */ React__default__namespace.default.createElement("div", {
-    onClick: handleStartCycle,
-    onPointerCancel: handleCancelInteraction,
-    onPointerDown: (e3) => {
-      if (handleOnly) onPress(e3);
-      handleStartInteraction();
-    },
-    onPointerMove: (e3) => {
-      if (handleOnly) onDrag(e3);
-    },
-    // onPointerUp is already handled by the content component
-    ref,
-    "data-vaul-drawer-visible": isOpen ? "true" : "false",
-    "data-vaul-handle": "",
-    "aria-hidden": "true",
-    ...rest
-  }, /* @__PURE__ */ React__default__namespace.default.createElement("span", {
-    "data-vaul-handle-hitarea": "",
-    "aria-hidden": "true"
-  }, children));
-});
-Handle.displayName = "Drawer.Handle";
-function Portal3(props) {
-  const context = useDrawerContext();
-  const { container = context.container, ...portalProps } = props;
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Portal2, {
-    container,
-    ...portalProps
-  });
-}
-var Drawer = {
-  Root: Root2,
-  Content: Content2,
-  Overlay: Overlay2,
-  Portal: Portal3,
-  Title,
-  Description
-};
 registerPlugin(
   filepond_plugin_file_validate_size_esm_default,
   filepond_plugin_file_validate_type_esm_default,
@@ -22617,7 +22793,7 @@ var DEFAULT_COMPRESSION_OPTIONS = {
   useWebWorker: true,
   fileType: "image/webp"
 };
-var isImageType = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
+var isImageType2 = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
   (t2) => type?.toLowerCase().includes(t2)
 );
 var getFileExtension = (filename) => {
@@ -22641,7 +22817,7 @@ var FileItemRenderer = ({
   `${cdnUrl}/${file2.name}`;
   const ext = getFileExtension(file2.name);
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-item", children: [
-    file2.type === "image/reference" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-icon", style: { backgroundColor: "#eef2ff", color: "#4f46e5" }, children: /* @__PURE__ */ jsxRuntime.jsx(Code, { size: 20 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+    file2.type === "image/reference" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-icon", style: { backgroundColor: "#eef2ff", color: "#4f46e5" }, children: /* @__PURE__ */ jsxRuntime.jsx(Code, { size: 20 }) }) : isImageType2(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
       TecofPicture,
       {
         data: file2,
@@ -23125,7 +23301,7 @@ var UploadField = ({
                 onClick: () => toggleGalleryFile(file2),
                 children: [
                   selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(Check, { size: 12, strokeWidth: 3 }) }),
-                  isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+                  isImageType2(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
                     TecofPicture,
                     {
                       data: file2,
