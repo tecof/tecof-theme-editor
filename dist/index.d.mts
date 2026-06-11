@@ -228,7 +228,7 @@ declare class TecofApiClient {
     getCmsCollectionItems(collectionSlug: string, options?: {
         page?: number;
         limit?: number;
-        sort?: 'newest' | 'oldest';
+        sort?: 'newest' | 'oldest' | 'custom';
         locale?: string;
     }): Promise<ApiResponse<any>>;
     /** CDN base URL (defaults to apiUrl if not set) */
@@ -650,7 +650,7 @@ interface CmsCollectionFieldValue {
     /** Max items to fetch */
     limit?: number;
     /** Sort order */
-    sort?: 'newest' | 'oldest';
+    sort?: 'newest' | 'oldest' | 'custom';
     /** Field mapping: slotKey → CMS field shortcode */
     fieldMap?: Record<string, string>;
 }

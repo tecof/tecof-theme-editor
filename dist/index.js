@@ -286,15 +286,19 @@ var TecofApiClient = class {
    */
   async getCmsCollectionItems(collectionSlug, options) {
     try {
+      const body = {
+        page: options?.page || 1,
+        limit: options?.limit || 50,
+        locale: options?.locale
+      };
+      const sortValue = options?.sort || "custom";
+      if (sortValue !== "custom") {
+        body.sort = sortValue;
+      }
       const res2 = await fetch(`${this.apiUrl}/api/store/cms/collections/${encodeURIComponent(collectionSlug)}/items`, {
         method: "POST",
         headers: this.headers,
-        body: JSON.stringify({
-          page: options?.page || 1,
-          limit: options?.limit || 50,
-          sort: options?.sort || "newest",
-          locale: options?.locale
-        })
+        body: JSON.stringify(body)
       });
       return await res2.json();
     } catch (error2) {
@@ -24849,7 +24853,7 @@ var CmsCollectionField = ({
       collectionSlug: col.slug,
       collectionName: col.name,
       limit: value?.limit || defaultLimit,
-      sort: value?.sort || "newest",
+      sort: value?.sort || "custom",
       fieldMap: value?.fieldMap || {}
     });
     setDropdownOpen(false);
@@ -24998,7 +25002,17 @@ var CmsCollectionField = ({
             "button",
             {
               type: "button",
-              className: `tecof-cms-col-sort-btn ${(value.sort || "newest") === "newest" ? "active" : ""}`,
+              className: `tecof-cms-col-sort-btn ${(value.sort || "custom") === "custom" ? "active" : ""}`,
+              onClick: () => handleSortChange("custom"),
+              disabled: readOnly,
+              children: "\xD6zel S\u0131ralama"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntime.jsx(
+            "button",
+            {
+              type: "button",
+              className: `tecof-cms-col-sort-btn ${value.sort === "newest" ? "active" : ""}`,
               onClick: () => handleSortChange("newest"),
               disabled: readOnly,
               children: "Yeni\u2192Eski"

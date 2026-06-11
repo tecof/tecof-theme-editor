@@ -31,7 +31,7 @@ export interface CmsCollectionFieldValue {
   /** Max items to fetch */
   limit?: number;
   /** Sort order */
-  sort?: 'newest' | 'oldest';
+  sort?: 'newest' | 'oldest' | 'custom';
   /** Field mapping: slotKey → CMS field shortcode */
   fieldMap?: Record<string, string>;
 }
@@ -156,7 +156,7 @@ export const CmsCollectionField = ({
       collectionSlug: col.slug,
       collectionName: col.name,
       limit: value?.limit || defaultLimit,
-      sort: value?.sort || 'newest',
+      sort: value?.sort || 'custom',
       fieldMap: value?.fieldMap || {},
     });
     setDropdownOpen(false);
@@ -176,7 +176,7 @@ export const CmsCollectionField = ({
     });
   }, [value, defaultLimit]);
 
-  const handleSortChange = useCallback((sort: 'newest' | 'oldest') => {
+  const handleSortChange = useCallback((sort: 'newest' | 'oldest' | 'custom') => {
     if (!value) return;
     onChangeRef.current({ ...value, sort });
   }, [value]);
@@ -323,7 +323,15 @@ export const CmsCollectionField = ({
               <div className="tecof-cms-col-sort-btns">
                 <button
                   type="button"
-                  className={`tecof-cms-col-sort-btn ${(value.sort || 'newest') === 'newest' ? 'active' : ''}`}
+                  className={`tecof-cms-col-sort-btn ${(value.sort || 'custom') === 'custom' ? 'active' : ''}`}
+                  onClick={() => handleSortChange('custom')}
+                  disabled={readOnly}
+                >
+                  Özel Sıralama
+                </button>
+                <button
+                  type="button"
+                  className={`tecof-cms-col-sort-btn ${value.sort === 'newest' ? 'active' : ''}`}
                   onClick={() => handleSortChange('newest')}
                   disabled={readOnly}
                 >

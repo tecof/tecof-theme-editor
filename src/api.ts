@@ -272,18 +272,25 @@ export class TecofApiClient {
    */
   async getCmsCollectionItems(
     collectionSlug: string,
-    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; locale?: string }
+    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' | 'custom'; locale?: string }
   ): Promise<ApiResponse<any>> {
     try {
+      const body: Record<string, any> = {
+        page: options?.page || 1,
+        limit: options?.limit || 50,
+        locale: options?.locale,
+      };
+
+      // 'custom' uses backend default (order: 1) — don't send sort field
+      const sortValue = options?.sort || 'custom';
+      if (sortValue !== 'custom') {
+        body.sort = sortValue;
+      }
+
       const res = await fetch(`${this.apiUrl}/api/store/cms/collections/${encodeURIComponent(collectionSlug)}/items`, {
         method: 'POST',
         headers: this.headers,
-        body: JSON.stringify({
-          page: options?.page || 1,
-          limit: options?.limit || 50,
-          sort: options?.sort || 'newest',
-          locale: options?.locale,
-        }),
+        body: JSON.stringify(body),
       });
       return await res.json();
     } catch (error) {
