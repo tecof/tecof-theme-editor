@@ -31,7 +31,12 @@
         },
         "./puck.css": "./dist/puck.css",
         "./styles.css": "./dist/styles.css",
-        "./dist/styles.css": "./dist/styles.css"
+        "./dist/styles.css": "./dist/styles.css",
+        "./under-construction": {
+            "types": "./dist/components/UnderConstruction.d.ts",
+            "import": "./dist/components/UnderConstruction.mjs",
+            "require": "./dist/components/UnderConstruction.js"
+        }
     },
     "files": [
         "dist"
@@ -40,9 +45,9 @@
         "*.css"
     ],
     "scripts": {
-        "dev": "tsup src/index.ts --watch --dts --format esm,cjs",
+        "dev": "tsup --watch",
         "dev:preview": "vite --config playground/vite.config.ts",
-        "build": "tsup src/index.ts --dts --format esm,cjs && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
+        "build": "tsup && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
         "lint": "eslint .",
         "test": "vitest",
         "storybook": "storybook dev -p 6006",
