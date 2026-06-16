@@ -3,6 +3,7 @@ export { TecofProvider, useTecof } from './components/TecofProvider';
 export { TecofEditor } from './components/TecofEditor';
 export { TecofRender } from './components/TecofRender';
 export { TecofPicture } from './components/TecofPicture';
+export { UnderConstruction } from './components/UnderConstruction';
 
 /* ─── Custom Puck Fields ─── */
 export { LanguageField, createLanguageField } from './components/fields';

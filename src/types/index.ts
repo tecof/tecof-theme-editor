@@ -147,6 +147,7 @@ export interface MerchantInfoData {
   languages: string[];
   /** Default language code (e.g. "tr") */
   defaultLanguage: string;
+  isUnderConstruction?: boolean;
 }
 
 /* ─── Language Field Value ─── */

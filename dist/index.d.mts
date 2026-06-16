@@ -119,6 +119,7 @@ interface MerchantInfoData {
     languages: string[];
     /** Default language code (e.g. "tr") */
     defaultLanguage: string;
+    isUnderConstruction?: boolean;
 }
 interface LanguageFieldValue {
     code: string;
@@ -312,6 +313,15 @@ interface TecofPictureProps {
     imageProps?: Record<string, any>;
 }
 declare const TecofPicture: react.MemoExoticComponent<({ data, alt, size, loading, fill, style, imgStyle, className, imgClassName, width, height, usePlaceholder, blurDataURL, fancybox, fancyboxName, ImageComponent, imageProps, }: TecofPictureProps) => react_jsx_runtime.JSX.Element | null>;
+
+interface UnderConstructionProps {
+    title: string;
+    description: string;
+    subtitle?: string;
+    logoUrl?: string | null;
+    accentColor?: string;
+}
+declare const UnderConstruction: react__default.FC<UnderConstructionProps>;
 
 interface LanguageFieldProps {
     field: any;
@@ -736,4 +746,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UnderConstruction, UploadField, type UploadedFile, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
