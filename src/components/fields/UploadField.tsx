@@ -153,7 +153,7 @@ const FileItemRenderer = ({
   return (
     <div className="tecof-upload-file-item">
       {file.type === 'image/reference' ? (
-        <div className="tecof-upload-file-icon" style={{ backgroundColor: '#f4f4f5', color: '#18181b' }}>
+        <div className="tecof-upload-file-icon is-reference">
           <Code size={16} />
         </div>
       ) : isImageType(file.type) ? (
@@ -162,7 +162,6 @@ const FileItemRenderer = ({
           alt={file.meta?.originalName || file.name}
           size="thumbnail"
           className="tecof-upload-file-thumb"
-          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }}
         />
       ) : (
         <div className="tecof-upload-file-icon">
@@ -568,20 +567,20 @@ export const UploadField = ({
 
       {/* Reference Code Input Mode */}
       {showRefInput && (
-        <div className="tecof-upload-ref-section" style={{ background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e4e4e7', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '11px', fontWeight: 500, color: '#71717a' }}>Dinamik CMS Değişkeni</span>
-            <button type="button" onClick={() => setShowRefInput(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a1a1aa', padding: 0 }}>
+        <div className="tecof-upload-ref-section">
+          <div className="tecof-upload-ref-header">
+            <span className="tecof-upload-ref-title">Dinamik CMS Değişkeni</span>
+            <button type="button" onClick={() => setShowRefInput(false)} className="tecof-upload-ref-close" title="Kapat">
               <X size={12} />
             </button>
           </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="tecof-upload-ref-row">
             <input
               type="text"
               value={refCode}
               onChange={(e) => setRefCode(e.target.value)}
               placeholder="{{ data. }}"
-              style={{ flex: 1, padding: '6px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+              className="tecof-upload-ref-input"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -593,7 +592,7 @@ export const UploadField = ({
             <button
               type="button"
               onClick={handleAddRef}
-              style={{ padding: '0 10px', background: '#18181b', color: '#fff', fontSize: '11px', fontWeight: 500, borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+              className="tecof-upload-ref-add"
             >
               Ekle
             </button>

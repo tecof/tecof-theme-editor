@@ -6,7 +6,13 @@ export interface FrameProps extends React.IframeHTMLAttributes<HTMLIFrameElement
   children: React.ReactNode;
 }
 
-export const Frame = ({ children, title = 'Canvas Frame', ...props }: FrameProps) => {
+export const Frame = ({
+  children,
+  title = 'Canvas Frame',
+  className,
+  style: _style,
+  ...props
+}: FrameProps) => {
   const [contentRef, setContentRef] = useState<HTMLIFrameElement | null>(null);
   const mountNode = contentRef?.contentWindow?.document?.body;
 
@@ -67,17 +73,22 @@ export const Frame = ({ children, title = 'Canvas Frame', ...props }: FrameProps
           background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-          background: rgba(0, 0, 0, 0.15);
-          border-radius: 4px;
+          background: var(--tecof-scrollbar-thumb);
+          border-radius: var(--tecof-radius-xs);
         }
         ::-webkit-scrollbar-thumb:hover {
-          background: rgba(0, 0, 0, 0.25);
+          background: var(--tecof-scrollbar-thumb-hover);
         }
       `;
       doc.head.appendChild(style);
     };
 
     copyStyles();
+
+    const observer = new MutationObserver(() => {
+      copyStyles();
+    });
+    observer.observe(document.head, { childList: true, subtree: true });
 
     // Set body attributes
     if (doc.body) {
@@ -94,9 +105,26 @@ export const Frame = ({ children, title = 'Canvas Frame', ...props }: FrameProps
         }
       };
 
+      const handleIframeKeyDown = (e: KeyboardEvent) => {
+        const event = new KeyboardEvent('keydown', {
+          key: e.key,
+          code: e.code,
+          ctrlKey: e.ctrlKey,
+          metaKey: e.metaKey,
+          shiftKey: e.shiftKey,
+          altKey: e.altKey,
+          bubbles: true
+        });
+        window.dispatchEvent(event);
+      };
+
       doc.body.addEventListener('click', handleBodyClick);
+      doc.addEventListener('keydown', handleIframeKeyDown);
+      
       return () => {
+        observer.disconnect();
         doc.body.removeEventListener('click', handleBodyClick);
+        doc.removeEventListener('keydown', handleIframeKeyDown);
       };
     }
   }, [contentRef]);
@@ -105,13 +133,7 @@ export const Frame = ({ children, title = 'Canvas Frame', ...props }: FrameProps
     <iframe
       title={title}
       ref={setContentRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        border: 'none',
-        background: '#ffffff',
-        ...props.style,
-      }}
+      className={['tecof-canvas-frame', className].filter(Boolean).join(' ')}
       {...props}
     >
       {mountNode && createPortal(children, mountNode)}

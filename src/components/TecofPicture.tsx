@@ -183,7 +183,7 @@ export const TecofPicture = memo(({
       <a
         data-fancybox={fancyboxName}
         href={fileURL}
-        style={{ display: 'block', textDecoration: 'none' }}
+        className="tecof-picture-link"
       >
         <div style={style} className={containerClassName}>
           {isVideoType ? renderVideo() : renderImg()}

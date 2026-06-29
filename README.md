@@ -1,15 +1,15 @@
 # @tecof/theme-editor
 
-Tecof platform için Puck CMS tabanlı **sayfa editörü**, **render motoru** ve **gelişmiş alan bileşenleri** kütüphanesi.
+Tecof platform için **sayfa editörü**, **render motoru** ve **gelişmiş alan bileşenleri** kütüphanesi.
 
-> API Client, Context Provider, Puck wrapper bileşenleri, çok dilli alan yöneticileri, medya yöneticisi, link seçici, resim görüntüleyici ve tema araçları içerir.
+> API Client, Context Provider, Tecof Studio editörü, çok dilli alan yöneticileri, medya yöneticisi, link seçici, resim görüntüleyici ve tema araçları içerir.
 
 ---
 
 ## Kurulum
 
 ```bash
-npm install @tecof/theme-editor @puckeditor/core react react-dom
+npm install @tecof/theme-editor react react-dom
 ```
 
 ## Hızlı Başlangıç
@@ -22,7 +22,6 @@ import { TecofProvider } from "@tecof/theme-editor";
 <TecofProvider
   apiUrl="https://api.example.com"
   secretKey="your-merchant-secret-key"
-  config={puckConfig}
 >
   {children}
 </TecofProvider>
@@ -33,10 +32,10 @@ import { TecofProvider } from "@tecof/theme-editor";
 ```tsx
 "use client";
 import { TecofEditor } from "@tecof/theme-editor";
-import { puckConfig } from "@/puck-config";
+import { tecofConfig } from "@/tecof-config";
 
 export default function EditorPage({ params }) {
-  return <TecofEditor pageId={params.id} />;
+  return <TecofEditor pageId={params.id} config={tecofConfig} />;
 }
 ```
 
@@ -45,11 +44,7 @@ export default function EditorPage({ params }) {
 ```tsx
 import { TecofRender } from "@tecof/theme-editor";
 
-// Slug ile otomatik fetch
-<TecofRender slug="home" />
-
-// Direkt data ile
-<TecofRender data={puckData} />
+<TecofRender data={pageData} config={tecofConfig} />
 ```
 
 ---
@@ -58,36 +53,37 @@ import { TecofRender } from "@tecof/theme-editor";
 
 ### `<TecofProvider />`
 
-Tüm Tecof bileşenlerini sarar, API client ve config context'i sağlar.
+Tüm Tecof bileşenlerini sarar ve API client context'i sağlar.
 
 | Prop | Tip | Açıklama |
 |------|-----|----------|
 | `apiUrl` | `string` | Backend API base URL |
 | `secretKey` | `string` | Merchant secret key |
-| `config` | `Config` | Puck component configuration |
 | `children` | `ReactNode` | Alt bileşenler |
 
 ### `<TecofEditor />`
 
-Puck wrapper — sayfa editörü. Otomatik fetch/save ve iframe postMessage desteği.
+Tecof Studio sayfa editörü. Otomatik fetch/save, iframe postMessage desteği, canvas DnD, katman paneli ve inspector içerir.
 
 | Prop | Tip | Açıklama |
 |------|-----|----------|
 | `pageId` | `string` | Düzenlenecek sayfa ID'si |
+| `config` | `Config` | Tecof/Puck-compatible component configuration |
+| `accessToken` | `string` | Kayıt isteklerinde Authorization header |
 | `onSave` | `(data) => void` | Kayıt sonrası callback |
-| `onPublish` | `(data) => void` | Yayınlama sonrası callback |
 | `onChange` | `(data) => void` | Her değişiklikte callback |
-| `overrides` | `object` | Puck UI override'ları |
+| `className` | `string` | Ek CSS sınıfı |
 
 ### `<TecofRender />`
 
-Yayınlanmış sayfaları render eder.
+Önceden yüklenmiş sayfa verisini render eder. Fetch akışı için `TecofApiClient.getPublishedPage(slug, locale?)` kullanılıp dönen `draftData`/sayfa verisi bu bileşene verilir.
 
 | Prop | Tip | Açıklama |
 |------|-----|----------|
-| `slug` | `string` | Sayfa slug'ı (otomatik fetch) |
-| `data` | `PuckPageData` | Direkt puck data (fetch yapmaz) |
-| `fallback` | `ReactNode` | Yükleme sırasında gösterilen bileşen |
+| `data` | `PuckPageData` | Sayfa verisi |
+| `config` | `Config` | Tecof/Puck-compatible component configuration |
+| `cmsData` | `object` | CMS template sayfaları için ham kayıt verisi |
+| `className` | `string` | Ek CSS sınıfı |
 
 ### `<TecofPicture />`
 
@@ -126,9 +122,9 @@ import Image from "next/image";
 
 ---
 
-## Custom Fields (Puck Alanları)
+## Custom Fields (Editör Alanları)
 
-Tüm alanlar `createXField()` factory fonksiyonları ile Puck config'e entegre edilir.
+Tüm alanlar `createXField()` factory fonksiyonları ile Tecof/Puck-compatible config'e entegre edilir.
 
 ### LanguageField — Çok Dilli Metin
 
@@ -325,7 +321,7 @@ Tüm `create*Field()` factory fonksiyonları aşağıdaki ortak seçenekleri des
 
 | Option | Tip | Açıklama |
 |--------|-----|----------|
-| `label` | `string` | Puck sidebar'da görünen alan etiketi |
+| `label` | `string` | Inspector'da görünen alan etiketi |
 | `labelIcon` | `ReactElement` | Etiketin yanında gösterilen ikon (ör: Lucide) |
 | `visible` | `boolean` | Alanın sidebar'da görünür olup olmadığı |
 
@@ -422,6 +418,7 @@ import {
 
 ```ts
 // Parent → Editor
+iframe.postMessage({ type: "puck:save" }, "*");
 iframe.postMessage({ type: "puck:publish" }, "*");
 iframe.postMessage({ type: "puck:undo" }, "*");
 iframe.postMessage({ type: "puck:redo" }, "*");
@@ -429,8 +426,9 @@ iframe.postMessage({ type: "puck:viewport", width: "375px" }, "*");
 
 // Editor → Parent
 window.addEventListener("message", (e) => {
-  if (e.data.type === "puck:save") { /* değişiklik var */ }
-  if (e.data.type === "puck:saved") { /* başarıyla kaydedildi */ }
+  if (e.data.type === "puck:changed") { /* değişiklik var */ }
+  if (e.data.type === "puck:saved") { /* başarıyla kaydedildi, e.data.data güncel draft */ }
+  if (e.data.type === "puck:saveError") { /* kayıt hatası */ }
 });
 ```
 
@@ -441,6 +439,8 @@ window.addEventListener("message", (e) => {
 Kütüphane %100 oranında izole bir CSS altyapısı sunar. Önceden kullanılan inline "CSS-in-JS" tarzı sabit tasarımlar kaldırılmış, field modüllerine ait tüm UI stilleri (EditorField, LinkField, UploadField vs.) merkezi `dist/styles.css` içerisine taşınmıştır.
 
 Tasarım çakışmalarını önlemek için kütüphanenin sunduğu tüm CSS sınıfları sadece `.tecof-[component]-[element]` (örnek: `.tecof-upload-file-list`) ön ekini kullanır. `:root` altındaki renk değişkenlerinden (örn: `--tecof-primary-500`) beslenir.
+
+Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, inspector ve field loader'ları `src/styles.css` içindeki lime-green accent token'larını ve skeleton primitive'lerini kullanır. Inline style yalnızca gerçek runtime değerleri için bırakılır (örn. seçili node overlay koordinatı, layer indent CSS değişkeni, kullanıcı renk swatch'ı veya dışarıdan gelen render style prop'u).
 
 Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
 

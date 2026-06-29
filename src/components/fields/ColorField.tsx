@@ -182,7 +182,7 @@ export const ColorField = ({
         {/* Color Swatch with native picker */}
         <div
           className={`tecof-color-swatch ${focused ? 'focused' : ''}`}
-          style={{ background: isValid && currentColor ? currentColor : '#ffffff' }}
+          style={{ background: isValid && currentColor ? currentColor : 'var(--tecof-surface)' }}
         >
           {!readOnly && (
             <input

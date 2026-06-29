@@ -237,7 +237,7 @@ const TipTapInstance = ({
     extensions: createExtensions(),
     content: content || '',
     editable: !readOnly,
-    onUpdate: ({ editor: ed }) => {
+    onUpdate: ({ editor: ed }: { editor: { getHTML: () => string } }) => {
       if (isMountedRef.current) {
         onUpdate(ed.getHTML());
       }

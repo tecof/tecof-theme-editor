@@ -151,7 +151,7 @@ export const MediaDrawer = ({
 
             {/* Search */}
             <div className="tecof-upload-search-box">
-              <Search size={15} color="#a1a1aa" />
+              <Search size={15} className="tecof-icon-muted" />
               <input
                 type="text"
                 placeholder="Dosya ara..."
@@ -172,16 +172,18 @@ export const MediaDrawer = ({
 
             {/* Gallery Grid */}
             {loading ? (
-              <div className="tecof-upload-gallery-empty">
-                <div className="tecof-upload-gallery-empty-icon">
-                  <RefreshCcw size={24} color="#a1a1aa" className="tecof-upload-spin" />
-                </div>
-                <p className="tecof-upload-loading-text">Yükleniyor...</p>
+              <div className="tecof-media-skeleton-grid" aria-busy="true">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div className="tecof-media-skeleton-card" key={index}>
+                    <span className="tecof-skeleton tecof-skeleton-block tecof-media-skeleton-thumb" />
+                    <span className="tecof-skeleton tecof-skeleton-text w-80" />
+                  </div>
+                ))}
               </div>
             ) : filteredGallery.length === 0 ? (
               <div className="tecof-upload-gallery-empty">
                 <div className="tecof-upload-gallery-empty-icon">
-                  <ImageIcon size={24} color="#a1a1aa" />
+                  <ImageIcon size={24} className="tecof-icon-muted" />
                 </div>
                 <p className="tecof-upload-empty-heading">
                   {gallerySearch ? 'Sonuç bulunamadı' : 'Henüz dosya yok'}
@@ -211,11 +213,10 @@ export const MediaDrawer = ({
                           alt={file.name}
                           size="thumbnail"
                           className="tecof-upload-gallery-thumb"
-                          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                         />
                       ) : (
                         <div className="tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap">
-                          <FileIcon size={24} color="#a1a1aa" />
+                          <FileIcon size={24} className="tecof-icon-muted" />
                         </div>
                       )}
                       <p className="tecof-upload-gallery-file-name">

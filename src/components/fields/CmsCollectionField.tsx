@@ -7,7 +7,6 @@ import {
   ChevronDown,
   Database,
   Link2,
-  Loader2,
   RefreshCw,
   Search,
   X,
@@ -204,9 +203,9 @@ export const CmsCollectionField = ({
   /* ── Loading ── */
   if (loading) {
     return (
-      <div className="tecof-cms-col-loading">
-        <Loader2 size={16} className="tecof-spin" />
-        <span>Koleksiyonlar yükleniyor…</span>
+      <div className="tecof-cms-col-loading tecof-field-loading-compact" aria-busy="true">
+        <span className="tecof-skeleton tecof-skeleton-circle" />
+        <span className="tecof-skeleton tecof-skeleton-text w-60" />
       </div>
     );
   }

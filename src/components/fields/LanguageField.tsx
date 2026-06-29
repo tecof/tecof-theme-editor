@@ -44,10 +44,15 @@ export const LanguageTabBar = ({
 /* ─── Loading Indicator ─── */
 
 export const FieldLoading = () => (
-  <div className="tecof-lang-loading">
-    <span className="tecof-lang-loading-dot" />
-    <span className="tecof-lang-loading-dot" />
-    <span className="tecof-lang-loading-dot" />
+  <div className="tecof-field-loading" aria-busy="true">
+    <div className="tecof-field-loading-row">
+      <span className="tecof-skeleton tecof-skeleton-circle tecof-field-loading-thumb" />
+      <div className="tecof-field-loading-lines">
+        <span className="tecof-skeleton tecof-skeleton-text w-60" />
+        <span className="tecof-skeleton tecof-skeleton-text sm w-80" />
+      </div>
+    </div>
+    <span className="tecof-skeleton tecof-skeleton-block tecof-studio-skeleton-field" />
   </div>
 );
 

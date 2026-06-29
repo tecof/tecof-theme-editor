@@ -18,45 +18,17 @@ export const FieldLabel = ({
   const Component = el;
 
   return (
-    <Component
-      className="tecof-field-label-container"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-        marginBottom: '16px',
-        width: '100%',
-        boxSizing: 'border-box',
-        userSelect: 'none',
-      }}
-    >
-      <div
-        className="tecof-field-label-header"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '12px',
-          fontWeight: 600,
-          color: '#27272a', // zinc-800
-        }}
-      >
-        {icon && <span style={{ display: 'inline-flex' }}>{icon}</span>}
+    <Component className="tecof-field-label-container">
+      <div className="tecof-field-label-header">
+        {icon && <span className="tecof-field-label-icon">{icon}</span>}
         <span>{label}</span>
         {readOnly && (
-          <span
-            style={{
-              fontSize: '10px',
-              color: '#a1a1aa',
-              fontWeight: 400,
-              marginLeft: 'auto',
-            }}
-          >
+          <span className="tecof-field-label-readonly">
             Salt Okunur
           </span>
         )}
       </div>
-      <div className="tecof-field-label-content" style={{ width: '100%' }}>
+      <div className="tecof-field-label-content">
         {children}
       </div>
     </Component>

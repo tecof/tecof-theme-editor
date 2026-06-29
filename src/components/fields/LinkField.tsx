@@ -207,7 +207,7 @@ export const LinkField = ({
             {activeValue.type === 'page' ? 'Sayfa' : 'Link'}
           </span>
           {activeValue.target === '_blank' && (
-            <ExternalLink size={14} color="#a1a1aa" />
+            <ExternalLink size={14} className="tecof-icon-muted" />
           )}
           {!readOnly && (
             <>
@@ -295,7 +295,7 @@ export const LinkField = ({
 
             {/* Search */}
             <div className="tecof-link-search-box">
-              <Search size={16} color="#a1a1aa" />
+              <Search size={16} className="tecof-icon-muted" />
               <input
                 type="text"
                 placeholder="Sayfa ara..."
@@ -307,8 +307,16 @@ export const LinkField = ({
 
             {/* Pages List */}
             {loading ? (
-              <div className="tecof-text-center tecof-p-40 tecof-text-muted">
-                Yükleniyor...
+              <div className="tecof-field-loading" aria-busy="true">
+                {[0, 1, 2].map((item) => (
+                  <div className="tecof-field-loading-row" key={item}>
+                    <span className="tecof-skeleton tecof-skeleton-circle tecof-field-loading-thumb" />
+                    <div className="tecof-field-loading-lines">
+                      <span className="tecof-skeleton tecof-skeleton-text w-60" />
+                      <span className="tecof-skeleton tecof-skeleton-text sm w-80" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredPages.length === 0 ? (
               <div className="tecof-text-center tecof-p-40 tecof-text-muted">
@@ -331,7 +339,7 @@ export const LinkField = ({
                           <p className="tecof-link-page-title">{page.title}</p>
                         )}
                       </div>
-                      <ChevronRight size={16} color="#d4d4d8" />
+                      <ChevronRight size={16} className="tecof-icon-faint" />
                     </div>
                   );
                 })}

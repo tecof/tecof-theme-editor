@@ -90,7 +90,7 @@ interface TecofProviderProps {
 interface TecofEditorProps {
     /** Page ID to load and edit */
     pageId: string;
-    /** Puck component configuration (Config from @puckeditor/core) */
+    /** Tecof/Puck-compatible component configuration */
     config: any;
     /** Access token for save operations (sent as Authorization header) */
     accessToken?: string;
@@ -98,17 +98,17 @@ interface TecofEditorProps {
     onSave?: (data: PuckPageData) => void;
     /** Called on every editor change */
     onChange?: (data: PuckPageData) => void;
-    /** Puck UI overrides */
+    /** Legacy editor UI overrides (reserved, currently ignored by TecofStudio) */
     overrides?: Record<string, any>;
-    /** Additional Puck plugins */
+    /** Additional editor plugins (reserved for host integrations) */
     plugins?: any[];
     /** Additional class name */
     className?: string;
 }
 interface TecofRenderProps {
-    /** Pre-fetched puck data */
+    /** Pre-fetched page data */
     data: PuckPageData;
-    /** Puck component configuration (Config from @puckeditor/core) */
+    /** Tecof/Puck-compatible component configuration */
     config: any;
     /** Additional class name */
     className?: string;
@@ -246,35 +246,18 @@ interface TecofContextValue {
 declare const TecofProvider: ({ apiUrl, secretKey, cdnUrl, children }: TecofProviderProps) => react_jsx_runtime.JSX.Element;
 declare function useTecof(): TecofContextValue;
 
-/**
- * TecofEditor — Puck CMS page editor.
- *
- * - Fetches page by ID via secretKey auth
- * - Saves draft via API (taslak kaydet)
- * - Supports iframe postMessage:
- *   - puck:save       → triggers draft save
- *   - puck:undo       → undo
- *   - puck:redo       → redo
- *   - puck:viewport   → resize preview
- * - Sends to parent:
- *   - puck:saved      → draft saved successfully
- *   - puck:changed    → data changed
- *   - puck:itemSelected → item selected { item, id }
- *
- * Requires `<TecofProvider>` ancestor for API client.
- */
-declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, overrides, plugins: extraPlugins, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
+declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
 declare const TecofStudio: ({ pageId, config, accessToken, onSave, onChange, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
 /**
- * TecofRender — Puck page renderer.
+ * TecofRender — Puck-compatible native page renderer.
  *
- * Pass `data` (PuckPageData) and `config` (Puck Config) directly.
+ * Pass `data` (PuckPageData-compatible page data) and Tecof component `config` directly.
  * Optionally pass `cmsData` to make CMS item data available to all
- * Puck components via `puck.metadata.cmsData`.
+ * components via `puck.metadata.cmsData`.
  *
- * No API fetch, no provider required.
+ * No API fetch, no provider required, zero @puckeditor/core dependency.
  */
 declare const TecofRender: ({ data, config, className, cmsData }: TecofRenderProps) => react_jsx_runtime.JSX.Element | null;
 

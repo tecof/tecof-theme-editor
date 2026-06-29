@@ -1,5 +1,5 @@
 import type { TecofDocument, TecofNode } from '../types';
-import { findNodeById, getDescendantZoneKeys } from './zones';
+import { findNodeById, getDescendantZoneKeys, parseZoneKey } from './zones';
 import { remapNodeIds, generateId } from './ids';
 
 /**
@@ -59,6 +59,14 @@ export const moveNode = (
   const { node, path: sourcePath } = result;
   const sourceList = sourcePath.zoneKey ? draft.zones[sourcePath.zoneKey] : draft.content;
   let targetList = targetZoneKey ? draft.zones[targetZoneKey] : draft.content;
+
+  if (targetZoneKey) {
+    const targetParentId = parseZoneKey(targetZoneKey).parentId;
+    const descendantZoneKeys = getDescendantZoneKeys(draft.zones, id);
+    if (targetParentId === id || descendantZoneKeys.includes(targetZoneKey)) {
+      return;
+    }
+  }
 
   if (!targetList && targetZoneKey) {
     targetList = [];

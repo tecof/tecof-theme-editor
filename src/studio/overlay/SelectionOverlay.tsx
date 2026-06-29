@@ -10,6 +10,14 @@ interface Coords {
   height: number;
 }
 
+const getOutlineStyle = (coords: Coords) =>
+  ({
+    '--tecof-outline-top': `${coords.top}px`,
+    '--tecof-outline-left': `${coords.left}px`,
+    '--tecof-outline-width': `${coords.width}px`,
+    '--tecof-outline-height': `${coords.height}px`,
+  }) as React.CSSProperties;
+
 const useOverlayCoords = (
   id: string | null,
   iframeEl: HTMLIFrameElement | null,
@@ -60,7 +68,7 @@ const useOverlayCoords = (
     updateCoords();
 
     const iframeWin = iframeEl.contentWindow;
-    
+
     // Watch iframe resize
     resizeObserver = new ResizeObserver(() => {
       updateCoords();
@@ -97,7 +105,7 @@ export const SelectionOverlay = () => {
 
   // Retrieve elements on mount / change
   useEffect(() => {
-    const iframe = document.querySelector('.tecof-canvas-viewport-wrapper iframe') as HTMLIFrameElement;
+    const iframe = document.querySelector('.tecof-canvas-viewport iframe') as HTMLIFrameElement;
     setIframeEl(iframe);
   }, [documentState]);
 
@@ -132,154 +140,76 @@ export const SelectionOverlay = () => {
   return (
     <div
       ref={containerRef}
-      className="tecof-selection-overlay-container"
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        pointerEvents: 'none',
-        zIndex: 1000,
-      }}
+      className="tecof-overlay"
     >
       {/* Hover Highlight */}
       {hoveredCoords && (
         <div
-          className="tecof-hover-outline"
-          style={{
-            position: 'absolute',
-            top: hoveredCoords.top,
-            left: hoveredCoords.left,
-            width: hoveredCoords.width,
-            height: hoveredCoords.height,
-            border: '1.5px dashed #3b82f6',
-            borderRadius: '4px',
-            boxSizing: 'border-box',
-            pointerEvents: 'none',
-            transition: 'all 0.1s ease-out',
-          }}
+          className="tecof-outline is-hover"
+          style={getOutlineStyle(hoveredCoords)}
         />
       )}
 
       {/* Selection Box & Toolbar */}
       {selectedCoords && (
         <div
-          className="tecof-selected-outline"
-          style={{
-            position: 'absolute',
-            top: selectedCoords.top,
-            left: selectedCoords.left,
-            width: selectedCoords.width,
-            height: selectedCoords.height,
-            border: '2px solid #3b82f6',
-            borderRadius: '4px',
-            boxSizing: 'border-box',
-            pointerEvents: 'none',
-            transition: 'all 0.1s ease-out',
-          }}
+          className="tecof-outline is-selected"
+          style={getOutlineStyle(selectedCoords)}
         >
           {/* Floating Toolbar */}
-          <div
-            className="tecof-floating-toolbar"
-            style={{
-              position: 'absolute',
-              top: '-36px',
-              right: '-2px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: '#3b82f6',
-              borderRadius: '6px',
-              padding: '4px',
-              pointerEvents: 'auto',
-              boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.2)',
-            }}
-          >
+          <div className="tecof-toolbar">
             {parentId && (
               <button
+                type="button"
                 onClick={() => selectNode(parentId)}
                 title="Üst Öğeyi Seç"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '4px',
-                  display: 'flex',
-                }}
+                className="tecof-toolbar-btn"
+                aria-label="Üst öğeyi seç"
               >
                 <ChevronUp size={14} />
               </button>
             )}
 
             <button
+              type="button"
               onClick={() => handleMove('up')}
               disabled={!canMoveUp}
               title="Yukarı Taşı"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#ffffff',
-                opacity: canMoveUp ? 1 : 0.5,
-                cursor: canMoveUp ? 'pointer' : 'not-allowed',
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-              }}
+              className="tecof-toolbar-btn"
+              aria-label="Yukarı taşı"
             >
               <ArrowUp size={14} />
             </button>
 
             <button
+              type="button"
               onClick={() => handleMove('down')}
               disabled={!canMoveDown}
               title="Aşağı Taşı"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#ffffff',
-                opacity: canMoveDown ? 1 : 0.5,
-                cursor: canMoveDown ? 'pointer' : 'not-allowed',
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-              }}
+              className="tecof-toolbar-btn"
+              aria-label="Aşağı taşı"
             >
               <ArrowDown size={14} />
             </button>
 
-            <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.3)', margin: '0 2px' }} />
+            <div className="tecof-toolbar-sep" />
 
             <button
+              type="button"
               onClick={() => duplicateNode(selectedId!)}
               title="Kopyala"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#ffffff',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-              }}
+              className="tecof-toolbar-btn"
+              aria-label="Kopyala"
             >
               <Copy size={14} />
             </button>
 
             <button
+              type="button"
               onClick={() => removeNode(selectedId!)}
               title="Sil"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#ffffff',
-                cursor: 'pointer',
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-              }}
+              className="tecof-toolbar-btn"
+              aria-label="Sil"
             >
               <Trash2 size={14} />
             </button>
@@ -287,55 +217,20 @@ export const SelectionOverlay = () => {
 
           {/* Component Tag Label */}
           {nodeDetails && (
-            <div
-              className="tecof-outline-label"
-              style={{
-                position: 'absolute',
-                top: '-26px',
-                left: '-2px',
-                background: '#3b82f6',
-                color: '#ffffff',
-                fontSize: '11px',
-                fontWeight: 600,
-                padding: '2px 8px',
-                borderRadius: '4px 4px 0 0',
-                userSelect: 'none',
-              }}
-            >
+            <div className="tecof-outline-label">
               {nodeDetails.node.type}
             </div>
           )}
 
           {/* Selected Node Breadcrumbs (Bottom overlay) */}
           {breadcrumbs.length > 1 && (
-            <div
-              className="tecof-selected-breadcrumbs"
-              style={{
-                position: 'absolute',
-                bottom: '-28px',
-                left: '-2px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                background: '#18181b',
-                color: '#a1a1aa',
-                fontSize: '10px',
-                padding: '4px 8px',
-                borderRadius: '0 0 6px 6px',
-                pointerEvents: 'auto',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-              }}
-            >
+            <div className="tecof-breadcrumbs">
               {breadcrumbs.map((crumb, idx) => (
                 <React.Fragment key={crumb.id}>
-                  {idx > 0 && <span style={{ color: '#52525b' }}>&gt;</span>}
+                  {idx > 0 && <span className="tecof-breadcrumb-sep">&gt;</span>}
                   <span
                     onClick={() => selectNode(crumb.id)}
-                    style={{
-                      cursor: 'pointer',
-                      color: crumb.id === selectedId ? '#ffffff' : undefined,
-                      fontWeight: crumb.id === selectedId ? 600 : undefined,
-                    }}
+                    className={`tecof-breadcrumb${crumb.id === selectedId ? ' is-active' : ''}`}
                     onMouseEnter={() => useEditorStore.getState().hoverNode(crumb.id)}
                     onMouseLeave={() => useEditorStore.getState().hoverNode(null)}
                   >

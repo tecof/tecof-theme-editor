@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useEditorStore } from '../store';
-import { parseDocument, serializeDocument, EMPTY_DOCUMENT } from '../document';
+import { createEmptyDocument, parseDocument, serializeDocument } from '../document';
 import { getParentId, getBreadcrumbs } from '../zones';
-import type { TecofDocument } from '../../types';
 
 describe('Tecof Studio Engine', () => {
   beforeEach(() => {
-    useEditorStore.getState().setDocument({ ...EMPTY_DOCUMENT });
+    useEditorStore.getState().setDocument(createEmptyDocument());
   });
 
   describe('Document Utilities', () => {
@@ -97,6 +96,21 @@ describe('Tecof Studio Engine', () => {
       expect(document.content[0].props.id).toBe('c');
       expect(document.content[1].props.id).toBe('a');
       expect(document.content[2].props.id).toBe('b');
+    });
+
+    it('should prevent moving a node into its own descendant zone', () => {
+      const { insertNode, moveNode } = useEditorStore.getState();
+
+      insertNode({ type: 'Container', props: { id: 'c1' } });
+      insertNode({ type: 'Row', props: { id: 'r1' } }, 'c1:content');
+      insertNode({ type: 'Button', props: { id: 'b1' } }, 'r1:items');
+
+      moveNode('c1', 'r1:items', 1);
+
+      const { document } = useEditorStore.getState();
+      expect(document.content.map((node) => node.props.id)).toEqual(['c1']);
+      expect(document.zones['c1:content'].map((node) => node.props.id)).toEqual(['r1']);
+      expect(document.zones['r1:items'].map((node) => node.props.id)).toEqual(['b1']);
     });
 
     it('should duplicate a node and remap inner zone ids', () => {

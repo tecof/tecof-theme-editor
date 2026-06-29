@@ -10,7 +10,7 @@ Sen, görsel sayfa editörleri (page builder) konusunda uzman bir **senior front
 
 Çalıştığın repo: `@tecof/theme-editor` — Tecof platformu için bir React kütüphanesi (NPM paketi olarak host uygulamaya export ediliyor).
 
-**Mevcut durum:** `TecofEditor` bileşeni içeride `@puckeditor/core`'un `<Puck>` editörünü sarıyor. Yani editör UI'ı tamamen Puck. Asıl değerli kısım ise **bizim yazdığımız parçalar:** custom field'lar, API client, iframe postMessage köprüsü ve `PuckPageData` veri modeli.
+**Mevcut durum:** `TecofEditor` artık in-house `TecofStudio` editörünü export ediyor. Canvas, inspector, layers, topbar, DnD helper'ları, custom field'lar, API client ve iframe postMessage köprüsü repo içinde yönetiliyor. Veri modeli geriye uyum için `PuckPageData` şeklini koruyor.
 
 **Hedef:** Puck'ın **editör arayüzünü** tamamen kaldırıp yerine Squarespace/Webflow tarzı **kendi editörümüzü** yazmak. Ama Puck'ın **veri yapısını ve mantığını korumak** — `@puckeditor/core` runtime'ına sıfır bağımlılık, ve veritabanındaki **eski sayfaların migration olmadan açılması.**
 
@@ -28,8 +28,8 @@ Bunlar müzakereye kapalı. İhlal eden kod reddedilir.
 
 1. **Veri sözleşmesi korunur.** Yeni editör, `src/types/index.ts` içindeki `PuckPageData` şeklini birebir okur/yazar. Yapı: `{ content, root, zones }`, her item `{ type, props }`, her prop'ta `id`. Bkz. §3.
 2. **Geriye dönük uyumluluk (lossless round-trip).** Var olan herhangi bir kayıtlı sayfa verisini yükle → editörde aç → tekrar serialize et işlemi **bilgi kaybı olmadan** çalışmalı. Tanımadığın prop/zone/alanı asla düşürme; aynen koru. Hiçbir migration script'i gerekmemeli.
-3. **Puck runtime bağımlılığı = SIFIR.** İş bittiğinde `@puckeditor/core` ne çalışma anında import edilmeli ne de `dependencies`/`peerDependencies`'te kalmalı. (Geçiş süresince paralel kalabilir — bkz. §8.) Şu an field'ların import ettiği `FieldLabel` ve Puck field prop tipleri için **kendi muadilini** yaz.
-4. **CSS konvansiyonu.** Tüm yeni stiller `src/styles.css` içinde, `.tecof-[component]-[element]` ön ekiyle (örn. `.tecof-canvas-overlay`). Inline style YASAK — istisna: gerçekten dinamik değerler (`style={{ background: userColor }}`). CSS module / CSS-in-JS yok. Mevcut `.agents/workflows/theme-editor-development.md` kurallarına uy.
+3. **Puck runtime bağımlılığı = SIFIR.** `@puckeditor/core` çalışma anında import edilmemeli ve `dependencies`/`peerDependencies`'te bulunmamalı. Field'lar in-house `FieldLabel` ve field-host sözleşmesiyle çalışır.
+4. **CSS konvansiyonu.** Tüm yeni stiller `src/styles.css` içinde, `.tecof-[component]-[element]` ön ekiyle (örn. `.tecof-canvas-overlay`). Inline style YASAK — istisna: gerçekten dinamik değerler (`style={{ background: userColor }}`) ve CSS değişkeniyle beslenen runtime geometri (`--tecof-outline-top`, `--tecof-layer-indent`). CSS module / CSS-in-JS yok. Mevcut `.agents/workflows/theme-editor-development.md` kurallarına uy.
 5. **Build-first.** Bu bir NPM paketi. `.tsx`/`.css` değişiklikleri `npm run build` ile derlenmeden aktif olmaz. Her faz sonunda `npm run lint` ve `npm run build` temiz geçmeli.
 6. **Mevcut public export'ları bozma.** `src/index.ts`'teki `TecofProvider`, `TecofRender`, `TecofPicture`, tüm `create*Field`, `TecofApiClient` ve util'ler imza koruyarak çalışmaya devam etmeli. Yeni editör ek bir export olarak gelir (bkz. §7), eskisini bir anda silmez.
 7. **Host entegrasyonu kırılmaz.** iframe postMessage protokolü (`puck:save`, `puck:undo`, `puck:redo`, `puck:viewport`, `puck:saved`, `puck:changed`, `puck:itemSelected`, `puck:itemDeselected`) aynen desteklenmeli ki host uygulama değişmeden çalışsın. (İçeride event isimlerini soyutla ama dışarıya aynı mesajları gönder.)
@@ -70,18 +70,18 @@ interface TecofDocument {
 
 | Dosya                                           | Ne işe yarıyor                                                                                                                                   | Yeni editörde rolü                                                                                                                                                                                                                                                        |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/components/TecofEditor.tsx`                | Puck wrapper, fetch/save, postMessage köprüsü, hover-preview drawer item                                                                         | **Referans.** Save/load akışı ve postMessage protokolü buradan birebir taşınacak. Editör UI'ı atılacak.                                                                                                                                                                   |
-| `src/components/TecofRender.tsx`                | Public render (`<Render>` wrapper)                                                                                                               | Render mantığı yeni canvas renderer'a örnek; runtime'dan Puck çıkarılacak.                                                                                                                                                                                                |
+| `src/components/TecofEditor.tsx`                | `TecofStudio` public export'u                                                                                                                    | **Korunacak public giriş.** Host uygulamalar bu import'u kullanmaya devam eder.                                                                                                                                                                                            |
+| `src/components/TecofRender.tsx`                | Public render                                                                                                                                    | Canvas ile aynı veri/config sözleşmesini kullanır; runtime'da Puck bağımlılığı yoktur.                                                                                                                                                                                     |
 | `src/components/TecofProvider.tsx`              | Context: API client + secretKey                                                                                                                  | **Aynen kullan**, gerekirse editör state'i için genişlet.                                                                                                                                                                                                                 |
 | `src/api.ts` (`TecofApiClient`)                 | getPage/savePage/getMerchantInfo/uploads/translate                                                                                               | **Aynen kullan.** Editör sadece bu client üzerinden veri alır/yazar.                                                                                                                                                                                                      |
-| `src/components/fields/*`                       | LanguageField, EditorField, UploadField, LinkField, ColorField, CodeEditorField, RepeaterField, CmsCollectionField + `create*Field` factory'leri | **Korunacak en kritik varlık.** Yeni inspector bunları render etmeli. Bunlar Puck'ın field prop sözleşmesini (`{ field, name, id, value, onChange, readOnly }`) ve `FieldLabel`'ı kullanıyor → bu sözleşmeyi sağlayan kendi field-host'unu ve `FieldLabel` muadilini yaz. |
+| `src/components/fields/*`                       | LanguageField, EditorField, UploadField, LinkField, ColorField, CodeEditorField, RepeaterField, CmsCollectionField + `create*Field` factory'leri | **Korunacak en kritik varlık.** Inspector bunları `{ field, name, id, value, onChange, readOnly }` sözleşmesiyle render eder.                                                                                                      |
 | `src/types/index.ts`                            | `PuckPageData`, field value tipleri, props tipleri                                                                                               | `TecofDocument`'ı buraya ekle; mevcut tipleri koru.                                                                                                                                                                                                                       |
 | `src/styles.css`                                | Tüm UI stilleri (2300+ satır)                                                                                                                    | Yeni editör stilleri buraya `.tecof-*` ile eklenir.                                                                                                                                                                                                                       |
 | `src/index.ts`                                  | Public API yüzeyi                                                                                                                                | Yeni editör export'u buraya eklenir; eskiler korunur.                                                                                                                                                                                                                     |
 | `.agents/workflows/theme-editor-development.md` | Katkı kuralları                                                                                                                                  | **Uy.**                                                                                                                                                                                                                                                                   |
 | `playground/App.tsx`                            | Mock API ile lokal demo                                                                                                                          | Yeni editörü test etmek için buraya bir demo sayfası ekle.                                                                                                                                                                                                                |
 
-**Önemli tespit:** Field bileşenleri `@puckeditor/core`'dan `FieldLabel` ve tip importları yapıyor. Puck'ı tamamen çıkarmak için bunların hepsinin in-house bir `FieldLabel` + field tipine taşınması gerekiyor. Bunu Faz 4'te planla.
+**Önemli tespit:** Field bileşenleri in-house `FieldLabel` ile çalışır. Yeni field eklerken Puck import'u ekleme; field-host sözleşmesini koru.
 
 ---
 
@@ -104,7 +104,7 @@ Implementasyon: `zustand` store + `immer` middleware (veya `useReducer + immer`)
 
 ### 5.2 Config Registry / Adapter
 
-Editör neyin sürüklenebilir, nasıl render edileceği ve hangi field'ları olduğunu config'ten okur. **Puck `Config` şekliyle uyumlu bir adapter yaz** ki host uygulamanın mevcut `puckConfig`'i değişmeden çalışsın:
+Editör neyin sürüklenebilir, nasıl render edileceği ve hangi field'ları olduğunu config'ten okur. **Tecof/Puck-compatible `Config` şekliyle uyumlu çalış** ki host uygulamanın mevcut component config'i migration'sız kullanılabilsin:
 
 ```ts
 interface TecofComponentConfig {
@@ -140,7 +140,7 @@ Webflow gibi, canvas **bir iframe içinde** render edilmeli — stil izolasyonu 
 1. **Kütüphaneden canvas'a:** sol panelden bir blok sürükleyip canvas'ta bir konuma/zone'a bırakma → `insertNode`.
 2. **Mevcut node'u taşıma/sıralama:** canvas içinde ve zone'lar arası taşıma → `moveNode`/`reorder`, iç içe (nested) destekli.
 
-Kullan: `@dnd-kit/core` + `@dnd-kit/sortable` (modern, erişilebilir, iframe ile çalışır; Puck'ın da geçtiği yol). Gereksinimler: drop indicator çizgisi, auto-scroll, nested zone hedefleme, geçersiz hedefte engelleme (örn. bir bileşeni kendi çocuğuna bırakma). iframe sınırını aşan DnD için pointer koordinat dönüşümünü doğru kur.
+Mevcut uygulama native HTML Drag & Drop üstünde ilerler ve ortak helper'ları kullanır: `src/studio/canvas/dndUtils.ts` drag MIME key'leri, default node yaratma, drag data okuma/yazma ve auto-scroll'u; `src/studio/canvas/dragGhost.ts` premium drag preview'ı yönetir. Gereksinimler: drop indicator çizgisi, auto-scroll, nested zone hedefleme, geçersiz hedefte engelleme (örn. bir bileşeni kendi çocuğuna bırakma). iframe sınırını aşan DnD için event'in geldiği document üzerinden scroll container seçilir.
 
 ### 5.5 Selection & Overlay Katmanı
 
@@ -183,7 +183,7 @@ Editörü Puck'tan ayıran kilit özellik: metni **doğrudan canvas üzerinde** 
 
 Engine event'lerini host'a aynı protokolle yansıt:
 
-- Parent→Editor: `puck:save` → save; `puck:undo`/`puck:redo` → history; `puck:viewport` → canvas genişliği.
+- Parent→Editor: `puck:save` / `puck:publish` → save; `puck:undo`/`puck:redo` → history; `puck:viewport` → canvas genişliği.
 - Editor→Parent: `puck:saved`, `puck:saveError`, `puck:changed`, `puck:itemSelected {type,id}`, `puck:itemDeselected`.
 - İçeride bu isimleri tek bir `bridge` modülünde soyutla (ileride yeniden adlandırmak kolay olsun), ama dışarı yayılan mesajlar şu an aynı kalsın.
 
@@ -191,7 +191,7 @@ Engine event'lerini host'a aynı protokolle yansıt:
 
 ## 6. Teknoloji Seçimleri
 
-- **DnD:** `@dnd-kit/core`, `@dnd-kit/sortable`.
+- **DnD:** Native HTML Drag & Drop + `src/studio/canvas/dndUtils.ts` + `dragGhost.ts`.
 - **State + history:** `zustand` + `immer` (veya gerekçelendirirsen `useReducer + immer`).
 - **iframe render:** `react-frame-component` veya hafif custom iframe + `createPortal`.
 - **ID üretimi:** `nanoid`.
@@ -245,9 +245,9 @@ Export adı: `TecofStudio` (yeni editör). `TecofEditor`'ı parite sağlanana ka
 ## 8. Çalışma Şekli (Process)
 
 1. **Önce keşif, sonra kod.** İlk olarak repoyu gez, §4 haritasını doğrula, `npm install` + `npm run build` + `npm run dev:preview`'in çalıştığını gör.
-2. **ARCHITECTURE.md yaz** (kod yazmadan önce): seçtiğin state modeli, DnD yaklaşımı, iframe stratejisi, zone modeli, fields'ı host'a bağlama planı, Puck'ı çıkarma planı, riskler. Onay için bana sun.
+2. **ARCHITECTURE.md yaz/güncelle** (büyük değişiklikten önce): state modeli, native DnD yaklaşımı, iframe stratejisi, zone modeli, fields'ı host'a bağlama planı, paket/export riskleri.
 3. **Faz faz ilerle** (§9). Her faz tek ve odaklı; sonunda `lint` + `build` temiz, ilgili testler yeşil, `playground`'da gözle doğrulanabilir.
-4. **Puck'ı bir anda atma.** Geçiş süresince `@puckeditor/core` paralel kalsın; `TecofStudio` parite seviyesine gelince Faz 10'da runtime'dan ve `package.json`'dan tamamen çıkar.
+4. **Puck import'u geri ekleme.** Veri/config uyumluluğu korunur ama runtime/package bağımlılığı geri gelmemeli.
 5. **Her fazda** kısa bir özet ver: ne değişti, nasıl test edilir, hangi kabul kriteri karşılandı.
 6. Belirsizlik varsa varsayımını yaz ve devam et; beni bloklamadan ilerle ama riskli kararları ARCHITECTURE.md'de işaretle.
 
@@ -276,7 +276,7 @@ Kabul: Tıkla→seç, hover→highlight, boş alan→deselect; toolbar aksiyonla
 Kabul: Her field tipi (Language, Editor, Upload, Link, Color, Code, Repeater, CmsCollection) seçili node'un prop'unu okuyup yazıyor; `@puckeditor/core` artık `fields/*` içinde import edilmiyor.
 
 **Faz 5 — Kütüphaneden Canvas'a Drag (Insert)**
-Çıktı: sol panel blok kütüphanesi + dnd-kit ile drop → `insertNode` (defaultProps ile, yeni id).
+Çıktı: sol panel blok kütüphanesi + native DnD helper'ları ile drop → `insertNode` (defaultProps ile, yeni id).
 Kabul: Bir blok sürüklenip kök seviyeye ve bir zone'a bırakılabiliyor; drop indicator görünüyor; geçersiz hedef engelleniyor.
 
 **Faz 6 — Reorder & Move (nested)**

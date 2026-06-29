@@ -111,7 +111,7 @@ export interface TecofProviderProps {
 export interface TecofEditorProps {
   /** Page ID to load and edit */
   pageId: string;
-  /** Puck component configuration (Config from @puckeditor/core) */
+  /** Tecof/Puck-compatible component configuration */
   config: any;
   /** Access token for save operations (sent as Authorization header) */
   accessToken?: string;
@@ -119,9 +119,9 @@ export interface TecofEditorProps {
   onSave?: (data: PuckPageData) => void;
   /** Called on every editor change */
   onChange?: (data: PuckPageData) => void;
-  /** Puck UI overrides */
+  /** Legacy editor UI overrides (reserved, currently ignored by TecofStudio) */
   overrides?: Record<string, any>;
-  /** Additional Puck plugins */
+  /** Additional editor plugins (reserved for host integrations) */
   plugins?: any[];
   /** Additional class name */
   className?: string;
@@ -130,9 +130,9 @@ export interface TecofEditorProps {
 /* ─── Tecof Render Props ─── */
 
 export interface TecofRenderProps {
-  /** Pre-fetched puck data */
+  /** Pre-fetched page data */
   data: PuckPageData;
-  /** Puck component configuration (Config from @puckeditor/core) */
+  /** Tecof/Puck-compatible component configuration */
   config: any;
   /** Additional class name */
   className?: string;

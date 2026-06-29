@@ -18,8 +18,8 @@ export const Inspector = () => {
     const nodeDetails = findNodeById(documentState, selectedId);
     if (!nodeDetails) {
       return (
-        <div style={{ padding: '24px', color: '#71717a', fontSize: '13px', textAlign: 'center' }}>
-          Bileşen yükleniyor veya bulunamadı.
+        <div className="tecof-inspector">
+          <div className="tecof-inspector-empty">Bileşen yükleniyor veya bulunamadı.</div>
         </div>
       );
     }
@@ -30,64 +30,22 @@ export const Inspector = () => {
     const label = componentConfig?.label || node.type;
 
     return (
-      <div
-        className="tecof-inspector"
-        style={{
-          width: '320px',
-          height: '100%',
-          borderLeft: '1px solid #e4e4e7',
-          background: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column',
-          boxSizing: 'border-box',
-        }}
-      >
+      <div className="tecof-inspector">
         {/* Header */}
-        <div
-          style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #f4f4f5',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <div className="tecof-inspector-header">
           <div>
-            <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#18181b' }}>{label}</h3>
-            <span style={{ fontSize: '11px', color: '#a1a1aa', fontFamily: 'monospace' }}>{selectedId}</span>
+            <h3 className="tecof-inspector-title">{label}</h3>
+            <span className="tecof-inspector-id">{selectedId}</span>
           </div>
-          <button
-            onClick={() => selectNode(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#71717a',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: 500,
-              padding: '4px 8px',
-              borderRadius: '4px',
-              hover: { background: '#f4f4f5' },
-            } as any}
-          >
+          <button onClick={() => selectNode(null)} className="tecof-inspector-deselect">
             Seçimi Kaldır
           </button>
         </div>
 
         {/* Fields List */}
-        <div
-          className="tecof-inspector-fields"
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-          }}
-        >
+        <div className="tecof-inspector-fields">
           {Object.keys(fields).length === 0 ? (
-            <div style={{ color: '#a1a1aa', fontSize: '12px', textAlign: 'center', marginTop: '16px' }}>
+            <div className="tecof-inspector-empty-fields">
               Bu bileşenin düzenlenebilir alanı bulunmuyor.
             </div>
           ) : (
@@ -112,41 +70,17 @@ export const Inspector = () => {
   const hasRootFields = Object.keys(rootFields).length > 0;
 
   return (
-    <div
-      className="tecof-inspector"
-      style={{
-        width: '320px',
-        height: '100%',
-        borderLeft: '1px solid #e4e4e7',
-        background: '#ffffff',
-        display: 'flex',
-        flexDirection: 'column',
-        boxSizing: 'border-box',
-      }}
-    >
+    <div className="tecof-inspector">
       {/* Header */}
-      <div
-        style={{
-          padding: '16px 20px',
-          borderBottom: '1px solid #f4f4f5',
-        }}
-      >
-        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#18181b' }}>Sayfa Ayarları</h3>
-        <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Genel sayfa konfigürasyonu</span>
+      <div className="tecof-inspector-header">
+        <div>
+          <h3 className="tecof-inspector-title">Sayfa Ayarları</h3>
+          <span className="tecof-inspector-id">Genel sayfa konfigürasyonu</span>
+        </div>
       </div>
 
       {/* Fields List */}
-      <div
-        className="tecof-inspector-fields"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-        }}
-      >
+      <div className="tecof-inspector-fields">
         {hasRootFields ? (
           Object.entries(rootFields).map(([fieldName, fieldDef]) => (
             <FieldRenderer
@@ -159,19 +93,7 @@ export const Inspector = () => {
             />
           ))
         ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              color: '#a1a1aa',
-              fontSize: '12px',
-              textAlign: 'center',
-              padding: '20px',
-            }}
-          >
+          <div className="tecof-inspector-empty">
             <svg
               width="24"
               height="24"
@@ -181,7 +103,7 @@ export const Inspector = () => {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ marginBottom: '8px', opacity: 0.6 }}
+              className="tecof-inspector-empty-icon"
             >
               <rect width="18" height="18" x="3" y="3" rx="2" />
               <path d="M9 3v18" />
