@@ -4,11 +4,46 @@ import { parseDocument, serializeDocument } from '../engine/document';
 import { StudioContext } from './context';
 import { Canvas } from './canvas/Canvas';
 import { SelectionOverlay } from './overlay/SelectionOverlay';
+import { ContextMenu } from './canvas/ContextMenu';
+import { RecoveryBanner } from './canvas/RecoveryBanner';
 import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
-import type { TecofEditorProps } from '../types';
+import type { PuckPageData, TecofEditorProps } from '../types';
+
+/** Debounce window for autosave after the document stops changing. */
+const AUTOSAVE_DEBOUNCE_MS = 2000;
+/** localStorage key for a page's recovery draft. */
+const draftStorageKey = (pageId: string) => `tecof:draft:${pageId}`;
+
+/** Read a persisted local draft for a page, tolerating quota/parse/private-mode errors. */
+const readLocalDraft = (pageId: string): PuckPageData | null => {
+  try {
+    const raw = window.localStorage.getItem(draftStorageKey(pageId));
+    return raw ? (JSON.parse(raw) as PuckPageData) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Persist a local draft for a page (best-effort; never throws). */
+const writeLocalDraft = (pageId: string, data: PuckPageData) => {
+  try {
+    window.localStorage.setItem(draftStorageKey(pageId), JSON.stringify(data));
+  } catch {
+    /* storage full / unavailable — recovery is a best-effort safety net */
+  }
+};
+
+/** Remove a page's local draft (best-effort). */
+const clearLocalDraft = (pageId: string) => {
+  try {
+    window.localStorage.removeItem(draftStorageKey(pageId));
+  } catch {
+    /* ignore */
+  }
+};
 
 export const TecofStudio = ({
   pageId,
@@ -32,6 +67,13 @@ export const TecofStudio = ({
   const documentStateRef = useRef(documentState);
   documentStateRef.current = documentState;
 
+  // Recovery banner: a newer local draft was found that differs from the server.
+  const [recoveryDraft, setRecoveryDraft] = useState<PuckPageData | null>(null);
+  // True while there are unsaved edits (drives autosave + the beforeunload guard).
+  const dirtyRef = useRef(false);
+  // Pending autosave debounce timer.
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
 
   // 1. Fetch Page and Load into Store
@@ -39,6 +81,8 @@ export const TecofStudio = ({
     let cancelled = false;
     const load = async () => {
       setLoading(true);
+      setRecoveryDraft(null);
+      dirtyRef.current = false;
       try {
         const res = await apiClient.getPage(pageId);
         if (cancelled) return;
@@ -46,6 +90,22 @@ export const TecofStudio = ({
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
         const parsedDoc = parseDocument(rawData);
         setDocument(parsedDoc);
+
+        // Recovery: if a locally-persisted draft exists and differs from the
+        // server copy, offer to restore it (e.g. the tab closed before autosave
+        // flushed). We compare serialized forms so structurally-equal docs match.
+        const localDraft = readLocalDraft(pageId);
+        if (localDraft) {
+          const serverSerialized = JSON.stringify(serializeDocument(parsedDoc));
+          const localSerialized = JSON.stringify(localDraft);
+          if (localSerialized !== serverSerialized) {
+            setRecoveryDraft(localDraft);
+            console.info('[TecofStudio] Local draft differs from server; offering recovery.');
+          } else {
+            // In sync — drop the stale local copy.
+            clearLocalDraft(pageId);
+          }
+        }
       } catch (err) {
         console.error('Failed to load page:', err);
       } finally {
@@ -72,7 +132,25 @@ export const TecofStudio = ({
     if (isEmbedded) {
       window.parent.postMessage({ type: 'puck:changed' }, '*');
     }
-  }, [documentState, loading, onChange, isEmbedded]);
+
+    // ── Core UX: dirty-tracking, local recovery snapshot, debounced autosave ──
+    dirtyRef.current = true;
+    // Persist a recovery snapshot on every change so an unexpected close keeps work.
+    writeLocalDraft(pageId, serialized);
+
+    // Debounce the server autosave: reset the timer on each successive edit.
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(() => {
+      autosaveTimerRef.current = null;
+      if (dirtyRef.current) {
+        handleSaveDraftRef.current();
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, [documentState, loading, onChange, isEmbedded, pageId]);
+
+  // Keep a stable ref to the latest save fn so the autosave timer (scheduled in
+  // the change effect) always calls the current closure without re-subscribing.
+  const handleSaveDraftRef = useRef<() => void>(() => {});
 
   // 3. Save Draft Functionality
   const handleSaveDraft = useCallback(async () => {
@@ -85,6 +163,9 @@ export const TecofStudio = ({
     try {
       const res = await apiClient.savePage(pageId, serialized, undefined, accessToken);
       if (res.success) {
+        // Saved to server -> no longer dirty, and the local recovery copy is stale.
+        dirtyRef.current = false;
+        clearLocalDraft(pageId);
         setSaveStatus('success');
         setTimeout(() => setSaveStatus('idle'), 3000);
         onSave?.(serialized);
@@ -106,6 +187,45 @@ export const TecofStudio = ({
       setSaving(false);
     }
   }, [pageId, apiClient, accessToken, onSave, isEmbedded]);
+
+  // Keep the autosave ref pointing at the freshest save closure.
+  useEffect(() => {
+    handleSaveDraftRef.current = handleSaveDraft;
+  }, [handleSaveDraft]);
+
+  // Flush any pending autosave timer on unmount so it can't fire after teardown.
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, []);
+
+  // Warn before leaving the tab while there are unsaved (un-persisted-to-server) edits.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!dirtyRef.current) return;
+      e.preventDefault();
+      // Required by some browsers to actually show the native prompt.
+      e.returnValue = '';
+      return '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, []);
+
+  // Restore the locally-saved draft into the editor (and clear the banner).
+  const handleRestoreDraft = useCallback(() => {
+    if (!recoveryDraft) return;
+    setDocument(parseDocument(recoveryDraft));
+    setRecoveryDraft(null);
+    // The change effect will re-persist + schedule an autosave for the restored doc.
+  }, [recoveryDraft, setDocument]);
+
+  // Discard the local draft and keep the server copy already loaded.
+  const handleDismissRecovery = useCallback(() => {
+    clearLocalDraft(pageId);
+    setRecoveryDraft(null);
+  }, [pageId]);
 
   // 4. Listen to PostMessage signals from the host wrapper
   useEffect(() => {
@@ -210,6 +330,28 @@ export const TecofStudio = ({
         useEditorStore.getState().duplicateNode(selectedId);
         return;
       }
+
+      // Clipboard: copy / cut / paste. Placed AFTER the isInput() guard above so
+      // Cmd/Ctrl+C/X/V keep their native behaviour while editing text fields.
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'c' && selectedId) {
+        e.preventDefault();
+        useEditorStore.getState().copyNode(selectedId);
+        return;
+      }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'x' && selectedId) {
+        e.preventDefault();
+        useEditorStore.getState().cutNode(selectedId);
+        return;
+      }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'v') {
+        // Only intercept when something is on our clipboard; otherwise let the
+        // browser handle native paste (no-op on the canvas).
+        if (!useEditorStore.getState().clipboard) return;
+        e.preventDefault();
+        // Paste after the current selection (or into root content if nothing selected).
+        useEditorStore.getState().pasteNode(selectedId || undefined);
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -247,6 +389,14 @@ export const TecofStudio = ({
           <div className={`tecof-studio-save-indicator${saveStatus === 'error' ? ' is-error' : ''}`}>
             {saveStatus === 'error' ? 'Kaydedilemedi' : 'Kaydediliyor...'}
           </div>
+        )}
+
+        {/* Single host-DOM context menu for canvas right-clicks. */}
+        <ContextMenu />
+
+        {/* Unsaved-draft recovery toast (only when a differing local draft exists). */}
+        {recoveryDraft && (
+          <RecoveryBanner onRestore={handleRestoreDraft} onDismiss={handleDismissRecovery} />
         )}
       </div>
     </StudioContext.Provider>

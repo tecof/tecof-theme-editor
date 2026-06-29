@@ -8,7 +8,7 @@ export const createEmptyDocument = (): TecofDocument => ({
 
 export const EMPTY_DOCUMENT: TecofDocument = createEmptyDocument();
 
-const cloneValue = <T>(value: T): T => {
+export const cloneValue = <T>(value: T): T => {
   if (Array.isArray(value)) {
     return value.map((item) => cloneValue(item)) as T;
   }

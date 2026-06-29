@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { TecofDocument, TecofNode } from '../types';
-import { cloneDocument, createEmptyDocument, parseDocument } from './document';
+import { cloneDocument, cloneValue, createEmptyDocument, parseDocument } from './document';
 import { findNodeById } from './zones';
 import * as ops from './operations';
 
@@ -30,6 +30,13 @@ interface EditorState {
   viewport: 'desktop' | 'tablet' | 'mobile';
   /** Active drag operation (null when idle). Powers drop affordances + ghost. */
   drag: DragPayload | null;
+  /**
+   * Clipboard contents: a deep-cloned snapshot of the copied/cut node. `null`
+   * when empty. UI uses this to enable/disable "Yapıştır".
+   */
+  clipboard: TecofNode | null;
+  /** Internal: deep-cloned descendant zones of the clipboard node, keyed by zone. */
+  _clipboardZones: Record<string, TecofNode[]> | null;
   /** Internal: last coalescible commit marker (node id + timestamp). */
   _lastCommit: { id: string; time: number } | null;
 }
@@ -54,6 +61,11 @@ interface EditorActions {
   duplicateNode: (id: string) => void;
   updateProps: (id: string, patch: Record<string, any>) => void;
   setRootProps: (patch: Record<string, any>) => void;
+
+  // Clipboard
+  copyNode: (id: string) => void;
+  cutNode: (id: string) => void;
+  pasteNode: (targetId?: string) => void;
 
   // History
   undo: () => void;
@@ -95,6 +107,8 @@ export const useEditorStore = create<EditorStore>()(
     },
     viewport: 'desktop',
     drag: null,
+    clipboard: null,
+    _clipboardZones: null,
     _lastCommit: null,
 
     // Actions
@@ -103,6 +117,8 @@ export const useEditorStore = create<EditorStore>()(
         state.document = cloneDocument(parseDocument(doc));
         state.history = { past: [], future: [] };
         state.selection = { selectedId: null, hoveredId: null };
+        state.clipboard = null;
+        state._clipboardZones = null;
         state._lastCommit = null;
       }),
 
@@ -192,6 +208,47 @@ export const useEditorStore = create<EditorStore>()(
         }
         ops.setRootProps(state.document, patch);
         state._lastCommit = { id: '__root__', time: now };
+      }),
+
+    // ─── Clipboard ───
+    // Copy snapshots the node AND its descendant zones, deep-cloned so a later
+    // cut/delete of the source can never mutate what's on the clipboard.
+    copyNode: (id) =>
+      set((state) => {
+        const subtree = ops.collectSubtree(state.document, id);
+        if (!subtree) return;
+        state.clipboard = cloneValue(subtree.node);
+        state._clipboardZones = cloneValue(subtree.zones);
+      }),
+
+    // Cut = copy, then remove the original (single undo step for the removal).
+    cutNode: (id) =>
+      set((state) => {
+        const subtree = ops.collectSubtree(state.document, id);
+        if (!subtree) return;
+        state.clipboard = cloneValue(subtree.node);
+        state._clipboardZones = cloneValue(subtree.zones);
+
+        pushToHistory(state);
+        ops.removeNode(state.document, id);
+        if (state.selection.selectedId === id) {
+          state.selection.selectedId = null;
+        }
+      }),
+
+    // Paste remaps ids (fresh unique subtree) then inserts AFTER the target node
+    // (same zone/list) or at the end of root content when no target is given.
+    pasteNode: (targetId) =>
+      set((state) => {
+        if (!state.clipboard) return;
+        // Re-clone on paste so the same clipboard entry can be pasted repeatedly
+        // without aliasing nested prop objects across the inserted copies.
+        const clipNode = cloneValue(state.clipboard);
+        const clipZones = cloneValue(state._clipboardZones || {});
+
+        pushToHistory(state);
+        const newId = ops.pasteNode(state.document, clipNode, clipZones, targetId);
+        state.selection.selectedId = newId;
       }),
 
     undo: () =>

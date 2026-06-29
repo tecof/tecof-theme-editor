@@ -3855,3 +3855,209 @@
   color: var(--tecof-accent-text);
   background: var(--tecof-accent-subtle);
 }
+
+/* ═══ Core UX (context menu · clipboard · recovery) ═══ */
+
+/* ── Canvas right-click context menu (host DOM, fixed) ── */
+.tecof-context-menu {
+  position: fixed;
+  top: var(--tecof-menu-y, 0);
+  left: var(--tecof-menu-x, 0);
+  z-index: 100000;
+  min-width: 196px;
+  padding: 6px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius);
+  box-shadow: var(--tecof-shadow-lg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  /* Default anchor: top-left of the menu sits at the cursor. */
+  transform: translate(0, 0);
+}
+/* Edge-flip so the menu never spills off-screen. */
+.tecof-context-menu.is-flip-x { transform: translate(-100%, 0); }
+.tecof-context-menu.is-flip-y { transform: translate(0, -100%); }
+.tecof-context-menu.is-flip-x.is-flip-y { transform: translate(-100%, -100%); }
+
+.tecof-context-menu-head {
+  padding: 4px 8px 6px;
+  margin-bottom: 4px;
+  border-bottom: var(--tecof-line);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tecof-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tecof-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  background: transparent;
+  border-radius: var(--tecof-radius-sm);
+  color: var(--tecof-text);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.tecof-context-menu-item:hover:not(:disabled) {
+  background: var(--tecof-accent-subtle);
+  color: var(--tecof-accent-text);
+}
+
+.tecof-context-menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tecof-context-menu-item.is-danger { color: var(--tecof-danger); }
+.tecof-context-menu-item.is-danger:hover:not(:disabled) {
+  background: var(--tecof-danger-bg);
+  color: var(--tecof-danger-hover);
+}
+
+.tecof-context-menu-icon {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--tecof-text-muted);
+}
+.tecof-context-menu-item:hover:not(:disabled) .tecof-context-menu-icon { color: inherit; }
+.tecof-context-menu-item.is-danger .tecof-context-menu-icon { color: inherit; }
+
+.tecof-context-menu-label { flex: 1 1 auto; }
+
+.tecof-context-menu-sep {
+  height: 1px;
+  margin: 4px 4px;
+  background: var(--tecof-border);
+}
+
+/* ── Node render-error fallback (one crashed component, canvas stays alive) ── */
+.tecof-node-error {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  margin: 4px 0;
+  background: var(--tecof-danger-bg);
+  border: 1px dashed var(--tecof-danger-border-strong);
+  border-radius: var(--tecof-radius-sm);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+.tecof-node-error-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tecof-danger-text);
+}
+.tecof-node-error-detail {
+  font-size: 12px;
+  color: var(--tecof-danger-hover);
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ── Unsaved-draft recovery toast ── */
+.tecof-recovery-banner {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100001;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 520px;
+  padding: 14px 44px 14px 16px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-lg);
+  box-shadow: var(--tecof-shadow-lg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.tecof-recovery-banner-icon {
+  display: flex;
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--tecof-accent-text);
+}
+
+.tecof-recovery-banner-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.tecof-recovery-banner-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tecof-text);
+}
+.tecof-recovery-banner-sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-recovery-banner-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.tecof-recovery-banner-btn {
+  padding: 6px 12px;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-surface);
+  color: var(--tecof-text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--tecof-transition);
+}
+.tecof-recovery-banner-btn:hover {
+  background: var(--tecof-surface-2);
+  border-color: var(--tecof-border-strong);
+}
+.tecof-recovery-banner-btn.is-primary {
+  background: var(--tecof-accent);
+  border-color: var(--tecof-accent);
+  color: var(--tecof-accent-fg);
+}
+.tecof-recovery-banner-btn.is-primary:hover {
+  background: var(--tecof-accent-hover);
+  border-color: var(--tecof-accent-hover);
+}
+
+.tecof-recovery-banner-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  border-radius: var(--tecof-radius-xs);
+  color: var(--tecof-text-subtle);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.tecof-recovery-banner-close:hover {
+  background: var(--tecof-surface-2);
+  color: var(--tecof-text);
+}

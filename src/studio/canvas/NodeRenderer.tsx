@@ -2,9 +2,11 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useStudio } from '../context';
 import { ParentNodeContext, renderDropZone } from './DropZone';
 import { useEditorStore } from '../../engine/store';
+import { useContextMenuStore } from '../contextMenuStore';
 import type { TecofNode } from '../../types';
 import { setDragGhost } from './dragGhost';
 import { createEventAutoScroller, createNode, readDragData, writeDragData } from './dndUtils';
+import { NodeErrorBoundary } from './NodeErrorBoundary';
 
 export interface NodeRendererProps {
   node: TecofNode;
@@ -66,6 +68,29 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
       }
     },
     [selectNode, node.props.id, node.type, readOnly]
+  );
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (readOnly) return;
+      e.preventDefault();
+      e.stopPropagation();
+      selectNode(node.props.id);
+
+      // The wrapper lives inside the canvas iframe, so the cursor coords are
+      // relative to the iframe viewport. Translate them into HOST coords by
+      // adding the iframe element's offset, since the menu renders in host DOM.
+      let hostX = e.clientX;
+      let hostY = e.clientY;
+      const frameEl = (e.currentTarget.ownerDocument.defaultView as Window | null)?.frameElement;
+      if (frameEl) {
+        const frameRect = frameEl.getBoundingClientRect();
+        hostX += frameRect.left;
+        hostY += frameRect.top;
+      }
+      useContextMenuStore.getState().openMenu(node.props.id, hostX, hostY);
+    },
+    [selectNode, node.props.id, readOnly]
   );
 
   const handleDoubleClick = useCallback(
@@ -290,12 +315,15 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
+          onContextMenu={handleContextMenu}
           onDoubleClick={handleDoubleClick}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {componentConfig.render(componentProps)}
+          <NodeErrorBoundary type={node.type} nodeId={node.props.id}>
+            {componentConfig.render(componentProps)}
+          </NodeErrorBoundary>
         </div>
         {dragOverPosition === 'bottom' && (
           <div className="tecof-drop-line" />

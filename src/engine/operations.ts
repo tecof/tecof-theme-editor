@@ -94,7 +94,7 @@ export const duplicateNode = (draft: TecofDocument, id: string) => {
   if (!result) return;
 
   const { node, path } = result;
-  
+
   const { remappedNode, newZones } = remapNodeIds(node, draft.zones);
 
   const targetList = path.zoneKey ? draft.zones[path.zoneKey] : draft.content;
@@ -103,6 +103,67 @@ export const duplicateNode = (draft: TecofDocument, id: string) => {
   }
 
   Object.assign(draft.zones, newZones);
+};
+
+/**
+ * Collects a node together with all of its descendant zones, for the clipboard.
+ * Returns references into the live document — callers MUST deep-clone the result
+ * before storing it so a later cut/delete of the source cannot mutate the copy.
+ */
+export const collectSubtree = (
+  draft: TecofDocument,
+  id: string
+): { node: TecofNode; zones: Record<string, TecofNode[]> } | null => {
+  const result = findNodeById(draft, id);
+  if (!result) return null;
+
+  const zones: Record<string, TecofNode[]> = {};
+  for (const zoneKey of getDescendantZoneKeys(draft.zones, id)) {
+    zones[zoneKey] = draft.zones[zoneKey];
+  }
+
+  return { node: result.node, zones };
+};
+
+/**
+ * Pastes a previously copied subtree (node + its descendant zones) into the
+ * document. The subtree is given fresh unique ids via `remapNodeIds` so it can
+ * coexist with the original. It is inserted AFTER `targetId` (in the same
+ * zone/list) or, when no target is given/found, appended to the root content.
+ *
+ * `clipNode` / `clipZones` are the deep snapshot stored at copy time, so passing
+ * them to `remapNodeIds` as the source-zone lookup keeps the op self-contained.
+ * Returns the new root id of the pasted subtree.
+ */
+export const pasteNode = (
+  draft: TecofDocument,
+  clipNode: TecofNode,
+  clipZones: Record<string, TecofNode[]>,
+  targetId?: string
+): string => {
+  const { remappedNode, newZones } = remapNodeIds(clipNode, clipZones);
+
+  let targetList: TecofNode[] | undefined = draft.content;
+  let insertIndex = draft.content.length;
+
+  if (targetId) {
+    const result = findNodeById(draft, targetId);
+    if (result) {
+      const { zoneKey, index } = result.path;
+      if (zoneKey) {
+        if (!draft.zones[zoneKey]) draft.zones[zoneKey] = [];
+        targetList = draft.zones[zoneKey];
+      } else {
+        targetList = draft.content;
+      }
+      insertIndex = index + 1;
+    }
+  }
+
+  targetList?.splice(insertIndex, 0, remappedNode);
+  Object.assign(draft.zones, newZones);
+
+  return remappedNode.props.id;
 };
 
 export const updateProps = (draft: TecofDocument, id: string, patch: Record<string, any>) => {
