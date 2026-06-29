@@ -438,9 +438,32 @@ window.addEventListener("message", (e) => {
 
 Kütüphane %100 oranında izole bir CSS altyapısı sunar. Önceden kullanılan inline "CSS-in-JS" tarzı sabit tasarımlar kaldırılmış, field modüllerine ait tüm UI stilleri (EditorField, LinkField, UploadField vs.) merkezi `dist/styles.css` içerisine taşınmıştır.
 
-Tasarım çakışmalarını önlemek için kütüphanenin sunduğu tüm CSS sınıfları sadece `.tecof-[component]-[element]` (örnek: `.tecof-upload-file-list`) ön ekini kullanır. `:root` altındaki renk değişkenlerinden (örn: `--tecof-primary-500`) beslenir.
+Tasarım çakışmalarını önlemek için kütüphanenin sunduğu tüm CSS sınıfları sadece `.tecof-[component]-[element]` (örnek: `.tecof-upload-file-list`) ön ekini kullanır. Tüm editör arayüzü `src/styles.css` içindeki `:root` token'larından beslenir.
 
-Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, inspector ve field loader'ları `src/styles.css` içindeki lime-green accent token'larını ve skeleton primitive'lerini kullanır. Inline style yalnızca gerçek runtime değerleri için bırakılır (örn. seçili node overlay koordinatı, layer indent CSS değişkeni, kullanıcı renk swatch'ı veya dışarıdan gelen render style prop'u).
+### Renk Paleti (lime-green)
+
+`:root` altında tam bir `--tecof-primary-50…950` lime-green paleti tanımlıdır. **Kural: `600` ana renk, `700` hover.** Bileşenler doğrudan `-500/-600` skalasını değil, **semantik accent token'larını** kullanır:
+
+| Token | Değer | Kullanım |
+|---|---|---|
+| `--tecof-accent` | `primary-600` (`#74b500`) | Ana vurgu (buton, aktif sınır) |
+| `--tecof-accent-hover` | `primary-700` (`#588902`) | Hover |
+| `--tecof-accent-active` | `primary-800` | Active/basılı |
+| `--tecof-accent-fg` | `primary-950` (`#1d3300`) | Accent zemini üstü **koyu yazı** (AA) |
+| `--tecof-accent-subtle` | `primary-50` | Tint arka plan |
+| `--tecof-accent-text` | `primary-700` | Açık zeminde okunur accent metin |
+| `--tecof-accent-ring` | `rgba(116,181,0,.30)` | Focus halkası |
+
+> Lime zemin üzerine beyaz yazı kontrast bırakmadığı için accent dolgular **koyu yazı** (`--tecof-accent-fg`) kullanır. Bu token'lar yalnızca editör arayüzünü boyar; kullanıcı sitesinin teması (`--theme-*`, `generateCSSVariables`) etkilenmez.
+
+Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, inspector ve field loader'ları bu accent token'larını ve `.tecof-skeleton*` primitive'lerini kullanır. **Tüm yükleme durumları skeleton loader'dır** (spinner yalnızca buton-içi mikro yüklemede). Inline style yalnızca gerçek runtime değerleri için bırakılır (örn. seçili node overlay koordinatı, layer indent CSS değişkeni, kullanıcı renk swatch'ı veya dışarıdan gelen render style prop'u).
+
+### Studio Editör Özellikleri
+
+- **Düzenleme / Önizleme modu** — Üst bardaki toggle ile. Düzenleme'de tıklayınca bileşen seçilir, link/butonlar pasiftir; Önizleme'de link ve butonlar canlı çalışır, editör çerçevesi gizlenir.
+- **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; düzenlenen öğe accent kenarlıkla işaretlenir, Enter kaydeder, Esc iptal eder.
+- **Global dil** — Çoklu dilli içerikte dil, üst bardaki tek seçiciden (merchant-info) değiştirilir. Alanlar yalnızca aktif dili düzenler; alan-içi dil sekmeleri Studio'da gizlenir (provider yoksa eski sekmeli mod geçerlidir — geriye uyum). Bkz. `studio/language/LanguageContext`.
+- **Daraltılabilir paneller** — Sol (blok/katman) ve sağ (inspector) paneller üst bar butonlarıyla daraltılıp ince ikon rayına iner; canvas genişler.
 
 Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
 

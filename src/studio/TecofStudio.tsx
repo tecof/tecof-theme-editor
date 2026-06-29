@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { PanelLeft, PanelRight } from 'lucide-react';
 import { useEditorStore } from '../engine/store';
+import { useUiStore } from './uiStore';
 import { parseDocument, serializeDocument } from '../engine/document';
 import { StudioContext } from './context';
+import { LanguageProvider } from './language/LanguageContext';
 import { Canvas } from './canvas/Canvas';
 import { SelectionOverlay } from './overlay/SelectionOverlay';
 import { Inspector } from './panels/Inspector';
@@ -28,6 +31,12 @@ export const TecofStudio = ({
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
   const setViewport = useEditorStore((state) => state.setViewport);
+
+  const leftPanelOpen = useUiStore((state) => state.leftPanelOpen);
+  const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
+  const toggleLeftPanel = useUiStore((state) => state.toggleLeftPanel);
+  const toggleRightPanel = useUiStore((state) => state.toggleRightPanel);
+  const mode = useUiStore((state) => state.mode);
 
   const documentStateRef = useRef(documentState);
   documentStateRef.current = documentState;
@@ -221,9 +230,9 @@ export const TecofStudio = ({
   // 5. Context Value
   const studioContextValue = useMemo(() => ({
     config,
-    readOnly: false,
+    readOnly: mode === 'preview',
     apiClient
-  }), [config, apiClient]);
+  }), [config, mode, apiClient]);
 
   if (loading) {
     return <StudioSkeleton className={className} />;
@@ -231,27 +240,52 @@ export const TecofStudio = ({
 
   return (
     <StudioContext.Provider value={studioContextValue}>
-      <div className={`tecof-studio-root ${className || ''}`.trim()}>
-        <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} />
+      <LanguageProvider>
+        <div className={`tecof-studio-root ${className || ''}`.trim()}>
+          <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} />
 
-        <div className="tecof-studio-workspace-container">
-          <LeftPanel />
-          <div className="tecof-studio-workspace">
-            <Canvas />
-            <SelectionOverlay />
+          <div className="tecof-studio-workspace-container">
+            {leftPanelOpen ? (
+              <LeftPanel />
+            ) : (
+              <PanelRail side="left" onExpand={toggleLeftPanel} />
+            )}
+            <div className="tecof-studio-workspace">
+              <Canvas />
+              <SelectionOverlay />
+            </div>
+            {rightPanelOpen ? (
+              <Inspector />
+            ) : (
+              <PanelRail side="right" onExpand={toggleRightPanel} />
+            )}
           </div>
-          <Inspector />
+
+          {saving && (
+            <div className={`tecof-studio-save-indicator${saveStatus === 'error' ? ' is-error' : ''}`}>
+              {saveStatus === 'error' ? 'Kaydedilemedi' : 'Kaydediliyor...'}
+            </div>
+          )}
         </div>
-
-        {saving && (
-          <div className={`tecof-studio-save-indicator${saveStatus === 'error' ? ' is-error' : ''}`}>
-            {saveStatus === 'error' ? 'Kaydedilemedi' : 'Kaydediliyor...'}
-          </div>
-        )}
-      </div>
+      </LanguageProvider>
     </StudioContext.Provider>
   );
 };
+
+/* ─── Thin collapsed rail shown in place of a hidden panel ─── */
+const PanelRail = ({ side, onExpand }: { side: 'left' | 'right'; onExpand: () => void }) => (
+  <div className={`tecof-panel-rail tecof-panel-rail-${side}`}>
+    <button
+      type="button"
+      className="tecof-icon-btn"
+      onClick={onExpand}
+      title={side === 'left' ? 'Sol paneli aç' : 'Sağ paneli aç'}
+      aria-label={side === 'left' ? 'Sol paneli aç' : 'Sağ paneli aç'}
+    >
+      {side === 'left' ? <PanelLeft size={16} /> : <PanelRight size={16} />}
+    </button>
+  </div>
+);
 
 /* ─── Full-editor skeleton shown while the page document loads ─── */
 const StudioSkeleton = ({ className }: { className?: string }) => (

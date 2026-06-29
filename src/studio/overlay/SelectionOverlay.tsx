@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { getBreadcrumbs, getParentId, findNodeById } from '../../engine/zones';
 import { ArrowUp, ArrowDown, Copy, Trash2, ChevronUp } from 'lucide-react';
 
@@ -94,6 +95,7 @@ export const SelectionOverlay = () => {
   const documentState = useEditorStore((state) => state.document);
   const selectedId = useEditorStore((state) => state.selection.selectedId);
   const hoveredId = useEditorStore((state) => state.selection.hoveredId);
+  const mode = useUiStore((state) => state.mode);
 
   const selectNode = useEditorStore((state) => state.selectNode);
   const removeNode = useEditorStore((state) => state.removeNode);
@@ -136,6 +138,9 @@ export const SelectionOverlay = () => {
   };
 
   const breadcrumbs = selectedId ? getBreadcrumbs(documentState, selectedId) : [];
+
+  // Preview mode hides all editor chrome so links/buttons are fully interactive.
+  if (mode === 'preview') return null;
 
   return (
     <div

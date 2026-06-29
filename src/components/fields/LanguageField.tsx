@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguages } from './useLanguages';
+import { useActiveLanguage } from '../../studio/language/LanguageContext';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import { Languages, Copy, Loader2 } from 'lucide-react';
@@ -189,7 +190,18 @@ export const LanguageField = ({
   placeholder = '',
   isHtml = false,
 }: LanguageFieldProps & LanguageFieldOptions) => {
-  const { merchantInfo, loading, error, activeTab, setActiveTab } = useLanguages();
+  const {
+    merchantInfo,
+    loading,
+    error,
+    activeTab: localActiveTab,
+    setActiveTab: localSetActiveTab,
+  } = useLanguages();
+  // When a global language provider is mounted (TecofStudio), the active language
+  // is controlled app-wide from the top bar and per-field tabs are hidden.
+  const globalLang = useActiveLanguage();
+  const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
+  const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const { apiClient } = useTecof();
   const [translating, setTranslating] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -291,12 +303,14 @@ export const LanguageField = ({
 
   return (
     <div className="tecof-lang-container">
-      <LanguageTabBar
-        languages={languages}
-        defaultLanguage={defaultLanguage}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      {!globalLang && (
+        <LanguageTabBar
+          languages={languages}
+          defaultLanguage={defaultLanguage}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      )}
 
       {languages.map(code => {
         if (activeTab !== code) return null;

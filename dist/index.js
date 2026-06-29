@@ -336,6 +336,467 @@ function useTecof() {
   return ctx;
 }
 
+// node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.js
+var mergeClasses = (...classes) => classes.filter((className, index2, array) => {
+  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
+}).join(" ").trim();
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.js
+var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toCamelCase.js
+var toCamelCase = (string) => string.replace(
+  /^([A-Z])|[\s-_]+(\w)/g,
+  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
+);
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toPascalCase.js
+var toPascalCase = (string) => {
+  const camelCase = toCamelCase(string);
+  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+};
+
+// node_modules/lucide-react/dist/esm/defaultAttributes.js
+var defaultAttributes = {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: 24,
+  height: 24,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+};
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/hasA11yProp.js
+var hasA11yProp = (props) => {
+  for (const prop in props) {
+    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
+      return true;
+    }
+  }
+  return false;
+};
+var LucideContext = React__default.createContext({});
+var useLucideContext = () => React__default.useContext(LucideContext);
+
+// node_modules/lucide-react/dist/esm/Icon.js
+var Icon = React__default.forwardRef(
+  ({ color, size, strokeWidth, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => {
+    const {
+      size: contextSize = 24,
+      strokeWidth: contextStrokeWidth = 2,
+      absoluteStrokeWidth: contextAbsoluteStrokeWidth = false,
+      color: contextColor = "currentColor",
+      className: contextClass = ""
+    } = useLucideContext() ?? {};
+    const calculatedStrokeWidth = absoluteStrokeWidth ?? contextAbsoluteStrokeWidth ? Number(strokeWidth ?? contextStrokeWidth) * 24 / Number(size ?? contextSize) : strokeWidth ?? contextStrokeWidth;
+    return React__default.createElement(
+      "svg",
+      {
+        ref,
+        ...defaultAttributes,
+        width: size ?? contextSize ?? defaultAttributes.width,
+        height: size ?? contextSize ?? defaultAttributes.height,
+        stroke: color ?? contextColor,
+        strokeWidth: calculatedStrokeWidth,
+        className: mergeClasses("lucide", contextClass, className),
+        ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
+        ...rest
+      },
+      [
+        ...iconNode.map(([tag, attrs]) => React__default.createElement(tag, attrs)),
+        ...Array.isArray(children) ? children : [children]
+      ]
+    );
+  }
+);
+
+// node_modules/lucide-react/dist/esm/createLucideIcon.js
+var createLucideIcon = (iconName, iconNode) => {
+  const Component2 = React__default.forwardRef(
+    ({ className, ...props }, ref) => React__default.createElement(Icon, {
+      ref,
+      iconNode,
+      className: mergeClasses(
+        `lucide-${toKebabCase(toPascalCase(iconName))}`,
+        `lucide-${iconName}`,
+        className
+      ),
+      ...props
+    })
+  );
+  Component2.displayName = toPascalCase(iconName);
+  return Component2;
+};
+
+// node_modules/lucide-react/dist/esm/icons/arrow-down.js
+var __iconNode = [
+  ["path", { d: "M12 5v14", key: "s699le" }],
+  ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
+];
+var ArrowDown = createLucideIcon("arrow-down", __iconNode);
+
+// node_modules/lucide-react/dist/esm/icons/arrow-up.js
+var __iconNode2 = [
+  ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
+  ["path", { d: "M12 19V5", key: "x0mq9r" }]
+];
+var ArrowUp = createLucideIcon("arrow-up", __iconNode2);
+
+// node_modules/lucide-react/dist/esm/icons/check.js
+var __iconNode3 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+var Check = createLucideIcon("check", __iconNode3);
+
+// node_modules/lucide-react/dist/esm/icons/chevron-down.js
+var __iconNode4 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+var ChevronDown = createLucideIcon("chevron-down", __iconNode4);
+
+// node_modules/lucide-react/dist/esm/icons/chevron-right.js
+var __iconNode5 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+var ChevronRight = createLucideIcon("chevron-right", __iconNode5);
+
+// node_modules/lucide-react/dist/esm/icons/chevron-up.js
+var __iconNode6 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+var ChevronUp = createLucideIcon("chevron-up", __iconNode6);
+
+// node_modules/lucide-react/dist/esm/icons/code.js
+var __iconNode7 = [
+  ["path", { d: "m16 18 6-6-6-6", key: "eg8j8" }],
+  ["path", { d: "m8 6-6 6 6 6", key: "ppft3o" }]
+];
+var Code = createLucideIcon("code", __iconNode7);
+
+// node_modules/lucide-react/dist/esm/icons/copy.js
+var __iconNode8 = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+];
+var Copy = createLucideIcon("copy", __iconNode8);
+
+// node_modules/lucide-react/dist/esm/icons/database.js
+var __iconNode9 = [
+  ["ellipse", { cx: "12", cy: "5", rx: "9", ry: "3", key: "msslwz" }],
+  ["path", { d: "M3 5V19A9 3 0 0 0 21 19V5", key: "1wlel7" }],
+  ["path", { d: "M3 12A9 3 0 0 0 21 12", key: "mv7ke4" }]
+];
+var Database = createLucideIcon("database", __iconNode9);
+
+// node_modules/lucide-react/dist/esm/icons/external-link.js
+var __iconNode10 = [
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+];
+var ExternalLink = createLucideIcon("external-link", __iconNode10);
+
+// node_modules/lucide-react/dist/esm/icons/eye.js
+var __iconNode11 = [
+  [
+    "path",
+    {
+      d: "M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",
+      key: "1nclc0"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+];
+var Eye = createLucideIcon("eye", __iconNode11);
+
+// node_modules/lucide-react/dist/esm/icons/file-text.js
+var __iconNode12 = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+      key: "1oefj6"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+];
+var FileText = createLucideIcon("file-text", __iconNode12);
+
+// node_modules/lucide-react/dist/esm/icons/file.js
+var __iconNode13 = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+      key: "1oefj6"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
+];
+var File2 = createLucideIcon("file", __iconNode13);
+
+// node_modules/lucide-react/dist/esm/icons/folder-open.js
+var __iconNode14 = [
+  [
+    "path",
+    {
+      d: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2",
+      key: "usdka0"
+    }
+  ]
+];
+var FolderOpen = createLucideIcon("folder-open", __iconNode14);
+
+// node_modules/lucide-react/dist/esm/icons/globe.js
+var __iconNode15 = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
+  ["path", { d: "M2 12h20", key: "9i4pu4" }]
+];
+var Globe = createLucideIcon("globe", __iconNode15);
+
+// node_modules/lucide-react/dist/esm/icons/grid-3x3.js
+var __iconNode16 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
+  ["path", { d: "M3 9h18", key: "1pudct" }],
+  ["path", { d: "M3 15h18", key: "5xshup" }],
+  ["path", { d: "M9 3v18", key: "fh3hqa" }],
+  ["path", { d: "M15 3v18", key: "14nvp0" }]
+];
+var Grid3x3 = createLucideIcon("grid-3x3", __iconNode16);
+
+// node_modules/lucide-react/dist/esm/icons/grip-vertical.js
+var __iconNode17 = [
+  ["circle", { cx: "9", cy: "12", r: "1", key: "1vctgf" }],
+  ["circle", { cx: "9", cy: "5", r: "1", key: "hp0tcf" }],
+  ["circle", { cx: "9", cy: "19", r: "1", key: "fkjjf6" }],
+  ["circle", { cx: "15", cy: "12", r: "1", key: "1tmaij" }],
+  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
+  ["circle", { cx: "15", cy: "19", r: "1", key: "f4zoj3" }]
+];
+var GripVertical = createLucideIcon("grip-vertical", __iconNode17);
+
+// node_modules/lucide-react/dist/esm/icons/image-plus.js
+var __iconNode18 = [
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
+];
+var ImagePlus = createLucideIcon("image-plus", __iconNode18);
+
+// node_modules/lucide-react/dist/esm/icons/image.js
+var __iconNode19 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+];
+var Image2 = createLucideIcon("image", __iconNode19);
+
+// node_modules/lucide-react/dist/esm/icons/languages.js
+var __iconNode20 = [
+  ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
+  ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
+  ["path", { d: "M2 5h12", key: "or177f" }],
+  ["path", { d: "M7 2h1", key: "1t2jsx" }],
+  ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
+  ["path", { d: "M14 18h6", key: "1m8k6r" }]
+];
+var Languages = createLucideIcon("languages", __iconNode20);
+
+// node_modules/lucide-react/dist/esm/icons/layers.js
+var __iconNode21 = [
+  [
+    "path",
+    {
+      d: "M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z",
+      key: "zw3jo"
+    }
+  ],
+  [
+    "path",
+    {
+      d: "M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12",
+      key: "1wduqc"
+    }
+  ],
+  [
+    "path",
+    {
+      d: "M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17",
+      key: "kqbvx6"
+    }
+  ]
+];
+var Layers = createLucideIcon("layers", __iconNode21);
+
+// node_modules/lucide-react/dist/esm/icons/link-2.js
+var __iconNode22 = [
+  ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
+  ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
+  ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
+];
+var Link2 = createLucideIcon("link-2", __iconNode22);
+
+// node_modules/lucide-react/dist/esm/icons/link.js
+var __iconNode23 = [
+  ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
+  ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
+];
+var Link = createLucideIcon("link", __iconNode23);
+
+// node_modules/lucide-react/dist/esm/icons/loader-circle.js
+var __iconNode24 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+var LoaderCircle = createLucideIcon("loader-circle", __iconNode24);
+
+// node_modules/lucide-react/dist/esm/icons/monitor.js
+var __iconNode25 = [
+  ["rect", { width: "20", height: "14", x: "2", y: "3", rx: "2", key: "48i651" }],
+  ["line", { x1: "8", x2: "16", y1: "21", y2: "21", key: "1svkeh" }],
+  ["line", { x1: "12", x2: "12", y1: "17", y2: "21", key: "vw1qmm" }]
+];
+var Monitor = createLucideIcon("monitor", __iconNode25);
+
+// node_modules/lucide-react/dist/esm/icons/panel-left.js
+var __iconNode26 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
+  ["path", { d: "M9 3v18", key: "fh3hqa" }]
+];
+var PanelLeft = createLucideIcon("panel-left", __iconNode26);
+
+// node_modules/lucide-react/dist/esm/icons/panel-right.js
+var __iconNode27 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
+  ["path", { d: "M15 3v18", key: "14nvp0" }]
+];
+var PanelRight = createLucideIcon("panel-right", __iconNode27);
+
+// node_modules/lucide-react/dist/esm/icons/panels-top-left.js
+var __iconNode28 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
+  ["path", { d: "M3 9h18", key: "1pudct" }],
+  ["path", { d: "M9 21V9", key: "1oto5p" }]
+];
+var PanelsTopLeft = createLucideIcon("panels-top-left", __iconNode28);
+
+// node_modules/lucide-react/dist/esm/icons/pencil.js
+var __iconNode29 = [
+  [
+    "path",
+    {
+      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+      key: "1a8usu"
+    }
+  ],
+  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+];
+var Pencil = createLucideIcon("pencil", __iconNode29);
+
+// node_modules/lucide-react/dist/esm/icons/plus.js
+var __iconNode30 = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+var Plus = createLucideIcon("plus", __iconNode30);
+
+// node_modules/lucide-react/dist/esm/icons/redo-2.js
+var __iconNode31 = [
+  ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
+  ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
+];
+var Redo2 = createLucideIcon("redo-2", __iconNode31);
+
+// node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
+var __iconNode32 = [
+  ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
+  ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
+  ["path", { d: "M16 16h5v5", key: "ccwih5" }]
+];
+var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode32);
+
+// node_modules/lucide-react/dist/esm/icons/refresh-cw.js
+var __iconNode33 = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+var RefreshCw = createLucideIcon("refresh-cw", __iconNode33);
+
+// node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
+var __iconNode34 = [
+  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
+];
+var RotateCcw = createLucideIcon("rotate-ccw", __iconNode34);
+
+// node_modules/lucide-react/dist/esm/icons/save.js
+var __iconNode35 = [
+  [
+    "path",
+    {
+      d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+      key: "1c8476"
+    }
+  ],
+  ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
+  ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
+];
+var Save = createLucideIcon("save", __iconNode35);
+
+// node_modules/lucide-react/dist/esm/icons/search.js
+var __iconNode36 = [
+  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+];
+var Search = createLucideIcon("search", __iconNode36);
+
+// node_modules/lucide-react/dist/esm/icons/smartphone.js
+var __iconNode37 = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+var Smartphone = createLucideIcon("smartphone", __iconNode37);
+
+// node_modules/lucide-react/dist/esm/icons/tablet.js
+var __iconNode38 = [
+  ["rect", { width: "16", height: "20", x: "4", y: "2", rx: "2", ry: "2", key: "76otgf" }],
+  ["line", { x1: "12", x2: "12.01", y1: "18", y2: "18", key: "1dp563" }]
+];
+var Tablet = createLucideIcon("tablet", __iconNode38);
+
+// node_modules/lucide-react/dist/esm/icons/trash-2.js
+var __iconNode39 = [
+  ["path", { d: "M10 11v6", key: "nco0om" }],
+  ["path", { d: "M14 11v6", key: "outv1u" }],
+  ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
+];
+var Trash2 = createLucideIcon("trash-2", __iconNode39);
+
+// node_modules/lucide-react/dist/esm/icons/undo-2.js
+var __iconNode40 = [
+  ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
+  ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
+];
+var Undo2 = createLucideIcon("undo-2", __iconNode40);
+
+// node_modules/lucide-react/dist/esm/icons/upload.js
+var __iconNode41 = [
+  ["path", { d: "M12 3v12", key: "1x0j5s" }],
+  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
+];
+var Upload = createLucideIcon("upload", __iconNode41);
+
+// node_modules/lucide-react/dist/esm/icons/x.js
+var __iconNode42 = [
+  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
+  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
+];
+var X = createLucideIcon("x", __iconNode42);
+
 // src/engine/document.ts
 var createEmptyDocument = () => ({
   root: { props: {} },
@@ -663,6 +1124,17 @@ var useEditorStore = zustand.create()(
     })
   }))
 );
+var useUiStore = zustand.create((set2) => ({
+  mode: "edit",
+  leftPanelOpen: true,
+  rightPanelOpen: true,
+  setMode: (mode) => set2({ mode }),
+  toggleMode: () => set2((s2) => ({ mode: s2.mode === "edit" ? "preview" : "edit" })),
+  toggleLeftPanel: () => set2((s2) => ({ leftPanelOpen: !s2.leftPanelOpen })),
+  toggleRightPanel: () => set2((s2) => ({ rightPanelOpen: !s2.rightPanelOpen })),
+  setLeftPanelOpen: (open) => set2({ leftPanelOpen: open }),
+  setRightPanelOpen: (open) => set2({ rightPanelOpen: open })
+}));
 var StudioContext = React__default.createContext(null);
 var useStudio = () => {
   const ctx = React__default.useContext(StudioContext);
@@ -671,6 +1143,64 @@ var useStudio = () => {
   }
   return ctx;
 };
+var merchantInfoCache = /* @__PURE__ */ new Map();
+var CACHE_TTL = 5 * 60 * 1e3;
+function useLanguages() {
+  const { apiClient, secretKey, apiUrl } = useTecof();
+  const [merchantInfo, setMerchantInfo] = React__default.useState(null);
+  const [loading, setLoading] = React__default.useState(true);
+  const [error2, setError] = React__default.useState(null);
+  const [activeTab, setActiveTab] = React__default.useState("");
+  const cacheKey = React__default.useMemo(() => `${apiUrl}::${secretKey}`, [apiUrl, secretKey]);
+  React__default.useEffect(() => {
+    let cancelled = false;
+    const fetchInfo = async () => {
+      const cached = merchantInfoCache.get(cacheKey);
+      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+        setMerchantInfo(cached.data);
+        if (!activeTab) setActiveTab(cached.data.defaultLanguage);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      const res2 = await apiClient.getMerchantInfo();
+      if (cancelled) return;
+      if (res2.success && res2.data) {
+        merchantInfoCache.set(cacheKey, { data: res2.data, ts: Date.now() });
+        setMerchantInfo(res2.data);
+        if (!activeTab) setActiveTab(res2.data.defaultLanguage);
+      } else {
+        setError(res2.message || "Failed to load languages");
+        const fallback = { languages: ["tr"], defaultLanguage: "tr" };
+        setMerchantInfo(fallback);
+        if (!activeTab) setActiveTab("tr");
+      }
+      setLoading(false);
+    };
+    fetchInfo();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiClient, cacheKey]);
+  return { merchantInfo, loading, error: error2, activeTab, setActiveTab };
+}
+var ActiveLanguageContext = React__default.createContext(null);
+var LanguageProvider = ({ children }) => {
+  const { merchantInfo, activeTab, setActiveTab, loading } = useLanguages();
+  const value = React__default.useMemo(
+    () => ({
+      languages: merchantInfo?.languages || [],
+      defaultLanguage: merchantInfo?.defaultLanguage || "",
+      activeLanguage: activeTab,
+      setActiveLanguage: setActiveTab,
+      loading
+    }),
+    [merchantInfo, activeTab, setActiveTab, loading]
+  );
+  return /* @__PURE__ */ jsxRuntime.jsx(ActiveLanguageContext.Provider, { value, children });
+};
+var useActiveLanguage = () => React__default.useContext(ActiveLanguageContext);
 var Frame = ({
   children,
   title = "Canvas Frame",
@@ -709,9 +1239,6 @@ var Frame = ({
           padding: 0;
           background-color: transparent;
           min-height: 100vh;
-        }
-        body {
-          padding: 32px 16px;
           box-sizing: border-box;
         }
         .tecof-node-wrapper {
@@ -953,8 +1480,254 @@ function setDragGhost(e3, label) {
     win.requestAnimationFrame(() => ghost.remove());
   });
 }
+
+// src/studio/style/tokens.ts
+var SPACE = ["0", "1", "2", "3", "4", "5", "6", "8", "10", "12", "16", "20", "24"];
+var spaceOptions = () => SPACE.map((v2) => ({ label: v2, value: v2 }));
+var COLOR_OPTIONS = [
+  { label: "Yok", value: "" },
+  { label: "\u015Eeffaf", value: "transparent", swatch: "transparent" },
+  { label: "Beyaz", value: "white", swatch: "#ffffff" },
+  { label: "Siyah", value: "black", swatch: "#000000" },
+  // Brand palette (Tailwind v4 @theme: --color-primary-*)
+  ...["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"].map((s2) => ({
+    label: `Primary ${s2}`,
+    value: `primary-${s2}`,
+    swatch: `var(--tecof-primary-${s2})`
+  })),
+  // A few neutrals (Tailwind defaults)
+  { label: "Zinc 100", value: "zinc-100", swatch: "#f4f4f5" },
+  { label: "Zinc 300", value: "zinc-300", swatch: "#d4d4d8" },
+  { label: "Zinc 500", value: "zinc-500", swatch: "#71717a" },
+  { label: "Zinc 700", value: "zinc-700", swatch: "#3f3f46" },
+  { label: "Zinc 900", value: "zinc-900", swatch: "#18181b" }
+];
+var opts = (values, withNone = true) => [
+  ...withNone ? [{ label: "\u2014", value: "" }] : [],
+  ...values.map((v2) => ({ label: v2, value: v2 }))
+];
+var STYLE_CONTROLS = [
+  // Layout
+  {
+    id: "display",
+    label: "Display",
+    group: "layout",
+    type: "select",
+    options: opts(["block", "inline-block", "flex", "inline-flex", "grid", "hidden"]),
+    toClass: (v2) => v2 || null
+  },
+  {
+    id: "flexDir",
+    label: "Y\xF6n",
+    group: "layout",
+    type: "segment",
+    options: opts(["row", "col"]),
+    toClass: (v2) => v2 ? `flex-${v2}` : null
+  },
+  {
+    id: "justify",
+    label: "Yatay hiza",
+    group: "layout",
+    type: "select",
+    options: opts(["start", "center", "end", "between", "around", "evenly"]),
+    toClass: (v2) => v2 ? `justify-${v2}` : null
+  },
+  {
+    id: "items",
+    label: "Dikey hiza",
+    group: "layout",
+    type: "select",
+    options: opts(["start", "center", "end", "stretch", "baseline"]),
+    toClass: (v2) => v2 ? `items-${v2}` : null
+  },
+  {
+    id: "gap",
+    label: "Bo\u015Fluk (gap)",
+    group: "layout",
+    type: "space",
+    options: spaceOptions(),
+    toClass: (v2) => v2 ? `gap-${v2}` : null
+  },
+  // Spacing — padding
+  { id: "p", label: "Padding", group: "spacing", type: "space", options: spaceOptions(), toClass: (v2) => v2 ? `p-${v2}` : null },
+  { id: "px", label: "Padding X", group: "spacing", type: "space", options: spaceOptions(), toClass: (v2) => v2 ? `px-${v2}` : null },
+  { id: "py", label: "Padding Y", group: "spacing", type: "space", options: spaceOptions(), toClass: (v2) => v2 ? `py-${v2}` : null },
+  // Spacing — margin
+  { id: "m", label: "Margin", group: "spacing", type: "space", options: spaceOptions(), toClass: (v2) => v2 ? `m-${v2}` : null },
+  { id: "mx", label: "Margin X", group: "spacing", type: "space", options: spaceOptions(), toClass: (v2) => v2 ? `mx-${v2}` : null },
+  { id: "my", label: "Margin Y", group: "spacing", type: "space", options: spaceOptions(), toClass: (v2) => v2 ? `my-${v2}` : null },
+  // Sizing
+  {
+    id: "w",
+    label: "Geni\u015Flik",
+    group: "sizing",
+    type: "select",
+    options: opts(["auto", "full", "screen", "1/2", "1/3", "2/3", "1/4", "3/4", "fit"]),
+    toClass: (v2) => v2 ? `w-${v2}` : null
+  },
+  {
+    id: "h",
+    label: "Y\xFCkseklik",
+    group: "sizing",
+    type: "select",
+    options: opts(["auto", "full", "screen", "fit"]),
+    toClass: (v2) => v2 ? `h-${v2}` : null
+  },
+  {
+    id: "maxW",
+    label: "Maks. geni\u015Flik",
+    group: "sizing",
+    type: "select",
+    options: opts(["none", "sm", "md", "lg", "xl", "2xl", "4xl", "6xl", "full"]),
+    toClass: (v2) => v2 ? `max-w-${v2}` : null
+  },
+  // Background
+  {
+    id: "bg",
+    label: "Arka plan",
+    group: "background",
+    type: "color",
+    options: COLOR_OPTIONS,
+    toClass: (v2) => v2 ? `bg-${v2}` : null
+  },
+  // Typography
+  {
+    id: "text",
+    label: "Metin rengi",
+    group: "typography",
+    type: "color",
+    options: COLOR_OPTIONS,
+    toClass: (v2) => v2 ? `text-${v2}` : null
+  },
+  {
+    id: "fontSize",
+    label: "Yaz\u0131 boyutu",
+    group: "typography",
+    type: "select",
+    options: opts(["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl"]),
+    toClass: (v2) => v2 ? `text-${v2}` : null
+  },
+  {
+    id: "fontWeight",
+    label: "Kal\u0131nl\u0131k",
+    group: "typography",
+    type: "select",
+    options: opts(["normal", "medium", "semibold", "bold", "extrabold"]),
+    toClass: (v2) => v2 ? `font-${v2}` : null
+  },
+  {
+    id: "align",
+    label: "Metin hizas\u0131",
+    group: "typography",
+    type: "segment",
+    options: opts(["left", "center", "right", "justify"]),
+    toClass: (v2) => v2 ? `text-${v2}` : null
+  },
+  {
+    id: "leading",
+    label: "Sat\u0131r y\xFCks.",
+    group: "typography",
+    type: "select",
+    options: opts(["none", "tight", "snug", "normal", "relaxed", "loose"]),
+    toClass: (v2) => v2 ? `leading-${v2}` : null
+  },
+  // Border
+  {
+    id: "radius",
+    label: "K\xF6\u015Fe yar\u0131\xE7ap\u0131",
+    group: "border",
+    type: "select",
+    options: opts(["none", "sm", "md", "lg", "xl", "2xl", "3xl", "full"]),
+    toClass: (v2) => v2 ? v2 === "md" ? "rounded" : `rounded-${v2}` : null
+  },
+  {
+    id: "border",
+    label: "Kenarl\u0131k",
+    group: "border",
+    type: "select",
+    options: opts(["0", "2", "4", "8"]),
+    toClass: (v2) => v2 ? v2 === "1" ? "border" : `border-${v2}` : null
+  },
+  {
+    id: "borderColor",
+    label: "Kenarl\u0131k rengi",
+    group: "border",
+    type: "color",
+    options: COLOR_OPTIONS,
+    toClass: (v2) => v2 ? `border-${v2}` : null
+  },
+  // Effects
+  {
+    id: "shadow",
+    label: "G\xF6lge",
+    group: "effects",
+    type: "select",
+    options: opts(["none", "sm", "md", "lg", "xl", "2xl"]),
+    toClass: (v2) => v2 ? v2 === "md" ? "shadow" : `shadow-${v2}` : null
+  },
+  {
+    id: "opacity",
+    label: "Saydaml\u0131k",
+    group: "effects",
+    type: "select",
+    options: opts(["0", "25", "50", "75", "90", "100"]),
+    toClass: (v2) => v2 ? `opacity-${v2}` : null
+  }
+];
+var CONTROL_BY_ID = Object.fromEntries(
+  STYLE_CONTROLS.map((c2) => [c2.id, c2])
+);
+var GROUP_LABELS = {
+  layout: "Yerle\u015Fim",
+  spacing: "Bo\u015Fluk",
+  sizing: "Boyut",
+  typography: "Tipografi",
+  background: "Arka Plan",
+  border: "Kenarl\u0131k",
+  effects: "Efektler"
+};
+var BP_PREFIX = { base: "", sm: "sm:", md: "md:", lg: "lg:", xl: "xl:" };
+var STATE_PREFIX = { hover: "hover:", focus: "focus:", active: "active:" };
+
+// src/studio/style/compileStyles.ts
+function emit(props, prefix) {
+  if (!props) return [];
+  const out = [];
+  for (const [id, value] of Object.entries(props)) {
+    if (!value) continue;
+    const control = CONTROL_BY_ID[id];
+    if (!control) continue;
+    const cls = control.toClass(value);
+    if (cls) out.push(prefix + cls);
+  }
+  return out;
+}
+function compileStyles(styles3) {
+  if (!styles3) return "";
+  const classes = [
+    ...emit(styles3.base, BP_PREFIX.base),
+    ...emit(styles3.sm, BP_PREFIX.sm),
+    ...emit(styles3.md, BP_PREFIX.md),
+    ...emit(styles3.lg, BP_PREFIX.lg),
+    ...emit(styles3.xl, BP_PREFIX.xl)
+  ];
+  if (styles3.states) {
+    for (const [state3, props] of Object.entries(styles3.states)) {
+      classes.push(...emit(props, STATE_PREFIX[state3] || ""));
+    }
+  }
+  return classes.join(" ");
+}
+function mergeClassName(authorClassName, styleClassName) {
+  return [authorClassName, styleClassName].filter(Boolean).join(" ").trim();
+}
+
+// src/studio/style/types.ts
+var STYLES_PROP = "_tecofStyles";
 var NodeRenderer = ({ node, index: index2, zoneKey }) => {
-  const { config: config3, metadata, readOnly } = useStudio();
+  const { config: config3, metadata, readOnly: studioReadOnly } = useStudio();
+  const mode = useUiStore((s2) => s2.mode);
+  const locked = studioReadOnly || mode === "preview";
   const componentConfig = config3.components[node.type];
   const selectNode = useEditorStore((state3) => state3.selectNode);
   const hoverNode = useEditorStore((state3) => state3.hoverNode);
@@ -965,25 +1738,25 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
   const autoScrollerRef = React__default.useRef(createEventAutoScroller());
   const handleMouseEnter = React__default.useCallback(
     (e3) => {
-      if (readOnly) return;
+      if (locked) return;
       e3.stopPropagation();
       hoverNode(node.props.id);
     },
-    [hoverNode, node.props.id, readOnly]
+    [hoverNode, node.props.id, locked]
   );
   const handleMouseLeave = React__default.useCallback(
     (e3) => {
-      if (readOnly) return;
+      if (locked) return;
       e3.stopPropagation();
       if (hoveredId === node.props.id) {
         hoverNode(null);
       }
     },
-    [hoverNode, node.props.id, hoveredId, readOnly]
+    [hoverNode, node.props.id, hoveredId, locked]
   );
   const handleClick = React__default.useCallback(
     (e3) => {
-      if (readOnly) return;
+      if (locked) return;
       e3.stopPropagation();
       selectNode(node.props.id);
       const isEmbedded = typeof window !== "undefined" && window.parent !== window;
@@ -1000,11 +1773,11 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
         );
       }
     },
-    [selectNode, node.props.id, node.type, readOnly]
+    [selectNode, node.props.id, node.type, locked]
   );
   const handleDoubleClick = React__default.useCallback(
     (e3) => {
-      if (readOnly) return;
+      if (locked) return;
       const target = e3.target;
       const validTags = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "div"];
       const tag = target.tagName.toLowerCase();
@@ -1097,11 +1870,11 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
       target.addEventListener("blur", handleBlur);
       target.addEventListener("keydown", handleKeyDown);
     },
-    [node.props, node.props.id, readOnly]
+    [node.props, node.props.id, locked]
   );
   const [dragOverPosition, setDragOverPosition] = React__default.useState(null);
   const handleDragOver = React__default.useCallback((e3) => {
-    if (readOnly) return;
+    if (locked) return;
     e3.preventDefault();
     e3.stopPropagation();
     autoScrollerRef.current.update(e3);
@@ -1112,14 +1885,14 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
     } else {
       setDragOverPosition("bottom");
     }
-  }, [readOnly]);
+  }, [locked]);
   const handleDragLeave = React__default.useCallback((e3) => {
     if (e3.currentTarget.contains(e3.relatedTarget)) return;
     autoScrollerRef.current.stop();
     setDragOverPosition(null);
   }, []);
   const handleDrop = React__default.useCallback((e3) => {
-    if (readOnly) return;
+    if (locked) return;
     e3.preventDefault();
     e3.stopPropagation();
     autoScrollerRef.current.stop();
@@ -1132,7 +1905,7 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
       useEditorStore.getState().insertNode(createNode(config3, type), zoneKey || void 0, targetIndex);
     }
     endDrag();
-  }, [dragOverPosition, index2, node.props.id, zoneKey, config3, readOnly, endDrag]);
+  }, [dragOverPosition, index2, node.props.id, zoneKey, config3, locked, endDrag]);
   if (!componentConfig) {
     return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-node-missing", children: [
       "Bile\u015Fen bulunamad\u0131: ",
@@ -1142,21 +1915,30 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
   const label = componentConfig.label || node.type;
   const wrapperClassName = [
     "tecof-node-wrapper",
-    readOnly ? "is-readonly" : "",
+    locked ? "is-readonly" : "",
     drag?.id === node.props.id ? "is-dragging" : ""
   ].filter(Boolean).join(" ");
+  const styleClassName = compileStyles(node.props[STYLES_PROP]);
   const componentProps = {
     ...node.props,
+    className: mergeClassName(node.props.className, styleClassName),
     puck: {
       renderDropZone,
-      isEditing: !readOnly,
+      isEditing: !locked,
       metadata: {
         ...metadata || {},
         ...componentConfig.metadata || {}
       }
     },
-    editMode: !readOnly
+    editMode: !locked
   };
+  if (componentConfig.fields) {
+    Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]) => {
+      if (fieldDef && fieldDef.type === "slot") {
+        componentProps[fieldName] = renderDropZone({ zone: fieldName });
+      }
+    });
+  }
   return /* @__PURE__ */ jsxRuntime.jsx(ParentNodeContext.Provider, { value: node.props.id, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-node", children: [
     dragOverPosition === "top" && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-drop-line" }),
     /* @__PURE__ */ jsxRuntime.jsx(
@@ -1167,7 +1949,7 @@ var NodeRenderer = ({ node, index: index2, zoneKey }) => {
         "data-tecof-type": node.type,
         "data-tecof-index": index2,
         "data-tecof-zone": zoneKey || "root",
-        draggable: !readOnly,
+        draggable: !locked,
         onDragStart: (e3) => {
           writeDragData(e3, { nodeId: node.props.id });
           e3.dataTransfer.effectAllowed = "move";
@@ -1270,440 +2052,6 @@ var Canvas = () => {
   }) : renderedContent;
   return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-canvas-container", children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: viewportClassName, children: /* @__PURE__ */ jsxRuntime.jsx(Frame, { className: "tecof-canvas-frame", children: contentWithLayout }) }) });
 };
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.js
-var mergeClasses = (...classes) => classes.filter((className, index2, array) => {
-  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
-}).join(" ").trim();
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.js
-var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toCamelCase.js
-var toCamelCase = (string) => string.replace(
-  /^([A-Z])|[\s-_]+(\w)/g,
-  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
-);
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toPascalCase.js
-var toPascalCase = (string) => {
-  const camelCase = toCamelCase(string);
-  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
-};
-
-// node_modules/lucide-react/dist/esm/defaultAttributes.js
-var defaultAttributes = {
-  xmlns: "http://www.w3.org/2000/svg",
-  width: 24,
-  height: 24,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round"
-};
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/hasA11yProp.js
-var hasA11yProp = (props) => {
-  for (const prop in props) {
-    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
-      return true;
-    }
-  }
-  return false;
-};
-var LucideContext = React__default.createContext({});
-var useLucideContext = () => React__default.useContext(LucideContext);
-
-// node_modules/lucide-react/dist/esm/Icon.js
-var Icon = React__default.forwardRef(
-  ({ color, size, strokeWidth, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => {
-    const {
-      size: contextSize = 24,
-      strokeWidth: contextStrokeWidth = 2,
-      absoluteStrokeWidth: contextAbsoluteStrokeWidth = false,
-      color: contextColor = "currentColor",
-      className: contextClass = ""
-    } = useLucideContext() ?? {};
-    const calculatedStrokeWidth = absoluteStrokeWidth ?? contextAbsoluteStrokeWidth ? Number(strokeWidth ?? contextStrokeWidth) * 24 / Number(size ?? contextSize) : strokeWidth ?? contextStrokeWidth;
-    return React__default.createElement(
-      "svg",
-      {
-        ref,
-        ...defaultAttributes,
-        width: size ?? contextSize ?? defaultAttributes.width,
-        height: size ?? contextSize ?? defaultAttributes.height,
-        stroke: color ?? contextColor,
-        strokeWidth: calculatedStrokeWidth,
-        className: mergeClasses("lucide", contextClass, className),
-        ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
-        ...rest
-      },
-      [
-        ...iconNode.map(([tag, attrs]) => React__default.createElement(tag, attrs)),
-        ...Array.isArray(children) ? children : [children]
-      ]
-    );
-  }
-);
-
-// node_modules/lucide-react/dist/esm/createLucideIcon.js
-var createLucideIcon = (iconName, iconNode) => {
-  const Component2 = React__default.forwardRef(
-    ({ className, ...props }, ref) => React__default.createElement(Icon, {
-      ref,
-      iconNode,
-      className: mergeClasses(
-        `lucide-${toKebabCase(toPascalCase(iconName))}`,
-        `lucide-${iconName}`,
-        className
-      ),
-      ...props
-    })
-  );
-  Component2.displayName = toPascalCase(iconName);
-  return Component2;
-};
-
-// node_modules/lucide-react/dist/esm/icons/arrow-down.js
-var __iconNode = [
-  ["path", { d: "M12 5v14", key: "s699le" }],
-  ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
-];
-var ArrowDown = createLucideIcon("arrow-down", __iconNode);
-
-// node_modules/lucide-react/dist/esm/icons/arrow-up.js
-var __iconNode2 = [
-  ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
-  ["path", { d: "M12 19V5", key: "x0mq9r" }]
-];
-var ArrowUp = createLucideIcon("arrow-up", __iconNode2);
-
-// node_modules/lucide-react/dist/esm/icons/check.js
-var __iconNode3 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-var Check = createLucideIcon("check", __iconNode3);
-
-// node_modules/lucide-react/dist/esm/icons/chevron-down.js
-var __iconNode4 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-var ChevronDown = createLucideIcon("chevron-down", __iconNode4);
-
-// node_modules/lucide-react/dist/esm/icons/chevron-right.js
-var __iconNode5 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-var ChevronRight = createLucideIcon("chevron-right", __iconNode5);
-
-// node_modules/lucide-react/dist/esm/icons/chevron-up.js
-var __iconNode6 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-var ChevronUp = createLucideIcon("chevron-up", __iconNode6);
-
-// node_modules/lucide-react/dist/esm/icons/code.js
-var __iconNode7 = [
-  ["path", { d: "m16 18 6-6-6-6", key: "eg8j8" }],
-  ["path", { d: "m8 6-6 6 6 6", key: "ppft3o" }]
-];
-var Code = createLucideIcon("code", __iconNode7);
-
-// node_modules/lucide-react/dist/esm/icons/copy.js
-var __iconNode8 = [
-  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
-  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
-];
-var Copy = createLucideIcon("copy", __iconNode8);
-
-// node_modules/lucide-react/dist/esm/icons/database.js
-var __iconNode9 = [
-  ["ellipse", { cx: "12", cy: "5", rx: "9", ry: "3", key: "msslwz" }],
-  ["path", { d: "M3 5V19A9 3 0 0 0 21 19V5", key: "1wlel7" }],
-  ["path", { d: "M3 12A9 3 0 0 0 21 12", key: "mv7ke4" }]
-];
-var Database = createLucideIcon("database", __iconNode9);
-
-// node_modules/lucide-react/dist/esm/icons/external-link.js
-var __iconNode10 = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-];
-var ExternalLink = createLucideIcon("external-link", __iconNode10);
-
-// node_modules/lucide-react/dist/esm/icons/file-text.js
-var __iconNode11 = [
-  [
-    "path",
-    {
-      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
-      key: "1oefj6"
-    }
-  ],
-  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
-  ["path", { d: "M10 9H8", key: "b1mrlr" }],
-  ["path", { d: "M16 13H8", key: "t4e002" }],
-  ["path", { d: "M16 17H8", key: "z1uh3a" }]
-];
-var FileText = createLucideIcon("file-text", __iconNode11);
-
-// node_modules/lucide-react/dist/esm/icons/file.js
-var __iconNode12 = [
-  [
-    "path",
-    {
-      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
-      key: "1oefj6"
-    }
-  ],
-  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
-];
-var File2 = createLucideIcon("file", __iconNode12);
-
-// node_modules/lucide-react/dist/esm/icons/folder-open.js
-var __iconNode13 = [
-  [
-    "path",
-    {
-      d: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2",
-      key: "usdka0"
-    }
-  ]
-];
-var FolderOpen = createLucideIcon("folder-open", __iconNode13);
-
-// node_modules/lucide-react/dist/esm/icons/globe.js
-var __iconNode14 = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
-  ["path", { d: "M2 12h20", key: "9i4pu4" }]
-];
-var Globe = createLucideIcon("globe", __iconNode14);
-
-// node_modules/lucide-react/dist/esm/icons/grid-3x3.js
-var __iconNode15 = [
-  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
-  ["path", { d: "M3 9h18", key: "1pudct" }],
-  ["path", { d: "M3 15h18", key: "5xshup" }],
-  ["path", { d: "M9 3v18", key: "fh3hqa" }],
-  ["path", { d: "M15 3v18", key: "14nvp0" }]
-];
-var Grid3x3 = createLucideIcon("grid-3x3", __iconNode15);
-
-// node_modules/lucide-react/dist/esm/icons/grip-vertical.js
-var __iconNode16 = [
-  ["circle", { cx: "9", cy: "12", r: "1", key: "1vctgf" }],
-  ["circle", { cx: "9", cy: "5", r: "1", key: "hp0tcf" }],
-  ["circle", { cx: "9", cy: "19", r: "1", key: "fkjjf6" }],
-  ["circle", { cx: "15", cy: "12", r: "1", key: "1tmaij" }],
-  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
-  ["circle", { cx: "15", cy: "19", r: "1", key: "f4zoj3" }]
-];
-var GripVertical = createLucideIcon("grip-vertical", __iconNode16);
-
-// node_modules/lucide-react/dist/esm/icons/image-plus.js
-var __iconNode17 = [
-  ["path", { d: "M16 5h6", key: "1vod17" }],
-  ["path", { d: "M19 2v6", key: "4bpg5p" }],
-  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
-];
-var ImagePlus = createLucideIcon("image-plus", __iconNode17);
-
-// node_modules/lucide-react/dist/esm/icons/image.js
-var __iconNode18 = [
-  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
-];
-var Image2 = createLucideIcon("image", __iconNode18);
-
-// node_modules/lucide-react/dist/esm/icons/languages.js
-var __iconNode19 = [
-  ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
-  ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
-  ["path", { d: "M2 5h12", key: "or177f" }],
-  ["path", { d: "M7 2h1", key: "1t2jsx" }],
-  ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
-  ["path", { d: "M14 18h6", key: "1m8k6r" }]
-];
-var Languages = createLucideIcon("languages", __iconNode19);
-
-// node_modules/lucide-react/dist/esm/icons/layers.js
-var __iconNode20 = [
-  [
-    "path",
-    {
-      d: "M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z",
-      key: "zw3jo"
-    }
-  ],
-  [
-    "path",
-    {
-      d: "M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12",
-      key: "1wduqc"
-    }
-  ],
-  [
-    "path",
-    {
-      d: "M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17",
-      key: "kqbvx6"
-    }
-  ]
-];
-var Layers = createLucideIcon("layers", __iconNode20);
-
-// node_modules/lucide-react/dist/esm/icons/link-2.js
-var __iconNode21 = [
-  ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
-  ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
-  ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
-];
-var Link2 = createLucideIcon("link-2", __iconNode21);
-
-// node_modules/lucide-react/dist/esm/icons/link.js
-var __iconNode22 = [
-  ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
-  ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
-];
-var Link = createLucideIcon("link", __iconNode22);
-
-// node_modules/lucide-react/dist/esm/icons/loader-circle.js
-var __iconNode23 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-var LoaderCircle = createLucideIcon("loader-circle", __iconNode23);
-
-// node_modules/lucide-react/dist/esm/icons/monitor.js
-var __iconNode24 = [
-  ["rect", { width: "20", height: "14", x: "2", y: "3", rx: "2", key: "48i651" }],
-  ["line", { x1: "8", x2: "16", y1: "21", y2: "21", key: "1svkeh" }],
-  ["line", { x1: "12", x2: "12", y1: "17", y2: "21", key: "vw1qmm" }]
-];
-var Monitor = createLucideIcon("monitor", __iconNode24);
-
-// node_modules/lucide-react/dist/esm/icons/panels-top-left.js
-var __iconNode25 = [
-  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
-  ["path", { d: "M3 9h18", key: "1pudct" }],
-  ["path", { d: "M9 21V9", key: "1oto5p" }]
-];
-var PanelsTopLeft = createLucideIcon("panels-top-left", __iconNode25);
-
-// node_modules/lucide-react/dist/esm/icons/pencil.js
-var __iconNode26 = [
-  [
-    "path",
-    {
-      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
-      key: "1a8usu"
-    }
-  ],
-  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
-];
-var Pencil = createLucideIcon("pencil", __iconNode26);
-
-// node_modules/lucide-react/dist/esm/icons/plus.js
-var __iconNode27 = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-var Plus = createLucideIcon("plus", __iconNode27);
-
-// node_modules/lucide-react/dist/esm/icons/redo-2.js
-var __iconNode28 = [
-  ["path", { d: "m15 14 5-5-5-5", key: "12vg1m" }],
-  ["path", { d: "M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13", key: "6uklza" }]
-];
-var Redo2 = createLucideIcon("redo-2", __iconNode28);
-
-// node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
-var __iconNode29 = [
-  ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
-  ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
-  ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
-  ["path", { d: "M16 16h5v5", key: "ccwih5" }]
-];
-var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode29);
-
-// node_modules/lucide-react/dist/esm/icons/refresh-cw.js
-var __iconNode30 = [
-  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-  ["path", { d: "M8 16H3v5", key: "1cv678" }]
-];
-var RefreshCw = createLucideIcon("refresh-cw", __iconNode30);
-
-// node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
-var __iconNode31 = [
-  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
-  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
-];
-var RotateCcw = createLucideIcon("rotate-ccw", __iconNode31);
-
-// node_modules/lucide-react/dist/esm/icons/save.js
-var __iconNode32 = [
-  [
-    "path",
-    {
-      d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
-      key: "1c8476"
-    }
-  ],
-  ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7", key: "1ydtos" }],
-  ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7", key: "t51u73" }]
-];
-var Save = createLucideIcon("save", __iconNode32);
-
-// node_modules/lucide-react/dist/esm/icons/search.js
-var __iconNode33 = [
-  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
-  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
-];
-var Search = createLucideIcon("search", __iconNode33);
-
-// node_modules/lucide-react/dist/esm/icons/smartphone.js
-var __iconNode34 = [
-  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-  ["path", { d: "M12 18h.01", key: "mhygvu" }]
-];
-var Smartphone = createLucideIcon("smartphone", __iconNode34);
-
-// node_modules/lucide-react/dist/esm/icons/tablet.js
-var __iconNode35 = [
-  ["rect", { width: "16", height: "20", x: "4", y: "2", rx: "2", ry: "2", key: "76otgf" }],
-  ["line", { x1: "12", x2: "12.01", y1: "18", y2: "18", key: "1dp563" }]
-];
-var Tablet = createLucideIcon("tablet", __iconNode35);
-
-// node_modules/lucide-react/dist/esm/icons/trash-2.js
-var __iconNode36 = [
-  ["path", { d: "M10 11v6", key: "nco0om" }],
-  ["path", { d: "M14 11v6", key: "outv1u" }],
-  ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
-];
-var Trash2 = createLucideIcon("trash-2", __iconNode36);
-
-// node_modules/lucide-react/dist/esm/icons/undo-2.js
-var __iconNode37 = [
-  ["path", { d: "M9 14 4 9l5-5", key: "102s5s" }],
-  ["path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11", key: "f3b9sd" }]
-];
-var Undo2 = createLucideIcon("undo-2", __iconNode37);
-
-// node_modules/lucide-react/dist/esm/icons/upload.js
-var __iconNode38 = [
-  ["path", { d: "M12 3v12", key: "1x0j5s" }],
-  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
-];
-var Upload = createLucideIcon("upload", __iconNode38);
-
-// node_modules/lucide-react/dist/esm/icons/x.js
-var __iconNode39 = [
-  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
-  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
-];
-var X = createLucideIcon("x", __iconNode39);
 var getOutlineStyle = (coords) => ({
   "--tecof-outline-top": `${coords.top}px`,
   "--tecof-outline-left": `${coords.left}px`,
@@ -1764,6 +2112,7 @@ var SelectionOverlay = () => {
   const documentState = useEditorStore((state3) => state3.document);
   const selectedId = useEditorStore((state3) => state3.selection.selectedId);
   const hoveredId = useEditorStore((state3) => state3.selection.hoveredId);
+  const mode = useUiStore((state3) => state3.mode);
   const selectNode = useEditorStore((state3) => state3.selectNode);
   const removeNode2 = useEditorStore((state3) => state3.removeNode);
   const duplicateNode2 = useEditorStore((state3) => state3.duplicateNode);
@@ -1796,6 +2145,7 @@ var SelectionOverlay = () => {
     moveNode2(selectedId, zoneKey, newIndex);
   };
   const breadcrumbs = selectedId ? getBreadcrumbs(documentState, selectedId) : [];
+  if (mode === "preview") return null;
   return /* @__PURE__ */ jsxRuntime.jsxs(
     "div",
     {
@@ -2157,6 +2507,21 @@ var FieldRenderer = ({
         )
       ] }) });
     }
+    case "object": {
+      const objectFields = definition.objectFields || {};
+      const objVal = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+      return /* @__PURE__ */ jsxRuntime.jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-object", children: Object.entries(objectFields).map(([subFieldName, subFieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
+        FieldRenderer,
+        {
+          name: subFieldName,
+          definition: subFieldDef,
+          value: objVal[subFieldName],
+          onChange: (newSubVal) => onChange({ ...objVal, [subFieldName]: newSubVal }),
+          readOnly
+        },
+        subFieldName
+      )) }) });
+    }
     default:
       return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-unsupported", children: [
         'Desteklenmeyen alan t\xFCr\xFC: "',
@@ -2167,6 +2532,116 @@ var FieldRenderer = ({
       ] });
   }
 };
+var BREAKPOINTS = [
+  { key: "base", label: "Genel" },
+  { key: "sm", label: "sm" },
+  { key: "md", label: "md" },
+  { key: "lg", label: "lg" },
+  { key: "xl", label: "xl" }
+];
+var STATES = [
+  { key: "base", label: "Normal" },
+  { key: "hover", label: "Hover" },
+  { key: "focus", label: "Focus" },
+  { key: "active", label: "Active" }
+];
+var GROUP_ORDER = ["layout", "spacing", "sizing", "typography", "background", "border", "effects"];
+var StyleEditor = ({ value, onChange }) => {
+  const styles3 = value || {};
+  const [bp, setBp] = React__default.useState("base");
+  const [state3, setState2] = React__default.useState("base");
+  const layer = state3 === "base" ? styles3[bp] || {} : styles3.states?.[state3] || {};
+  const setLayerValue = (controlId, raw) => {
+    const nextLayer = { ...layer };
+    if (raw) nextLayer[controlId] = raw;
+    else delete nextLayer[controlId];
+    if (state3 === "base") {
+      onChange({ ...styles3, [bp]: nextLayer });
+    } else {
+      onChange({ ...styles3, states: { ...styles3.states, [state3]: nextLayer } });
+    }
+  };
+  const grouped = GROUP_ORDER.map((group) => ({
+    group,
+    controls: STYLE_CONTROLS.filter((c2) => c2.group === group)
+  })).filter((g) => g.controls.length > 0);
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-editor", children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-scopes", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", role: "group", "aria-label": "Breakpoint", children: BREAKPOINTS.map((b) => /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          className: `tecof-style-seg-btn${bp === b.key ? " is-active" : ""}`,
+          onClick: () => setBp(b.key),
+          children: b.label
+        },
+        b.key
+      )) }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", role: "group", "aria-label": "Durum", children: STATES.map((s2) => /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          className: `tecof-style-seg-btn${state3 === s2.key ? " is-active" : ""}`,
+          onClick: () => setState2(s2.key),
+          children: s2.label
+        },
+        s2.key
+      )) })
+    ] }),
+    grouped.map(({ group, controls }) => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-group", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-group-title", children: GROUP_LABELS[group] }),
+      controls.map((control) => /* @__PURE__ */ jsxRuntime.jsx(
+        ControlRow,
+        {
+          control,
+          value: layer[control.id] || "",
+          onChange: (v2) => setLayerValue(control.id, v2)
+        },
+        control.id
+      ))
+    ] }, group))
+  ] });
+};
+var ControlRow = ({
+  control,
+  value,
+  onChange
+}) => {
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-row", children: [
+    /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-style-label", children: control.label }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-control", children: control.type === "color" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: control.options.map((opt) => {
+      const isNone = opt.value === "";
+      return /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          title: opt.label,
+          className: `tecof-style-swatch${value === opt.value ? " is-active" : ""}${isNone ? " is-none" : ""}`,
+          style: !isNone ? { "--swatch": opt.swatch || opt.value } : void 0,
+          onClick: () => onChange(opt.value)
+        },
+        opt.value || "none"
+      );
+    }) }) : control.type === "segment" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", children: control.options.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(
+      "button",
+      {
+        type: "button",
+        className: `tecof-style-seg-btn${value === opt.value ? " is-active" : ""}`,
+        onClick: () => onChange(opt.value),
+        children: opt.label
+      },
+      opt.value || "none"
+    )) }) : /* @__PURE__ */ jsxRuntime.jsx(
+      "select",
+      {
+        className: "tecof-input-select tecof-style-select",
+        value,
+        onChange: (e3) => onChange(e3.target.value),
+        children: control.options.map((opt) => /* @__PURE__ */ jsxRuntime.jsx("option", { value: opt.value, children: opt.label }, opt.value || "none"))
+      }
+    ) })
+  ] });
+};
 var Inspector = () => {
   const documentState = useEditorStore((state3) => state3.document);
   const selectedId = useEditorStore((state3) => state3.selection.selectedId);
@@ -2174,15 +2649,27 @@ var Inspector = () => {
   const setRootProps2 = useEditorStore((state3) => state3.setRootProps);
   const selectNode = useEditorStore((state3) => state3.selectNode);
   const { config: config3, readOnly } = useStudio();
+  const [tab, setTab] = React__default.useState("content");
+  const activeNodeInfo = React__default.useMemo(() => {
+    if (!selectedId) return null;
+    const details = findNodeById(documentState, selectedId);
+    if (!details) return null;
+    const componentConfig = config3.components[details.node.type];
+    const fields = componentConfig?.fields || {};
+    const editableFields = Object.entries(fields).filter(
+      ([_2, fieldDef]) => fieldDef?.type !== "slot"
+    );
+    return {
+      node: details.node,
+      label: componentConfig?.label || details.node.type,
+      editableFields
+    };
+  }, [selectedId, documentState, config3]);
   if (selectedId) {
-    const nodeDetails = findNodeById(documentState, selectedId);
-    if (!nodeDetails) {
+    if (!activeNodeInfo) {
       return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector", children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-empty", children: "Bile\u015Fen y\xFCkleniyor veya bulunamad\u0131." }) });
     }
-    const { node } = nodeDetails;
-    const componentConfig = config3.components[node.type];
-    const fields = componentConfig?.fields || {};
-    const label = componentConfig?.label || node.type;
+    const { node, label, editableFields } = activeNodeInfo;
     return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-inspector", children: [
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-inspector-header", children: [
         /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
@@ -2191,7 +2678,37 @@ var Inspector = () => {
         ] }),
         /* @__PURE__ */ jsxRuntime.jsx("button", { onClick: () => selectNode(null), className: "tecof-inspector-deselect", children: "Se\xE7imi Kald\u0131r" })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-fields", children: Object.keys(fields).length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-empty-fields", children: "Bu bile\u015Fenin d\xFCzenlenebilir alan\u0131 bulunmuyor." }) : Object.entries(fields).map(([fieldName, fieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-inspector-tabs", role: "tablist", "aria-label": "Inspector g\xF6r\xFCn\xFCm\xFC", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            role: "tab",
+            "aria-selected": tab === "content",
+            className: `tecof-inspector-tab${tab === "content" ? " is-active" : ""}`,
+            onClick: () => setTab("content"),
+            children: "\u0130\xE7erik"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            role: "tab",
+            "aria-selected": tab === "style",
+            className: `tecof-inspector-tab${tab === "style" ? " is-active" : ""}`,
+            onClick: () => setTab("style"),
+            children: "Stil"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-fields", children: tab === "style" ? /* @__PURE__ */ jsxRuntime.jsx(
+        StyleEditor,
+        {
+          value: node.props[STYLES_PROP],
+          onChange: (next) => updateProps2(selectedId, { [STYLES_PROP]: next })
+        }
+      ) : editableFields.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-empty-fields", children: "Bu bile\u015Fenin d\xFCzenlenebilir alan\u0131 bulunmuyor." }) : editableFields.map(([fieldName, fieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
         FieldRenderer,
         {
           name: fieldName,
@@ -2205,13 +2722,13 @@ var Inspector = () => {
     ] });
   }
   const rootFields = config3.root?.fields || {};
-  const hasRootFields = Object.keys(rootFields).length > 0;
+  const rootFieldEntries = Object.entries(rootFields);
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-inspector", children: [
     /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-header", children: /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
       /* @__PURE__ */ jsxRuntime.jsx("h3", { className: "tecof-inspector-title", children: "Sayfa Ayarlar\u0131" }),
       /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-inspector-id", children: "Genel sayfa konfig\xFCrasyonu" })
     ] }) }),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-fields", children: hasRootFields ? Object.entries(rootFields).map(([fieldName, fieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-inspector-fields", children: rootFieldEntries.length > 0 ? rootFieldEntries.map(([fieldName, fieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
       FieldRenderer,
       {
         name: fieldName,
@@ -2244,6 +2761,27 @@ var Inspector = () => {
     ] }) })
   ] });
 };
+var LanguageSwitcher = () => {
+  const lang = useActiveLanguage();
+  if (!lang || lang.languages.length <= 1) return null;
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-switcher", title: "D\xFCzenlenen dil", children: [
+    /* @__PURE__ */ jsxRuntime.jsx(Globe, { size: 14, className: "tecof-lang-switcher-icon" }),
+    /* @__PURE__ */ jsxRuntime.jsx(
+      "select",
+      {
+        className: "tecof-lang-switcher-select",
+        value: lang.activeLanguage,
+        onChange: (e3) => lang.setActiveLanguage(e3.target.value),
+        "aria-label": "D\xFCzenlenen dil",
+        children: lang.languages.map((code) => /* @__PURE__ */ jsxRuntime.jsxs("option", { value: code, children: [
+          code.toUpperCase(),
+          code === lang.defaultLanguage ? " \u2022 Varsay\u0131lan" : ""
+        ] }, code))
+      }
+    ),
+    /* @__PURE__ */ jsxRuntime.jsx(ChevronDown, { size: 12, className: "tecof-lang-switcher-caret" })
+  ] });
+};
 var TopBar = ({ onSave, saving, saveStatus }) => {
   const viewport = useEditorStore((state3) => state3.viewport);
   const setViewport = useEditorStore((state3) => state3.setViewport);
@@ -2251,62 +2789,118 @@ var TopBar = ({ onSave, saving, saveStatus }) => {
   const futureCount = useEditorStore((state3) => state3.history.future.length);
   const undo = useEditorStore((state3) => state3.undo);
   const redo = useEditorStore((state3) => state3.redo);
+  const mode = useUiStore((state3) => state3.mode);
+  const setMode = useUiStore((state3) => state3.setMode);
+  const leftPanelOpen = useUiStore((state3) => state3.leftPanelOpen);
+  const rightPanelOpen = useUiStore((state3) => state3.rightPanelOpen);
+  const toggleLeftPanel = useUiStore((state3) => state3.toggleLeftPanel);
+  const toggleRightPanel = useUiStore((state3) => state3.toggleRightPanel);
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar", children: [
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-title", children: [
-      /* @__PURE__ */ jsxRuntime.jsx("span", { children: "Sayfa D\xFCzenleyici" }),
-      saveStatus === "success" && /* @__PURE__ */ jsxRuntime.jsxs("span", { className: "tecof-topbar-saved", children: [
-        /* @__PURE__ */ jsxRuntime.jsx(Check, { size: 12 }),
-        " Kaydedildi"
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-group", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: toggleLeftPanel,
+          className: `tecof-icon-btn${leftPanelOpen ? " is-active" : ""}`,
+          title: "Sol paneli a\xE7/kapat",
+          "aria-pressed": leftPanelOpen,
+          children: /* @__PURE__ */ jsxRuntime.jsx(PanelLeft, { size: 16 })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-title", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("span", { children: "Sayfa D\xFCzenleyici" }),
+        saveStatus === "success" && /* @__PURE__ */ jsxRuntime.jsxs("span", { className: "tecof-topbar-saved", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(Check, { size: 12 }),
+          " Kaydedildi"
+        ] })
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-viewports", children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        "button",
-        {
-          type: "button",
-          onClick: () => setViewport("desktop"),
-          className: `tecof-vp-btn${viewport === "desktop" ? " is-active" : ""}`,
-          title: "Masa\xFCst\xFC",
-          "aria-label": "Masa\xFCst\xFC g\xF6r\xFCn\xFCm\xFC",
-          "aria-pressed": viewport === "desktop",
-          children: /* @__PURE__ */ jsxRuntime.jsx(Monitor, { size: 16 })
-        }
-      ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        "button",
-        {
-          type: "button",
-          onClick: () => setViewport("tablet"),
-          className: `tecof-vp-btn${viewport === "tablet" ? " is-active" : ""}`,
-          title: "Tablet",
-          "aria-label": "Tablet g\xF6r\xFCn\xFCm\xFC",
-          "aria-pressed": viewport === "tablet",
-          children: /* @__PURE__ */ jsxRuntime.jsx(Tablet, { size: 16 })
-        }
-      ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        "button",
-        {
-          type: "button",
-          onClick: () => setViewport("mobile"),
-          className: `tecof-vp-btn${viewport === "mobile" ? " is-active" : ""}`,
-          title: "Mobil",
-          "aria-label": "Mobil g\xF6r\xFCn\xFCm\xFC",
-          "aria-pressed": viewport === "mobile",
-          children: /* @__PURE__ */ jsxRuntime.jsx(Smartphone, { size: 16 })
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-actions", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-undoredo", children: [
-        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: undo, disabled: pastCount === 0, className: "tecof-icon-btn", title: "Geri Al", "aria-label": "Geri al", children: /* @__PURE__ */ jsxRuntime.jsx(Undo2, { size: 16 }) }),
-        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: redo, disabled: futureCount === 0, className: "tecof-icon-btn", title: "Yinele", "aria-label": "Yinele", children: /* @__PURE__ */ jsxRuntime.jsx(Redo2, { size: 16 }) })
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-group", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-viewports", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => setViewport("desktop"),
+            className: `tecof-vp-btn${viewport === "desktop" ? " is-active" : ""}`,
+            title: "Masa\xFCst\xFC",
+            children: /* @__PURE__ */ jsxRuntime.jsx(Monitor, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => setViewport("tablet"),
+            className: `tecof-vp-btn${viewport === "tablet" ? " is-active" : ""}`,
+            title: "Tablet",
+            children: /* @__PURE__ */ jsxRuntime.jsx(Tablet, { size: 16 })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            onClick: () => setViewport("mobile"),
+            className: `tecof-vp-btn${viewport === "mobile" ? " is-active" : ""}`,
+            title: "Mobil",
+            children: /* @__PURE__ */ jsxRuntime.jsx(Smartphone, { size: 16 })
+          }
+        )
       ] }),
       /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-topbar-divider" }),
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", onClick: onSave, disabled: saving, className: "tecof-btn-primary", "aria-busy": saving, children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-mode-toggle", role: "group", "aria-label": "D\xFCzenleme modu", children: [
+        /* @__PURE__ */ jsxRuntime.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setMode("edit"),
+            className: `tecof-mode-btn${mode === "edit" ? " is-active" : ""}`,
+            title: "D\xFCzenleme: bile\u015Fenleri se\xE7 ve d\xFCzenle",
+            children: [
+              /* @__PURE__ */ jsxRuntime.jsx(Pencil, { size: 14 }),
+              " D\xFCzenle"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => setMode("preview"),
+            className: `tecof-mode-btn${mode === "preview" ? " is-active" : ""}`,
+            title: "\xD6nizleme: link ve butonlar \xE7al\u0131\u015F\u0131r",
+            children: [
+              /* @__PURE__ */ jsxRuntime.jsx(Eye, { size: 14 }),
+              " \xD6nizle"
+            ]
+          }
+        )
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-group", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(LanguageSwitcher, {}),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-topbar-undoredo", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: undo, disabled: pastCount === 0, className: "tecof-icon-btn", title: "Geri Al", children: /* @__PURE__ */ jsxRuntime.jsx(Undo2, { size: 16 }) }),
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: redo, disabled: futureCount === 0, className: "tecof-icon-btn", title: "Yinele", children: /* @__PURE__ */ jsxRuntime.jsx(Redo2, { size: 16 }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-topbar-divider" }),
+      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", onClick: onSave, disabled: saving, className: "tecof-btn-primary", children: [
         /* @__PURE__ */ jsxRuntime.jsx(Save, { size: 14 }),
         saving ? "Kaydediliyor..." : "Taslak Kaydet"
-      ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          onClick: toggleRightPanel,
+          className: `tecof-icon-btn${rightPanelOpen ? " is-active" : ""}`,
+          title: "Sa\u011F paneli a\xE7/kapat",
+          "aria-pressed": rightPanelOpen,
+          children: /* @__PURE__ */ jsxRuntime.jsx(PanelRight, { size: 16 })
+        }
+      )
     ] })
   ] });
 };
@@ -2572,6 +3166,11 @@ var TecofStudio = ({
   const undo = useEditorStore((state3) => state3.undo);
   const redo = useEditorStore((state3) => state3.redo);
   const setViewport = useEditorStore((state3) => state3.setViewport);
+  const leftPanelOpen = useUiStore((state3) => state3.leftPanelOpen);
+  const rightPanelOpen = useUiStore((state3) => state3.rightPanelOpen);
+  const toggleLeftPanel = useUiStore((state3) => state3.toggleLeftPanel);
+  const toggleRightPanel = useUiStore((state3) => state3.toggleRightPanel);
+  const mode = useUiStore((state3) => state3.mode);
   const documentStateRef = React__default.useRef(documentState);
   documentStateRef.current = documentState;
   const isEmbedded = typeof window !== "undefined" && window.parent !== window;
@@ -2732,25 +3331,36 @@ var TecofStudio = ({
   }, [undo, redo, isEmbedded]);
   const studioContextValue = React__default.useMemo(() => ({
     config: config3,
-    readOnly: false,
+    readOnly: mode === "preview",
     apiClient
-  }), [config3, apiClient]);
+  }), [config3, mode, apiClient]);
   if (loading) {
     return /* @__PURE__ */ jsxRuntime.jsx(StudioSkeleton, { className });
   }
-  return /* @__PURE__ */ jsxRuntime.jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
+  return /* @__PURE__ */ jsxRuntime.jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxRuntime.jsx(LanguageProvider, { children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsxRuntime.jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus }),
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-studio-workspace-container", children: [
-      /* @__PURE__ */ jsxRuntime.jsx(LeftPanel, {}),
+      leftPanelOpen ? /* @__PURE__ */ jsxRuntime.jsx(LeftPanel, {}) : /* @__PURE__ */ jsxRuntime.jsx(PanelRail, { side: "left", onExpand: toggleLeftPanel }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-studio-workspace", children: [
         /* @__PURE__ */ jsxRuntime.jsx(Canvas, {}),
         /* @__PURE__ */ jsxRuntime.jsx(SelectionOverlay, {})
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsx(Inspector, {})
+      rightPanelOpen ? /* @__PURE__ */ jsxRuntime.jsx(Inspector, {}) : /* @__PURE__ */ jsxRuntime.jsx(PanelRail, { side: "right", onExpand: toggleRightPanel })
     ] }),
     saving && /* @__PURE__ */ jsxRuntime.jsx("div", { className: `tecof-studio-save-indicator${saveStatus === "error" ? " is-error" : ""}`, children: saveStatus === "error" ? "Kaydedilemedi" : "Kaydediliyor..." })
-  ] }) });
+  ] }) }) });
 };
+var PanelRail = ({ side, onExpand }) => /* @__PURE__ */ jsxRuntime.jsx("div", { className: `tecof-panel-rail tecof-panel-rail-${side}`, children: /* @__PURE__ */ jsxRuntime.jsx(
+  "button",
+  {
+    type: "button",
+    className: "tecof-icon-btn",
+    onClick: onExpand,
+    title: side === "left" ? "Sol paneli a\xE7" : "Sa\u011F paneli a\xE7",
+    "aria-label": side === "left" ? "Sol paneli a\xE7" : "Sa\u011F paneli a\xE7",
+    children: side === "left" ? /* @__PURE__ */ jsxRuntime.jsx(PanelLeft, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(PanelRight, { size: 16 })
+  }
+) });
 var StudioSkeleton = ({ className }) => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-skeleton ${className || ""}`.trim(), "aria-busy": "true", "aria-label": "St\xFCdyo y\xFCkleniyor", children: [
   /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-studio-skeleton-topbar", children: [
     /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-studio-skeleton-title" }),
@@ -2810,6 +3420,13 @@ var RenderNode = ({ node, index: index2 }) => {
     },
     editMode: false
   };
+  if (componentConfig.fields) {
+    Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]) => {
+      if (fieldDef && fieldDef.type === "slot") {
+        componentProps[fieldName] = /* @__PURE__ */ jsxRuntime.jsx(RenderDropZone, { zone: fieldName });
+      }
+    });
+  }
   return /* @__PURE__ */ jsxRuntime.jsx(ParentNodeContext2.Provider, { value: node.props.id || null, children: componentConfig.render(componentProps) });
 };
 var TecofRender = ({ data: data3, config: config3, className, cmsData }) => {
@@ -3187,48 +3804,6 @@ var UnderConstruction = ({
     ] })
   ] });
 };
-var merchantInfoCache = /* @__PURE__ */ new Map();
-var CACHE_TTL = 5 * 60 * 1e3;
-function useLanguages() {
-  const { apiClient, secretKey, apiUrl } = useTecof();
-  const [merchantInfo, setMerchantInfo] = React__default.useState(null);
-  const [loading, setLoading] = React__default.useState(true);
-  const [error2, setError] = React__default.useState(null);
-  const [activeTab, setActiveTab] = React__default.useState("");
-  const cacheKey = React__default.useMemo(() => `${apiUrl}::${secretKey}`, [apiUrl, secretKey]);
-  React__default.useEffect(() => {
-    let cancelled = false;
-    const fetchInfo = async () => {
-      const cached = merchantInfoCache.get(cacheKey);
-      if (cached && Date.now() - cached.ts < CACHE_TTL) {
-        setMerchantInfo(cached.data);
-        if (!activeTab) setActiveTab(cached.data.defaultLanguage);
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      const res2 = await apiClient.getMerchantInfo();
-      if (cancelled) return;
-      if (res2.success && res2.data) {
-        merchantInfoCache.set(cacheKey, { data: res2.data, ts: Date.now() });
-        setMerchantInfo(res2.data);
-        if (!activeTab) setActiveTab(res2.data.defaultLanguage);
-      } else {
-        setError(res2.message || "Failed to load languages");
-        const fallback = { languages: ["tr"], defaultLanguage: "tr" };
-        setMerchantInfo(fallback);
-        if (!activeTab) setActiveTab("tr");
-      }
-      setLoading(false);
-    };
-    fetchInfo();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiClient, cacheKey]);
-  return { merchantInfo, loading, error: error2, activeTab, setActiveTab };
-}
 var FieldErrorBoundary = class extends React__default.Component {
   constructor(props) {
     super(props);
@@ -3381,7 +3956,16 @@ var LanguageField = ({
   placeholder = "",
   isHtml = false
 }) => {
-  const { merchantInfo, loading, error: error2, activeTab, setActiveTab } = useLanguages();
+  const {
+    merchantInfo,
+    loading,
+    error: error2,
+    activeTab: localActiveTab,
+    setActiveTab: localSetActiveTab
+  } = useLanguages();
+  const globalLang = useActiveLanguage();
+  const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
+  const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const { apiClient } = useTecof();
   const [translating, setTranslating] = React__default.useState(false);
   const [statusMsg, setStatusMsg] = React__default.useState(null);
@@ -3461,7 +4045,7 @@ var LanguageField = ({
   const hasText = !!getCurrentText();
   const hasMultipleLanguages = languages.length > 1;
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-container", children: [
-    /* @__PURE__ */ jsxRuntime.jsx(
+    !globalLang && /* @__PURE__ */ jsxRuntime.jsx(
       LanguageTabBar,
       {
         languages,
@@ -7402,7 +7986,16 @@ var EditorField = ({
   onChange,
   readOnly
 }) => {
-  const { merchantInfo, loading, error: error2, activeTab, setActiveTab } = useLanguages();
+  const {
+    merchantInfo,
+    loading,
+    error: error2,
+    activeTab: localActiveTab,
+    setActiveTab: localSetActiveTab
+  } = useLanguages();
+  const globalLang = useActiveLanguage();
+  const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
+  const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const { cdnUrl } = useTecof();
   const values = React__default.useMemo(() => {
     if (!merchantInfo) return value || [];
@@ -7432,7 +8025,7 @@ var EditorField = ({
   if (!merchantInfo) return null;
   const { languages, defaultLanguage } = merchantInfo;
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-container tecof-editor-field", children: [
-    /* @__PURE__ */ jsxRuntime.jsx(
+    !globalLang && /* @__PURE__ */ jsxRuntime.jsx(
       LanguageTabBar,
       {
         languages,
@@ -8053,7 +8646,7 @@ var createView = (
     },
     write: write2 = () => {
     },
-    create: create5 = () => {
+    create: create6 = () => {
     },
     destroy: destroy3 = () => {
     },
@@ -8257,7 +8850,7 @@ var createView = (
       }
     });
     const internalAPI = createObject(internalAPIDefinition);
-    create5({
+    create6({
       root: internalAPI,
       props
     });
@@ -8704,8 +9297,8 @@ var applyFilters = (key, value, utils) => filters.filter((f2) => f2.key === key)
 var addFilter = (key, cb) => filters.push({ key, cb });
 var extendDefaultOptions = (additionalOptions) => Object.assign(defaultOptions, additionalOptions);
 var getOptions = () => ({ ...defaultOptions });
-var setOptions = (opts) => {
-  forin(opts, (key, value) => {
+var setOptions = (opts2) => {
+  forin(opts2, (key, value) => {
     if (!defaultOptions[key]) {
       return;
     }
@@ -10987,7 +11580,7 @@ var percentageArc = (x, y, radius, from, to) => {
     arcSweep
   );
 };
-var create2 = ({ root: root3, props }) => {
+var create3 = ({ root: root3, props }) => {
   props.spin = false;
   props.progress = 0;
   props.opacity = 0;
@@ -11027,7 +11620,7 @@ var progressIndicator = createView({
   name: "progress-indicator",
   ignoreRectUpdate: true,
   ignoreRect: true,
-  create: create2,
+  create: create3,
   write,
   mixins: {
     apis: ["progress", "spin", "align"],
@@ -14254,18 +14847,18 @@ if (supported()) {
     updateOptionTypes();
   };
   getOptions$1 = () => {
-    const opts = {};
+    const opts2 = {};
     forin(getOptions(), (key, value) => {
-      opts[key] = value[0];
+      opts2[key] = value[0];
     });
-    return opts;
+    return opts2;
   };
-  setOptions$1 = (opts) => {
-    if (isObject(opts)) {
+  setOptions$1 = (opts2) => {
+    if (isObject(opts2)) {
       state.apps.forEach((app) => {
-        app.setOptions(opts);
+        app.setOptions(opts2);
       });
-      setOptions(opts);
+      setOptions(opts2);
     }
     return getOptions$1();
   };
@@ -15867,7 +16460,7 @@ var createImageWrapperView = (_2) => {
     root3.ref.overlayShadow.opacity = 0.25;
     root3.ref.overlaySuccess.opacity = 1;
   };
-  const create5 = ({ root: root3 }) => {
+  const create6 = ({ root: root3 }) => {
     root3.ref.images = [];
     root3.ref.imageData = null;
     root3.ref.imageViewBin = [];
@@ -15892,7 +16485,7 @@ var createImageWrapperView = (_2) => {
   };
   return _2.utils.createView({
     name: "image-preview-wrapper",
-    create: create5,
+    create: create6,
     styles: ["height"],
     apis: ["height"],
     destroy: ({ root: root3 }) => {
@@ -17702,7 +18295,7 @@ var plugin7 = ({ addFilter: addFilter2, utils }) => {
           }).catch(reject);
         });
         const variantPromises = variants.map(
-          (create5) => create5(transform, file2, item2.getMetadata())
+          (create6) => create6(transform, file2, item2.getMetadata())
         );
         Promise.all(variantPromises).then((files) => {
           resolve(
@@ -21042,7 +21635,7 @@ var createTexture = function(e3, t2, r2, n, i2) {
   }
   return o2;
 };
-var create3 = function() {
+var create4 = function() {
   var e3 = new Float32Array(16);
   return e3[0] = 1, e3[5] = 1, e3[10] = 1, e3[15] = 1, e3;
 };
@@ -21070,7 +21663,7 @@ var rotateZ = function(e3, t2) {
   var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[4], u = e3[5], s2 = e3[6], d = e3[7];
   e3[0] = i2 * n + l3 * r2, e3[1] = o2 * n + u * r2, e3[2] = a2 * n + s2 * r2, e3[3] = c2 * n + d * r2, e3[4] = l3 * n - i2 * r2, e3[5] = u * n - o2 * r2, e3[6] = s2 * n - a2 * r2, e3[7] = d * n - c2 * r2;
 };
-var mat4 = { create: create3, perspective, translate, scale, rotateX, rotateY, rotateZ };
+var mat4 = { create: create4, perspective, translate, scale, rotateX, rotateY, rotateZ };
 var degToRad = function(e3) {
   return e3 * Math.PI / 180;
 };
@@ -25664,7 +26257,7 @@ var validators = {
   handler: validateHandler,
   initial: validateInitial
 };
-function create4(initial) {
+function create5(initial) {
   var handler = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
   validators.initial(initial);
   validators.handler(handler);
@@ -25702,7 +26295,7 @@ function didStateUpdate(state3, handler, changes) {
   return changes;
 }
 var index = {
-  create: create4
+  create: create5
 };
 var state_local_default = index;
 
@@ -26143,7 +26736,15 @@ var LinkField = ({
   placeholder = "https://..."
 }) => {
   const { apiClient } = useTecof();
-  const { merchantInfo, loading: langLoading, activeTab, setActiveTab } = useLanguages();
+  const {
+    merchantInfo,
+    loading: langLoading,
+    activeTab: localActiveTab,
+    setActiveTab: localSetActiveTab
+  } = useLanguages();
+  const globalLang = useActiveLanguage();
+  const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
+  const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const [drawerOpen, setDrawerOpen] = React__default.useState(false);
   const [pages, setPages] = React__default.useState([]);
   const [loading, setLoading] = React__default.useState(false);
@@ -26231,7 +26832,7 @@ var LinkField = ({
   }, [activeValue]);
   const hasValue = activeValue && activeValue.url && activeValue.url !== "";
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-container", children: [
-    merchantInfo && merchantInfo.languages.length > 1 && /* @__PURE__ */ jsxRuntime.jsx(
+    !globalLang && merchantInfo && merchantInfo.languages.length > 1 && /* @__PURE__ */ jsxRuntime.jsx(
       LanguageTabBar,
       {
         languages: merchantInfo.languages,
@@ -27360,6 +27961,7 @@ lucide-react/dist/esm/icons/code.js:
 lucide-react/dist/esm/icons/copy.js:
 lucide-react/dist/esm/icons/database.js:
 lucide-react/dist/esm/icons/external-link.js:
+lucide-react/dist/esm/icons/eye.js:
 lucide-react/dist/esm/icons/file-text.js:
 lucide-react/dist/esm/icons/file.js:
 lucide-react/dist/esm/icons/folder-open.js:
@@ -27374,6 +27976,8 @@ lucide-react/dist/esm/icons/link-2.js:
 lucide-react/dist/esm/icons/link.js:
 lucide-react/dist/esm/icons/loader-circle.js:
 lucide-react/dist/esm/icons/monitor.js:
+lucide-react/dist/esm/icons/panel-left.js:
+lucide-react/dist/esm/icons/panel-right.js:
 lucide-react/dist/esm/icons/panels-top-left.js:
 lucide-react/dist/esm/icons/pencil.js:
 lucide-react/dist/esm/icons/plus.js:

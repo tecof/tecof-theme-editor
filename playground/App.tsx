@@ -9,6 +9,11 @@ import { ColorField } from '../src/components/fields/ColorField';
 import { LinkField } from '../src/components/fields/LinkField';
 import { EditorField } from '../src/components/fields/EditorField';
 import { TecofStudio } from '../src/studio/TecofStudio';
+import { getSafelist } from '../src/studio/style/tokens';
+
+/* All classes the Style editor can emit — rendered hidden so Tailwind's browser
+   JIT generates them; Frame then copies the compiled CSS into the canvas iframe. */
+const SAFELIST = getSafelist().join(' ');
 
 /* ────────────────────────────────────────────── */
 /*  Mock API Server (MSW-free, fetch intercept)  */
@@ -62,12 +67,32 @@ const mockConfig = {
         </button>
       ),
     },
+    Box: {
+      label: 'Kutu (Stil Testi)',
+      fields: {
+        text: { type: 'text' },
+      },
+      defaultProps: { text: 'Beni sağdaki "Stil" sekmesinden tasarla' },
+      render: ({ text, className }: any) => (
+        <div className={className || ''}>
+          {text || 'Stil sekmesinden tasarla'}
+        </div>
+      ),
+    },
   },
 };
 
 const mockPageData = {
   content: [
-    { type: 'Hero', props: { id: 'hero-1', title: 'Tecof Studio Canlı Önizleme!' } }
+    { type: 'Hero', props: { id: 'hero-1', title: 'Tecof Studio Canlı Önizleme!' } },
+    {
+      type: 'Box',
+      props: {
+        id: 'box-1',
+        text: 'Beni sağdaki "Stil" sekmesinden tasarla',
+        _tecofStyles: { base: { p: '8', bg: 'primary-100', radius: 'xl', text: 'primary-900', align: 'center', fontSize: '2xl', fontWeight: 'bold' } },
+      },
+    },
   ],
   root: { props: { title: 'Ana Sayfa' } },
   zones: {
@@ -259,6 +284,9 @@ const App = () => {
 
   return (
     <TecofProvider apiUrl={MOCK_API_URL} secretKey={MOCK_SECRET}>
+      {/* Hidden: forces Tailwind's browser JIT to emit every Style-editor class
+          so Frame can copy the compiled CSS into the canvas iframe. */}
+      <div aria-hidden className={SAFELIST} style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} />
       <div style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',

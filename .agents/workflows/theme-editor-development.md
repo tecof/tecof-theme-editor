@@ -37,6 +37,9 @@ The `styles.css` document includes several unified helpers you may reuse:
 - `.tecof-underline` / `.tecof-line-through`
 - Skeleton primitives: `.tecof-skeleton`, `.tecof-skeleton-text`, `.tecof-skeleton-block`, `.tecof-field-loading`, `.tecof-field-loading-compact`
 - Design primitives: `--tecof-line`, `--tecof-line-subtle`, `--tecof-line-dashed`, `--tecof-radius-*`, `--tecof-focus-ring`, `--tecof-danger-ring`, `--tecof-shadow-*`, `.tecof-icon-muted`, `.tecof-icon-faint`
+- Accent tokens (lime-green, **600 = ana renk, 700 = hover**): `--tecof-accent` (600), `--tecof-accent-hover` (700), `--tecof-accent-active` (800), `--tecof-accent-fg` (950, accent zemini üstü **koyu yazı** — beyaz kullanma, kontrast düşük), `--tecof-accent-subtle` (50), `--tecof-accent-text` (700, açık zemin), `--tecof-accent-ring`. Bileşenlerde sabit hex/`-500` yerine bu semantik token'ları kullan. Editör paleti site temasını (`--theme-*`) etkilemez.
+
+Studio UI state (mode + panel görünürlüğü) `/src/studio/uiStore.ts` içindedir (belge/undo geçmişinden ayrı). `mode === 'preview'` iken NodeRenderer seçim/sürüklemeyi kapatır ve `editMode=false` geçirir (link/buton canlı), SelectionOverlay gizlenir. Çok dilli alanlar `/src/studio/language/LanguageContext.tsx` (`useActiveLanguage`) ile global aktif dili okur; provider yoksa eski sekmeli moda düşer (geriye uyum).
 
 Studio drag-and-drop code should reuse `/src/studio/canvas/dndUtils.ts` for drag MIME keys, default node creation, root/zone drop handling, and auto-scroll wiring. Drag previews should use `/src/studio/canvas/dragGhost.ts`.
 

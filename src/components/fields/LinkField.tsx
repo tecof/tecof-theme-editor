@@ -6,6 +6,7 @@ import { useTecof } from '../TecofProvider';
 import type { LinkFieldValue, LocalizedLinkFieldValue } from '../../types';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
 import { useLanguages } from './useLanguages';
+import { useActiveLanguage } from '../../studio/language/LanguageContext';
 
 // Vaul and Icons
 import { Drawer } from 'vaul';
@@ -56,7 +57,16 @@ export const LinkField = ({
   placeholder = 'https://...',
 }: LinkFieldProps & LinkFieldOptions) => {
   const { apiClient } = useTecof();
-  const { merchantInfo, loading: langLoading, error: langError, activeTab, setActiveTab } = useLanguages();
+  const {
+    merchantInfo,
+    loading: langLoading,
+    error: langError,
+    activeTab: localActiveTab,
+    setActiveTab: localSetActiveTab,
+  } = useLanguages();
+  const globalLang = useActiveLanguage();
+  const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
+  const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -182,7 +192,7 @@ export const LinkField = ({
   return (
     <div className="tecof-link-container">
 
-      {merchantInfo && merchantInfo.languages.length > 1 && (
+      {!globalLang && merchantInfo && merchantInfo.languages.length > 1 && (
         <LanguageTabBar
           languages={merchantInfo.languages}
           defaultLanguage={merchantInfo.defaultLanguage}

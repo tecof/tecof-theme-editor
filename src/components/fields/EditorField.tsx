@@ -21,6 +21,7 @@ import Image from '@tiptap/extension-image';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useLanguages } from './useLanguages';
+import { useActiveLanguage } from '../../studio/language/LanguageContext';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
 import { MediaDrawer } from './MediaDrawer';
 import { useTecof } from '../TecofProvider';
@@ -331,7 +332,16 @@ export const EditorField = ({
   onChange,
   readOnly,
 }: EditorFieldProps & EditorFieldOptions) => {
-  const { merchantInfo, loading, error, activeTab, setActiveTab } = useLanguages();
+  const {
+    merchantInfo,
+    loading,
+    error,
+    activeTab: localActiveTab,
+    setActiveTab: localSetActiveTab,
+  } = useLanguages();
+  const globalLang = useActiveLanguage();
+  const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
+  const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const { cdnUrl } = useTecof();
 
   // Ensure values array has entries for all languages
@@ -371,12 +381,14 @@ export const EditorField = ({
 
   return (
     <div className="tecof-lang-container tecof-editor-field">
-      <LanguageTabBar
-        languages={languages}
-        defaultLanguage={defaultLanguage}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      {!globalLang && (
+        <LanguageTabBar
+          languages={languages}
+          defaultLanguage={defaultLanguage}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      )}
 
       {languages.map(code => {
         if (activeTab !== code) return null;

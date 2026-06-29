@@ -3855,3 +3855,273 @@
   color: var(--tecof-accent-text);
   background: var(--tecof-accent-subtle);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Studio — New Features: inline edit, modes, language switch, panels
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── Inline text editing border (rendered inside the canvas iframe) ─── */
+[data-tecof-inline-editing="true"] {
+  outline: 2px solid var(--tecof-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+  cursor: text;
+  background: var(--tecof-accent-subtle);
+  box-shadow: 0 0 0 4px var(--tecof-accent-ring);
+}
+
+/* ─── Object field group ─── */
+.tecof-field-object {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius);
+  background: var(--tecof-surface-2);
+}
+
+/* ─── TopBar layout groups + active icon button ─── */
+.tecof-topbar-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tecof-icon-btn.is-active {
+  color: var(--tecof-accent-text);
+  background: var(--tecof-accent-subtle);
+}
+
+/* ─── Edit / Preview mode toggle (segmented) ─── */
+.tecof-mode-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--tecof-bg);
+  padding: 3px;
+  border-radius: var(--tecof-radius);
+  gap: 2px;
+}
+
+.tecof-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--tecof-radius-sm);
+  color: var(--tecof-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: var(--tecof-transition);
+}
+
+.tecof-mode-btn:hover { color: var(--tecof-text); }
+
+.tecof-mode-btn.is-active {
+  background: var(--tecof-surface);
+  color: var(--tecof-accent-text);
+  box-shadow: var(--tecof-shadow-sm);
+}
+
+/* ─── Language switcher (top bar) ─── */
+.tecof-lang-switcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--tecof-bg);
+  border-radius: var(--tecof-radius);
+  padding: 0 24px 0 10px;
+  height: 32px;
+}
+
+.tecof-lang-switcher-icon {
+  color: var(--tecof-text-muted);
+  flex-shrink: 0;
+}
+
+.tecof-lang-switcher-select {
+  appearance: none;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tecof-text);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tecof-lang-switcher-caret {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: var(--tecof-text-muted);
+}
+
+/* ─── Collapsed panel rail ─── */
+.tecof-panel-rail {
+  width: 44px;
+  flex-shrink: 0;
+  background: var(--tecof-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.tecof-panel-rail-left { border-right: 1px solid var(--tecof-border); }
+.tecof-panel-rail-right { border-left: 1px solid var(--tecof-border); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Studio — Visual Style Editor (Tailwind)
+   ═══════════════════════════════════════════════════════════════════ */
+.tecof-style-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tecof-style-scopes {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  background: var(--tecof-surface);
+  border-bottom: 1px solid var(--tecof-border);
+}
+
+.tecof-style-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tecof-style-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-style-row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.tecof-style-label {
+  font-size: 12px;
+  color: var(--tecof-text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tecof-style-control { min-width: 0; }
+.tecof-style-select { padding: 7px 28px 7px 10px; font-size: 12px; }
+
+/* Segmented control */
+.tecof-style-seg {
+  display: flex;
+  background: var(--tecof-bg);
+  border-radius: var(--tecof-radius-sm);
+  padding: 2px;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.tecof-style-seg-btn {
+  flex: 1;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--tecof-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 5px 8px;
+  border-radius: calc(var(--tecof-radius-sm) - 2px);
+  transition: var(--tecof-transition);
+  white-space: nowrap;
+}
+
+.tecof-style-seg-btn:hover { color: var(--tecof-text); }
+
+.tecof-style-seg-btn.is-active {
+  background: var(--tecof-surface);
+  color: var(--tecof-accent-text);
+  box-shadow: var(--tecof-shadow-sm);
+}
+
+/* Color swatches */
+.tecof-style-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tecof-style-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--tecof-radius-sm);
+  border: 1px solid var(--tecof-border-strong);
+  cursor: pointer;
+  padding: 0;
+  background: var(--swatch, transparent);
+  transition: transform 0.1s ease, box-shadow 0.12s ease;
+}
+
+.tecof-style-swatch:hover { transform: scale(1.1); }
+
+.tecof-style-swatch.is-active {
+  box-shadow: 0 0 0 2px var(--tecof-surface), 0 0 0 4px var(--tecof-accent);
+}
+
+/* "None" swatch: diagonal line on a light background */
+.tecof-style-swatch.is-none {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), var(--tecof-danger) calc(50% - 1px), var(--tecof-danger) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--tecof-surface);
+}
+
+/* Inspector tabs (Content / Style) */
+.tecof-inspector-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+}
+
+.tecof-inspector-tab {
+  flex: 1;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--tecof-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 8px;
+  border-radius: var(--tecof-radius-sm);
+  transition: var(--tecof-transition);
+}
+
+.tecof-inspector-tab:hover { color: var(--tecof-text); background: var(--tecof-bg); }
+
+.tecof-inspector-tab.is-active {
+  background: var(--tecof-accent-subtle);
+  color: var(--tecof-accent-text);
+}
