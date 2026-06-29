@@ -50,7 +50,15 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
       },
     },
     editMode: false,
-  };
+  } as any;
+
+  if (componentConfig.fields) {
+    Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]: [string, any]) => {
+      if (fieldDef && fieldDef.type === 'slot') {
+        componentProps[fieldName] = <RenderDropZone zone={fieldName} />;
+      }
+    });
+  }
 
   return (
     <ParentNodeContext.Provider value={node.props.id || null}>

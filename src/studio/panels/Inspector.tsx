@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { findNodeById } from '../../engine/zones';
 import { useStudio } from '../context';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
+import { StyleEditor } from '../style/StyleEditor';
+import { STYLES_PROP } from '../style/types';
 
 export const Inspector = () => {
   const documentState = useEditorStore((state) => state.document);
@@ -12,11 +14,32 @@ export const Inspector = () => {
   const selectNode = useEditorStore((state) => state.selectNode);
 
   const { config, readOnly } = useStudio();
+  const [tab, setTab] = useState<'content' | 'style'>('content');
+
+  // Find active selected node details memoized to prevent expensive lookup on every render
+  const activeNodeInfo = useMemo(() => {
+    if (!selectedId) return null;
+    const details = findNodeById(documentState, selectedId);
+    if (!details) return null;
+
+    const componentConfig = config.components[details.node.type];
+    const fields = componentConfig?.fields || {};
+    
+    // Filter out slot type fields (slot fields are on-canvas drag-drop only)
+    const editableFields = Object.entries(fields).filter(
+      ([_, fieldDef]: [string, any]) => fieldDef?.type !== 'slot'
+    );
+
+    return {
+      node: details.node,
+      label: componentConfig?.label || details.node.type,
+      editableFields,
+    };
+  }, [selectedId, documentState, config]);
 
   // 1. Component selected state
   if (selectedId) {
-    const nodeDetails = findNodeById(documentState, selectedId);
-    if (!nodeDetails) {
+    if (!activeNodeInfo) {
       return (
         <div className="tecof-inspector">
           <div className="tecof-inspector-empty">Bileşen yükleniyor veya bulunamadı.</div>
@@ -24,10 +47,7 @@ export const Inspector = () => {
       );
     }
 
-    const { node } = nodeDetails;
-    const componentConfig = config.components[node.type];
-    const fields = componentConfig?.fields || {};
-    const label = componentConfig?.label || node.type;
+    const { node, label, editableFields } = activeNodeInfo;
 
     return (
       <div className="tecof-inspector">
@@ -42,14 +62,41 @@ export const Inspector = () => {
           </button>
         </div>
 
-        {/* Fields List */}
+        {/* Content / Style tabs */}
+        <div className="tecof-inspector-tabs" role="tablist" aria-label="Inspector görünümü">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'content'}
+            className={`tecof-inspector-tab${tab === 'content' ? ' is-active' : ''}`}
+            onClick={() => setTab('content')}
+          >
+            İçerik
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'style'}
+            className={`tecof-inspector-tab${tab === 'style' ? ' is-active' : ''}`}
+            onClick={() => setTab('style')}
+          >
+            Stil
+          </button>
+        </div>
+
+        {/* Fields List / Style Editor */}
         <div className="tecof-inspector-fields">
-          {Object.keys(fields).length === 0 ? (
+          {tab === 'style' ? (
+            <StyleEditor
+              value={node.props[STYLES_PROP]}
+              onChange={(next) => updateProps(selectedId, { [STYLES_PROP]: next })}
+            />
+          ) : editableFields.length === 0 ? (
             <div className="tecof-inspector-empty-fields">
               Bu bileşenin düzenlenebilir alanı bulunmuyor.
             </div>
           ) : (
-            Object.entries(fields).map(([fieldName, fieldDef]) => (
+            editableFields.map(([fieldName, fieldDef]) => (
               <FieldRenderer
                 key={fieldName}
                 name={fieldName}
@@ -67,7 +114,7 @@ export const Inspector = () => {
 
   // 2. Root (Page) Settings (when selectedId is null)
   const rootFields = config.root?.fields || {};
-  const hasRootFields = Object.keys(rootFields).length > 0;
+  const rootFieldEntries = Object.entries(rootFields);
 
   return (
     <div className="tecof-inspector">
@@ -81,8 +128,8 @@ export const Inspector = () => {
 
       {/* Fields List */}
       <div className="tecof-inspector-fields">
-        {hasRootFields ? (
-          Object.entries(rootFields).map(([fieldName, fieldDef]) => (
+        {rootFieldEntries.length > 0 ? (
+          rootFieldEntries.map(([fieldName, fieldDef]) => (
             <FieldRenderer
               key={fieldName}
               name={fieldName}

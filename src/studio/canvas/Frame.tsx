@@ -55,9 +55,6 @@ export const Frame = ({
           padding: 0;
           background-color: transparent;
           min-height: 100vh;
-        }
-        body {
-          padding: 32px 16px;
           box-sizing: border-box;
         }
         .tecof-node-wrapper {

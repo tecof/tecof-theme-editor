@@ -55,7 +55,7 @@ export const parseDocument = (rawData: Partial<PuckPageData> | null | undefined)
     zones: Object.fromEntries(
       Object.entries(rawData.zones || {}).map(([zoneKey, nodes]) => [zoneKey, [...nodes]])
     ),
-  };
+  } as TecofDocument;
 };
 
 /**

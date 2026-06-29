@@ -292,6 +292,29 @@ export const FieldRenderer = ({
       );
     }
 
+    case 'object': {
+      // Puck-compatible object field: a fixed group of named sub-fields.
+      const objectFields = definition.objectFields || {};
+      const objVal = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+
+      return (
+        <FieldLabel label={label} readOnly={readOnly}>
+          <div className="tecof-field-object">
+            {Object.entries(objectFields).map(([subFieldName, subFieldDef]) => (
+              <FieldRenderer
+                key={subFieldName}
+                name={subFieldName}
+                definition={subFieldDef}
+                value={objVal[subFieldName]}
+                onChange={(newSubVal) => onChange({ ...objVal, [subFieldName]: newSubVal })}
+                readOnly={readOnly}
+              />
+            ))}
+          </div>
+        </FieldLabel>
+      );
+    }
+
     default:
       return (
         <div className="tecof-field-unsupported">

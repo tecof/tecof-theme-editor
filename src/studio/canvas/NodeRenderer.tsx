@@ -2,9 +2,12 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useStudio } from '../context';
 import { ParentNodeContext, renderDropZone } from './DropZone';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
 import { setDragGhost } from './dragGhost';
 import { createEventAutoScroller, createNode, readDragData, writeDragData } from './dndUtils';
+import { compileStyles, mergeClassName } from '../style/compileStyles';
+import { STYLES_PROP } from '../style/types';
 
 export interface NodeRendererProps {
   node: TecofNode;
@@ -13,7 +16,11 @@ export interface NodeRendererProps {
 }
 
 export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
-  const { config, metadata, readOnly } = useStudio();
+  const { config, metadata, readOnly: studioReadOnly } = useStudio();
+  const mode = useUiStore((s) => s.mode);
+  // In preview mode the canvas behaves like the live site: no select/hover/drag,
+  // components receive editMode=false so their links & buttons are clickable.
+  const locked = studioReadOnly || mode === 'preview';
   const componentConfig = config.components[node.type];
 
   const selectNode = useEditorStore((state) => state.selectNode);
@@ -26,27 +33,27 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
 
   const handleMouseEnter = useCallback(
     (e: React.MouseEvent) => {
-      if (readOnly) return;
+      if (locked) return;
       e.stopPropagation();
       hoverNode(node.props.id);
     },
-    [hoverNode, node.props.id, readOnly]
+    [hoverNode, node.props.id, locked]
   );
 
   const handleMouseLeave = useCallback(
     (e: React.MouseEvent) => {
-      if (readOnly) return;
+      if (locked) return;
       e.stopPropagation();
       if (hoveredId === node.props.id) {
         hoverNode(null);
       }
     },
-    [hoverNode, node.props.id, hoveredId, readOnly]
+    [hoverNode, node.props.id, hoveredId, locked]
   );
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (readOnly) return;
+      if (locked) return;
       e.stopPropagation();
       selectNode(node.props.id);
 
@@ -65,12 +72,12 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
         );
       }
     },
-    [selectNode, node.props.id, node.type, readOnly]
+    [selectNode, node.props.id, node.type, locked]
   );
 
   const handleDoubleClick = useCallback(
     (e: React.MouseEvent) => {
-      if (readOnly) return;
+      if (locked) return;
       const target = e.target as HTMLElement;
 
       const validTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'a', 'div'];
@@ -189,13 +196,13 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
       target.addEventListener('blur', handleBlur);
       target.addEventListener('keydown', handleKeyDown);
     },
-    [node.props, node.props.id, readOnly]
+    [node.props, node.props.id, locked]
   );
 
   const [dragOverPosition, setDragOverPosition] = useState<'top' | 'bottom' | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (readOnly) return;
+    if (locked) return;
     e.preventDefault();
     e.stopPropagation();
     autoScrollerRef.current.update(e);
@@ -207,7 +214,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     } else {
       setDragOverPosition('bottom');
     }
-  }, [readOnly]);
+  }, [locked]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
@@ -216,7 +223,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    if (readOnly) return;
+    if (locked) return;
     e.preventDefault();
     e.stopPropagation();
     autoScrollerRef.current.stop();
@@ -231,7 +238,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
       useEditorStore.getState().insertNode(createNode(config, type), zoneKey || undefined, targetIndex);
     }
     endDrag();
-  }, [dragOverPosition, index, node.props.id, zoneKey, config, readOnly, endDrag]);
+  }, [dragOverPosition, index, node.props.id, zoneKey, config, locked, endDrag]);
 
   if (!componentConfig) {
     return (
@@ -244,24 +251,37 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const label = componentConfig.label || node.type;
   const wrapperClassName = [
     'tecof-node-wrapper',
-    readOnly ? 'is-readonly' : '',
+    locked ? 'is-readonly' : '',
     drag?.id === node.props.id ? 'is-dragging' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
+  // Compile the node's structured Tailwind styles and pass them as `className`
+  // so the component applies them to its root (same prop flows in production).
+  const styleClassName = compileStyles(node.props[STYLES_PROP]);
+
   const componentProps = {
     ...node.props,
+    className: mergeClassName(node.props.className, styleClassName),
     puck: {
       renderDropZone,
-      isEditing: !readOnly,
+      isEditing: !locked,
       metadata: {
         ...(metadata || {}),
         ...(componentConfig.metadata || {}),
       },
     },
-    editMode: !readOnly,
-  };
+    editMode: !locked,
+  } as any;
+
+  if (componentConfig.fields) {
+    Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]: [string, any]) => {
+      if (fieldDef && fieldDef.type === 'slot') {
+        componentProps[fieldName] = renderDropZone({ zone: fieldName });
+      }
+    });
+  }
 
   // We wrap in ParentNodeContext so any inner DropZone knows its parent id
   return (
@@ -276,7 +296,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
           data-tecof-type={node.type}
           data-tecof-index={index}
           data-tecof-zone={zoneKey || 'root'}
-          draggable={!readOnly}
+          draggable={!locked}
           onDragStart={(e) => {
             writeDragData(e, { nodeId: node.props.id });
             e.dataTransfer.effectAllowed = 'move';
