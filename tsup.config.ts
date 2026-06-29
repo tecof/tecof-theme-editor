@@ -7,7 +7,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom', /^@tiptap\//],
+  external: ['react', 'react-dom', '@tiptap/core', '@tiptap/pm', '@tiptap/react'],
   treeshake: true,
   injectStyle: true,
 });

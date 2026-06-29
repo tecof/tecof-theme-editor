@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid';
+import { nanoid } from 'nanoid/non-secure';
 import type { TecofNode, TecofDocument } from '../types';
 
 export const generateId = () => nanoid(8);

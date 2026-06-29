@@ -24,7 +24,7 @@ export const DropZone = ({ zone, className, style }: DropZoneProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   // Get items for this zone from the store
-  const items = useEditorStore((state) => state.document.zones[zoneKey] || []);
+  const items = useEditorStore((state) => state.document.zones[zoneKey]) || [];
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

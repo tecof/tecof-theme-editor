@@ -12,7 +12,7 @@ export const Canvas = () => {
   const insertNode = useEditorStore((state) => state.insertNode);
   const endDrag = useEditorStore((state) => state.endDrag);
   const { config, readOnly } = useStudio();
-  const rootProps = useEditorStore((state) => state.document.root?.props || {});
+  const rootProps = useEditorStore((state) => state.document.root?.props) || {};
   const [isRootDragOver, setIsRootDragOver] = useState(false);
   const autoScrollerRef = useRef(createEventAutoScroller());
 

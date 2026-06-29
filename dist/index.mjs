@@ -1,29 +1,13 @@
 import * as React__default from 'react';
 import React__default__default, { createContext, forwardRef, createElement, memo, useRef, useCallback, useContext, useState, useEffect, useMemo, Component, useLayoutEffect } from 'react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
-import { create } from 'zustand';
-import { immer } from 'zustand/middleware/immer';
-import { nanoid } from 'nanoid';
 import * as ReactDOM from 'react-dom';
 import ReactDOM__default, { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
-import Document from '@tiptap/extension-document';
-import Paragraph from '@tiptap/extension-paragraph';
-import Text from '@tiptap/extension-text';
-import Bold from '@tiptap/extension-bold';
-import Italic from '@tiptap/extension-italic';
-import Strike from '@tiptap/extension-strike';
-import Underline from '@tiptap/extension-underline';
-import Heading from '@tiptap/extension-heading';
-import { BulletList, OrderedList, ListItem, ListKeymap } from '@tiptap/extension-list';
-import Blockquote from '@tiptap/extension-blockquote';
-import HardBreak from '@tiptap/extension-hard-break';
-import HorizontalRule from '@tiptap/extension-horizontal-rule';
-import TextAlign from '@tiptap/extension-text-align';
-import Link3 from '@tiptap/extension-link';
-import Code2 from '@tiptap/extension-code';
-import CodeBlock from '@tiptap/extension-code-block';
-import Image3 from '@tiptap/extension-image';
+import { Node as Node$1, mergeAttributes, Mark, markPasteRule, markInputRule, textblockTypeInputRule, wrappingInputRule, renderNestedMarkdownContent, Extension, getRenderedAttributes, parseIndentedBlocks, nodeInputRule, canInsertNode, isNodeSelection, ResizableNodeView, isNodeActive, isAtStartOfNode, isAtEndOfNode, combineTransactionSteps, getChangedRanges, findChildrenInRange, getMarksBetween, getAttributes, getNodeAtPosition, getNodeType } from '@tiptap/core';
+import { jsx as jsx$1 } from '@tiptap/core/jsx-runtime';
+import { Fragment as Fragment$1 } from '@tiptap/pm/model';
+import { Plugin, TextSelection as TextSelection$1, NodeSelection as NodeSelection$1, PluginKey, Selection as Selection$1 } from '@tiptap/pm/state';
 
 // src/components/TecofProvider.tsx
 
@@ -200,8 +184,8 @@ var TecofApiClient = class {
       };
     }
   }
-  async getComponentPreview(domain, componentName) {
-    const cacheKey = `${domain}:${componentName}`;
+  async getComponentPreview(domain2, componentName) {
+    const cacheKey = `${domain2}:${componentName}`;
     if (this.previewBlobCache.has(cacheKey)) {
       return this.previewBlobCache.get(cacheKey);
     }
@@ -213,7 +197,7 @@ var TecofApiClient = class {
           Accept: "image/png",
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ domain, componentName })
+        body: JSON.stringify({ domain: domain2, componentName })
       });
       if (!res2.ok) return null;
       const blob2 = await res2.blob();
@@ -758,6 +742,878 @@ var __iconNode42 = [
 ];
 var X = createLucideIcon("x", __iconNode42);
 
+// node_modules/zustand/esm/vanilla.mjs
+var createStoreImpl = (createState) => {
+  let state3;
+  const listeners3 = /* @__PURE__ */ new Set();
+  const setState2 = (partial, replace2) => {
+    const nextState = typeof partial === "function" ? partial(state3) : partial;
+    if (!Object.is(nextState, state3)) {
+      const previousState = state3;
+      state3 = (replace2 != null ? replace2 : typeof nextState !== "object" || nextState === null) ? nextState : Object.assign({}, state3, nextState);
+      listeners3.forEach((listener) => listener(state3, previousState));
+    }
+  };
+  const getState3 = () => state3;
+  const getInitialState = () => initialState;
+  const subscribe = (listener) => {
+    listeners3.add(listener);
+    return () => listeners3.delete(listener);
+  };
+  const api = { setState: setState2, getState: getState3, getInitialState, subscribe };
+  const initialState = state3 = createState(setState2, getState3, api);
+  return api;
+};
+var createStore = ((createState) => createState ? createStoreImpl(createState) : createStoreImpl);
+var identity = (arg) => arg;
+function useStore(api, selector = identity) {
+  const slice = React__default__default.useSyncExternalStore(
+    api.subscribe,
+    React__default__default.useCallback(() => selector(api.getState()), [api, selector]),
+    React__default__default.useCallback(() => selector(api.getInitialState()), [api, selector])
+  );
+  React__default__default.useDebugValue(slice);
+  return slice;
+}
+var createImpl = (createState) => {
+  const api = createStore(createState);
+  const useBoundStore = (selector) => useStore(api, selector);
+  Object.assign(useBoundStore, api);
+  return useBoundStore;
+};
+var create = ((createState) => createState ? createImpl(createState) : createImpl);
+
+// node_modules/immer/dist/immer.mjs
+var NOTHING = /* @__PURE__ */ Symbol.for("immer-nothing");
+var DRAFTABLE = /* @__PURE__ */ Symbol.for("immer-draftable");
+var DRAFT_STATE = /* @__PURE__ */ Symbol.for("immer-state");
+var errors = process.env.NODE_ENV !== "production" ? [
+  // All error codes, starting by 0:
+  function(plugin9) {
+    return `The plugin for '${plugin9}' has not been loaded into Immer. To enable the plugin, import and call \`enable${plugin9}()\` when initializing your application.`;
+  },
+  function(thing) {
+    return `produce can only be called on things that are draftable: plain objects, arrays, Map, Set or classes that are marked with '[immerable]: true'. Got '${thing}'`;
+  },
+  "This object has been frozen and should not be mutated",
+  function(data3) {
+    return "Cannot use a proxy that has been revoked. Did you pass an object from inside an immer function to an async process? " + data3;
+  },
+  "An immer producer returned a new value *and* modified its draft. Either return a new value *or* modify the draft.",
+  "Immer forbids circular references",
+  "The first or second argument to `produce` must be a function",
+  "The third argument to `produce` must be a function or undefined",
+  "First argument to `createDraft` must be a plain object, an array, or an immerable object",
+  "First argument to `finishDraft` must be a draft returned by `createDraft`",
+  function(thing) {
+    return `'current' expects a draft, got: ${thing}`;
+  },
+  "Object.defineProperty() cannot be used on an Immer draft",
+  "Object.setPrototypeOf() cannot be used on an Immer draft",
+  "Immer only supports deleting array indices",
+  "Immer only supports setting array indices and the 'length' property",
+  function(thing) {
+    return `'original' expects a draft, got: ${thing}`;
+  }
+  // Note: if more errors are added, the errorOffset in Patches.ts should be increased
+  // See Patches.ts for additional errors
+] : [];
+function die(error2, ...args) {
+  if (process.env.NODE_ENV !== "production") {
+    const e3 = errors[error2];
+    const msg = isFunction(e3) ? e3.apply(null, args) : e3;
+    throw new Error(`[Immer] ${msg}`);
+  }
+  throw new Error(
+    `[Immer] minified error nr: ${error2}. Full error at: https://bit.ly/3cXEKWf`
+  );
+}
+var O = Object;
+var getPrototypeOf = O.getPrototypeOf;
+var CONSTRUCTOR = "constructor";
+var PROTOTYPE = "prototype";
+var CONFIGURABLE = "configurable";
+var ENUMERABLE = "enumerable";
+var WRITABLE = "writable";
+var VALUE = "value";
+var isDraft = (value) => !!value && !!value[DRAFT_STATE];
+function isDraftable(value) {
+  if (!value)
+    return false;
+  return isPlainObject(value) || isArray(value) || !!value[DRAFTABLE] || !!value[CONSTRUCTOR]?.[DRAFTABLE] || isMap(value) || isSet(value);
+}
+var objectCtorString = O[PROTOTYPE][CONSTRUCTOR].toString();
+var cachedCtorStrings = /* @__PURE__ */ new WeakMap();
+function isPlainObject(value) {
+  if (!value || !isObjectish(value))
+    return false;
+  const proto = getPrototypeOf(value);
+  if (proto === null || proto === O[PROTOTYPE])
+    return true;
+  const Ctor = O.hasOwnProperty.call(proto, CONSTRUCTOR) && proto[CONSTRUCTOR];
+  if (Ctor === Object)
+    return true;
+  if (!isFunction(Ctor))
+    return false;
+  let ctorString = cachedCtorStrings.get(Ctor);
+  if (ctorString === void 0) {
+    ctorString = Function.toString.call(Ctor);
+    cachedCtorStrings.set(Ctor, ctorString);
+  }
+  return ctorString === objectCtorString;
+}
+function each(obj, iter, strict = true) {
+  if (getArchtype(obj) === 0) {
+    const keys = strict ? Reflect.ownKeys(obj) : O.keys(obj);
+    keys.forEach((key) => {
+      iter(key, obj[key], obj);
+    });
+  } else {
+    obj.forEach((entry, index2) => iter(index2, entry, obj));
+  }
+}
+function getArchtype(thing) {
+  const state3 = thing[DRAFT_STATE];
+  return state3 ? state3.type_ : isArray(thing) ? 1 : isMap(thing) ? 2 : isSet(thing) ? 3 : 0;
+}
+var has = (thing, prop, type = getArchtype(thing)) => type === 2 ? thing.has(prop) : O[PROTOTYPE].hasOwnProperty.call(thing, prop);
+var get = (thing, prop, type = getArchtype(thing)) => (
+  // @ts-ignore
+  type === 2 ? thing.get(prop) : thing[prop]
+);
+var set = (thing, propOrOldValue, value, type = getArchtype(thing)) => {
+  if (type === 2)
+    thing.set(propOrOldValue, value);
+  else if (type === 3) {
+    thing.add(value);
+  } else
+    thing[propOrOldValue] = value;
+};
+function is(x, y) {
+  if (x === y) {
+    return x !== 0 || 1 / x === 1 / y;
+  } else {
+    return x !== x && y !== y;
+  }
+}
+var isArray = Array.isArray;
+var isMap = (target) => target instanceof Map;
+var isSet = (target) => target instanceof Set;
+var isObjectish = (target) => typeof target === "object";
+var isFunction = (target) => typeof target === "function";
+var isBoolean = (target) => typeof target === "boolean";
+function isArrayIndex(value) {
+  const n = +value;
+  return Number.isInteger(n) && String(n) === value;
+}
+var latest = (state3) => state3.copy_ || state3.base_;
+var getFinalValue = (state3) => state3.modified_ ? state3.copy_ : state3.base_;
+function shallowCopy(base, strict) {
+  if (isMap(base)) {
+    return new Map(base);
+  }
+  if (isSet(base)) {
+    return new Set(base);
+  }
+  if (isArray(base))
+    return Array[PROTOTYPE].slice.call(base);
+  const isPlain = isPlainObject(base);
+  if (strict === true || strict === "class_only" && !isPlain) {
+    const descriptors = O.getOwnPropertyDescriptors(base);
+    delete descriptors[DRAFT_STATE];
+    let keys = Reflect.ownKeys(descriptors);
+    for (let i2 = 0; i2 < keys.length; i2++) {
+      const key = keys[i2];
+      const desc = descriptors[key];
+      if (desc[WRITABLE] === false) {
+        desc[WRITABLE] = true;
+        desc[CONFIGURABLE] = true;
+      }
+      if (desc.get || desc.set)
+        descriptors[key] = {
+          [CONFIGURABLE]: true,
+          [WRITABLE]: true,
+          // could live with !!desc.set as well here...
+          [ENUMERABLE]: desc[ENUMERABLE],
+          [VALUE]: base[key]
+        };
+    }
+    return O.create(getPrototypeOf(base), descriptors);
+  } else {
+    const proto = getPrototypeOf(base);
+    if (proto !== null && isPlain) {
+      return { ...base };
+    }
+    const obj = O.create(proto);
+    return O.assign(obj, base);
+  }
+}
+function freeze(obj, deep = false) {
+  if (isFrozen(obj) || isDraft(obj) || !isDraftable(obj))
+    return obj;
+  if (getArchtype(obj) > 1) {
+    O.defineProperties(obj, {
+      set: dontMutateMethodOverride,
+      add: dontMutateMethodOverride,
+      clear: dontMutateMethodOverride,
+      delete: dontMutateMethodOverride
+    });
+  }
+  O.freeze(obj);
+  if (deep)
+    each(
+      obj,
+      (_key, value) => {
+        freeze(value, true);
+      },
+      false
+    );
+  return obj;
+}
+function dontMutateFrozenCollections() {
+  die(2);
+}
+var dontMutateMethodOverride = {
+  [VALUE]: dontMutateFrozenCollections
+};
+function isFrozen(obj) {
+  if (obj === null || !isObjectish(obj))
+    return true;
+  return O.isFrozen(obj);
+}
+var PluginMapSet = "MapSet";
+var PluginPatches = "Patches";
+var PluginArrayMethods = "ArrayMethods";
+var plugins = {};
+function getPlugin(pluginKey) {
+  const plugin9 = plugins[pluginKey];
+  if (!plugin9) {
+    die(0, pluginKey);
+  }
+  return plugin9;
+}
+var isPluginLoaded = (pluginKey) => !!plugins[pluginKey];
+var currentScope;
+var getCurrentScope = () => currentScope;
+var createScope = (parent_, immer_) => ({
+  drafts_: [],
+  parent_,
+  immer_,
+  // Whenever the modified draft contains a draft from another scope, we
+  // need to prevent auto-freezing so the unowned draft can be finalized.
+  canAutoFreeze_: true,
+  unfinalizedDrafts_: 0,
+  handledSet_: /* @__PURE__ */ new Set(),
+  processedForPatches_: /* @__PURE__ */ new Set(),
+  mapSetPlugin_: isPluginLoaded(PluginMapSet) ? getPlugin(PluginMapSet) : void 0,
+  arrayMethodsPlugin_: isPluginLoaded(PluginArrayMethods) ? getPlugin(PluginArrayMethods) : void 0
+});
+function usePatchesInScope(scope, patchListener) {
+  if (patchListener) {
+    scope.patchPlugin_ = getPlugin(PluginPatches);
+    scope.patches_ = [];
+    scope.inversePatches_ = [];
+    scope.patchListener_ = patchListener;
+  }
+}
+function revokeScope(scope) {
+  leaveScope(scope);
+  scope.drafts_.forEach(revokeDraft);
+  scope.drafts_ = null;
+}
+function leaveScope(scope) {
+  if (scope === currentScope) {
+    currentScope = scope.parent_;
+  }
+}
+var enterScope = (immer22) => currentScope = createScope(currentScope, immer22);
+function revokeDraft(draft) {
+  const state3 = draft[DRAFT_STATE];
+  if (state3.type_ === 0 || state3.type_ === 1)
+    state3.revoke_();
+  else
+    state3.revoked_ = true;
+}
+function processResult(result, scope) {
+  scope.unfinalizedDrafts_ = scope.drafts_.length;
+  const baseDraft = scope.drafts_[0];
+  const isReplaced = result !== void 0 && result !== baseDraft;
+  if (isReplaced) {
+    if (baseDraft[DRAFT_STATE].modified_) {
+      revokeScope(scope);
+      die(4);
+    }
+    if (isDraftable(result)) {
+      result = finalize(scope, result);
+    }
+    const { patchPlugin_ } = scope;
+    if (patchPlugin_) {
+      patchPlugin_.generateReplacementPatches_(
+        baseDraft[DRAFT_STATE].base_,
+        result,
+        scope
+      );
+    }
+  } else {
+    result = finalize(scope, baseDraft);
+  }
+  maybeFreeze(scope, result, true);
+  revokeScope(scope);
+  if (scope.patches_) {
+    scope.patchListener_(scope.patches_, scope.inversePatches_);
+  }
+  return result !== NOTHING ? result : void 0;
+}
+function finalize(rootScope, value) {
+  if (isFrozen(value))
+    return value;
+  const state3 = value[DRAFT_STATE];
+  if (!state3) {
+    const finalValue = handleValue(value, rootScope.handledSet_, rootScope);
+    return finalValue;
+  }
+  if (!isSameScope(state3, rootScope)) {
+    return value;
+  }
+  if (!state3.modified_) {
+    return state3.base_;
+  }
+  if (!state3.finalized_) {
+    const { callbacks_ } = state3;
+    if (callbacks_) {
+      while (callbacks_.length > 0) {
+        const callback = callbacks_.pop();
+        callback(rootScope);
+      }
+    }
+    generatePatchesAndFinalize(state3, rootScope);
+  }
+  return state3.copy_;
+}
+function maybeFreeze(scope, value, deep = false) {
+  if (!scope.parent_ && scope.immer_.autoFreeze_ && scope.canAutoFreeze_) {
+    freeze(value, deep);
+  }
+}
+function markStateFinalized(state3) {
+  state3.finalized_ = true;
+  state3.scope_.unfinalizedDrafts_--;
+}
+var isSameScope = (state3, rootScope) => state3.scope_ === rootScope;
+var EMPTY_LOCATIONS_RESULT = [];
+function updateDraftInParent(parent, draftValue, finalizedValue, originalKey) {
+  const parentCopy = latest(parent);
+  const parentType = parent.type_;
+  if (originalKey !== void 0) {
+    const currentValue = get(parentCopy, originalKey, parentType);
+    if (currentValue === draftValue) {
+      set(parentCopy, originalKey, finalizedValue, parentType);
+      return;
+    }
+  }
+  if (!parent.draftLocations_) {
+    const draftLocations = parent.draftLocations_ = /* @__PURE__ */ new Map();
+    each(parentCopy, (key, value) => {
+      if (isDraft(value)) {
+        const keys = draftLocations.get(value) || [];
+        keys.push(key);
+        draftLocations.set(value, keys);
+      }
+    });
+  }
+  const locations = parent.draftLocations_.get(draftValue) ?? EMPTY_LOCATIONS_RESULT;
+  for (const location2 of locations) {
+    set(parentCopy, location2, finalizedValue, parentType);
+  }
+}
+function registerChildFinalizationCallback(parent, child, key) {
+  parent.callbacks_.push(function childCleanup(rootScope) {
+    const state3 = child;
+    if (!state3 || !isSameScope(state3, rootScope)) {
+      return;
+    }
+    rootScope.mapSetPlugin_?.fixSetContents(state3);
+    const finalizedValue = getFinalValue(state3);
+    updateDraftInParent(parent, state3.draft_ ?? state3, finalizedValue, key);
+    generatePatchesAndFinalize(state3, rootScope);
+  });
+}
+function generatePatchesAndFinalize(state3, rootScope) {
+  const shouldFinalize = state3.modified_ && !state3.finalized_ && (state3.type_ === 3 || state3.type_ === 1 && state3.allIndicesReassigned_ || (state3.assigned_?.size ?? 0) > 0);
+  if (shouldFinalize) {
+    const { patchPlugin_ } = rootScope;
+    if (patchPlugin_) {
+      const basePath = patchPlugin_.getPath(state3);
+      if (basePath) {
+        patchPlugin_.generatePatches_(state3, basePath, rootScope);
+      }
+    }
+    markStateFinalized(state3);
+  }
+}
+function handleCrossReference(target, key, value) {
+  const { scope_ } = target;
+  if (isDraft(value)) {
+    const state3 = value[DRAFT_STATE];
+    if (isSameScope(state3, scope_)) {
+      state3.callbacks_.push(function crossReferenceCleanup() {
+        prepareCopy(target);
+        const finalizedValue = getFinalValue(state3);
+        updateDraftInParent(target, value, finalizedValue, key);
+      });
+    }
+  } else if (isDraftable(value)) {
+    target.callbacks_.push(function nestedDraftCleanup() {
+      const targetCopy = latest(target);
+      if (target.type_ === 3) {
+        if (targetCopy.has(value)) {
+          handleValue(value, scope_.handledSet_, scope_);
+        }
+      } else {
+        if (get(targetCopy, key, target.type_) === value) {
+          if (scope_.drafts_.length > 1 && (target.assigned_.get(key) ?? false) === true && target.copy_) {
+            handleValue(
+              get(target.copy_, key, target.type_),
+              scope_.handledSet_,
+              scope_
+            );
+          }
+        }
+      }
+    });
+  }
+}
+function handleValue(target, handledSet, rootScope) {
+  if (!rootScope.immer_.autoFreeze_ && rootScope.unfinalizedDrafts_ < 1) {
+    return target;
+  }
+  if (isDraft(target) || handledSet.has(target) || !isDraftable(target) || isFrozen(target)) {
+    return target;
+  }
+  handledSet.add(target);
+  each(target, (key, value) => {
+    if (isDraft(value)) {
+      const state3 = value[DRAFT_STATE];
+      if (isSameScope(state3, rootScope)) {
+        const updatedValue = getFinalValue(state3);
+        set(target, key, updatedValue, target.type_);
+        markStateFinalized(state3);
+      }
+    } else if (isDraftable(value)) {
+      handleValue(value, handledSet, rootScope);
+    }
+  });
+  return target;
+}
+function createProxyProxy(base, parent) {
+  const baseIsArray = isArray(base);
+  const state3 = {
+    type_: baseIsArray ? 1 : 0,
+    // Track which produce call this is associated with.
+    scope_: parent ? parent.scope_ : getCurrentScope(),
+    // True for both shallow and deep changes.
+    modified_: false,
+    // Used during finalization.
+    finalized_: false,
+    // Track which properties have been assigned (true) or deleted (false).
+    // actually instantiated in `prepareCopy()`
+    assigned_: void 0,
+    // The parent draft state.
+    parent_: parent,
+    // The base state.
+    base_: base,
+    // The base proxy.
+    draft_: null,
+    // set below
+    // The base copy with any updated values.
+    copy_: null,
+    // Called by the `produce` function.
+    revoke_: null,
+    isManual_: false,
+    // `callbacks` actually gets assigned in `createProxy`
+    callbacks_: void 0
+  };
+  let target = state3;
+  let traps = objectTraps;
+  if (baseIsArray) {
+    target = [state3];
+    traps = arrayTraps;
+  }
+  const { revoke, proxy } = Proxy.revocable(target, traps);
+  state3.draft_ = proxy;
+  state3.revoke_ = revoke;
+  return [proxy, state3];
+}
+var objectTraps = {
+  get(state3, prop) {
+    if (prop === DRAFT_STATE)
+      return state3;
+    let arrayPlugin = state3.scope_.arrayMethodsPlugin_;
+    const isArrayWithStringProp = state3.type_ === 1 && typeof prop === "string";
+    if (isArrayWithStringProp) {
+      if (arrayPlugin?.isArrayOperationMethod(prop)) {
+        return arrayPlugin.createMethodInterceptor(state3, prop);
+      }
+    }
+    const source = latest(state3);
+    if (!has(source, prop, state3.type_)) {
+      return readPropFromProto(state3, source, prop);
+    }
+    const value = source[prop];
+    if (state3.finalized_ || !isDraftable(value)) {
+      return value;
+    }
+    if (isArrayWithStringProp && state3.operationMethod && arrayPlugin?.isMutatingArrayMethod(
+      state3.operationMethod
+    ) && isArrayIndex(prop)) {
+      return value;
+    }
+    if (value === peek(state3.base_, prop)) {
+      prepareCopy(state3);
+      const childKey = state3.type_ === 1 ? +prop : prop;
+      const childDraft = createProxy(state3.scope_, value, state3, childKey);
+      return state3.copy_[childKey] = childDraft;
+    }
+    return value;
+  },
+  has(state3, prop) {
+    return prop in latest(state3);
+  },
+  ownKeys(state3) {
+    return Reflect.ownKeys(latest(state3));
+  },
+  set(state3, prop, value) {
+    const desc = getDescriptorFromProto(latest(state3), prop);
+    if (desc?.set) {
+      desc.set.call(state3.draft_, value);
+      return true;
+    }
+    if (!state3.modified_) {
+      const current2 = peek(latest(state3), prop);
+      const currentState = current2?.[DRAFT_STATE];
+      if (currentState && currentState.base_ === value) {
+        state3.copy_[prop] = value;
+        state3.assigned_.set(prop, false);
+        return true;
+      }
+      if (is(value, current2) && (value !== void 0 || has(state3.base_, prop, state3.type_)))
+        return true;
+      prepareCopy(state3);
+      markChanged(state3);
+    }
+    if (state3.copy_[prop] === value && // special case: handle new props with value 'undefined'
+    (value !== void 0 || prop in state3.copy_) || // special case: NaN
+    Number.isNaN(value) && Number.isNaN(state3.copy_[prop]))
+      return true;
+    state3.copy_[prop] = value;
+    state3.assigned_.set(prop, true);
+    handleCrossReference(state3, prop, value);
+    return true;
+  },
+  deleteProperty(state3, prop) {
+    prepareCopy(state3);
+    if (peek(state3.base_, prop) !== void 0 || prop in state3.base_) {
+      state3.assigned_.set(prop, false);
+      markChanged(state3);
+    } else {
+      state3.assigned_.delete(prop);
+    }
+    if (state3.copy_) {
+      delete state3.copy_[prop];
+    }
+    return true;
+  },
+  // Note: We never coerce `desc.value` into an Immer draft, because we can't make
+  // the same guarantee in ES5 mode.
+  getOwnPropertyDescriptor(state3, prop) {
+    const owner = latest(state3);
+    const desc = Reflect.getOwnPropertyDescriptor(owner, prop);
+    if (!desc)
+      return desc;
+    return {
+      [WRITABLE]: true,
+      [CONFIGURABLE]: state3.type_ !== 1 || prop !== "length",
+      [ENUMERABLE]: desc[ENUMERABLE],
+      [VALUE]: owner[prop]
+    };
+  },
+  defineProperty() {
+    die(11);
+  },
+  getPrototypeOf(state3) {
+    return getPrototypeOf(state3.base_);
+  },
+  setPrototypeOf() {
+    die(12);
+  }
+};
+var arrayTraps = {};
+for (let key in objectTraps) {
+  let fn3 = objectTraps[key];
+  arrayTraps[key] = function() {
+    const args = arguments;
+    args[0] = args[0][0];
+    return fn3.apply(this, args);
+  };
+}
+arrayTraps.deleteProperty = function(state3, prop) {
+  if (process.env.NODE_ENV !== "production" && isNaN(parseInt(prop)))
+    die(13);
+  return arrayTraps.set.call(this, state3, prop, void 0);
+};
+arrayTraps.set = function(state3, prop, value) {
+  if (process.env.NODE_ENV !== "production" && prop !== "length" && isNaN(parseInt(prop)))
+    die(14);
+  return objectTraps.set.call(this, state3[0], prop, value, state3[0]);
+};
+function peek(draft, prop) {
+  const state3 = draft[DRAFT_STATE];
+  const source = state3 ? latest(state3) : draft;
+  return source[prop];
+}
+function readPropFromProto(state3, source, prop) {
+  const desc = getDescriptorFromProto(source, prop);
+  return desc ? VALUE in desc ? desc[VALUE] : (
+    // This is a very special case, if the prop is a getter defined by the
+    // prototype, we should invoke it with the draft as context!
+    desc.get?.call(state3.draft_)
+  ) : void 0;
+}
+function getDescriptorFromProto(source, prop) {
+  if (!(prop in source))
+    return void 0;
+  let proto = getPrototypeOf(source);
+  while (proto) {
+    const desc = Object.getOwnPropertyDescriptor(proto, prop);
+    if (desc)
+      return desc;
+    proto = getPrototypeOf(proto);
+  }
+  return void 0;
+}
+function markChanged(state3) {
+  if (!state3.modified_) {
+    state3.modified_ = true;
+    if (state3.parent_) {
+      markChanged(state3.parent_);
+    }
+  }
+}
+function prepareCopy(state3) {
+  if (!state3.copy_) {
+    state3.assigned_ = /* @__PURE__ */ new Map();
+    state3.copy_ = shallowCopy(
+      state3.base_,
+      state3.scope_.immer_.useStrictShallowCopy_
+    );
+  }
+}
+var Immer2 = class {
+  constructor(config3) {
+    this.autoFreeze_ = true;
+    this.useStrictShallowCopy_ = false;
+    this.useStrictIteration_ = false;
+    this.produce = (base, recipe, patchListener) => {
+      if (isFunction(base) && !isFunction(recipe)) {
+        const defaultBase = recipe;
+        recipe = base;
+        const self2 = this;
+        return function curriedProduce(base2 = defaultBase, ...args) {
+          return self2.produce(base2, (draft) => recipe.call(this, draft, ...args));
+        };
+      }
+      if (!isFunction(recipe))
+        die(6);
+      if (patchListener !== void 0 && !isFunction(patchListener))
+        die(7);
+      let result;
+      if (isDraftable(base)) {
+        const scope = enterScope(this);
+        const proxy = createProxy(scope, base, void 0);
+        let hasError = true;
+        try {
+          result = recipe(proxy);
+          hasError = false;
+        } finally {
+          if (hasError)
+            revokeScope(scope);
+          else
+            leaveScope(scope);
+        }
+        usePatchesInScope(scope, patchListener);
+        return processResult(result, scope);
+      } else if (!base || !isObjectish(base)) {
+        result = recipe(base);
+        if (result === void 0)
+          result = base;
+        if (result === NOTHING)
+          result = void 0;
+        if (this.autoFreeze_)
+          freeze(result, true);
+        if (patchListener) {
+          const p = [];
+          const ip = [];
+          getPlugin(PluginPatches).generateReplacementPatches_(base, result, {
+            patches_: p,
+            inversePatches_: ip
+          });
+          patchListener(p, ip);
+        }
+        return result;
+      } else
+        die(1, base);
+    };
+    this.produceWithPatches = (base, recipe) => {
+      if (isFunction(base)) {
+        return (state3, ...args) => this.produceWithPatches(state3, (draft) => base(draft, ...args));
+      }
+      let patches, inversePatches;
+      const result = this.produce(base, recipe, (p, ip) => {
+        patches = p;
+        inversePatches = ip;
+      });
+      return [result, patches, inversePatches];
+    };
+    if (isBoolean(config3?.autoFreeze))
+      this.setAutoFreeze(config3.autoFreeze);
+    if (isBoolean(config3?.useStrictShallowCopy))
+      this.setUseStrictShallowCopy(config3.useStrictShallowCopy);
+    if (isBoolean(config3?.useStrictIteration))
+      this.setUseStrictIteration(config3.useStrictIteration);
+  }
+  createDraft(base) {
+    if (!isDraftable(base))
+      die(8);
+    if (isDraft(base))
+      base = current(base);
+    const scope = enterScope(this);
+    const proxy = createProxy(scope, base, void 0);
+    proxy[DRAFT_STATE].isManual_ = true;
+    leaveScope(scope);
+    return proxy;
+  }
+  finishDraft(draft, patchListener) {
+    const state3 = draft && draft[DRAFT_STATE];
+    if (!state3 || !state3.isManual_)
+      die(9);
+    const { scope_: scope } = state3;
+    usePatchesInScope(scope, patchListener);
+    return processResult(void 0, scope);
+  }
+  /**
+   * Pass true to automatically freeze all copies created by Immer.
+   *
+   * By default, auto-freezing is enabled.
+   */
+  setAutoFreeze(value) {
+    this.autoFreeze_ = value;
+  }
+  /**
+   * Pass true to enable strict shallow copy.
+   *
+   * By default, immer does not copy the object descriptors such as getter, setter and non-enumrable properties.
+   */
+  setUseStrictShallowCopy(value) {
+    this.useStrictShallowCopy_ = value;
+  }
+  /**
+   * Pass false to use faster iteration that skips non-enumerable properties
+   * but still handles symbols for compatibility.
+   *
+   * By default, strict iteration is enabled (includes all own properties).
+   */
+  setUseStrictIteration(value) {
+    this.useStrictIteration_ = value;
+  }
+  shouldUseStrictIteration() {
+    return this.useStrictIteration_;
+  }
+  applyPatches(base, patches) {
+    let i2;
+    for (i2 = patches.length - 1; i2 >= 0; i2--) {
+      const patch = patches[i2];
+      if (patch.path.length === 0 && patch.op === "replace") {
+        base = patch.value;
+        break;
+      }
+    }
+    if (i2 > -1) {
+      patches = patches.slice(i2 + 1);
+    }
+    const applyPatchesImpl = getPlugin(PluginPatches).applyPatches_;
+    if (isDraft(base)) {
+      return applyPatchesImpl(base, patches);
+    }
+    return this.produce(
+      base,
+      (draft) => applyPatchesImpl(draft, patches)
+    );
+  }
+};
+function createProxy(rootScope, value, parent, key) {
+  const [draft, state3] = isMap(value) ? getPlugin(PluginMapSet).proxyMap_(value, parent) : isSet(value) ? getPlugin(PluginMapSet).proxySet_(value, parent) : createProxyProxy(value, parent);
+  const scope = parent?.scope_ ?? getCurrentScope();
+  scope.drafts_.push(draft);
+  state3.callbacks_ = parent?.callbacks_ ?? [];
+  state3.key_ = key;
+  if (parent && key !== void 0) {
+    registerChildFinalizationCallback(parent, state3, key);
+  } else {
+    state3.callbacks_.push(function rootDraftCleanup(rootScope2) {
+      rootScope2.mapSetPlugin_?.fixSetContents(state3);
+      const { patchPlugin_ } = rootScope2;
+      if (state3.modified_ && patchPlugin_) {
+        patchPlugin_.generatePatches_(state3, [], rootScope2);
+      }
+    });
+  }
+  return draft;
+}
+function current(value) {
+  if (!isDraft(value))
+    die(10, value);
+  return currentImpl(value);
+}
+function currentImpl(value) {
+  if (!isDraftable(value) || isFrozen(value))
+    return value;
+  const state3 = value[DRAFT_STATE];
+  let copy;
+  let strict = true;
+  if (state3) {
+    if (!state3.modified_)
+      return state3.base_;
+    state3.finalized_ = true;
+    copy = shallowCopy(value, state3.scope_.immer_.useStrictShallowCopy_);
+    strict = state3.scope_.immer_.shouldUseStrictIteration();
+  } else {
+    copy = shallowCopy(value, true);
+  }
+  each(
+    copy,
+    (key, childValue) => {
+      set(copy, key, currentImpl(childValue));
+    },
+    strict
+  );
+  if (state3) {
+    state3.finalized_ = false;
+  }
+  return copy;
+}
+var immer = new Immer2();
+var produce = immer.produce;
+
+// node_modules/zustand/esm/middleware/immer.mjs
+var immerImpl = (initializer) => (set3, get2, store) => {
+  store.setState = (updater, replace2, ...args) => {
+    const nextState = typeof updater === "function" ? produce(updater) : updater;
+    return set3(nextState, replace2, ...args);
+  };
+  return initializer(store.setState, get2, store);
+};
+var immer2 = immerImpl;
+
 // src/engine/document.ts
 var createEmptyDocument = () => ({
   root: { props: {} },
@@ -862,6 +1718,19 @@ var getBreadcrumbs = (doc, id) => {
   }
   return crumbs;
 };
+
+// node_modules/nanoid/non-secure/index.js
+var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+var nanoid = (size = 21) => {
+  let id = "";
+  let i2 = size | 0;
+  while (i2-- > 0) {
+    id += urlAlphabet[Math.random() * 64 | 0];
+  }
+  return id;
+};
+
+// src/engine/ids.ts
 var generateId = () => nanoid(8);
 var remapNodeIds = (node, sourceZones, idMap = /* @__PURE__ */ new Map()) => {
   const oldId = node.props.id;
@@ -984,7 +1853,7 @@ var validateSelection = (state3) => {
   state3.selection.hoveredId = null;
 };
 var useEditorStore = create()(
-  immer((set2) => ({
+  immer2((set3) => ({
     // Initial State
     document: createEmptyDocument(),
     history: {
@@ -999,47 +1868,47 @@ var useEditorStore = create()(
     drag: null,
     _lastCommit: null,
     // Actions
-    setDocument: (doc) => set2((state3) => {
+    setDocument: (doc) => set3((state3) => {
       state3.document = cloneDocument(parseDocument(doc));
       state3.history = { past: [], future: [] };
       state3.selection = { selectedId: null, hoveredId: null };
       state3._lastCommit = null;
     }),
-    selectNode: (id) => set2((state3) => {
+    selectNode: (id) => set3((state3) => {
       state3.selection.selectedId = id;
     }),
-    hoverNode: (id) => set2((state3) => {
+    hoverNode: (id) => set3((state3) => {
       state3.selection.hoveredId = id;
     }),
-    setViewport: (viewport) => set2((state3) => {
+    setViewport: (viewport) => set3((state3) => {
       state3.viewport = viewport;
     }),
-    beginDrag: (payload) => set2((state3) => {
+    beginDrag: (payload) => set3((state3) => {
       state3.drag = payload;
     }),
-    endDrag: () => set2((state3) => {
+    endDrag: () => set3((state3) => {
       state3.drag = null;
     }),
-    insertNode: (node, targetZoneKey, index2) => set2((state3) => {
+    insertNode: (node, targetZoneKey, index2) => set3((state3) => {
       pushToHistory(state3);
       insertNode(state3.document, node, targetZoneKey, index2);
     }),
-    removeNode: (id) => set2((state3) => {
+    removeNode: (id) => set3((state3) => {
       pushToHistory(state3);
       removeNode(state3.document, id);
       if (state3.selection.selectedId === id) {
         state3.selection.selectedId = null;
       }
     }),
-    moveNode: (id, targetZoneKey, index2) => set2((state3) => {
+    moveNode: (id, targetZoneKey, index2) => set3((state3) => {
       pushToHistory(state3);
       moveNode(state3.document, id, targetZoneKey, index2);
     }),
-    duplicateNode: (id) => set2((state3) => {
+    duplicateNode: (id) => set3((state3) => {
       pushToHistory(state3);
       duplicateNode(state3.document, id);
     }),
-    updateProps: (id, patch) => set2((state3) => {
+    updateProps: (id, patch) => set3((state3) => {
       const now2 = Date.now();
       const last = state3._lastCommit;
       const isContinuation = last && last.id === id && now2 - last.time < COALESCE_MS;
@@ -1053,7 +1922,7 @@ var useEditorStore = create()(
       updateProps(state3.document, id, patch);
       state3._lastCommit = { id, time: now2 };
     }),
-    setRootProps: (patch) => set2((state3) => {
+    setRootProps: (patch) => set3((state3) => {
       const now2 = Date.now();
       const last = state3._lastCommit;
       const isContinuation = last && last.id === "__root__" && now2 - last.time < COALESCE_MS;
@@ -1067,7 +1936,7 @@ var useEditorStore = create()(
       setRootProps(state3.document, patch);
       state3._lastCommit = { id: "__root__", time: now2 };
     }),
-    undo: () => set2((state3) => {
+    undo: () => set3((state3) => {
       if (state3.history.past.length === 0) return;
       const previous = state3.history.past.pop();
       state3.history.future.push(cloneDocument(state3.document));
@@ -1075,7 +1944,7 @@ var useEditorStore = create()(
       state3._lastCommit = null;
       validateSelection(state3);
     }),
-    redo: () => set2((state3) => {
+    redo: () => set3((state3) => {
       if (state3.history.future.length === 0) return;
       const next = state3.history.future.pop();
       state3.history.past.push(cloneDocument(state3.document));
@@ -1085,16 +1954,18 @@ var useEditorStore = create()(
     })
   }))
 );
-var useUiStore = create((set2) => ({
+
+// src/studio/uiStore.ts
+var useUiStore = create((set3) => ({
   mode: "edit",
   leftPanelOpen: true,
   rightPanelOpen: true,
-  setMode: (mode) => set2({ mode }),
-  toggleMode: () => set2((s2) => ({ mode: s2.mode === "edit" ? "preview" : "edit" })),
-  toggleLeftPanel: () => set2((s2) => ({ leftPanelOpen: !s2.leftPanelOpen })),
-  toggleRightPanel: () => set2((s2) => ({ rightPanelOpen: !s2.rightPanelOpen })),
-  setLeftPanelOpen: (open) => set2({ leftPanelOpen: open }),
-  setRightPanelOpen: (open) => set2({ rightPanelOpen: open })
+  setMode: (mode) => set3({ mode }),
+  toggleMode: () => set3((s2) => ({ mode: s2.mode === "edit" ? "preview" : "edit" })),
+  toggleLeftPanel: () => set3((s2) => ({ leftPanelOpen: !s2.leftPanelOpen })),
+  toggleRightPanel: () => set3((s2) => ({ rightPanelOpen: !s2.rightPanelOpen })),
+  setLeftPanelOpen: (open) => set3({ leftPanelOpen: open }),
+  setRightPanelOpen: (open) => set3({ rightPanelOpen: open })
 }));
 var StudioContext = createContext(null);
 var useStudio = () => {
@@ -1375,7 +2246,7 @@ var DropZone = ({ zone, className, style }) => {
   const drag = useEditorStore((state3) => state3.drag);
   const autoScrollerRef = useRef(createEventAutoScroller());
   const [isDragOver, setIsDragOver] = useState(false);
-  const items = useEditorStore((state3) => state3.document.zones[zoneKey] || []);
+  const items = useEditorStore((state3) => state3.document.zones[zoneKey]) || [];
   const handleDragOver = (e3) => {
     e3.preventDefault();
     e3.stopPropagation();
@@ -1940,7 +2811,7 @@ var Canvas = () => {
   const insertNode2 = useEditorStore((state3) => state3.insertNode);
   const endDrag = useEditorStore((state3) => state3.endDrag);
   const { config: config3, readOnly } = useStudio();
-  const rootProps = useEditorStore((state3) => state3.document.root?.props || {});
+  const rootProps = useEditorStore((state3) => state3.document.root?.props) || {};
   const [isRootDragOver, setIsRootDragOver] = useState(false);
   const autoScrollerRef = useRef(createEventAutoScroller());
   useEffect(() => {
@@ -3932,9 +4803,9 @@ var LanguageField = ({
   const [statusMsg, setStatusMsg] = useState(null);
   const values = useMemo(() => {
     if (!merchantInfo) return value || [];
-    const current = value || [];
+    const current2 = value || [];
     return merchantInfo.languages.map((code) => {
-      const existing = current.find((v2) => v2.code === code);
+      const existing = current2.find((v2) => v2.code === code);
       return existing || { code, value: "" };
     });
   }, [value, merchantInfo]);
@@ -3943,8 +4814,8 @@ var LanguageField = ({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const handleChange = useCallback((code, newVal) => {
-    const current = valuesRef.current;
-    const updated = [...current];
+    const current2 = valuesRef.current;
+    const updated = [...current2];
     const idx = updated.findIndex((v2) => v2.code === code);
     if (idx >= 0) {
       updated[idx] = { ...updated[idx], value: newVal };
@@ -4094,6 +4965,6106 @@ var createLanguageField = (options = {}) => {
     ) }) })
   };
 };
+var Document = Node$1.create({
+  name: "doc",
+  topNode: true,
+  content: "block+",
+  renderMarkdown: (node, h2) => {
+    if (!node.content) {
+      return "";
+    }
+    return h2.renderChildren(node.content, "\n\n");
+  }
+});
+var index_default = Document;
+var EMPTY_PARAGRAPH_MARKDOWN = "&nbsp;";
+var NBSP_CHAR = "\xA0";
+var Paragraph = Node$1.create({
+  name: "paragraph",
+  priority: 1e3,
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  group: "block",
+  content: "inline*",
+  parseHTML() {
+    return [{ tag: "p" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["p", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  parseMarkdown: (token, helpers) => {
+    const tokens = token.tokens || [];
+    if (tokens.length === 1 && tokens[0].type === "image") {
+      return helpers.parseChildren([tokens[0]]);
+    }
+    const content = helpers.parseInline(tokens);
+    const hasExplicitEmptyParagraphMarker = tokens.length === 1 && tokens[0].type === "text" && (tokens[0].raw === EMPTY_PARAGRAPH_MARKDOWN || tokens[0].text === EMPTY_PARAGRAPH_MARKDOWN || tokens[0].raw === NBSP_CHAR || tokens[0].text === NBSP_CHAR);
+    if (hasExplicitEmptyParagraphMarker && content.length === 1 && content[0].type === "text" && (content[0].text === EMPTY_PARAGRAPH_MARKDOWN || content[0].text === NBSP_CHAR)) {
+      return helpers.createNode("paragraph", void 0, []);
+    }
+    return helpers.createNode("paragraph", void 0, content);
+  },
+  renderMarkdown: (node, h2, ctx) => {
+    var _a, _b;
+    if (!node) {
+      return "";
+    }
+    const content = Array.isArray(node.content) ? node.content : [];
+    if (content.length === 0) {
+      const previousContent = Array.isArray((_a = ctx == null ? void 0 : ctx.previousNode) == null ? void 0 : _a.content) ? ctx.previousNode.content : [];
+      const previousNodeIsEmptyParagraph = ((_b = ctx == null ? void 0 : ctx.previousNode) == null ? void 0 : _b.type) === "paragraph" && previousContent.length === 0;
+      return previousNodeIsEmptyParagraph ? EMPTY_PARAGRAPH_MARKDOWN : "";
+    }
+    return h2.renderChildren(content);
+  },
+  addCommands() {
+    return {
+      setParagraph: () => ({ commands }) => {
+        return commands.setNode(this.name);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Alt-0": () => this.editor.commands.setParagraph()
+    };
+  }
+});
+var index_default2 = Paragraph;
+var Text = Node$1.create({
+  name: "text",
+  group: "inline",
+  parseMarkdown: (token) => {
+    return {
+      type: "text",
+      text: token.text || ""
+    };
+  },
+  renderMarkdown: (node) => node.text || ""
+});
+var index_default3 = Text;
+var starInputRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))$/;
+var starPasteRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))/g;
+var underscoreInputRegex = /(?:^|\s)(__(?!\s+__)((?:[^_]+))__(?!\s+__))$/;
+var underscorePasteRegex = /(?:^|\s)(__(?!\s+__)((?:[^_]+))__(?!\s+__))/g;
+var Bold = Mark.create({
+  name: "bold",
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "strong"
+      },
+      {
+        tag: "b",
+        getAttrs: (node) => node.style.fontWeight !== "normal" && null
+      },
+      {
+        style: "font-weight=400",
+        clearMark: (mark) => mark.type.name === this.name
+      },
+      {
+        style: "font-weight",
+        getAttrs: (value) => /^(bold(er)?|[5-9]\d{2,})$/.test(value) && null
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return /* @__PURE__ */ jsx$1("strong", { ...mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), children: /* @__PURE__ */ jsx$1("slot", {}) });
+  },
+  markdownTokenName: "strong",
+  parseMarkdown: (token, helpers) => {
+    return helpers.applyMark("bold", helpers.parseInline(token.tokens || []));
+  },
+  markdownOptions: {
+    htmlReopen: {
+      open: "<strong>",
+      close: "</strong>"
+    }
+  },
+  renderMarkdown: (node, h2) => {
+    return `**${h2.renderChildren(node)}**`;
+  },
+  addCommands() {
+    return {
+      setBold: () => ({ commands }) => {
+        return commands.setMark(this.name);
+      },
+      toggleBold: () => ({ commands }) => {
+        return commands.toggleMark(this.name);
+      },
+      unsetBold: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-b": () => this.editor.commands.toggleBold(),
+      "Mod-B": () => this.editor.commands.toggleBold()
+    };
+  },
+  addInputRules() {
+    return [
+      markInputRule({
+        find: starInputRegex,
+        type: this.type
+      }),
+      markInputRule({
+        find: underscoreInputRegex,
+        type: this.type
+      })
+    ];
+  },
+  addPasteRules() {
+    return [
+      markPasteRule({
+        find: starPasteRegex,
+        type: this.type
+      }),
+      markPasteRule({
+        find: underscorePasteRegex,
+        type: this.type
+      })
+    ];
+  }
+});
+var index_default4 = Bold;
+var starInputRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))$/;
+var starPasteRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))/g;
+var underscoreInputRegex2 = /(?:^|\s)(_(?!\s+_)((?:[^_]+))_(?!\s+_))$/;
+var underscorePasteRegex2 = /(?:^|\s)(_(?!\s+_)((?:[^_]+))_(?!\s+_))/g;
+var Italic = Mark.create({
+  name: "italic",
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "em"
+      },
+      {
+        tag: "i",
+        getAttrs: (node) => node.style.fontStyle !== "normal" && null
+      },
+      {
+        style: "font-style=normal",
+        clearMark: (mark) => mark.type.name === this.name
+      },
+      {
+        style: "font-style=italic"
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["em", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  addCommands() {
+    return {
+      setItalic: () => ({ commands }) => {
+        return commands.setMark(this.name);
+      },
+      toggleItalic: () => ({ commands }) => {
+        return commands.toggleMark(this.name);
+      },
+      unsetItalic: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      }
+    };
+  },
+  markdownTokenName: "em",
+  parseMarkdown: (token, helpers) => {
+    return helpers.applyMark("italic", helpers.parseInline(token.tokens || []));
+  },
+  markdownOptions: {
+    htmlReopen: {
+      open: "<em>",
+      close: "</em>"
+    }
+  },
+  renderMarkdown: (node, h2) => {
+    return `*${h2.renderChildren(node)}*`;
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-i": () => this.editor.commands.toggleItalic(),
+      "Mod-I": () => this.editor.commands.toggleItalic()
+    };
+  },
+  addInputRules() {
+    return [
+      markInputRule({
+        find: starInputRegex2,
+        type: this.type
+      }),
+      markInputRule({
+        find: underscoreInputRegex2,
+        type: this.type
+      })
+    ];
+  },
+  addPasteRules() {
+    return [
+      markPasteRule({
+        find: starPasteRegex2,
+        type: this.type
+      }),
+      markPasteRule({
+        find: underscorePasteRegex2,
+        type: this.type
+      })
+    ];
+  }
+});
+var index_default5 = Italic;
+var inputRegex = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))$/;
+var pasteRegex = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))/g;
+var Strike = Mark.create({
+  name: "strike",
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "s"
+      },
+      {
+        tag: "del"
+      },
+      {
+        tag: "strike"
+      },
+      {
+        style: "text-decoration",
+        consuming: false,
+        getAttrs: (style) => style.includes("line-through") ? {} : false
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["s", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  markdownTokenName: "del",
+  parseMarkdown: (token, helpers) => {
+    return helpers.applyMark("strike", helpers.parseInline(token.tokens || []));
+  },
+  renderMarkdown: (node, h2) => {
+    return `~~${h2.renderChildren(node)}~~`;
+  },
+  addCommands() {
+    return {
+      setStrike: () => ({ commands }) => {
+        return commands.setMark(this.name);
+      },
+      toggleStrike: () => ({ commands }) => {
+        return commands.toggleMark(this.name);
+      },
+      unsetStrike: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-s": () => this.editor.commands.toggleStrike()
+    };
+  },
+  addInputRules() {
+    return [
+      markInputRule({
+        find: inputRegex,
+        type: this.type
+      })
+    ];
+  },
+  addPasteRules() {
+    return [
+      markPasteRule({
+        find: pasteRegex,
+        type: this.type
+      })
+    ];
+  }
+});
+var index_default6 = Strike;
+var Underline = Mark.create({
+  name: "underline",
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "u"
+      },
+      {
+        style: "text-decoration",
+        consuming: false,
+        getAttrs: (style) => style.includes("underline") ? {} : false
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["u", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  parseMarkdown(token, helpers) {
+    return helpers.applyMark(this.name || "underline", helpers.parseInline(token.tokens || []));
+  },
+  renderMarkdown(node, helpers) {
+    return `++${helpers.renderChildren(node)}++`;
+  },
+  markdownTokenizer: {
+    name: "underline",
+    level: "inline",
+    start(src) {
+      return src.indexOf("++");
+    },
+    tokenize(src, _tokens, lexer) {
+      const rule = /^(\+\+)([\s\S]+?)(\+\+)/;
+      const match = rule.exec(src);
+      if (!match) {
+        return void 0;
+      }
+      const innerContent = match[2].trim();
+      return {
+        type: "underline",
+        raw: match[0],
+        text: innerContent,
+        tokens: lexer.inlineTokens(innerContent)
+      };
+    }
+  },
+  addCommands() {
+    return {
+      setUnderline: () => ({ commands }) => {
+        return commands.setMark(this.name);
+      },
+      toggleUnderline: () => ({ commands }) => {
+        return commands.toggleMark(this.name);
+      },
+      unsetUnderline: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-u": () => this.editor.commands.toggleUnderline(),
+      "Mod-U": () => this.editor.commands.toggleUnderline()
+    };
+  }
+});
+var index_default7 = Underline;
+var Heading = Node$1.create({
+  name: "heading",
+  addOptions() {
+    return {
+      levels: [1, 2, 3, 4, 5, 6],
+      HTMLAttributes: {}
+    };
+  },
+  content: "inline*",
+  group: "block",
+  defining: true,
+  addAttributes() {
+    return {
+      level: {
+        default: 1,
+        rendered: false
+      }
+    };
+  },
+  parseHTML() {
+    return this.options.levels.map((level) => ({
+      tag: `h${level}`,
+      attrs: { level }
+    }));
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const hasLevel = this.options.levels.includes(node.attrs.level);
+    const level = hasLevel ? node.attrs.level : this.options.levels[0];
+    return [`h${level}`, mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  parseMarkdown: (token, helpers) => {
+    return helpers.createNode(
+      "heading",
+      { level: token.depth || 1 },
+      helpers.parseInline(token.tokens || [])
+    );
+  },
+  renderMarkdown: (node, h2) => {
+    var _a;
+    const level = ((_a = node.attrs) == null ? void 0 : _a.level) ? parseInt(node.attrs.level, 10) : 1;
+    const headingChars = "#".repeat(level);
+    if (!node.content) {
+      return "";
+    }
+    return `${headingChars} ${h2.renderChildren(node.content)}`;
+  },
+  addCommands() {
+    return {
+      setHeading: (attributes) => ({ commands }) => {
+        if (!this.options.levels.includes(attributes.level)) {
+          return false;
+        }
+        return commands.setNode(this.name, attributes);
+      },
+      toggleHeading: (attributes) => ({ commands }) => {
+        if (!this.options.levels.includes(attributes.level)) {
+          return false;
+        }
+        return commands.toggleNode(this.name, "paragraph", attributes);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return this.options.levels.reduce(
+      (items, level) => ({
+        ...items,
+        [`Mod-Alt-${level}`]: () => this.editor.commands.toggleHeading({ level })
+      }),
+      {}
+    );
+  },
+  addInputRules() {
+    return this.options.levels.map((level) => {
+      return textblockTypeInputRule({
+        find: new RegExp(`^(#{${Math.min(...this.options.levels)},${level}})\\s$`),
+        type: this.type,
+        getAttributes: {
+          level
+        }
+      });
+    });
+  }
+});
+var index_default8 = Heading;
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name3 in all)
+    __defProp(target, name3, { get: all[name3], enumerable: true });
+};
+var ListItemName = "listItem";
+var TextStyleName = "textStyle";
+var bulletListInputRegex = /^\s*([-+*])\s$/;
+var BulletList = Node$1.create({
+  name: "bulletList",
+  addOptions() {
+    return {
+      itemTypeName: "listItem",
+      HTMLAttributes: {},
+      keepMarks: false,
+      keepAttributes: false
+    };
+  },
+  group: "block list",
+  content() {
+    return `${this.options.itemTypeName}+`;
+  },
+  parseHTML() {
+    return [{ tag: "ul" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["ul", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  markdownTokenName: "list",
+  parseMarkdown: (token, helpers) => {
+    if (token.type !== "list" || token.ordered) {
+      return [];
+    }
+    return {
+      type: "bulletList",
+      content: token.items ? helpers.parseChildren(token.items) : []
+    };
+  },
+  renderMarkdown: (node, h2) => {
+    if (!node.content) {
+      return "";
+    }
+    return h2.renderChildren(node.content, "\n");
+  },
+  markdownOptions: {
+    indentsContent: true
+  },
+  addCommands() {
+    return {
+      toggleBulletList: () => ({ commands, chain: chain4 }) => {
+        if (this.options.keepAttributes) {
+          return chain4().toggleList(this.name, this.options.itemTypeName, this.options.keepMarks).updateAttributes(ListItemName, this.editor.getAttributes(TextStyleName)).run();
+        }
+        return commands.toggleList(this.name, this.options.itemTypeName, this.options.keepMarks);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-8": () => this.editor.commands.toggleBulletList()
+    };
+  },
+  addInputRules() {
+    let inputRule = wrappingInputRule({
+      find: bulletListInputRegex,
+      type: this.type
+    });
+    if (this.options.keepMarks || this.options.keepAttributes) {
+      inputRule = wrappingInputRule({
+        find: bulletListInputRegex,
+        type: this.type,
+        keepMarks: this.options.keepMarks,
+        keepAttributes: this.options.keepAttributes,
+        getAttributes: () => {
+          return this.editor.getAttributes(TextStyleName);
+        },
+        editor: this.editor
+      });
+    }
+    return [inputRule];
+  }
+});
+var getBranchingNestedListAtCursor = (state3, itemName, wrapperNames) => {
+  const { selection } = state3;
+  if (!selection.empty) {
+    return null;
+  }
+  const { $from } = selection;
+  if (!$from.parent.isTextblock) {
+    return null;
+  }
+  if ($from.parentOffset !== $from.parent.content.size) {
+    return null;
+  }
+  let listItemDepth = -1;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    if ($from.node(depth).type.name === itemName) {
+      listItemDepth = depth;
+      break;
+    }
+  }
+  if (listItemDepth < 0) {
+    return null;
+  }
+  const listItem = $from.node(listItemDepth);
+  const indexInListItem = $from.index(listItemDepth);
+  if (indexInListItem + 1 >= listItem.childCount) {
+    return null;
+  }
+  const nextChild = listItem.child(indexInListItem + 1);
+  if (!wrapperNames.includes(nextChild.type.name)) {
+    return null;
+  }
+  const itemType = state3.schema.nodes[itemName];
+  let hasBranching = false;
+  nextChild.forEach((child) => {
+    if (child.type === itemType && child.childCount > 1) {
+      hasBranching = true;
+    }
+  });
+  if (!hasBranching) {
+    return null;
+  }
+  const nodeAfter = state3.doc.resolve($from.after()).nodeAfter;
+  if (!nodeAfter || !wrapperNames.includes(nodeAfter.type.name)) {
+    return null;
+  }
+  const items = [];
+  nodeAfter.forEach((child) => {
+    items.push(child);
+  });
+  if (items.length === 0) {
+    return null;
+  }
+  return {
+    listItemDepth,
+    nestedList: nodeAfter,
+    nestedListPos: $from.after(),
+    insertPos: $from.after(listItemDepth),
+    items
+  };
+};
+var hoistBranchingNestedList = (state3, dispatch, itemName, wrapperNames) => {
+  const context = getBranchingNestedListAtCursor(state3, itemName, wrapperNames);
+  if (!context) {
+    return false;
+  }
+  const { selection } = state3;
+  const { nestedList, nestedListPos, insertPos, items } = context;
+  const tr2 = state3.tr;
+  tr2.delete(nestedListPos, nestedListPos + nestedList.nodeSize);
+  const mappedInsertPos = tr2.mapping.map(insertPos);
+  tr2.insert(mappedInsertPos, Fragment$1.from(items));
+  tr2.setSelection(selection.map(tr2.doc, tr2.mapping));
+  if (dispatch) {
+    dispatch(tr2);
+  }
+  return true;
+};
+var handleDeleteBranchingNestedList = (editor2, itemName, wrapperNames) => {
+  return hoistBranchingNestedList(editor2.state, editor2.view.dispatch, itemName, wrapperNames);
+};
+var createBranchingListDeleteKeymap = (itemName, wrapperNames) => {
+  return Extension.create({
+    name: `${itemName}BranchingDeleteKeymap`,
+    priority: 101,
+    addKeyboardShortcuts() {
+      const handleDelete2 = () => handleDeleteBranchingNestedList(this.editor, itemName, wrapperNames);
+      return {
+        Delete: handleDelete2,
+        "Mod-Delete": handleDelete2
+      };
+    }
+  });
+};
+var ROMAN_NUMERALS = [
+  [1e3, "m"],
+  [900, "cm"],
+  [500, "d"],
+  [400, "cd"],
+  [100, "c"],
+  [90, "xc"],
+  [50, "l"],
+  [40, "xl"],
+  [10, "x"],
+  [9, "ix"],
+  [5, "v"],
+  [4, "iv"],
+  [1, "i"]
+];
+var ALPHA_NUMERALS = "abcdefghijklmnopqrstuvwxyz";
+var ORDERED_LIST_ALPHA_MARKER_PATTERN = "[a-zA-Z]{1,2}";
+var ORDERED_LIST_MARKER_PATTERN = String.raw`\d+|[ivxlcdmIVXLCDM]+|${ORDERED_LIST_ALPHA_MARKER_PATTERN}`;
+function toRoman(num) {
+  let remaining = num;
+  let result = "";
+  for (const [value, numeral] of ROMAN_NUMERALS) {
+    while (remaining >= value) {
+      result += numeral;
+      remaining -= value;
+    }
+  }
+  return result;
+}
+function toRomanUpper(num) {
+  return toRoman(num).toUpperCase();
+}
+function fromRoman(roman) {
+  const lower = roman.toLowerCase();
+  let index2 = 0;
+  let result = 0;
+  while (index2 < lower.length) {
+    let matched = false;
+    for (const [value, numeral] of ROMAN_NUMERALS) {
+      if (lower.startsWith(numeral, index2)) {
+        result += value;
+        index2 += numeral.length;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      return 0;
+    }
+  }
+  return result;
+}
+function isValidRoman(marker) {
+  if (!/^[ivxlcdmIVXLCDM]+$/.test(marker)) {
+    return false;
+  }
+  const value = fromRoman(marker);
+  if (value <= 0) {
+    return false;
+  }
+  const expected = marker === marker.toLowerCase() ? toRoman(value) : toRomanUpper(value);
+  return expected === marker;
+}
+function fromAlpha(marker) {
+  const lower = marker.toLowerCase();
+  if (lower.length === 1) {
+    return lower.charCodeAt(0) - "a".charCodeAt(0) + 1;
+  }
+  if (lower.length === 2) {
+    const first = lower.charCodeAt(0) - "a".charCodeAt(0);
+    const second = lower.charCodeAt(1) - "a".charCodeAt(0);
+    return (first + 1) * 26 + second + 1;
+  }
+  return 0;
+}
+function toRomanAlpha(num) {
+  if (num <= 26) {
+    return ALPHA_NUMERALS[num - 1];
+  }
+  const first = Math.floor((num - 1) / 26) - 1;
+  const second = (num - 1) % 26;
+  if (first < 0) {
+    return ALPHA_NUMERALS[second];
+  }
+  return ALPHA_NUMERALS[first] + ALPHA_NUMERALS[second];
+}
+function detectMarkerType(marker) {
+  if (!marker || /^\d+$/.test(marker)) {
+    return void 0;
+  }
+  if (isValidRoman(marker)) {
+    return marker === marker.toLowerCase() ? "i" : "I";
+  }
+  if (/^[a-z]{1,2}$/.test(marker)) {
+    return "a";
+  }
+  if (/^[A-Z]{1,2}$/.test(marker)) {
+    return "A";
+  }
+  return void 0;
+}
+function markerToStart(marker) {
+  if (/^\d+$/.test(marker)) {
+    return parseInt(marker, 10);
+  }
+  const type = detectMarkerType(marker);
+  if (type === "i" || type === "I") {
+    return fromRoman(marker);
+  }
+  if (type === "a" || type === "A") {
+    const start = fromAlpha(marker);
+    return start > 0 ? start : 1;
+  }
+  const parsed = parseInt(marker, 10);
+  return Number.isNaN(parsed) ? 1 : parsed;
+}
+function startToMarker(type, start) {
+  if (type === "numeric") {
+    return String(start);
+  }
+  switch (type) {
+    case "a":
+      return toRomanAlpha(start);
+    case "A":
+      return toRomanAlpha(start).toUpperCase();
+    case "i":
+      return toRoman(start);
+    case "I":
+      return toRomanUpper(start);
+    default:
+      return String(start);
+  }
+}
+function areOrderedListMarkersSequential(markers) {
+  var _a;
+  if (markers.length === 0) {
+    return false;
+  }
+  const firstType = (_a = detectMarkerType(markers[0])) != null ? _a : "numeric";
+  const firstStart = markerToStart(markers[0]);
+  if (firstStart < 1) {
+    return false;
+  }
+  for (let i2 = 0; i2 < markers.length; i2++) {
+    const expected = startToMarker(firstType, firstStart + i2);
+    if (markers[i2] !== expected) {
+      return false;
+    }
+  }
+  return true;
+}
+function parseListMarker(marker) {
+  return {
+    type: detectMarkerType(marker),
+    start: markerToStart(marker)
+  };
+}
+function buildOrderedListAttrsFromMarker(marker) {
+  const { type, start } = parseListMarker(marker);
+  const attrs = {};
+  if (type) {
+    attrs.type = type;
+  }
+  if (start !== 1) {
+    attrs.start = start;
+  }
+  return attrs;
+}
+function getListMarker(type, index2, separator = ". ") {
+  const position = index2 + 1;
+  if (!type || type === "1") {
+    return `${position}${separator}`;
+  }
+  switch (type) {
+    case "a":
+      return `${toRomanAlpha(position)}${separator}`;
+    case "A":
+      return `${toRomanAlpha(position).toUpperCase()}${separator}`;
+    case "i":
+      return `${toRoman(position)}${separator}`;
+    case "I":
+      return `${toRomanUpper(position)}${separator}`;
+    default:
+      return `${position}${separator}`;
+  }
+}
+function isSameLineOrderedListToken(token) {
+  var _a, _b;
+  const nestedToken = (_a = token.tokens) == null ? void 0 : _a[0];
+  return Boolean(
+    token.text && ((_b = token.tokens) == null ? void 0 : _b.length) === 1 && (nestedToken == null ? void 0 : nestedToken.type) === "list" && nestedToken.ordered && nestedToken.raw === token.text
+  );
+}
+function parseSameLineOrderedListText(text2, helpers) {
+  if (helpers.tokenizeInline) {
+    return helpers.parseInline(helpers.tokenizeInline(text2));
+  }
+  return helpers.parseInline([
+    {
+      type: "text",
+      raw: text2,
+      text: text2
+    }
+  ]);
+}
+var ListItem = Node$1.create({
+  name: "listItem",
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+      bulletListTypeName: "bulletList",
+      orderedListTypeName: "orderedList"
+    };
+  },
+  content: "paragraph block*",
+  defining: true,
+  parseHTML() {
+    return [
+      {
+        tag: "li"
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["li", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  markdownTokenName: "list_item",
+  parseMarkdown: (token, helpers) => {
+    var _a;
+    if (token.type !== "list_item") {
+      return [];
+    }
+    const parseBlockChildren = (_a = helpers.parseBlockChildren) != null ? _a : helpers.parseChildren;
+    let content = [];
+    if (token.tokens && token.tokens.length > 0) {
+      if (isSameLineOrderedListToken(token)) {
+        return {
+          type: "listItem",
+          content: [
+            {
+              type: "paragraph",
+              content: parseSameLineOrderedListText(token.text || "", helpers)
+            }
+          ]
+        };
+      }
+      const hasParagraphTokens = token.tokens.some((t2) => t2.type === "paragraph");
+      if (hasParagraphTokens) {
+        content = parseBlockChildren(token.tokens);
+      } else {
+        const firstToken = token.tokens[0];
+        if (firstToken && firstToken.type === "text" && firstToken.tokens && firstToken.tokens.length > 0) {
+          const inlineContent = helpers.parseInline(firstToken.tokens);
+          content = [
+            {
+              type: "paragraph",
+              content: inlineContent
+            }
+          ];
+          if (token.tokens.length > 1) {
+            const remainingTokens = token.tokens.slice(1);
+            const additionalContent = parseBlockChildren(remainingTokens);
+            content.push(...additionalContent);
+          }
+        } else {
+          content = parseBlockChildren(token.tokens);
+        }
+      }
+    }
+    if (content.length === 0) {
+      content = [
+        {
+          type: "paragraph",
+          content: []
+        }
+      ];
+    }
+    return {
+      type: "listItem",
+      content
+    };
+  },
+  renderMarkdown: (node, h2, ctx) => {
+    return renderNestedMarkdownContent(
+      node,
+      h2,
+      (context) => {
+        var _a, _b, _c, _d;
+        if (context.parentType === "bulletList") {
+          return "- ";
+        }
+        if (context.parentType === "orderedList") {
+          const start = ((_b = (_a = context.meta) == null ? void 0 : _a.parentAttrs) == null ? void 0 : _b.start) || 1;
+          const type = (_d = (_c = context.meta) == null ? void 0 : _c.parentAttrs) == null ? void 0 : _d.type;
+          const index2 = start - 1 + (context.index || 0);
+          return getListMarker(type, index2, ". ");
+        }
+        return "- ";
+      },
+      ctx
+    );
+  },
+  addExtensions() {
+    return [
+      createBranchingListDeleteKeymap(this.name, [
+        this.options.bulletListTypeName,
+        this.options.orderedListTypeName
+      ])
+    ];
+  },
+  addKeyboardShortcuts() {
+    return {
+      Enter: () => this.editor.commands.splitListItem(this.name),
+      Tab: () => this.editor.commands.sinkListItem(this.name),
+      "Shift-Tab": () => this.editor.commands.liftListItem(this.name)
+    };
+  }
+});
+var listHelpers_exports = {};
+__export(listHelpers_exports, {
+  findListItemPos: () => findListItemPos,
+  getNextListDepth: () => getNextListDepth,
+  handleBackspace: () => handleBackspace,
+  handleDelete: () => handleDelete,
+  hasListBefore: () => hasListBefore,
+  hasListItemAfter: () => hasListItemAfter,
+  hasListItemBefore: () => hasListItemBefore,
+  listItemHasSubList: () => listItemHasSubList,
+  nextListIsDeeper: () => nextListIsDeeper,
+  nextListIsHigher: () => nextListIsHigher
+});
+var findListItemPos = (typeOrName, state3) => {
+  const { $from } = state3.selection;
+  const nodeType = getNodeType(typeOrName, state3.schema);
+  let currentNode = null;
+  let currentDepth = $from.depth;
+  let currentPos = $from.pos;
+  let targetDepth = null;
+  while (currentDepth > 0 && targetDepth === null) {
+    currentNode = $from.node(currentDepth);
+    if (currentNode.type === nodeType) {
+      targetDepth = currentDepth;
+    } else {
+      currentDepth -= 1;
+      currentPos -= 1;
+    }
+  }
+  if (targetDepth === null) {
+    return null;
+  }
+  return { $pos: state3.doc.resolve(currentPos), depth: targetDepth };
+};
+var getNextListDepth = (typeOrName, state3) => {
+  const listItemPos = findListItemPos(typeOrName, state3);
+  if (!listItemPos) {
+    return false;
+  }
+  const [, depth] = getNodeAtPosition(state3, typeOrName, listItemPos.$pos.pos + 4);
+  return depth;
+};
+var hasListBefore = (editorState, name3, parentListTypes) => {
+  const { $anchor } = editorState.selection;
+  const previousNodePos = Math.max(0, $anchor.pos - 2);
+  const previousNode = editorState.doc.resolve(previousNodePos).node();
+  if (!previousNode || !parentListTypes.includes(previousNode.type.name)) {
+    return false;
+  }
+  return true;
+};
+var handleBackspace = (editor2, name3, parentListTypes) => {
+  if (editor2.commands.undoInputRule()) {
+    return true;
+  }
+  if (editor2.state.selection.from !== editor2.state.selection.to) {
+    return false;
+  }
+  if (!isNodeActive(editor2.state, name3) && hasListBefore(editor2.state, name3, parentListTypes)) {
+    const { $anchor } = editor2.state.selection;
+    const $listPos = editor2.state.doc.resolve($anchor.before() - 1);
+    const listDescendants = [];
+    $listPos.node().descendants((node, pos) => {
+      if (node.type.name === name3) {
+        listDescendants.push({ node, pos });
+      }
+    });
+    const lastItem = listDescendants.at(-1);
+    if (!lastItem) {
+      return false;
+    }
+    const $lastItemPos = editor2.state.doc.resolve($listPos.start() + lastItem.pos + 1);
+    return editor2.chain().cut({ from: $anchor.start() - 1, to: $anchor.end() + 1 }, $lastItemPos.end()).joinForward().run();
+  }
+  if (!isNodeActive(editor2.state, name3)) {
+    return false;
+  }
+  if (!isAtStartOfNode(editor2.state)) {
+    return false;
+  }
+  return editor2.chain().liftListItem(name3).run();
+};
+var nextListIsDeeper = (typeOrName, state3) => {
+  const listDepth = getNextListDepth(typeOrName, state3);
+  const listItemPos = findListItemPos(typeOrName, state3);
+  if (!listItemPos || !listDepth) {
+    return false;
+  }
+  if (listDepth > listItemPos.depth) {
+    return true;
+  }
+  return false;
+};
+var nextListIsHigher = (typeOrName, state3) => {
+  const listDepth = getNextListDepth(typeOrName, state3);
+  const listItemPos = findListItemPos(typeOrName, state3);
+  if (!listItemPos || !listDepth) {
+    return false;
+  }
+  if (listDepth < listItemPos.depth) {
+    return true;
+  }
+  return false;
+};
+var handleDelete = (editor2, name3) => {
+  if (!isNodeActive(editor2.state, name3)) {
+    return false;
+  }
+  if (!isAtEndOfNode(editor2.state, name3)) {
+    return false;
+  }
+  const { selection } = editor2.state;
+  const { $from, $to } = selection;
+  if (!selection.empty && $from.sameParent($to)) {
+    return false;
+  }
+  if (nextListIsDeeper(name3, editor2.state)) {
+    return editor2.chain().focus(editor2.state.selection.from + 4).lift(name3).joinBackward().run();
+  }
+  if (nextListIsHigher(name3, editor2.state)) {
+    return editor2.chain().joinForward().joinBackward().run();
+  }
+  return editor2.commands.joinItemForward();
+};
+var hasListItemAfter = (typeOrName, state3) => {
+  var _a;
+  const { $anchor } = state3.selection;
+  const $targetPos = state3.doc.resolve($anchor.pos - $anchor.parentOffset - 2);
+  if ($targetPos.index() === $targetPos.parent.childCount - 1) {
+    return false;
+  }
+  if (((_a = $targetPos.nodeAfter) == null ? void 0 : _a.type.name) !== typeOrName) {
+    return false;
+  }
+  return true;
+};
+var hasListItemBefore = (typeOrName, state3) => {
+  var _a;
+  const { $anchor } = state3.selection;
+  const $targetPos = state3.doc.resolve($anchor.pos - 2);
+  if ($targetPos.index() === 0) {
+    return false;
+  }
+  if (((_a = $targetPos.nodeBefore) == null ? void 0 : _a.type.name) !== typeOrName) {
+    return false;
+  }
+  return true;
+};
+var listItemHasSubList = (typeOrName, state3, node) => {
+  if (!node) {
+    return false;
+  }
+  const nodeType = getNodeType(typeOrName, state3.schema);
+  let hasSubList = false;
+  node.descendants((child) => {
+    if (child.type === nodeType) {
+      hasSubList = true;
+    }
+  });
+  return hasSubList;
+};
+var ListKeymap = Extension.create({
+  name: "listKeymap",
+  addOptions() {
+    return {
+      listTypes: [
+        {
+          itemName: "listItem",
+          wrapperNames: ["bulletList", "orderedList"]
+        },
+        {
+          itemName: "taskItem",
+          wrapperNames: ["taskList"]
+        }
+      ]
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      Delete: ({ editor: editor2 }) => {
+        let handled = false;
+        this.options.listTypes.forEach(({ itemName }) => {
+          if (editor2.state.schema.nodes[itemName] === void 0) {
+            return;
+          }
+          if (handleDelete(editor2, itemName)) {
+            handled = true;
+          }
+        });
+        return handled;
+      },
+      "Mod-Delete": ({ editor: editor2 }) => {
+        let handled = false;
+        this.options.listTypes.forEach(({ itemName }) => {
+          if (editor2.state.schema.nodes[itemName] === void 0) {
+            return;
+          }
+          if (handleDelete(editor2, itemName)) {
+            handled = true;
+          }
+        });
+        return handled;
+      },
+      Backspace: ({ editor: editor2 }) => {
+        let handled = false;
+        this.options.listTypes.forEach(({ itemName, wrapperNames }) => {
+          if (editor2.state.schema.nodes[itemName] === void 0) {
+            return;
+          }
+          if (handleBackspace(editor2, itemName, wrapperNames)) {
+            handled = true;
+          }
+        });
+        return handled;
+      },
+      "Mod-Backspace": ({ editor: editor2 }) => {
+        let handled = false;
+        this.options.listTypes.forEach(({ itemName, wrapperNames }) => {
+          if (editor2.state.schema.nodes[itemName] === void 0) {
+            return;
+          }
+          if (handleBackspace(editor2, itemName, wrapperNames)) {
+            handled = true;
+          }
+        });
+        return handled;
+      }
+    };
+  }
+});
+var ORDERED_LIST_ITEM_REGEX = new RegExp(
+  `^(\\s*)(${ORDERED_LIST_MARKER_PATTERN})([.)])\\s+(.*)$`
+);
+var ORDERED_LIST_LINE_START_REGEX = new RegExp(
+  `^(\\s*)(${ORDERED_LIST_MARKER_PATTERN})([.)])\\s+`
+);
+var INDENTED_LINE_REGEX = /^\s/;
+function isOrderedListMarkerLine(line2) {
+  return ORDERED_LIST_ITEM_REGEX.test(line2.trimStart());
+}
+function isBlockContentLine(line2) {
+  const trimmedLine = line2.trimStart();
+  return (
+    // oxlint-disable-next-line prefer-string-starts-ends-with
+    /^[-+*]\s+/.test(trimmedLine) || isOrderedListMarkerLine(trimmedLine) || // oxlint-disable-next-line prefer-string-starts-ends-with
+    /^>\s?/.test(trimmedLine) || // oxlint-disable-next-line prefer-string-starts-ends-with
+    /^```/.test(trimmedLine) || // oxlint-disable-next-line prefer-string-starts-ends-with
+    /^~~~/.test(trimmedLine)
+  );
+}
+function splitItemContent(contentLines) {
+  const paragraphLines = [];
+  const blockLines = [];
+  let reachedBlockBoundary = false;
+  contentLines.forEach((line2) => {
+    if (reachedBlockBoundary) {
+      blockLines.push(line2);
+      return;
+    }
+    if (line2.trim() === "") {
+      reachedBlockBoundary = true;
+      blockLines.push(line2);
+      return;
+    }
+    if (paragraphLines.length > 0 && isBlockContentLine(line2)) {
+      reachedBlockBoundary = true;
+      blockLines.push(line2);
+      return;
+    }
+    paragraphLines.push(line2);
+  });
+  return {
+    paragraphLines,
+    blockLines
+  };
+}
+function collectOrderedListItems(lines) {
+  const listItems = [];
+  let currentLineIndex = 0;
+  let consumed = 0;
+  while (currentLineIndex < lines.length) {
+    const line2 = lines[currentLineIndex];
+    const match = line2.match(ORDERED_LIST_ITEM_REGEX);
+    if (!match) {
+      break;
+    }
+    const [, indent, marker, _separator, content] = match;
+    const indentLevel = indent.length;
+    const number = parseInt(marker, 10);
+    const markerType = isNaN(number) ? detectMarkerType(marker) : void 0;
+    const itemNumber = isNaN(number) ? markerToStart(marker) : number;
+    const itemContentLines = [content];
+    let nextLineIndex = currentLineIndex + 1;
+    const itemLines = [line2];
+    let sawBlankLine = false;
+    while (nextLineIndex < lines.length) {
+      const nextLine = lines[nextLineIndex];
+      const nextMatch = nextLine.match(ORDERED_LIST_ITEM_REGEX);
+      if (nextMatch) {
+        break;
+      }
+      if (nextLine.trim() === "") {
+        itemLines.push(nextLine);
+        itemContentLines.push("");
+        sawBlankLine = true;
+        nextLineIndex += 1;
+      } else if (nextLine.match(INDENTED_LINE_REGEX)) {
+        const leadingWhitespace = nextLine.length - nextLine.trimStart().length;
+        const contentIndent = indentLevel + marker.length + 1;
+        itemLines.push(nextLine);
+        itemContentLines.push(nextLine.slice(Math.min(leadingWhitespace, contentIndent)));
+        nextLineIndex += 1;
+      } else {
+        if (sawBlankLine) {
+          break;
+        }
+        itemLines.push(nextLine);
+        itemContentLines.push(nextLine);
+        nextLineIndex += 1;
+      }
+    }
+    listItems.push({
+      indent: indentLevel,
+      number: itemNumber,
+      type: markerType,
+      content: itemContentLines.join("\n").trim(),
+      contentLines: itemContentLines,
+      raw: itemLines.join("\n")
+    });
+    consumed = nextLineIndex;
+    currentLineIndex = nextLineIndex;
+  }
+  return [listItems, consumed];
+}
+var PLAIN_TEXT_ORDERED_LIST_LINE_REGEX = new RegExp(
+  `^(${ORDERED_LIST_MARKER_PATTERN})([.)])\\s+(.+)$`
+);
+function parsePlainTextOrderedListPaste(text2) {
+  const lines = text2.split("\n").filter((l3) => l3.trim().length > 0);
+  if (lines.length === 0) {
+    return null;
+  }
+  const parsedItems = [];
+  for (const line2 of lines) {
+    const match = line2.trim().match(PLAIN_TEXT_ORDERED_LIST_LINE_REGEX);
+    if (!match) {
+      return null;
+    }
+    parsedItems.push({
+      marker: match[1],
+      content: match[3]
+    });
+  }
+  const markers = parsedItems.map((item2) => item2.marker);
+  if (!areOrderedListMarkersSequential(markers)) {
+    return null;
+  }
+  const attrs = buildOrderedListAttrsFromMarker(parsedItems[0].marker);
+  return {
+    type: "orderedList",
+    attrs,
+    content: parsedItems.map((item2) => ({
+      type: "listItem",
+      content: [
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: item2.content }]
+        }
+      ]
+    }))
+  };
+}
+function buildNestedStructure(items, baseIndent, lexer) {
+  const result = [];
+  let currentIndex = 0;
+  while (currentIndex < items.length) {
+    const item2 = items[currentIndex];
+    if (item2.indent === baseIndent) {
+      const { paragraphLines, blockLines } = splitItemContent(item2.contentLines);
+      const mainText = paragraphLines.join("\n").trim();
+      const tokens = [];
+      if (mainText) {
+        tokens.push({
+          type: "paragraph",
+          raw: mainText,
+          tokens: lexer.inlineTokens(mainText)
+        });
+      }
+      const additionalContent = blockLines.join("\n").trim();
+      if (additionalContent) {
+        const blockTokens = lexer.blockTokens(additionalContent);
+        tokens.push(...blockTokens);
+      }
+      let lookAheadIndex = currentIndex + 1;
+      const nestedItems = [];
+      while (lookAheadIndex < items.length && items[lookAheadIndex].indent > baseIndent) {
+        nestedItems.push(items[lookAheadIndex]);
+        lookAheadIndex += 1;
+      }
+      if (nestedItems.length > 0) {
+        const nextIndent = Math.min(...nestedItems.map((nestedItem) => nestedItem.indent));
+        const nestedListItems = buildNestedStructure(nestedItems, nextIndent, lexer);
+        tokens.push({
+          type: "list",
+          ordered: true,
+          start: nestedItems[0].number,
+          typeMarker: nestedItems[0].type,
+          items: nestedListItems,
+          raw: nestedItems.map((nestedItem) => nestedItem.raw).join("\n")
+        });
+      }
+      result.push({
+        type: "list_item",
+        raw: item2.raw,
+        tokens
+      });
+      currentIndex = lookAheadIndex;
+    } else {
+      currentIndex += 1;
+    }
+  }
+  return result;
+}
+function parseListItems(items, helpers) {
+  return items.map((item2) => {
+    if (item2.type !== "list_item") {
+      return helpers.parseChildren([item2])[0];
+    }
+    const content = [];
+    if (item2.tokens && item2.tokens.length > 0) {
+      item2.tokens.forEach((itemToken) => {
+        if (itemToken.type === "paragraph" || itemToken.type === "list" || itemToken.type === "blockquote" || itemToken.type === "code") {
+          content.push(...helpers.parseChildren([itemToken]));
+        } else if (itemToken.type === "text" && itemToken.tokens) {
+          const inlineContent = helpers.parseChildren([itemToken]);
+          content.push({
+            type: "paragraph",
+            content: inlineContent
+          });
+        } else {
+          const parsed = helpers.parseChildren([itemToken]);
+          if (parsed.length > 0) {
+            content.push(...parsed);
+          }
+        }
+      });
+    }
+    return {
+      type: "listItem",
+      content
+    };
+  });
+}
+var ListItemName2 = "listItem";
+var TextStyleName2 = "textStyle";
+var orderedListInputRegex = /^(\d+)\.\s$/;
+function cssListStyleTypeToHtmlType(style) {
+  const match = style.match(/list-style-type\s*:\s*([^;]+)/i);
+  if (!match) {
+    return null;
+  }
+  const cssValue = match[1].trim().toLowerCase();
+  switch (cssValue) {
+    case "upper-roman":
+      return "I";
+    case "lower-roman":
+      return "i";
+    case "upper-alpha":
+    case "upper-latin":
+      return "A";
+    case "lower-alpha":
+    case "lower-latin":
+      return "a";
+    default:
+      return null;
+  }
+}
+var OrderedList = Node$1.create({
+  name: "orderedList",
+  addOptions() {
+    return {
+      itemTypeName: "listItem",
+      HTMLAttributes: {},
+      keepMarks: false,
+      keepAttributes: false
+    };
+  },
+  group: "block list",
+  content() {
+    return `${this.options.itemTypeName}+`;
+  },
+  addAttributes() {
+    return {
+      start: {
+        default: 1,
+        parseHTML: (element) => {
+          return element.hasAttribute("start") ? parseInt(element.getAttribute("start") || "", 10) : 1;
+        }
+      },
+      type: {
+        default: null,
+        parseHTML: (element) => {
+          const htmlType = element.getAttribute("type");
+          if (htmlType) {
+            return htmlType;
+          }
+          const style = element.getAttribute("style");
+          if (style) {
+            const mappedFromOl = cssListStyleTypeToHtmlType(style);
+            if (mappedFromOl) {
+              return mappedFromOl;
+            }
+          }
+          const firstLi = element.querySelector("li");
+          if (firstLi) {
+            const liStyle = firstLi.getAttribute("style");
+            if (liStyle) {
+              const mappedFromLi = cssListStyleTypeToHtmlType(liStyle);
+              if (mappedFromLi) {
+                return mappedFromLi;
+              }
+            }
+          }
+          return null;
+        }
+      }
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "ol"
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    const { start, type, ...attributesWithoutType } = HTMLAttributes;
+    const attrs = mergeAttributes(this.options.HTMLAttributes, attributesWithoutType);
+    if (start !== 1) {
+      attrs.start = start;
+    }
+    if (type && type !== "1") {
+      attrs.type = type;
+    }
+    return ["ol", attrs, 0];
+  },
+  markdownTokenName: "list",
+  parseMarkdown: (token, helpers) => {
+    if (token.type !== "list" || !token.ordered) {
+      return [];
+    }
+    const startValue = token.start || 1;
+    const typeValue = token.typeMarker;
+    const content = token.items ? parseListItems(token.items, helpers) : [];
+    const attrs = {};
+    if (startValue !== 1) {
+      attrs.start = startValue;
+    }
+    if (typeValue) {
+      attrs.type = typeValue;
+    }
+    if (Object.keys(attrs).length > 0) {
+      return {
+        type: "orderedList",
+        attrs,
+        content
+      };
+    }
+    return {
+      type: "orderedList",
+      content
+    };
+  },
+  renderMarkdown: (node, h2) => {
+    if (!node.content) {
+      return "";
+    }
+    return h2.renderChildren(node.content, "\n");
+  },
+  markdownTokenizer: {
+    name: "orderedList",
+    level: "block",
+    start: (src) => {
+      const match = src.match(ORDERED_LIST_LINE_START_REGEX);
+      const index2 = match == null ? void 0 : match.index;
+      return index2 !== void 0 ? index2 : -1;
+    },
+    tokenize: (src, _tokens, lexer) => {
+      var _a, _b;
+      const lines = src.split("\n");
+      const [listItems, consumed] = collectOrderedListItems(lines);
+      if (listItems.length === 0) {
+        return void 0;
+      }
+      const items = buildNestedStructure(listItems, 0, lexer);
+      if (items.length === 0) {
+        return void 0;
+      }
+      const startValue = ((_a = listItems[0]) == null ? void 0 : _a.number) || 1;
+      const typeMarker = (_b = listItems[0]) == null ? void 0 : _b.type;
+      return {
+        type: "list",
+        ordered: true,
+        start: startValue,
+        typeMarker,
+        items,
+        raw: lines.slice(0, consumed).join("\n")
+      };
+    }
+  },
+  markdownOptions: {
+    indentsContent: true
+  },
+  addCommands() {
+    return {
+      toggleOrderedList: () => ({ commands, chain: chain4 }) => {
+        if (this.options.keepAttributes) {
+          return chain4().toggleList(this.name, this.options.itemTypeName, this.options.keepMarks).updateAttributes(ListItemName2, this.editor.getAttributes(TextStyleName2)).run();
+        }
+        return commands.toggleList(this.name, this.options.itemTypeName, this.options.keepMarks);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-7": () => this.editor.commands.toggleOrderedList()
+    };
+  },
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handlePaste: (view, event) => {
+            var _a, _b;
+            const html = (_a = event.clipboardData) == null ? void 0 : _a.getData("text/html");
+            if (html == null ? void 0 : html.trim()) {
+              return false;
+            }
+            const text2 = (_b = event.clipboardData) == null ? void 0 : _b.getData("text/plain");
+            if (!text2) {
+              return false;
+            }
+            const orderedListContent = parsePlainTextOrderedListPaste(text2);
+            if (!orderedListContent) {
+              return false;
+            }
+            try {
+              const orderedListNode = view.state.schema.nodeFromJSON(orderedListContent);
+              const tr2 = view.state.tr.replaceSelectionWith(orderedListNode);
+              view.dispatch(tr2);
+              return true;
+            } catch {
+              return false;
+            }
+          }
+        }
+      })
+    ];
+  },
+  addInputRules() {
+    const joinPredicate = (match, node) => {
+      const hasDefaultType = !node.attrs.type || node.attrs.type === "1";
+      return hasDefaultType && node.childCount + node.attrs.start === +match[1];
+    };
+    let inputRule = wrappingInputRule({
+      find: orderedListInputRegex,
+      type: this.type,
+      getAttributes: (match) => ({ start: +match[1] }),
+      joinPredicate
+    });
+    if (this.options.keepMarks || this.options.keepAttributes) {
+      inputRule = wrappingInputRule({
+        find: orderedListInputRegex,
+        type: this.type,
+        keepMarks: this.options.keepMarks,
+        keepAttributes: this.options.keepAttributes,
+        getAttributes: (match) => ({ start: +match[1], ...this.editor.getAttributes(TextStyleName2) }),
+        joinPredicate,
+        editor: this.editor
+      });
+    }
+    return [inputRule];
+  }
+});
+var inputRegex2 = /^\s*(\[([( |x])?\])\s$/;
+var TaskItem = Node$1.create({
+  name: "taskItem",
+  addOptions() {
+    return {
+      nested: false,
+      HTMLAttributes: {},
+      taskListTypeName: "taskList",
+      a11y: void 0
+    };
+  },
+  content() {
+    return this.options.nested ? "paragraph block*" : "paragraph+";
+  },
+  defining: true,
+  addAttributes() {
+    return {
+      checked: {
+        default: false,
+        keepOnSplit: false,
+        parseHTML: (element) => {
+          const dataChecked = element.getAttribute("data-checked");
+          return dataChecked === "" || dataChecked === "true";
+        },
+        renderHTML: (attributes) => ({
+          "data-checked": attributes.checked
+        })
+      }
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: `li[data-type="${this.name}"]`,
+        priority: 51
+      }
+    ];
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      "li",
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        "data-type": this.name
+      }),
+      [
+        "label",
+        [
+          "input",
+          {
+            type: "checkbox",
+            checked: node.attrs.checked ? "checked" : null
+          }
+        ],
+        ["span"]
+      ],
+      ["div", 0]
+    ];
+  },
+  parseMarkdown: (token, h2) => {
+    const content = [];
+    if (token.tokens && token.tokens.length > 0) {
+      content.push(h2.createNode("paragraph", {}, h2.parseInline(token.tokens)));
+    } else if (token.text) {
+      content.push(h2.createNode("paragraph", {}, [h2.createNode("text", { text: token.text })]));
+    } else {
+      content.push(h2.createNode("paragraph", {}, []));
+    }
+    if (token.nestedTokens && token.nestedTokens.length > 0) {
+      const nestedContent = h2.parseChildren(token.nestedTokens);
+      content.push(...nestedContent);
+    }
+    return h2.createNode("taskItem", { checked: token.checked || false }, content);
+  },
+  renderMarkdown: (node, h2) => {
+    var _a;
+    const checkedChar = ((_a = node.attrs) == null ? void 0 : _a.checked) ? "x" : " ";
+    const prefix = `- [${checkedChar}] `;
+    return renderNestedMarkdownContent(node, h2, prefix);
+  },
+  addExtensions() {
+    if (!this.options.nested) {
+      return [];
+    }
+    return [createBranchingListDeleteKeymap(this.name, [this.options.taskListTypeName])];
+  },
+  addKeyboardShortcuts() {
+    const shortcuts = {
+      Enter: () => this.editor.commands.splitListItem(this.name),
+      "Shift-Tab": () => this.editor.commands.liftListItem(this.name)
+    };
+    if (!this.options.nested) {
+      return shortcuts;
+    }
+    return {
+      ...shortcuts,
+      Tab: () => this.editor.commands.sinkListItem(this.name)
+    };
+  },
+  addNodeView() {
+    return ({ node, HTMLAttributes, getPos, editor: editor2 }) => {
+      const listItem = document.createElement("li");
+      const checkboxWrapper = document.createElement("label");
+      const checkboxStyler = document.createElement("span");
+      const checkbox = document.createElement("input");
+      const content = document.createElement("div");
+      const updateA11Y = (currentNode) => {
+        var _a, _b;
+        checkbox.ariaLabel = ((_b = (_a = this.options.a11y) == null ? void 0 : _a.checkboxLabel) == null ? void 0 : _b.call(_a, currentNode, checkbox.checked)) || `Task item checkbox for ${currentNode.textContent || "empty task item"}`;
+      };
+      updateA11Y(node);
+      checkboxWrapper.contentEditable = "false";
+      checkbox.type = "checkbox";
+      checkbox.addEventListener("mousedown", (event) => event.preventDefault());
+      checkbox.addEventListener("change", (event) => {
+        if (!editor2.isEditable && !this.options.onReadOnlyChecked) {
+          checkbox.checked = !checkbox.checked;
+          return;
+        }
+        const { checked } = event.target;
+        if (editor2.isEditable && typeof getPos === "function") {
+          editor2.chain().focus(void 0, { scrollIntoView: false }).command(({ tr: tr2 }) => {
+            const position = getPos();
+            if (typeof position !== "number") {
+              return false;
+            }
+            const currentNode = tr2.doc.nodeAt(position);
+            tr2.setNodeMarkup(position, void 0, {
+              ...currentNode == null ? void 0 : currentNode.attrs,
+              checked
+            });
+            return true;
+          }).run();
+        }
+        if (!editor2.isEditable && this.options.onReadOnlyChecked) {
+          if (!this.options.onReadOnlyChecked(node, checked)) {
+            checkbox.checked = !checkbox.checked;
+          }
+        }
+      });
+      Object.entries(this.options.HTMLAttributes).forEach(([key, value]) => {
+        listItem.setAttribute(key, value);
+      });
+      listItem.dataset.checked = node.attrs.checked;
+      checkbox.checked = node.attrs.checked;
+      checkboxWrapper.append(checkbox, checkboxStyler);
+      listItem.append(checkboxWrapper, content);
+      Object.entries(HTMLAttributes).forEach(([key, value]) => {
+        listItem.setAttribute(key, value);
+      });
+      let prevRenderedAttributeKeys = new Set(Object.keys(HTMLAttributes));
+      return {
+        dom: listItem,
+        contentDOM: content,
+        update: (updatedNode) => {
+          if (updatedNode.type !== this.type) {
+            return false;
+          }
+          listItem.dataset.checked = updatedNode.attrs.checked;
+          checkbox.checked = updatedNode.attrs.checked;
+          updateA11Y(updatedNode);
+          const extensionAttributes = editor2.extensionManager.attributes;
+          const newHTMLAttributes = getRenderedAttributes(updatedNode, extensionAttributes);
+          const newKeys = new Set(Object.keys(newHTMLAttributes));
+          const staticAttrs = this.options.HTMLAttributes;
+          prevRenderedAttributeKeys.forEach((key) => {
+            if (!newKeys.has(key)) {
+              if (key in staticAttrs) {
+                listItem.setAttribute(key, staticAttrs[key]);
+              } else {
+                listItem.removeAttribute(key);
+              }
+            }
+          });
+          Object.entries(newHTMLAttributes).forEach(([key, value]) => {
+            if (value === null || value === void 0) {
+              if (key in staticAttrs) {
+                listItem.setAttribute(key, staticAttrs[key]);
+              } else {
+                listItem.removeAttribute(key);
+              }
+            } else {
+              listItem.setAttribute(key, value);
+            }
+          });
+          prevRenderedAttributeKeys = newKeys;
+          return true;
+        }
+      };
+    };
+  },
+  addInputRules() {
+    return [
+      wrappingInputRule({
+        find: inputRegex2,
+        type: this.type,
+        getAttributes: (match) => ({
+          checked: match[match.length - 1] === "x"
+        })
+      })
+    ];
+  }
+});
+var TaskList = Node$1.create({
+  name: "taskList",
+  addOptions() {
+    return {
+      itemTypeName: "taskItem",
+      HTMLAttributes: {}
+    };
+  },
+  group: "block list",
+  content() {
+    return `${this.options.itemTypeName}+`;
+  },
+  parseHTML() {
+    return [
+      {
+        tag: `ul[data-type="${this.name}"]`,
+        priority: 51
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "ul",
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { "data-type": this.name }),
+      0
+    ];
+  },
+  parseMarkdown: (token, h2) => {
+    return h2.createNode("taskList", {}, h2.parseChildren(token.items || []));
+  },
+  renderMarkdown: (node, h2) => {
+    if (!node.content) {
+      return "";
+    }
+    return h2.renderChildren(node.content, "\n");
+  },
+  markdownTokenizer: {
+    name: "taskList",
+    level: "block",
+    start(src) {
+      var _a;
+      const index2 = (_a = src.match(/^\s*[-+*]\s+\[([ xX])\]\s+/)) == null ? void 0 : _a.index;
+      return index2 !== void 0 ? index2 : -1;
+    },
+    tokenize(src, tokens, lexer) {
+      const parseTaskListContent = (content) => {
+        const nestedResult = parseIndentedBlocks(
+          content,
+          {
+            itemPattern: /^(\s*)([-+*])\s+\[([ xX])\]\s+(.*)$/,
+            extractItemData: (match) => ({
+              indentLevel: match[1].length,
+              mainContent: match[4],
+              checked: match[3].toLowerCase() === "x"
+            }),
+            createToken: (data3, nestedTokens) => ({
+              type: "taskItem",
+              raw: "",
+              mainContent: data3.mainContent,
+              indentLevel: data3.indentLevel,
+              checked: data3.checked,
+              text: data3.mainContent,
+              tokens: lexer.inlineTokens(data3.mainContent),
+              nestedTokens
+            }),
+            // Allow recursive nesting
+            customNestedParser: parseTaskListContent
+          },
+          lexer
+        );
+        if (nestedResult) {
+          return [
+            {
+              type: "taskList",
+              raw: nestedResult.raw,
+              items: nestedResult.items
+            }
+          ];
+        }
+        return lexer.blockTokens(content);
+      };
+      const result = parseIndentedBlocks(
+        src,
+        {
+          itemPattern: /^(\s*)([-+*])\s+\[([ xX])\]\s+(.*)$/,
+          extractItemData: (match) => ({
+            indentLevel: match[1].length,
+            mainContent: match[4],
+            checked: match[3].toLowerCase() === "x"
+          }),
+          createToken: (data3, nestedTokens) => ({
+            type: "taskItem",
+            raw: "",
+            mainContent: data3.mainContent,
+            indentLevel: data3.indentLevel,
+            checked: data3.checked,
+            text: data3.mainContent,
+            tokens: lexer.inlineTokens(data3.mainContent),
+            nestedTokens
+          }),
+          // Use the recursive parser for nested content
+          customNestedParser: parseTaskListContent
+        },
+        lexer
+      );
+      if (!result) {
+        return void 0;
+      }
+      return {
+        type: "taskList",
+        raw: result.raw,
+        items: result.items
+      };
+    }
+  },
+  markdownOptions: {
+    indentsContent: true
+  },
+  addCommands() {
+    return {
+      toggleTaskList: () => ({ commands }) => {
+        return commands.toggleList(this.name, this.options.itemTypeName);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-9": () => this.editor.commands.toggleTaskList()
+    };
+  }
+});
+Extension.create({
+  name: "listKit",
+  addExtensions() {
+    const extensions = [];
+    if (this.options.bulletList !== false) {
+      extensions.push(BulletList.configure(this.options.bulletList));
+    }
+    if (this.options.listItem !== false) {
+      extensions.push(ListItem.configure(this.options.listItem));
+    }
+    if (this.options.listKeymap !== false) {
+      extensions.push(ListKeymap.configure(this.options.listKeymap));
+    }
+    if (this.options.orderedList !== false) {
+      extensions.push(OrderedList.configure(this.options.orderedList));
+    }
+    if (this.options.taskItem !== false) {
+      extensions.push(TaskItem.configure(this.options.taskItem));
+    }
+    if (this.options.taskList !== false) {
+      extensions.push(TaskList.configure(this.options.taskList));
+    }
+    return extensions;
+  }
+});
+function findDiffStart(a2, b, pos) {
+  for (let i2 = 0; ; i2++) {
+    if (i2 == a2.childCount || i2 == b.childCount)
+      return a2.childCount == b.childCount ? null : pos;
+    let childA = a2.child(i2), childB = b.child(i2);
+    if (childA == childB) {
+      pos += childA.nodeSize;
+      continue;
+    }
+    if (!childA.sameMarkup(childB))
+      return pos;
+    if (childA.isText && childA.text != childB.text) {
+      for (let j = 0; childA.text[j] == childB.text[j]; j++)
+        pos++;
+      return pos;
+    }
+    if (childA.content.size || childB.content.size) {
+      let inner = findDiffStart(childA.content, childB.content, pos + 1);
+      if (inner != null)
+        return inner;
+    }
+    pos += childA.nodeSize;
+  }
+}
+function findDiffEnd(a2, b, posA, posB) {
+  for (let iA = a2.childCount, iB = b.childCount; ; ) {
+    if (iA == 0 || iB == 0)
+      return iA == iB ? null : { a: posA, b: posB };
+    let childA = a2.child(--iA), childB = b.child(--iB), size = childA.nodeSize;
+    if (childA == childB) {
+      posA -= size;
+      posB -= size;
+      continue;
+    }
+    if (!childA.sameMarkup(childB))
+      return { a: posA, b: posB };
+    if (childA.isText && childA.text != childB.text) {
+      let same = 0, minSize = Math.min(childA.text.length, childB.text.length);
+      while (same < minSize && childA.text[childA.text.length - same - 1] == childB.text[childB.text.length - same - 1]) {
+        same++;
+        posA--;
+        posB--;
+      }
+      return { a: posA, b: posB };
+    }
+    if (childA.content.size || childB.content.size) {
+      let inner = findDiffEnd(childA.content, childB.content, posA - 1, posB - 1);
+      if (inner)
+        return inner;
+    }
+    posA -= size;
+    posB -= size;
+  }
+}
+var Fragment3 = class _Fragment {
+  /**
+  @internal
+  */
+  constructor(content, size) {
+    this.content = content;
+    this.size = size || 0;
+    if (size == null)
+      for (let i2 = 0; i2 < content.length; i2++)
+        this.size += content[i2].nodeSize;
+  }
+  /**
+  Invoke a callback for all descendant nodes between the given two
+  positions (relative to start of this fragment). Doesn't descend
+  into a node when the callback returns `false`.
+  */
+  nodesBetween(from, to, f2, nodeStart = 0, parent) {
+    for (let i2 = 0, pos = 0; pos < to; i2++) {
+      let child = this.content[i2], end = pos + child.nodeSize;
+      if (end > from && f2(child, nodeStart + pos, parent || null, i2) !== false && child.content.size) {
+        let start = pos + 1;
+        child.nodesBetween(Math.max(0, from - start), Math.min(child.content.size, to - start), f2, nodeStart + start);
+      }
+      pos = end;
+    }
+  }
+  /**
+  Call the given callback for every descendant node. `pos` will be
+  relative to the start of the fragment. The callback may return
+  `false` to prevent traversal of a given node's children.
+  */
+  descendants(f2) {
+    this.nodesBetween(0, this.size, f2);
+  }
+  /**
+  Extract the text between `from` and `to`. See the same method on
+  [`Node`](https://prosemirror.net/docs/ref/#model.Node.textBetween).
+  */
+  textBetween(from, to, blockSeparator, leafText) {
+    let text2 = "", first = true;
+    this.nodesBetween(from, to, (node, pos) => {
+      let nodeText = node.isText ? node.text.slice(Math.max(from, pos) - pos, to - pos) : !node.isLeaf ? "" : leafText ? typeof leafText === "function" ? leafText(node) : leafText : node.type.spec.leafText ? node.type.spec.leafText(node) : "";
+      if (node.isBlock && (node.isLeaf && nodeText || node.isTextblock) && blockSeparator) {
+        if (first)
+          first = false;
+        else
+          text2 += blockSeparator;
+      }
+      text2 += nodeText;
+    }, 0);
+    return text2;
+  }
+  /**
+  Create a new fragment containing the combined content of this
+  fragment and the other.
+  */
+  append(other) {
+    if (!other.size)
+      return this;
+    if (!this.size)
+      return other;
+    let last = this.lastChild, first = other.firstChild, content = this.content.slice(), i2 = 0;
+    if (last.isText && last.sameMarkup(first)) {
+      content[content.length - 1] = last.withText(last.text + first.text);
+      i2 = 1;
+    }
+    for (; i2 < other.content.length; i2++)
+      content.push(other.content[i2]);
+    return new _Fragment(content, this.size + other.size);
+  }
+  /**
+  Cut out the sub-fragment between the two given positions.
+  */
+  cut(from, to = this.size) {
+    if (from == 0 && to == this.size)
+      return this;
+    let result = [], size = 0;
+    if (to > from)
+      for (let i2 = 0, pos = 0; pos < to; i2++) {
+        let child = this.content[i2], end = pos + child.nodeSize;
+        if (end > from) {
+          if (pos < from || end > to) {
+            if (child.isText)
+              child = child.cut(Math.max(0, from - pos), Math.min(child.text.length, to - pos));
+            else
+              child = child.cut(Math.max(0, from - pos - 1), Math.min(child.content.size, to - pos - 1));
+          }
+          result.push(child);
+          size += child.nodeSize;
+        }
+        pos = end;
+      }
+    return new _Fragment(result, size);
+  }
+  /**
+  @internal
+  */
+  cutByIndex(from, to) {
+    if (from == to)
+      return _Fragment.empty;
+    if (from == 0 && to == this.content.length)
+      return this;
+    return new _Fragment(this.content.slice(from, to));
+  }
+  /**
+  Create a new fragment in which the node at the given index is
+  replaced by the given node.
+  */
+  replaceChild(index2, node) {
+    let current2 = this.content[index2];
+    if (current2 == node)
+      return this;
+    let copy = this.content.slice();
+    let size = this.size + node.nodeSize - current2.nodeSize;
+    copy[index2] = node;
+    return new _Fragment(copy, size);
+  }
+  /**
+  Create a new fragment by prepending the given node to this
+  fragment.
+  */
+  addToStart(node) {
+    return new _Fragment([node].concat(this.content), this.size + node.nodeSize);
+  }
+  /**
+  Create a new fragment by appending the given node to this
+  fragment.
+  */
+  addToEnd(node) {
+    return new _Fragment(this.content.concat(node), this.size + node.nodeSize);
+  }
+  /**
+  Compare this fragment to another one.
+  */
+  eq(other) {
+    if (this.content.length != other.content.length)
+      return false;
+    for (let i2 = 0; i2 < this.content.length; i2++)
+      if (!this.content[i2].eq(other.content[i2]))
+        return false;
+    return true;
+  }
+  /**
+  The first child of the fragment, or `null` if it is empty.
+  */
+  get firstChild() {
+    return this.content.length ? this.content[0] : null;
+  }
+  /**
+  The last child of the fragment, or `null` if it is empty.
+  */
+  get lastChild() {
+    return this.content.length ? this.content[this.content.length - 1] : null;
+  }
+  /**
+  The number of child nodes in this fragment.
+  */
+  get childCount() {
+    return this.content.length;
+  }
+  /**
+  Get the child node at the given index. Raise an error when the
+  index is out of range.
+  */
+  child(index2) {
+    let found2 = this.content[index2];
+    if (!found2)
+      throw new RangeError("Index " + index2 + " out of range for " + this);
+    return found2;
+  }
+  /**
+  Get the child node at the given index, if it exists.
+  */
+  maybeChild(index2) {
+    return this.content[index2] || null;
+  }
+  /**
+  Call `f` for every child node, passing the node, its offset
+  into this parent node, and its index.
+  */
+  forEach(f2) {
+    for (let i2 = 0, p = 0; i2 < this.content.length; i2++) {
+      let child = this.content[i2];
+      f2(child, p, i2);
+      p += child.nodeSize;
+    }
+  }
+  /**
+  Find the first position at which this fragment and another
+  fragment differ, or `null` if they are the same.
+  */
+  findDiffStart(other, pos = 0) {
+    return findDiffStart(this, other, pos);
+  }
+  /**
+  Find the first position, searching from the end, at which this
+  fragment and the given fragment differ, or `null` if they are
+  the same. Since this position will not be the same in both
+  nodes, an object with two separate positions is returned.
+  */
+  findDiffEnd(other, pos = this.size, otherPos = other.size) {
+    return findDiffEnd(this, other, pos, otherPos);
+  }
+  /**
+  Find the index and inner offset corresponding to a given relative
+  position in this fragment. The result object will be reused
+  (overwritten) the next time the function is called. @internal
+  */
+  findIndex(pos) {
+    if (pos == 0)
+      return retIndex(0, pos);
+    if (pos == this.size)
+      return retIndex(this.content.length, pos);
+    if (pos > this.size || pos < 0)
+      throw new RangeError(`Position ${pos} outside of fragment (${this})`);
+    for (let i2 = 0, curPos = 0; ; i2++) {
+      let cur = this.child(i2), end = curPos + cur.nodeSize;
+      if (end >= pos) {
+        if (end == pos)
+          return retIndex(i2 + 1, end);
+        return retIndex(i2, curPos);
+      }
+      curPos = end;
+    }
+  }
+  /**
+  Return a debugging string that describes this fragment.
+  */
+  toString() {
+    return "<" + this.toStringInner() + ">";
+  }
+  /**
+  @internal
+  */
+  toStringInner() {
+    return this.content.join(", ");
+  }
+  /**
+  Create a JSON-serializeable representation of this fragment.
+  */
+  toJSON() {
+    return this.content.length ? this.content.map((n) => n.toJSON()) : null;
+  }
+  /**
+  Deserialize a fragment from its JSON representation.
+  */
+  static fromJSON(schema, value) {
+    if (!value)
+      return _Fragment.empty;
+    if (!Array.isArray(value))
+      throw new RangeError("Invalid input for Fragment.fromJSON");
+    return _Fragment.fromArray(value.map(schema.nodeFromJSON));
+  }
+  /**
+  Build a fragment from an array of nodes. Ensures that adjacent
+  text nodes with the same marks are joined together.
+  */
+  static fromArray(array) {
+    if (!array.length)
+      return _Fragment.empty;
+    let joined, size = 0;
+    for (let i2 = 0; i2 < array.length; i2++) {
+      let node = array[i2];
+      size += node.nodeSize;
+      if (i2 && node.isText && array[i2 - 1].sameMarkup(node)) {
+        if (!joined)
+          joined = array.slice(0, i2);
+        joined[joined.length - 1] = node.withText(joined[joined.length - 1].text + node.text);
+      } else if (joined) {
+        joined.push(node);
+      }
+    }
+    return new _Fragment(joined || array, size);
+  }
+  /**
+  Create a fragment from something that can be interpreted as a
+  set of nodes. For `null`, it returns the empty fragment. For a
+  fragment, the fragment itself. For a node or array of nodes, a
+  fragment containing those nodes.
+  */
+  static from(nodes) {
+    if (!nodes)
+      return _Fragment.empty;
+    if (nodes instanceof _Fragment)
+      return nodes;
+    if (Array.isArray(nodes))
+      return this.fromArray(nodes);
+    if (nodes.attrs)
+      return new _Fragment([nodes], nodes.nodeSize);
+    throw new RangeError("Can not convert " + nodes + " to a Fragment" + (nodes.nodesBetween ? " (looks like multiple versions of prosemirror-model were loaded)" : ""));
+  }
+};
+Fragment3.empty = new Fragment3([], 0);
+var found = { index: 0, offset: 0 };
+function retIndex(index2, offset) {
+  found.index = index2;
+  found.offset = offset;
+  return found;
+}
+var ReplaceError = class extends Error {
+};
+var Slice = class _Slice {
+  /**
+  Create a slice. When specifying a non-zero open depth, you must
+  make sure that there are nodes of at least that depth at the
+  appropriate side of the fragment—i.e. if the fragment is an
+  empty paragraph node, `openStart` and `openEnd` can't be greater
+  than 1.
+  
+  It is not necessary for the content of open nodes to conform to
+  the schema's content constraints, though it should be a valid
+  start/end/middle for such a node, depending on which sides are
+  open.
+  */
+  constructor(content, openStart, openEnd) {
+    this.content = content;
+    this.openStart = openStart;
+    this.openEnd = openEnd;
+  }
+  /**
+  The size this slice would add when inserted into a document.
+  */
+  get size() {
+    return this.content.size - this.openStart - this.openEnd;
+  }
+  /**
+  @internal
+  */
+  insertAt(pos, fragment) {
+    let content = insertInto(this.content, pos + this.openStart, fragment, this.openStart + 1, this.openEnd + 1);
+    return content && new _Slice(content, this.openStart, this.openEnd);
+  }
+  /**
+  @internal
+  */
+  removeBetween(from, to) {
+    return new _Slice(removeRange(this.content, from + this.openStart, to + this.openStart), this.openStart, this.openEnd);
+  }
+  /**
+  Tests whether this slice is equal to another slice.
+  */
+  eq(other) {
+    return this.content.eq(other.content) && this.openStart == other.openStart && this.openEnd == other.openEnd;
+  }
+  /**
+  @internal
+  */
+  toString() {
+    return this.content + "(" + this.openStart + "," + this.openEnd + ")";
+  }
+  /**
+  Convert a slice to a JSON-serializable representation.
+  */
+  toJSON() {
+    if (!this.content.size)
+      return null;
+    let json = { content: this.content.toJSON() };
+    if (this.openStart > 0)
+      json.openStart = this.openStart;
+    if (this.openEnd > 0)
+      json.openEnd = this.openEnd;
+    return json;
+  }
+  /**
+  Deserialize a slice from its JSON representation.
+  */
+  static fromJSON(schema, json) {
+    if (!json)
+      return _Slice.empty;
+    let openStart = json.openStart || 0, openEnd = json.openEnd || 0;
+    if (typeof openStart != "number" || typeof openEnd != "number")
+      throw new RangeError("Invalid input for Slice.fromJSON");
+    return new _Slice(Fragment3.fromJSON(schema, json.content), openStart, openEnd);
+  }
+  /**
+  Create a slice from a fragment by taking the maximum possible
+  open value on both side of the fragment.
+  */
+  static maxOpen(fragment, openIsolating = true) {
+    let openStart = 0, openEnd = 0;
+    for (let n = fragment.firstChild; n && !n.isLeaf && (openIsolating || !n.type.spec.isolating); n = n.firstChild)
+      openStart++;
+    for (let n = fragment.lastChild; n && !n.isLeaf && (openIsolating || !n.type.spec.isolating); n = n.lastChild)
+      openEnd++;
+    return new _Slice(fragment, openStart, openEnd);
+  }
+};
+Slice.empty = new Slice(Fragment3.empty, 0, 0);
+function removeRange(content, from, to) {
+  let { index: index2, offset } = content.findIndex(from), child = content.maybeChild(index2);
+  let { index: indexTo, offset: offsetTo } = content.findIndex(to);
+  if (offset == from || child.isText) {
+    if (offsetTo != to && !content.child(indexTo).isText)
+      throw new RangeError("Removing non-flat range");
+    return content.cut(0, from).append(content.cut(to));
+  }
+  if (index2 != indexTo)
+    throw new RangeError("Removing non-flat range");
+  return content.replaceChild(index2, child.copy(removeRange(child.content, from - offset - 1, to - offset - 1)));
+}
+function insertInto(content, dist, insert, openStart, openEnd, parent) {
+  let { index: index2, offset } = content.findIndex(dist), child = content.maybeChild(index2);
+  if (offset == dist || child.isText) {
+    if (parent && openStart <= 0 && openEnd <= 0 && !parent.canReplace(index2, index2, insert))
+      return null;
+    return content.cut(0, dist).append(insert).append(content.cut(dist));
+  }
+  let inner = insertInto(child.content, dist - offset - 1, insert, index2 == 0 ? openStart - 1 : 0, index2 == content.childCount - 1 ? openEnd - 1 : 0, child);
+  return inner && content.replaceChild(index2, child.copy(inner));
+}
+var lower16 = 65535;
+var factor16 = Math.pow(2, 16);
+function makeRecover(index2, offset) {
+  return index2 + offset * factor16;
+}
+function recoverIndex(value) {
+  return value & lower16;
+}
+function recoverOffset(value) {
+  return (value - (value & lower16)) / factor16;
+}
+var DEL_BEFORE = 1;
+var DEL_AFTER = 2;
+var DEL_ACROSS = 4;
+var DEL_SIDE = 8;
+var MapResult = class {
+  /**
+  @internal
+  */
+  constructor(pos, delInfo, recover) {
+    this.pos = pos;
+    this.delInfo = delInfo;
+    this.recover = recover;
+  }
+  /**
+  Tells you whether the position was deleted, that is, whether the
+  step removed the token on the side queried (via the `assoc`)
+  argument from the document.
+  */
+  get deleted() {
+    return (this.delInfo & DEL_SIDE) > 0;
+  }
+  /**
+  Tells you whether the token before the mapped position was deleted.
+  */
+  get deletedBefore() {
+    return (this.delInfo & (DEL_BEFORE | DEL_ACROSS)) > 0;
+  }
+  /**
+  True when the token after the mapped position was deleted.
+  */
+  get deletedAfter() {
+    return (this.delInfo & (DEL_AFTER | DEL_ACROSS)) > 0;
+  }
+  /**
+  Tells whether any of the steps mapped through deletes across the
+  position (including both the token before and after the
+  position).
+  */
+  get deletedAcross() {
+    return (this.delInfo & DEL_ACROSS) > 0;
+  }
+};
+var StepMap = class _StepMap {
+  /**
+  Create a position map. The modifications to the document are
+  represented as an array of numbers, in which each group of three
+  represents a modified chunk as `[start, oldSize, newSize]`.
+  */
+  constructor(ranges, inverted = false) {
+    this.ranges = ranges;
+    this.inverted = inverted;
+    if (!ranges.length && _StepMap.empty)
+      return _StepMap.empty;
+  }
+  /**
+  @internal
+  */
+  recover(value) {
+    let diff = 0, index2 = recoverIndex(value);
+    if (!this.inverted)
+      for (let i2 = 0; i2 < index2; i2++)
+        diff += this.ranges[i2 * 3 + 2] - this.ranges[i2 * 3 + 1];
+    return this.ranges[index2 * 3] + diff + recoverOffset(value);
+  }
+  mapResult(pos, assoc = 1) {
+    return this._map(pos, assoc, false);
+  }
+  map(pos, assoc = 1) {
+    return this._map(pos, assoc, true);
+  }
+  /**
+  @internal
+  */
+  _map(pos, assoc, simple) {
+    let diff = 0, oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2;
+    for (let i2 = 0; i2 < this.ranges.length; i2 += 3) {
+      let start = this.ranges[i2] - (this.inverted ? diff : 0);
+      if (start > pos)
+        break;
+      let oldSize = this.ranges[i2 + oldIndex], newSize = this.ranges[i2 + newIndex], end = start + oldSize;
+      if (pos <= end) {
+        let side = !oldSize ? assoc : pos == start ? -1 : pos == end ? 1 : assoc;
+        let result = start + diff + (side < 0 ? 0 : newSize);
+        if (simple)
+          return result;
+        let recover = pos == (assoc < 0 ? start : end) ? null : makeRecover(i2 / 3, pos - start);
+        let del = pos == start ? DEL_AFTER : pos == end ? DEL_BEFORE : DEL_ACROSS;
+        if (assoc < 0 ? pos != start : pos != end)
+          del |= DEL_SIDE;
+        return new MapResult(result, del, recover);
+      }
+      diff += newSize - oldSize;
+    }
+    return simple ? pos + diff : new MapResult(pos + diff, 0, null);
+  }
+  /**
+  @internal
+  */
+  touches(pos, recover) {
+    let diff = 0, index2 = recoverIndex(recover);
+    let oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2;
+    for (let i2 = 0; i2 < this.ranges.length; i2 += 3) {
+      let start = this.ranges[i2] - (this.inverted ? diff : 0);
+      if (start > pos)
+        break;
+      let oldSize = this.ranges[i2 + oldIndex], end = start + oldSize;
+      if (pos <= end && i2 == index2 * 3)
+        return true;
+      diff += this.ranges[i2 + newIndex] - oldSize;
+    }
+    return false;
+  }
+  /**
+  Calls the given function on each of the changed ranges included in
+  this map.
+  */
+  forEach(f2) {
+    let oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2;
+    for (let i2 = 0, diff = 0; i2 < this.ranges.length; i2 += 3) {
+      let start = this.ranges[i2], oldStart = start - (this.inverted ? diff : 0), newStart = start + (this.inverted ? 0 : diff);
+      let oldSize = this.ranges[i2 + oldIndex], newSize = this.ranges[i2 + newIndex];
+      f2(oldStart, oldStart + oldSize, newStart, newStart + newSize);
+      diff += newSize - oldSize;
+    }
+  }
+  /**
+  Create an inverted version of this map. The result can be used to
+  map positions in the post-step document to the pre-step document.
+  */
+  invert() {
+    return new _StepMap(this.ranges, !this.inverted);
+  }
+  /**
+  @internal
+  */
+  toString() {
+    return (this.inverted ? "-" : "") + JSON.stringify(this.ranges);
+  }
+  /**
+  Create a map that moves all positions by offset `n` (which may be
+  negative). This can be useful when applying steps meant for a
+  sub-document to a larger document, or vice-versa.
+  */
+  static offset(n) {
+    return n == 0 ? _StepMap.empty : new _StepMap(n < 0 ? [0, -n, 0] : [0, 0, n]);
+  }
+};
+StepMap.empty = new StepMap([]);
+var stepsByID = /* @__PURE__ */ Object.create(null);
+var Step = class {
+  /**
+  Get the step map that represents the changes made by this step,
+  and which can be used to transform between positions in the old
+  and the new document.
+  */
+  getMap() {
+    return StepMap.empty;
+  }
+  /**
+  Try to merge this step with another one, to be applied directly
+  after it. Returns the merged step when possible, null if the
+  steps can't be merged.
+  */
+  merge(other) {
+    return null;
+  }
+  /**
+  Deserialize a step from its JSON representation. Will call
+  through to the step class' own implementation of this method.
+  */
+  static fromJSON(schema, json) {
+    if (!json || !json.stepType)
+      throw new RangeError("Invalid input for Step.fromJSON");
+    let type = stepsByID[json.stepType];
+    if (!type)
+      throw new RangeError(`No step type ${json.stepType} defined`);
+    return type.fromJSON(schema, json);
+  }
+  /**
+  To be able to serialize steps to JSON, each step needs a string
+  ID to attach to its JSON representation. Use this method to
+  register an ID for your step classes. Try to pick something
+  that's unlikely to clash with steps from other modules.
+  */
+  static jsonID(id, stepClass) {
+    if (id in stepsByID)
+      throw new RangeError("Duplicate use of step JSON ID " + id);
+    stepsByID[id] = stepClass;
+    stepClass.prototype.jsonID = id;
+    return stepClass;
+  }
+};
+var StepResult = class _StepResult {
+  /**
+  @internal
+  */
+  constructor(doc, failed) {
+    this.doc = doc;
+    this.failed = failed;
+  }
+  /**
+  Create a successful step result.
+  */
+  static ok(doc) {
+    return new _StepResult(doc, null);
+  }
+  /**
+  Create a failed step result.
+  */
+  static fail(message) {
+    return new _StepResult(null, message);
+  }
+  /**
+  Call [`Node.replace`](https://prosemirror.net/docs/ref/#model.Node.replace) with the given
+  arguments. Create a successful result if it succeeds, and a
+  failed one if it throws a `ReplaceError`.
+  */
+  static fromReplace(doc, from, to, slice) {
+    try {
+      return _StepResult.ok(doc.replace(from, to, slice));
+    } catch (e3) {
+      if (e3 instanceof ReplaceError)
+        return _StepResult.fail(e3.message);
+      throw e3;
+    }
+  }
+};
+function mapFragment(fragment, f2, parent) {
+  let mapped = [];
+  for (let i2 = 0; i2 < fragment.childCount; i2++) {
+    let child = fragment.child(i2);
+    if (child.content.size)
+      child = child.copy(mapFragment(child.content, f2, child));
+    if (child.isInline)
+      child = f2(child, parent, i2);
+    mapped.push(child);
+  }
+  return Fragment3.fromArray(mapped);
+}
+var AddMarkStep = class _AddMarkStep extends Step {
+  /**
+  Create a mark step.
+  */
+  constructor(from, to, mark) {
+    super();
+    this.from = from;
+    this.to = to;
+    this.mark = mark;
+  }
+  apply(doc) {
+    let oldSlice = doc.slice(this.from, this.to), $from = doc.resolve(this.from);
+    let parent = $from.node($from.sharedDepth(this.to));
+    let slice = new Slice(mapFragment(oldSlice.content, (node, parent2) => {
+      if (!node.isAtom || !parent2.type.allowsMarkType(this.mark.type))
+        return node;
+      return node.mark(this.mark.addToSet(node.marks));
+    }, parent), oldSlice.openStart, oldSlice.openEnd);
+    return StepResult.fromReplace(doc, this.from, this.to, slice);
+  }
+  invert() {
+    return new RemoveMarkStep(this.from, this.to, this.mark);
+  }
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1);
+    if (from.deleted && to.deleted || from.pos >= to.pos)
+      return null;
+    return new _AddMarkStep(from.pos, to.pos, this.mark);
+  }
+  merge(other) {
+    if (other instanceof _AddMarkStep && other.mark.eq(this.mark) && this.from <= other.to && this.to >= other.from)
+      return new _AddMarkStep(Math.min(this.from, other.from), Math.max(this.to, other.to), this.mark);
+    return null;
+  }
+  toJSON() {
+    return {
+      stepType: "addMark",
+      mark: this.mark.toJSON(),
+      from: this.from,
+      to: this.to
+    };
+  }
+  /**
+  @internal
+  */
+  static fromJSON(schema, json) {
+    if (typeof json.from != "number" || typeof json.to != "number")
+      throw new RangeError("Invalid input for AddMarkStep.fromJSON");
+    return new _AddMarkStep(json.from, json.to, schema.markFromJSON(json.mark));
+  }
+};
+Step.jsonID("addMark", AddMarkStep);
+var RemoveMarkStep = class _RemoveMarkStep extends Step {
+  /**
+  Create a mark-removing step.
+  */
+  constructor(from, to, mark) {
+    super();
+    this.from = from;
+    this.to = to;
+    this.mark = mark;
+  }
+  apply(doc) {
+    let oldSlice = doc.slice(this.from, this.to);
+    let slice = new Slice(mapFragment(oldSlice.content, (node) => {
+      return node.mark(this.mark.removeFromSet(node.marks));
+    }, doc), oldSlice.openStart, oldSlice.openEnd);
+    return StepResult.fromReplace(doc, this.from, this.to, slice);
+  }
+  invert() {
+    return new AddMarkStep(this.from, this.to, this.mark);
+  }
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1);
+    if (from.deleted && to.deleted || from.pos >= to.pos)
+      return null;
+    return new _RemoveMarkStep(from.pos, to.pos, this.mark);
+  }
+  merge(other) {
+    if (other instanceof _RemoveMarkStep && other.mark.eq(this.mark) && this.from <= other.to && this.to >= other.from)
+      return new _RemoveMarkStep(Math.min(this.from, other.from), Math.max(this.to, other.to), this.mark);
+    return null;
+  }
+  toJSON() {
+    return {
+      stepType: "removeMark",
+      mark: this.mark.toJSON(),
+      from: this.from,
+      to: this.to
+    };
+  }
+  /**
+  @internal
+  */
+  static fromJSON(schema, json) {
+    if (typeof json.from != "number" || typeof json.to != "number")
+      throw new RangeError("Invalid input for RemoveMarkStep.fromJSON");
+    return new _RemoveMarkStep(json.from, json.to, schema.markFromJSON(json.mark));
+  }
+};
+Step.jsonID("removeMark", RemoveMarkStep);
+var AddNodeMarkStep = class _AddNodeMarkStep extends Step {
+  /**
+  Create a node mark step.
+  */
+  constructor(pos, mark) {
+    super();
+    this.pos = pos;
+    this.mark = mark;
+  }
+  apply(doc) {
+    let node = doc.nodeAt(this.pos);
+    if (!node)
+      return StepResult.fail("No node at mark step's position");
+    let updated = node.type.create(node.attrs, null, this.mark.addToSet(node.marks));
+    return StepResult.fromReplace(doc, this.pos, this.pos + 1, new Slice(Fragment3.from(updated), 0, node.isLeaf ? 0 : 1));
+  }
+  invert(doc) {
+    let node = doc.nodeAt(this.pos);
+    if (node) {
+      let newSet = this.mark.addToSet(node.marks);
+      if (newSet.length == node.marks.length) {
+        for (let i2 = 0; i2 < node.marks.length; i2++)
+          if (!node.marks[i2].isInSet(newSet))
+            return new _AddNodeMarkStep(this.pos, node.marks[i2]);
+        return new _AddNodeMarkStep(this.pos, this.mark);
+      }
+    }
+    return new RemoveNodeMarkStep(this.pos, this.mark);
+  }
+  map(mapping) {
+    let pos = mapping.mapResult(this.pos, 1);
+    return pos.deletedAfter ? null : new _AddNodeMarkStep(pos.pos, this.mark);
+  }
+  toJSON() {
+    return { stepType: "addNodeMark", pos: this.pos, mark: this.mark.toJSON() };
+  }
+  /**
+  @internal
+  */
+  static fromJSON(schema, json) {
+    if (typeof json.pos != "number")
+      throw new RangeError("Invalid input for AddNodeMarkStep.fromJSON");
+    return new _AddNodeMarkStep(json.pos, schema.markFromJSON(json.mark));
+  }
+};
+Step.jsonID("addNodeMark", AddNodeMarkStep);
+var RemoveNodeMarkStep = class _RemoveNodeMarkStep extends Step {
+  /**
+  Create a mark-removing step.
+  */
+  constructor(pos, mark) {
+    super();
+    this.pos = pos;
+    this.mark = mark;
+  }
+  apply(doc) {
+    let node = doc.nodeAt(this.pos);
+    if (!node)
+      return StepResult.fail("No node at mark step's position");
+    let updated = node.type.create(node.attrs, null, this.mark.removeFromSet(node.marks));
+    return StepResult.fromReplace(doc, this.pos, this.pos + 1, new Slice(Fragment3.from(updated), 0, node.isLeaf ? 0 : 1));
+  }
+  invert(doc) {
+    let node = doc.nodeAt(this.pos);
+    if (!node || !this.mark.isInSet(node.marks))
+      return this;
+    return new AddNodeMarkStep(this.pos, this.mark);
+  }
+  map(mapping) {
+    let pos = mapping.mapResult(this.pos, 1);
+    return pos.deletedAfter ? null : new _RemoveNodeMarkStep(pos.pos, this.mark);
+  }
+  toJSON() {
+    return { stepType: "removeNodeMark", pos: this.pos, mark: this.mark.toJSON() };
+  }
+  /**
+  @internal
+  */
+  static fromJSON(schema, json) {
+    if (typeof json.pos != "number")
+      throw new RangeError("Invalid input for RemoveNodeMarkStep.fromJSON");
+    return new _RemoveNodeMarkStep(json.pos, schema.markFromJSON(json.mark));
+  }
+};
+Step.jsonID("removeNodeMark", RemoveNodeMarkStep);
+var ReplaceStep = class _ReplaceStep extends Step {
+  /**
+  The given `slice` should fit the 'gap' between `from` and
+  `to`—the depths must line up, and the surrounding nodes must be
+  able to be joined with the open sides of the slice. When
+  `structure` is true, the step will fail if the content between
+  from and to is not just a sequence of closing and then opening
+  tokens (this is to guard against rebased replace steps
+  overwriting something they weren't supposed to).
+  */
+  constructor(from, to, slice, structure = false) {
+    super();
+    this.from = from;
+    this.to = to;
+    this.slice = slice;
+    this.structure = structure;
+  }
+  apply(doc) {
+    if (this.structure && contentBetween(doc, this.from, this.to))
+      return StepResult.fail("Structure replace would overwrite content");
+    return StepResult.fromReplace(doc, this.from, this.to, this.slice);
+  }
+  getMap() {
+    return new StepMap([this.from, this.to - this.from, this.slice.size]);
+  }
+  invert(doc) {
+    return new _ReplaceStep(this.from, this.from + this.slice.size, doc.slice(this.from, this.to));
+  }
+  map(mapping) {
+    let to = mapping.mapResult(this.to, -1);
+    let from = this.from == this.to && _ReplaceStep.MAP_BIAS < 0 ? to : mapping.mapResult(this.from, 1);
+    if (from.deletedAcross && to.deletedAcross)
+      return null;
+    return new _ReplaceStep(from.pos, Math.max(from.pos, to.pos), this.slice, this.structure);
+  }
+  merge(other) {
+    if (!(other instanceof _ReplaceStep) || other.structure || this.structure)
+      return null;
+    if (this.from + this.slice.size == other.from && !this.slice.openEnd && !other.slice.openStart) {
+      let slice = this.slice.size + other.slice.size == 0 ? Slice.empty : new Slice(this.slice.content.append(other.slice.content), this.slice.openStart, other.slice.openEnd);
+      return new _ReplaceStep(this.from, this.to + (other.to - other.from), slice, this.structure);
+    } else if (other.to == this.from && !this.slice.openStart && !other.slice.openEnd) {
+      let slice = this.slice.size + other.slice.size == 0 ? Slice.empty : new Slice(other.slice.content.append(this.slice.content), other.slice.openStart, this.slice.openEnd);
+      return new _ReplaceStep(other.from, this.to, slice, this.structure);
+    } else {
+      return null;
+    }
+  }
+  toJSON() {
+    let json = { stepType: "replace", from: this.from, to: this.to };
+    if (this.slice.size)
+      json.slice = this.slice.toJSON();
+    if (this.structure)
+      json.structure = true;
+    return json;
+  }
+  /**
+  @internal
+  */
+  static fromJSON(schema, json) {
+    if (typeof json.from != "number" || typeof json.to != "number")
+      throw new RangeError("Invalid input for ReplaceStep.fromJSON");
+    return new _ReplaceStep(json.from, json.to, Slice.fromJSON(schema, json.slice), !!json.structure);
+  }
+};
+ReplaceStep.MAP_BIAS = 1;
+Step.jsonID("replace", ReplaceStep);
+var ReplaceAroundStep = class _ReplaceAroundStep extends Step {
+  /**
+  Create a replace-around step with the given range and gap.
+  `insert` should be the point in the slice into which the content
+  of the gap should be moved. `structure` has the same meaning as
+  it has in the [`ReplaceStep`](https://prosemirror.net/docs/ref/#transform.ReplaceStep) class.
+  */
+  constructor(from, to, gapFrom, gapTo, slice, insert, structure = false) {
+    super();
+    this.from = from;
+    this.to = to;
+    this.gapFrom = gapFrom;
+    this.gapTo = gapTo;
+    this.slice = slice;
+    this.insert = insert;
+    this.structure = structure;
+  }
+  apply(doc) {
+    if (this.structure && (contentBetween(doc, this.from, this.gapFrom) || contentBetween(doc, this.gapTo, this.to)))
+      return StepResult.fail("Structure gap-replace would overwrite content");
+    let gap = doc.slice(this.gapFrom, this.gapTo);
+    if (gap.openStart || gap.openEnd)
+      return StepResult.fail("Gap is not a flat range");
+    let inserted = this.slice.insertAt(this.insert, gap.content);
+    if (!inserted)
+      return StepResult.fail("Content does not fit in gap");
+    return StepResult.fromReplace(doc, this.from, this.to, inserted);
+  }
+  getMap() {
+    return new StepMap([
+      this.from,
+      this.gapFrom - this.from,
+      this.insert,
+      this.gapTo,
+      this.to - this.gapTo,
+      this.slice.size - this.insert
+    ]);
+  }
+  invert(doc) {
+    let gap = this.gapTo - this.gapFrom;
+    return new _ReplaceAroundStep(this.from, this.from + this.slice.size + gap, this.from + this.insert, this.from + this.insert + gap, doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from), this.gapFrom - this.from, this.structure);
+  }
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1);
+    let gapFrom = this.from == this.gapFrom ? from.pos : mapping.map(this.gapFrom, -1);
+    let gapTo = this.to == this.gapTo ? to.pos : mapping.map(this.gapTo, 1);
+    if (from.deletedAcross && to.deletedAcross || gapFrom < from.pos || gapTo > to.pos)
+      return null;
+    return new _ReplaceAroundStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert, this.structure);
+  }
+  toJSON() {
+    let json = {
+      stepType: "replaceAround",
+      from: this.from,
+      to: this.to,
+      gapFrom: this.gapFrom,
+      gapTo: this.gapTo,
+      insert: this.insert
+    };
+    if (this.slice.size)
+      json.slice = this.slice.toJSON();
+    if (this.structure)
+      json.structure = true;
+    return json;
+  }
+  /**
+  @internal
+  */
+  static fromJSON(schema, json) {
+    if (typeof json.from != "number" || typeof json.to != "number" || typeof json.gapFrom != "number" || typeof json.gapTo != "number" || typeof json.insert != "number")
+      throw new RangeError("Invalid input for ReplaceAroundStep.fromJSON");
+    return new _ReplaceAroundStep(json.from, json.to, json.gapFrom, json.gapTo, Slice.fromJSON(schema, json.slice), json.insert, !!json.structure);
+  }
+};
+Step.jsonID("replaceAround", ReplaceAroundStep);
+function contentBetween(doc, from, to) {
+  let $from = doc.resolve(from), dist = to - from, depth = $from.depth;
+  while (dist > 0 && depth > 0 && $from.indexAfter(depth) == $from.node(depth).childCount) {
+    depth--;
+    dist--;
+  }
+  if (dist > 0) {
+    let next = $from.node(depth).maybeChild($from.indexAfter(depth));
+    while (dist > 0) {
+      if (!next || next.isLeaf)
+        return true;
+      next = next.firstChild;
+      dist--;
+    }
+  }
+  return false;
+}
+var AttrStep = class _AttrStep extends Step {
+  /**
+  Construct an attribute step.
+  */
+  constructor(pos, attr3, value) {
+    super();
+    this.pos = pos;
+    this.attr = attr3;
+    this.value = value;
+  }
+  apply(doc) {
+    let node = doc.nodeAt(this.pos);
+    if (!node)
+      return StepResult.fail("No node at attribute step's position");
+    let attrs = /* @__PURE__ */ Object.create(null);
+    for (let name3 in node.attrs)
+      attrs[name3] = node.attrs[name3];
+    attrs[this.attr] = this.value;
+    let updated = node.type.create(attrs, null, node.marks);
+    return StepResult.fromReplace(doc, this.pos, this.pos + 1, new Slice(Fragment3.from(updated), 0, node.isLeaf ? 0 : 1));
+  }
+  getMap() {
+    return StepMap.empty;
+  }
+  invert(doc) {
+    return new _AttrStep(this.pos, this.attr, doc.nodeAt(this.pos).attrs[this.attr]);
+  }
+  map(mapping) {
+    let pos = mapping.mapResult(this.pos, 1);
+    return pos.deletedAfter ? null : new _AttrStep(pos.pos, this.attr, this.value);
+  }
+  toJSON() {
+    return { stepType: "attr", pos: this.pos, attr: this.attr, value: this.value };
+  }
+  static fromJSON(schema, json) {
+    if (typeof json.pos != "number" || typeof json.attr != "string")
+      throw new RangeError("Invalid input for AttrStep.fromJSON");
+    return new _AttrStep(json.pos, json.attr, json.value);
+  }
+};
+Step.jsonID("attr", AttrStep);
+var DocAttrStep = class _DocAttrStep extends Step {
+  /**
+  Construct an attribute step.
+  */
+  constructor(attr3, value) {
+    super();
+    this.attr = attr3;
+    this.value = value;
+  }
+  apply(doc) {
+    let attrs = /* @__PURE__ */ Object.create(null);
+    for (let name3 in doc.attrs)
+      attrs[name3] = doc.attrs[name3];
+    attrs[this.attr] = this.value;
+    let updated = doc.type.create(attrs, doc.content, doc.marks);
+    return StepResult.ok(updated);
+  }
+  getMap() {
+    return StepMap.empty;
+  }
+  invert(doc) {
+    return new _DocAttrStep(this.attr, doc.attrs[this.attr]);
+  }
+  map(mapping) {
+    return this;
+  }
+  toJSON() {
+    return { stepType: "docAttr", attr: this.attr, value: this.value };
+  }
+  static fromJSON(schema, json) {
+    if (typeof json.attr != "string")
+      throw new RangeError("Invalid input for DocAttrStep.fromJSON");
+    return new _DocAttrStep(json.attr, json.value);
+  }
+};
+Step.jsonID("docAttr", DocAttrStep);
+var TransformError = class extends Error {
+};
+TransformError = function TransformError2(message) {
+  let err = Error.call(this, message);
+  err.__proto__ = TransformError2.prototype;
+  return err;
+};
+TransformError.prototype = Object.create(Error.prototype);
+TransformError.prototype.constructor = TransformError;
+TransformError.prototype.name = "TransformError";
+var classesById = /* @__PURE__ */ Object.create(null);
+var Selection = class {
+  /**
+  Initialize a selection with the head and anchor and ranges. If no
+  ranges are given, constructs a single range across `$anchor` and
+  `$head`.
+  */
+  constructor($anchor, $head, ranges) {
+    this.$anchor = $anchor;
+    this.$head = $head;
+    this.ranges = ranges || [new SelectionRange($anchor.min($head), $anchor.max($head))];
+  }
+  /**
+  The selection's anchor, as an unresolved position.
+  */
+  get anchor() {
+    return this.$anchor.pos;
+  }
+  /**
+  The selection's head.
+  */
+  get head() {
+    return this.$head.pos;
+  }
+  /**
+  The lower bound of the selection's main range.
+  */
+  get from() {
+    return this.$from.pos;
+  }
+  /**
+  The upper bound of the selection's main range.
+  */
+  get to() {
+    return this.$to.pos;
+  }
+  /**
+  The resolved lower  bound of the selection's main range.
+  */
+  get $from() {
+    return this.ranges[0].$from;
+  }
+  /**
+  The resolved upper bound of the selection's main range.
+  */
+  get $to() {
+    return this.ranges[0].$to;
+  }
+  /**
+  Indicates whether the selection contains any content.
+  */
+  get empty() {
+    let ranges = this.ranges;
+    for (let i2 = 0; i2 < ranges.length; i2++)
+      if (ranges[i2].$from.pos != ranges[i2].$to.pos)
+        return false;
+    return true;
+  }
+  /**
+  Get the content of this selection as a slice.
+  */
+  content() {
+    return this.$from.doc.slice(this.from, this.to, true);
+  }
+  /**
+  Replace the selection with a slice or, if no slice is given,
+  delete the selection. Will append to the given transaction.
+  */
+  replace(tr2, content = Slice.empty) {
+    let lastNode = content.content.lastChild, lastParent = null;
+    for (let i2 = 0; i2 < content.openEnd; i2++) {
+      lastParent = lastNode;
+      lastNode = lastNode.lastChild;
+    }
+    let mapFrom = tr2.steps.length, ranges = this.ranges;
+    for (let i2 = 0; i2 < ranges.length; i2++) {
+      let { $from, $to } = ranges[i2], mapping = tr2.mapping.slice(mapFrom);
+      tr2.replaceRange(mapping.map($from.pos), mapping.map($to.pos), i2 ? Slice.empty : content);
+      if (i2 == 0)
+        selectionToInsertionEnd(tr2, mapFrom, (lastNode ? lastNode.isInline : lastParent && lastParent.isTextblock) ? -1 : 1);
+    }
+  }
+  /**
+  Replace the selection with the given node, appending the changes
+  to the given transaction.
+  */
+  replaceWith(tr2, node) {
+    let mapFrom = tr2.steps.length, ranges = this.ranges;
+    for (let i2 = 0; i2 < ranges.length; i2++) {
+      let { $from, $to } = ranges[i2], mapping = tr2.mapping.slice(mapFrom);
+      let from = mapping.map($from.pos), to = mapping.map($to.pos);
+      if (i2) {
+        tr2.deleteRange(from, to);
+      } else {
+        tr2.replaceRangeWith(from, to, node);
+        selectionToInsertionEnd(tr2, mapFrom, node.isInline ? -1 : 1);
+      }
+    }
+  }
+  /**
+  Find a valid cursor or leaf node selection starting at the given
+  position and searching back if `dir` is negative, and forward if
+  positive. When `textOnly` is true, only consider cursor
+  selections. Will return null when no valid selection position is
+  found.
+  */
+  static findFrom($pos, dir, textOnly = false) {
+    let inner = $pos.parent.inlineContent ? new TextSelection($pos) : findSelectionIn($pos.node(0), $pos.parent, $pos.pos, $pos.index(), dir, textOnly);
+    if (inner)
+      return inner;
+    for (let depth = $pos.depth - 1; depth >= 0; depth--) {
+      let found2 = dir < 0 ? findSelectionIn($pos.node(0), $pos.node(depth), $pos.before(depth + 1), $pos.index(depth), dir, textOnly) : findSelectionIn($pos.node(0), $pos.node(depth), $pos.after(depth + 1), $pos.index(depth) + 1, dir, textOnly);
+      if (found2)
+        return found2;
+    }
+    return null;
+  }
+  /**
+  Find a valid cursor or leaf node selection near the given
+  position. Searches forward first by default, but if `bias` is
+  negative, it will search backwards first.
+  */
+  static near($pos, bias = 1) {
+    return this.findFrom($pos, bias) || this.findFrom($pos, -bias) || new AllSelection($pos.node(0));
+  }
+  /**
+  Find the cursor or leaf node selection closest to the start of
+  the given document. Will return an
+  [`AllSelection`](https://prosemirror.net/docs/ref/#state.AllSelection) if no valid position
+  exists.
+  */
+  static atStart(doc) {
+    return findSelectionIn(doc, doc, 0, 0, 1) || new AllSelection(doc);
+  }
+  /**
+  Find the cursor or leaf node selection closest to the end of the
+  given document.
+  */
+  static atEnd(doc) {
+    return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1) || new AllSelection(doc);
+  }
+  /**
+  Deserialize the JSON representation of a selection. Must be
+  implemented for custom classes (as a static class method).
+  */
+  static fromJSON(doc, json) {
+    if (!json || !json.type)
+      throw new RangeError("Invalid input for Selection.fromJSON");
+    let cls = classesById[json.type];
+    if (!cls)
+      throw new RangeError(`No selection type ${json.type} defined`);
+    return cls.fromJSON(doc, json);
+  }
+  /**
+  To be able to deserialize selections from JSON, custom selection
+  classes must register themselves with an ID string, so that they
+  can be disambiguated. Try to pick something that's unlikely to
+  clash with classes from other modules.
+  */
+  static jsonID(id, selectionClass) {
+    if (id in classesById)
+      throw new RangeError("Duplicate use of selection JSON ID " + id);
+    classesById[id] = selectionClass;
+    selectionClass.prototype.jsonID = id;
+    return selectionClass;
+  }
+  /**
+  Get a [bookmark](https://prosemirror.net/docs/ref/#state.SelectionBookmark) for this selection,
+  which is a value that can be mapped without having access to a
+  current document, and later resolved to a real selection for a
+  given document again. (This is used mostly by the history to
+  track and restore old selections.) The default implementation of
+  this method just converts the selection to a text selection and
+  returns the bookmark for that.
+  */
+  getBookmark() {
+    return TextSelection.between(this.$anchor, this.$head).getBookmark();
+  }
+};
+Selection.prototype.visible = true;
+var SelectionRange = class {
+  /**
+  Create a range.
+  */
+  constructor($from, $to) {
+    this.$from = $from;
+    this.$to = $to;
+  }
+};
+var warnedAboutTextSelection = false;
+function checkTextSelection($pos) {
+  if (!warnedAboutTextSelection && !$pos.parent.inlineContent) {
+    warnedAboutTextSelection = true;
+    console["warn"]("TextSelection endpoint not pointing into a node with inline content (" + $pos.parent.type.name + ")");
+  }
+}
+var TextSelection = class _TextSelection extends Selection {
+  /**
+  Construct a text selection between the given points.
+  */
+  constructor($anchor, $head = $anchor) {
+    checkTextSelection($anchor);
+    checkTextSelection($head);
+    super($anchor, $head);
+  }
+  /**
+  Returns a resolved position if this is a cursor selection (an
+  empty text selection), and null otherwise.
+  */
+  get $cursor() {
+    return this.$anchor.pos == this.$head.pos ? this.$head : null;
+  }
+  map(doc, mapping) {
+    let $head = doc.resolve(mapping.map(this.head));
+    if (!$head.parent.inlineContent)
+      return Selection.near($head);
+    let $anchor = doc.resolve(mapping.map(this.anchor));
+    return new _TextSelection($anchor.parent.inlineContent ? $anchor : $head, $head);
+  }
+  replace(tr2, content = Slice.empty) {
+    super.replace(tr2, content);
+    if (content == Slice.empty) {
+      let marks = this.$from.marksAcross(this.$to);
+      if (marks)
+        tr2.ensureMarks(marks);
+    }
+  }
+  eq(other) {
+    return other instanceof _TextSelection && other.anchor == this.anchor && other.head == this.head;
+  }
+  getBookmark() {
+    return new TextBookmark(this.anchor, this.head);
+  }
+  toJSON() {
+    return { type: "text", anchor: this.anchor, head: this.head };
+  }
+  /**
+  @internal
+  */
+  static fromJSON(doc, json) {
+    if (typeof json.anchor != "number" || typeof json.head != "number")
+      throw new RangeError("Invalid input for TextSelection.fromJSON");
+    return new _TextSelection(doc.resolve(json.anchor), doc.resolve(json.head));
+  }
+  /**
+  Create a text selection from non-resolved positions.
+  */
+  static create(doc, anchor, head = anchor) {
+    let $anchor = doc.resolve(anchor);
+    return new this($anchor, head == anchor ? $anchor : doc.resolve(head));
+  }
+  /**
+  Return a text selection that spans the given positions or, if
+  they aren't text positions, find a text selection near them.
+  `bias` determines whether the method searches forward (default)
+  or backwards (negative number) first. Will fall back to calling
+  [`Selection.near`](https://prosemirror.net/docs/ref/#state.Selection^near) when the document
+  doesn't contain a valid text position.
+  */
+  static between($anchor, $head, bias) {
+    let dPos = $anchor.pos - $head.pos;
+    if (!bias || dPos)
+      bias = dPos >= 0 ? 1 : -1;
+    if (!$head.parent.inlineContent) {
+      let found2 = Selection.findFrom($head, bias, true) || Selection.findFrom($head, -bias, true);
+      if (found2)
+        $head = found2.$head;
+      else
+        return Selection.near($head, bias);
+    }
+    if (!$anchor.parent.inlineContent) {
+      if (dPos == 0) {
+        $anchor = $head;
+      } else {
+        $anchor = (Selection.findFrom($anchor, -bias, true) || Selection.findFrom($anchor, bias, true)).$anchor;
+        if ($anchor.pos < $head.pos != dPos < 0)
+          $anchor = $head;
+      }
+    }
+    return new _TextSelection($anchor, $head);
+  }
+};
+Selection.jsonID("text", TextSelection);
+var TextBookmark = class _TextBookmark {
+  constructor(anchor, head) {
+    this.anchor = anchor;
+    this.head = head;
+  }
+  map(mapping) {
+    return new _TextBookmark(mapping.map(this.anchor), mapping.map(this.head));
+  }
+  resolve(doc) {
+    return TextSelection.between(doc.resolve(this.anchor), doc.resolve(this.head));
+  }
+};
+var NodeSelection = class _NodeSelection extends Selection {
+  /**
+  Create a node selection. Does not verify the validity of its
+  argument.
+  */
+  constructor($pos) {
+    let node = $pos.nodeAfter;
+    let $end = $pos.node(0).resolve($pos.pos + node.nodeSize);
+    super($pos, $end);
+    this.node = node;
+  }
+  map(doc, mapping) {
+    let { deleted, pos } = mapping.mapResult(this.anchor);
+    let $pos = doc.resolve(pos);
+    if (deleted)
+      return Selection.near($pos);
+    return new _NodeSelection($pos);
+  }
+  content() {
+    return new Slice(Fragment3.from(this.node), 0, 0);
+  }
+  eq(other) {
+    return other instanceof _NodeSelection && other.anchor == this.anchor;
+  }
+  toJSON() {
+    return { type: "node", anchor: this.anchor };
+  }
+  getBookmark() {
+    return new NodeBookmark(this.anchor);
+  }
+  /**
+  @internal
+  */
+  static fromJSON(doc, json) {
+    if (typeof json.anchor != "number")
+      throw new RangeError("Invalid input for NodeSelection.fromJSON");
+    return new _NodeSelection(doc.resolve(json.anchor));
+  }
+  /**
+  Create a node selection from non-resolved positions.
+  */
+  static create(doc, from) {
+    return new _NodeSelection(doc.resolve(from));
+  }
+  /**
+  Determines whether the given node may be selected as a node
+  selection.
+  */
+  static isSelectable(node) {
+    return !node.isText && node.type.spec.selectable !== false;
+  }
+};
+NodeSelection.prototype.visible = false;
+Selection.jsonID("node", NodeSelection);
+var NodeBookmark = class _NodeBookmark {
+  constructor(anchor) {
+    this.anchor = anchor;
+  }
+  map(mapping) {
+    let { deleted, pos } = mapping.mapResult(this.anchor);
+    return deleted ? new TextBookmark(pos, pos) : new _NodeBookmark(pos);
+  }
+  resolve(doc) {
+    let $pos = doc.resolve(this.anchor), node = $pos.nodeAfter;
+    if (node && NodeSelection.isSelectable(node))
+      return new NodeSelection($pos);
+    return Selection.near($pos);
+  }
+};
+var AllSelection = class _AllSelection extends Selection {
+  /**
+  Create an all-selection over the given document.
+  */
+  constructor(doc) {
+    super(doc.resolve(0), doc.resolve(doc.content.size));
+  }
+  replace(tr2, content = Slice.empty) {
+    if (content == Slice.empty) {
+      tr2.delete(0, tr2.doc.content.size);
+      let sel = Selection.atStart(tr2.doc);
+      if (!sel.eq(tr2.selection))
+        tr2.setSelection(sel);
+    } else {
+      super.replace(tr2, content);
+    }
+  }
+  toJSON() {
+    return { type: "all" };
+  }
+  /**
+  @internal
+  */
+  static fromJSON(doc) {
+    return new _AllSelection(doc);
+  }
+  map(doc) {
+    return new _AllSelection(doc);
+  }
+  eq(other) {
+    return other instanceof _AllSelection;
+  }
+  getBookmark() {
+    return AllBookmark;
+  }
+};
+Selection.jsonID("all", AllSelection);
+var AllBookmark = {
+  map() {
+    return this;
+  },
+  resolve(doc) {
+    return new AllSelection(doc);
+  }
+};
+function findSelectionIn(doc, node, pos, index2, dir, text2 = false) {
+  if (node.inlineContent)
+    return TextSelection.create(doc, pos);
+  for (let i2 = index2 - (dir > 0 ? 0 : 1); dir > 0 ? i2 < node.childCount : i2 >= 0; i2 += dir) {
+    let child = node.child(i2);
+    if (!child.isAtom) {
+      let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text2);
+      if (inner)
+        return inner;
+    } else if (!text2 && NodeSelection.isSelectable(child)) {
+      return NodeSelection.create(doc, pos - (dir < 0 ? child.nodeSize : 0));
+    }
+    pos += child.nodeSize * dir;
+  }
+  return null;
+}
+function selectionToInsertionEnd(tr2, startLen, bias) {
+  let last = tr2.steps.length - 1;
+  if (last < startLen)
+    return;
+  let step = tr2.steps[last];
+  if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep))
+    return;
+  let map2 = tr2.mapping.maps[last], end;
+  map2.forEach((_from, _to, _newFrom, newTo) => {
+    if (end == null)
+      end = newTo;
+  });
+  tr2.setSelection(Selection.near(tr2.doc.resolve(end), bias));
+}
+function bind(f2, self2) {
+  return !self2 || !f2 ? f2 : f2.bind(self2);
+}
+var FieldDesc = class {
+  constructor(name3, desc, self2) {
+    this.name = name3;
+    this.init = bind(desc.init, self2);
+    this.apply = bind(desc.apply, self2);
+  }
+};
+[
+  new FieldDesc("doc", {
+    init(config3) {
+      return config3.doc || config3.schema.topNodeType.createAndFill();
+    },
+    apply(tr2) {
+      return tr2.doc;
+    }
+  }),
+  new FieldDesc("selection", {
+    init(config3, instance) {
+      return config3.selection || Selection.atStart(instance.doc);
+    },
+    apply(tr2) {
+      return tr2.selection;
+    }
+  }),
+  new FieldDesc("storedMarks", {
+    init(config3) {
+      return config3.storedMarks || null;
+    },
+    apply(tr2, _marks, _old, state3) {
+      return state3.selection.$cursor ? tr2.storedMarks : null;
+    }
+  }),
+  new FieldDesc("scrollToSelection", {
+    init() {
+      return 0;
+    },
+    apply(tr2, prev) {
+      return tr2.scrolledIntoView ? prev + 1 : prev;
+    }
+  })
+];
+var handleBackspace2 = (editor2, type) => {
+  var _a;
+  const { state: state3, view } = editor2;
+  const { selection } = state3;
+  if (!selection.empty) return false;
+  const { $from } = selection;
+  if ($from.parentOffset !== 0) return false;
+  const parentDepth = $from.depth - 1;
+  const parent = $from.node(parentDepth);
+  const index2 = $from.index(parentDepth);
+  if (index2 === 0) return false;
+  if (parent.type === type) {
+    return editor2.commands.lift(type.name);
+  }
+  const previous = parent.child(index2 - 1);
+  if (previous.type !== type || !((_a = previous.lastChild) == null ? void 0 : _a.isTextblock)) {
+    return false;
+  }
+  const blockStart = $from.before();
+  const insideBlockquoteEnd = blockStart - 1;
+  const targetPos = insideBlockquoteEnd - 1;
+  const { tr: tr2 } = state3;
+  tr2.delete(blockStart, $from.after()).insert(targetPos, $from.parent.content);
+  tr2.setSelection(TextSelection.create(tr2.doc, targetPos));
+  view.dispatch(tr2.scrollIntoView());
+  return true;
+};
+var inputRegex3 = /^\s*>\s$/;
+var Blockquote = Node$1.create({
+  name: "blockquote",
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  content: "block+",
+  group: "block",
+  defining: true,
+  parseHTML() {
+    return [{ tag: "blockquote" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return /* @__PURE__ */ jsx$1("blockquote", { ...mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), children: /* @__PURE__ */ jsx$1("slot", {}) });
+  },
+  parseMarkdown: (token, helpers) => {
+    var _a;
+    const parseBlockChildren = (_a = helpers.parseBlockChildren) != null ? _a : helpers.parseChildren;
+    return helpers.createNode("blockquote", void 0, parseBlockChildren(token.tokens || []));
+  },
+  renderMarkdown: (node, h2) => {
+    if (!node.content) {
+      return "";
+    }
+    const prefix = ">";
+    const result = [];
+    node.content.forEach((child, index2) => {
+      var _a, _b;
+      const childContent = (_b = (_a = h2.renderChild) == null ? void 0 : _a.call(h2, child, index2)) != null ? _b : h2.renderChildren([child]);
+      const lines = childContent.split("\n");
+      const linesWithPrefix = lines.map((line2) => {
+        if (line2.trim() === "") {
+          return prefix;
+        }
+        return `${prefix} ${line2}`;
+      });
+      result.push(linesWithPrefix.join("\n"));
+    });
+    return result.join(`
+${prefix}
+`);
+  },
+  addCommands() {
+    return {
+      setBlockquote: () => ({ commands }) => {
+        return commands.wrapIn(this.name);
+      },
+      toggleBlockquote: () => ({ commands }) => {
+        return commands.toggleWrap(this.name);
+      },
+      unsetBlockquote: () => ({ commands }) => {
+        return commands.lift(this.name);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-b": () => this.editor.commands.toggleBlockquote(),
+      Backspace: () => handleBackspace2(this.editor, this.type)
+    };
+  },
+  addInputRules() {
+    return [
+      wrappingInputRule({
+        find: inputRegex3,
+        type: this.type
+      })
+    ];
+  }
+});
+var index_default9 = Blockquote;
+var HardBreak = Node$1.create({
+  name: "hardBreak",
+  markdownTokenName: "br",
+  addOptions() {
+    return {
+      keepMarks: true,
+      HTMLAttributes: {}
+    };
+  },
+  inline: true,
+  group: "inline",
+  selectable: false,
+  linebreakReplacement: true,
+  parseHTML() {
+    return [{ tag: "br" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["br", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+  },
+  renderText() {
+    return "\n";
+  },
+  renderMarkdown: () => `  
+`,
+  parseMarkdown: () => {
+    return {
+      type: "hardBreak"
+    };
+  },
+  addCommands() {
+    return {
+      setHardBreak: () => ({ commands, chain: chain4, state: state3, editor: editor2 }) => {
+        return commands.first([
+          () => commands.exitCode(),
+          () => commands.command(() => {
+            const { selection, storedMarks } = state3;
+            if (selection.$from.parent.type.spec.isolating) {
+              return false;
+            }
+            const { keepMarks } = this.options;
+            const { splittableMarks } = editor2.extensionManager;
+            const marks = storedMarks || selection.$to.parentOffset && selection.$from.marks();
+            return chain4().insertContent({ type: this.name }).command(({ tr: tr2, dispatch }) => {
+              if (dispatch && marks && keepMarks) {
+                const filteredMarks = marks.filter(
+                  (mark) => splittableMarks.includes(mark.type.name)
+                );
+                tr2.ensureMarks(filteredMarks);
+              }
+              return true;
+            }).run();
+          })
+        ]);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Enter": () => this.editor.commands.setHardBreak(),
+      "Shift-Enter": () => this.editor.commands.setHardBreak()
+    };
+  }
+});
+var index_default10 = HardBreak;
+var HorizontalRule = Node$1.create({
+  name: "horizontalRule",
+  addOptions() {
+    return {
+      HTMLAttributes: {},
+      nextNodeType: "paragraph"
+    };
+  },
+  group: "block",
+  parseHTML() {
+    return [{ tag: "hr" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["hr", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+  },
+  markdownTokenName: "hr",
+  parseMarkdown: (token, helpers) => {
+    return helpers.createNode("horizontalRule");
+  },
+  renderMarkdown: () => {
+    return "---";
+  },
+  addCommands() {
+    return {
+      setHorizontalRule: () => ({ chain: chain4, state: state3 }) => {
+        if (!canInsertNode(state3, state3.schema.nodes[this.name])) {
+          return false;
+        }
+        const { selection } = state3;
+        const { $to: $originTo } = selection;
+        const currentChain = chain4();
+        if (isNodeSelection(selection)) {
+          currentChain.insertContentAt($originTo.pos, {
+            type: this.name
+          });
+        } else {
+          currentChain.insertContent({ type: this.name });
+        }
+        return currentChain.command(({ state: chainState, tr: tr2, dispatch }) => {
+          if (dispatch) {
+            const { $to } = tr2.selection;
+            const posAfter = $to.end();
+            if ($to.nodeAfter) {
+              if ($to.nodeAfter.isTextblock) {
+                tr2.setSelection(TextSelection$1.create(tr2.doc, $to.pos + 1));
+              } else if ($to.nodeAfter.isBlock) {
+                tr2.setSelection(NodeSelection$1.create(tr2.doc, $to.pos));
+              } else {
+                tr2.setSelection(TextSelection$1.create(tr2.doc, $to.pos));
+              }
+            } else {
+              const nodeType = chainState.schema.nodes[this.options.nextNodeType] || $to.parent.type.contentMatch.defaultType;
+              const node = nodeType == null ? void 0 : nodeType.create();
+              if (node) {
+                tr2.insert(posAfter, node);
+                tr2.setSelection(TextSelection$1.create(tr2.doc, posAfter + 1));
+              }
+            }
+            tr2.scrollIntoView();
+          }
+          return true;
+        }).run();
+      }
+    };
+  },
+  addInputRules() {
+    return [
+      nodeInputRule({
+        find: /^(?:---|—-|___\s|\*\*\*\s)$/,
+        type: this.type
+      })
+    ];
+  }
+});
+var index_default11 = HorizontalRule;
+var TextAlign = Extension.create({
+  name: "textAlign",
+  addOptions() {
+    return {
+      types: [],
+      alignments: ["left", "center", "right", "justify"],
+      defaultAlignment: null
+    };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          textAlign: {
+            default: this.options.defaultAlignment,
+            parseHTML: (element) => {
+              const alignment = element.style.textAlign;
+              return this.options.alignments.includes(alignment) ? alignment : this.options.defaultAlignment;
+            },
+            renderHTML: (attributes) => {
+              if (!attributes.textAlign) {
+                return {};
+              }
+              return { style: `text-align: ${attributes.textAlign}` };
+            }
+          }
+        }
+      }
+    ];
+  },
+  addCommands() {
+    return {
+      setTextAlign: (alignment) => ({ commands }) => {
+        if (!this.options.alignments.includes(alignment)) {
+          return false;
+        }
+        return this.options.types.map((type) => commands.updateAttributes(type, { textAlign: alignment })).some((response) => response);
+      },
+      unsetTextAlign: () => ({ commands }) => {
+        return this.options.types.map((type) => commands.resetAttributes(type, "textAlign")).some((response) => response);
+      },
+      toggleTextAlign: (alignment) => ({ editor: editor2, commands }) => {
+        if (!this.options.alignments.includes(alignment)) {
+          return false;
+        }
+        if (editor2.isActive({ textAlign: alignment })) {
+          return commands.unsetTextAlign();
+        }
+        return commands.setTextAlign(alignment);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Shift-l": () => this.editor.commands.setTextAlign("left"),
+      "Mod-Shift-e": () => this.editor.commands.setTextAlign("center"),
+      "Mod-Shift-r": () => this.editor.commands.setTextAlign("right"),
+      "Mod-Shift-j": () => this.editor.commands.setTextAlign("justify")
+    };
+  }
+});
+var index_default12 = TextAlign;
+
+// node_modules/linkifyjs/dist/linkify.mjs
+var encodedTlds = "aaa1rp3bb0ott3vie4c1le2ogado5udhabi7c0ademy5centure6ountant0s9o1tor4d0s1ult4e0g1ro2tna4f0l1rica5g0akhan5ency5i0g1rbus3force5tel5kdn3l0ibaba4pay4lfinanz6state5y2sace3tom5m0azon4ericanexpress7family11x2fam3ica3sterdam8nalytics7droid5quan4z2o0l2partments8p0le4q0uarelle8r0ab1mco4chi3my2pa2t0e3s0da2ia2sociates9t0hleta5torney7u0ction5di0ble3o3spost5thor3o0s4w0s2x0a2z0ure5ba0by2idu3namex4d1k2r0celona5laycard4s5efoot5gains6seball5ketball8uhaus5yern5b0c1t1va3cg1n2d1e0ats2uty4er2rlin4st0buy5t2f1g1h0arti5i0ble3d1ke2ng0o3o1z2j1lack0friday9ockbuster8g1omberg7ue3m0s1w2n0pparibas9o0ats3ehringer8fa2m1nd2o0k0ing5sch2tik2on4t1utique6x2r0adesco6idgestone9oadway5ker3ther5ussels7s1t1uild0ers6siness6y1zz3v1w1y1z0h3ca0b1fe2l0l1vinklein9m0era3p2non3petown5ital0one8r0avan4ds2e0er0s4s2sa1e1h1ino4t0ering5holic7ba1n1re3c1d1enter4o1rn3f0a1d2g1h0anel2nel4rity4se2t2eap3intai5ristmas6ome4urch5i0priani6rcle4sco3tadel4i0c2y3k1l0aims4eaning6ick2nic1que6othing5ud3ub0med6m1n1o0ach3des3ffee4llege4ogne5m0mbank4unity6pany2re3uter5sec4ndos3struction8ulting7tact3ractors9oking4l1p2rsica5untry4pon0s4rses6pa2r0edit0card4union9icket5own3s1uise0s6u0isinella9v1w1x1y0mru3ou3z2dad1nce3ta1e1ing3sun4y2clk3ds2e0al0er2s3gree4livery5l1oitte5ta3mocrat6ntal2ist5si0gn4v2hl2iamonds6et2gital5rect0ory7scount3ver5h2y2j1k1m1np2o0cs1tor4g1mains5t1wnload7rive4tv2ubai3pont4rban5vag2r2z2earth3t2c0o2deka3u0cation8e1g1mail3erck5nergy4gineer0ing9terprises10pson4quipment8r0icsson6ni3s0q1tate5t1u0rovision8s2vents5xchange6pert3osed4ress5traspace10fage2il1rwinds6th3mily4n0s2rm0ers5shion4t3edex3edback6rrari3ero6i0delity5o2lm2nal1nce1ial7re0stone6mdale6sh0ing5t0ness6j1k1lickr3ghts4r2orist4wers5y2m1o0o0d1tball6rd1ex2sale4um3undation8x2r0ee1senius7l1ogans4ntier7tr2ujitsu5n0d2rniture7tbol5yi3ga0l0lery3o1up4me0s3p1rden4y2b0iz3d0n2e0a1nt0ing5orge5f1g0ee3h1i0ft0s3ves2ing5l0ass3e1obal2o4m0ail3bh2o1x2n1odaddy5ld0point6f2odyear5g0le4p1t1v2p1q1r0ainger5phics5tis4een3ipe3ocery4up4s1t1u0cci3ge2ide2tars5ru3w1y2hair2mburg5ngout5us3bo2dfc0bank7ealth0care8lp1sinki6re1mes5iphop4samitsu7tachi5v2k0t2m1n1ockey4ldings5iday5medepot5goods5s0ense7nda3rse3spital5t0ing5t0els3mail5use3w2r1sbc3t1u0ghes5yatt3undai7ibm2cbc2e1u2d1e0ee3fm2kano4l1m0amat4db2mo0bilien9n0c1dustries8finiti5o2g1k1stitute6urance4e4t0ernational10uit4vestments10o1piranga7q1r0ish4s0maili5t0anbul7t0au2v3jaguar4va3cb2e0ep2tzt3welry6io2ll2m0p2nj2o0bs1urg4t1y2p0morgan6rs3uegos4niper7kaufen5ddi3e0rryhotels6properties14fh2g1h1i0a1ds2m1ndle4tchen5wi3m1n1oeln3matsu5sher5p0mg2n2r0d1ed3uokgroup8w1y0oto4z2la0caixa5mborghini8er3nd0rover6xess5salle5t0ino3robe5w0yer5b1c1ds2ease3clerc5frak4gal2o2xus4gbt3i0dl2fe0insurance9style7ghting6ke2lly3mited4o2ncoln4k2ve1ing5k1lc1p2oan0s3cker3us3l1ndon4tte1o3ve3pl0financial11r1s1t0d0a3u0ndbeck6xe1ury5v1y2ma0drid4if1son4keup4n0agement7go3p1rket0ing3s4riott5shalls7ttel5ba2c0kinsey7d1e0d0ia3et2lbourne7me1orial6n0u2rck0msd7g1h1iami3crosoft7l1ni1t2t0subishi9k1l0b1s2m0a2n1o0bi0le4da2e1i1m1nash3ey2ster5rmon3tgage6scow4to0rcycles9v0ie4p1q1r1s0d2t0n1r2u0seum3ic4v1w1x1y1z2na0b1goya4me2vy3ba2c1e0c1t0bank4flix4work5ustar5w0s2xt0direct7us4f0l2g0o2hk2i0co2ke1on3nja3ssan1y5l1o0kia3rton4w0ruz3tv4p1r0a1w2tt2u1yc2z2obi1server7ffice5kinawa6layan0group9lo3m0ega4ne1g1l0ine5oo2pen3racle3nge4g0anic5igins6saka4tsuka4t2vh3pa0ge2nasonic7ris2s1tners4s1y3y2ccw3e0t2f0izer5g1h0armacy6d1ilips5one2to0graphy6s4ysio5ics1tet2ures6d1n0g1k2oneer5zza4k1l0ace2y0station9umbing5s3m1n0c2ohl2ker3litie5rn2st3r0axi3ess3ime3o0d0uctions8f1gressive8mo2perties3y5tection8u0dential9s1t1ub2w0c2y2qa1pon3uebec3st5racing4dio4e0ad1lestate6tor2y4cipes5d0umbrella9hab3ise0n3t2liance6n0t0als5pair3ort3ublican8st0aurant8view0s5xroth6ich0ardli6oh3l1o1p2o0cks3deo3gers4om3s0vp3u0gby3hr2n2w0e2yukyu6sa0arland6fe0ty4kura4le1on3msclub4ung5ndvik0coromant12ofi4p1rl2s1ve2xo3b0i1s2c0b1haeffler7midt4olarships8ol3ule3warz5ience5ot3d1e0arch3t2cure1ity6ek2lect4ner3rvices6ven3w1x0y3fr2g1h0angrila6rp3ell3ia1ksha5oes2p0ping5uji3w3i0lk2na1gles5te3j1k0i0n2y0pe4l0ing4m0art3ile4n0cf3o0ccer3ial4ftbank4ware6hu2lar2utions7ng1y2y2pa0ce3ort2t3r0l2s1t0ada2ples4r1tebank4farm7c0group6ockholm6rage3e3ream4udio2y3yle4u0cks3pplies3y2ort5rf1gery5zuki5v1watch4iss4x1y0dney4stems6z2tab1ipei4lk2obao4rget4tamotors6r2too4x0i3c0i2d0k2eam2ch0nology8l1masek5nnis4va3f1g1h0d1eater2re6iaa2ckets5enda4ps2res2ol4j0maxx4x2k0maxx5l1m0all4n1o0day3kyo3ols3p1ray3shiba5tal3urs3wn2yota3s3r0ade1ing4ining5vel0ers0insurance16ust3v2t1ube2i1nes3shu4v0s2w1z2ua1bank3s2g1k1nicom3versity8o2ol2ps2s1y1z2va0cations7na1guard7c1e0gas3ntures6risign5m\xF6gensberater2ung14sicherung10t2g1i0ajes4deo3g1king4llas4n1p1rgin4sa1ion4va1o3laanderen9n1odka3lvo3te1ing3o2yage5u2wales2mart4ter4ng0gou5tch0es6eather0channel12bcam3er2site5d0ding5ibo2r3f1hoswho6ien2ki2lliamhill9n0dows4e1ners6me2oodside6rk0s2ld3w2s1tc1f3xbox3erox4ihuan4n2xx2yz3yachts4hoo3maxun5ndex5e1odobashi7ga2kohama6u0tube6t1un3za0ppos4ra3ero3ip2m1one3uerich6w2";
+var encodedUtlds = "\u03B5\u03BB1\u03C52\u0431\u04331\u0435\u043B3\u0434\u0435\u0442\u04384\u0435\u044E2\u043A\u0430\u0442\u043E\u043B\u0438\u043A6\u043E\u043C3\u043C\u043A\u04342\u043E\u043D1\u0441\u043A\u0432\u04306\u043E\u043D\u043B\u0430\u0439\u043D5\u0440\u04333\u0440\u0443\u04412\u04442\u0441\u0430\u0439\u04423\u0440\u04313\u0443\u043A\u04403\u049B\u0430\u04373\u0570\u0561\u05753\u05D9\u05E9\u05E8\u05D0\u05DC5\u05E7\u05D5\u05DD3\u0627\u0628\u0648\u0638\u0628\u064A5\u0631\u0627\u0645\u0643\u06485\u0644\u0627\u0631\u062F\u06464\u0628\u062D\u0631\u064A\u06465\u062C\u0632\u0627\u0626\u06315\u0633\u0639\u0648\u062F\u064A\u06296\u0639\u0644\u064A\u0627\u06465\u0645\u063A\u0631\u06285\u0645\u0627\u0631\u0627\u062A5\u06CC\u0631\u0627\u06465\u0628\u0627\u0631\u062A2\u0632\u0627\u06314\u064A\u062A\u06433\u06BE\u0627\u0631\u062A5\u062A\u0648\u0646\u06334\u0633\u0648\u062F\u0627\u06463\u0631\u064A\u06295\u0634\u0628\u0643\u06294\u0639\u0631\u0627\u06422\u06282\u0645\u0627\u06464\u0641\u0644\u0633\u0637\u064A\u06466\u0642\u0637\u06313\u0643\u0627\u062B\u0648\u0644\u064A\u06436\u0648\u06453\u0645\u0635\u06312\u0644\u064A\u0633\u064A\u06275\u0648\u0631\u064A\u062A\u0627\u0646\u064A\u06277\u0642\u06394\u0647\u0645\u0631\u0627\u06475\u067E\u0627\u06A9\u0633\u062A\u0627\u06467\u0680\u0627\u0631\u062A4\u0915\u0949\u092E3\u0928\u0947\u091F3\u092D\u093E\u0930\u09240\u092E\u094D3\u094B\u09245\u0938\u0902\u0917\u0920\u09285\u09AC\u09BE\u0982\u09B2\u09BE5\u09AD\u09BE\u09B0\u09A42\u09F0\u09A44\u0A2D\u0A3E\u0A30\u0A244\u0AAD\u0ABE\u0AB0\u0AA44\u0B2D\u0B3E\u0B30\u0B244\u0B87\u0BA8\u0BCD\u0BA4\u0BBF\u0BAF\u0BBE6\u0BB2\u0B99\u0BCD\u0B95\u0BC86\u0B9A\u0BBF\u0B99\u0BCD\u0B95\u0BAA\u0BCD\u0BAA\u0BC2\u0BB0\u0BCD11\u0C2D\u0C3E\u0C30\u0C24\u0C4D5\u0CAD\u0CBE\u0CB0\u0CA44\u0D2D\u0D3E\u0D30\u0D24\u0D025\u0DBD\u0D82\u0D9A\u0DCF4\u0E04\u0E2D\u0E213\u0E44\u0E17\u0E223\u0EA5\u0EB2\u0EA73\u10D2\u10D42\u307F\u3093\u306A3\u30A2\u30DE\u30BE\u30F34\u30AF\u30E9\u30A6\u30C94\u30B0\u30FC\u30B0\u30EB4\u30B3\u30E02\u30B9\u30C8\u30A23\u30BB\u30FC\u30EB3\u30D5\u30A1\u30C3\u30B7\u30E7\u30F36\u30DD\u30A4\u30F3\u30C84\u4E16\u754C2\u4E2D\u4FE11\u56FD1\u570B1\u6587\u7F513\u4E9A\u9A6C\u900A3\u4F01\u4E1A2\u4F5B\u5C712\u4FE1\u606F2\u5065\u5EB72\u516B\u53662\u516C\u53F81\u76CA2\u53F0\u6E7E1\u70632\u5546\u57CE1\u5E971\u68072\u5609\u91CC0\u5927\u9152\u5E975\u5728\u7EBF2\u5927\u62FF2\u5929\u4E3B\u65593\u5A31\u4E502\u5BB6\u96FB2\u5E7F\u4E1C2\u5FAE\u535A2\u6148\u55842\u6211\u7231\u4F603\u624B\u673A2\u62DB\u80582\u653F\u52A11\u5E9C2\u65B0\u52A0\u57612\u95FB2\u65F6\u5C1A2\u66F8\u7C4D2\u673A\u67842\u6DE1\u9A6C\u95213\u6E38\u620F2\u6FB3\u95802\u70B9\u770B2\u79FB\u52A82\u7EC4\u7EC7\u673A\u67844\u7F51\u57401\u5E971\u7AD91\u7EDC2\u8054\u901A2\u8C37\u6B4C2\u8D2D\u72692\u901A\u8CA92\u96C6\u56E22\u96FB\u8A0A\u76C8\u79D14\u98DE\u5229\u6D663\u98DF\u54C12\u9910\u53852\u9999\u683C\u91CC\u62C93\u6E2F2\uB2F7\uB1371\uCEF42\uC0BC\uC1312\uD55C\uAD6D2";
+var numeric = "numeric";
+var ascii = "ascii";
+var alpha = "alpha";
+var asciinumeric = "asciinumeric";
+var alphanumeric = "alphanumeric";
+var domain = "domain";
+var emoji = "emoji";
+var scheme = "scheme";
+var slashscheme = "slashscheme";
+var whitespace = "whitespace";
+function registerGroup(name3, groups) {
+  if (!(name3 in groups)) {
+    groups[name3] = [];
+  }
+  return groups[name3];
+}
+function addToGroups(t2, flags, groups) {
+  if (flags[numeric]) {
+    flags[asciinumeric] = true;
+    flags[alphanumeric] = true;
+  }
+  if (flags[ascii]) {
+    flags[asciinumeric] = true;
+    flags[alpha] = true;
+  }
+  if (flags[asciinumeric]) {
+    flags[alphanumeric] = true;
+  }
+  if (flags[alpha]) {
+    flags[alphanumeric] = true;
+  }
+  if (flags[alphanumeric]) {
+    flags[domain] = true;
+  }
+  if (flags[emoji]) {
+    flags[domain] = true;
+  }
+  for (const k2 in flags) {
+    const group = registerGroup(k2, groups);
+    if (group.indexOf(t2) < 0) {
+      group.push(t2);
+    }
+  }
+}
+function flagsForToken(t2, groups) {
+  const result = {};
+  for (const c2 in groups) {
+    if (groups[c2].indexOf(t2) >= 0) {
+      result[c2] = true;
+    }
+  }
+  return result;
+}
+function State(token = null) {
+  this.j = {};
+  this.jr = [];
+  this.jd = null;
+  this.t = token;
+}
+State.groups = {};
+State.prototype = {
+  accepts() {
+    return !!this.t;
+  },
+  /**
+   * Follow an existing transition from the given input to the next state.
+   * Does not mutate.
+   * @param {string} input character or token type to transition on
+   * @returns {?State<T>} the next state, if any
+   */
+  go(input) {
+    const state3 = this;
+    const nextState = state3.j[input];
+    if (nextState) {
+      return nextState;
+    }
+    for (let i2 = 0; i2 < state3.jr.length; i2++) {
+      const regex = state3.jr[i2][0];
+      const nextState2 = state3.jr[i2][1];
+      if (nextState2 && regex.test(input)) {
+        return nextState2;
+      }
+    }
+    return state3.jd;
+  },
+  /**
+   * Whether the state has a transition for the given input. Set the second
+   * argument to true to only look for an exact match (and not a default or
+   * regular-expression-based transition)
+   * @param {string} input
+   * @param {boolean} exactOnly
+   */
+  has(input, exactOnly = false) {
+    return exactOnly ? input in this.j : !!this.go(input);
+  },
+  /**
+   * Short for "transition all"; create a transition from the array of items
+   * in the given list to the same final resulting state.
+   * @param {string | string[]} inputs Group of inputs to transition on
+   * @param {Transition<T> | State<T>} [next] Transition options
+   * @param {Flags} [flags] Collections flags to add token to
+   * @param {Collections<T>} [groups] Master list of token groups
+   */
+  ta(inputs, next, flags, groups) {
+    for (let i2 = 0; i2 < inputs.length; i2++) {
+      this.tt(inputs[i2], next, flags, groups);
+    }
+  },
+  /**
+   * Short for "take regexp transition"; defines a transition for this state
+   * when it encounters a token which matches the given regular expression
+   * @param {RegExp} regexp Regular expression transition (populate first)
+   * @param {T | State<T>} [next] Transition options
+   * @param {Flags} [flags] Collections flags to add token to
+   * @param {Collections<T>} [groups] Master list of token groups
+   * @returns {State<T>} taken after the given input
+   */
+  tr(regexp, next, flags, groups) {
+    groups = groups || State.groups;
+    let nextState;
+    if (next && next.j) {
+      nextState = next;
+    } else {
+      nextState = new State(next);
+      if (flags && groups) {
+        addToGroups(next, flags, groups);
+      }
+    }
+    this.jr.push([regexp, nextState]);
+    return nextState;
+  },
+  /**
+   * Short for "take transitions", will take as many sequential transitions as
+   * the length of the given input and returns the
+   * resulting final state.
+   * @param {string | string[]} input
+   * @param {T | State<T>} [next] Transition options
+   * @param {Flags} [flags] Collections flags to add token to
+   * @param {Collections<T>} [groups] Master list of token groups
+   * @returns {State<T>} taken after the given input
+   */
+  ts(input, next, flags, groups) {
+    let state3 = this;
+    const len = input.length;
+    if (!len) {
+      return state3;
+    }
+    for (let i2 = 0; i2 < len - 1; i2++) {
+      state3 = state3.tt(input[i2]);
+    }
+    return state3.tt(input[len - 1], next, flags, groups);
+  },
+  /**
+   * Short for "take transition", this is a method for building/working with
+   * state machines.
+   *
+   * If a state already exists for the given input, returns it.
+   *
+   * If a token is specified, that state will emit that token when reached by
+   * the linkify engine.
+   *
+   * If no state exists, it will be initialized with some default transitions
+   * that resemble existing default transitions.
+   *
+   * If a state is given for the second argument, that state will be
+   * transitioned to on the given input regardless of what that input
+   * previously did.
+   *
+   * Specify a token group flags to define groups that this token belongs to.
+   * The token will be added to corresponding entires in the given groups
+   * object.
+   *
+   * @param {string} input character, token type to transition on
+   * @param {T | State<T>} [next] Transition options
+   * @param {Flags} [flags] Collections flags to add token to
+   * @param {Collections<T>} [groups] Master list of groups
+   * @returns {State<T>} taken after the given input
+   */
+  tt(input, next, flags, groups) {
+    groups = groups || State.groups;
+    const state3 = this;
+    if (next && next.j) {
+      state3.j[input] = next;
+      return next;
+    }
+    const t2 = next;
+    let nextState, templateState = state3.go(input);
+    if (templateState) {
+      nextState = new State();
+      Object.assign(nextState.j, templateState.j);
+      nextState.jr.push.apply(nextState.jr, templateState.jr);
+      nextState.jd = templateState.jd;
+      nextState.t = templateState.t;
+    } else {
+      nextState = new State();
+    }
+    if (t2) {
+      if (groups) {
+        if (nextState.t && typeof nextState.t === "string") {
+          const allFlags = Object.assign(flagsForToken(nextState.t, groups), flags);
+          addToGroups(t2, allFlags, groups);
+        } else if (flags) {
+          addToGroups(t2, flags, groups);
+        }
+      }
+      nextState.t = t2;
+    }
+    state3.j[input] = nextState;
+    return nextState;
+  }
+};
+var ta = (state3, input, next, flags, groups) => state3.ta(input, next, flags, groups);
+var tr = (state3, regexp, next, flags, groups) => state3.tr(regexp, next, flags, groups);
+var ts = (state3, input, next, flags, groups) => state3.ts(input, next, flags, groups);
+var tt = (state3, input, next, flags, groups) => state3.tt(input, next, flags, groups);
+var WORD = "WORD";
+var UWORD = "UWORD";
+var ASCIINUMERICAL = "ASCIINUMERICAL";
+var ALPHANUMERICAL = "ALPHANUMERICAL";
+var LOCALHOST = "LOCALHOST";
+var TLD = "TLD";
+var UTLD = "UTLD";
+var SCHEME = "SCHEME";
+var SLASH_SCHEME = "SLASH_SCHEME";
+var NUM = "NUM";
+var WS = "WS";
+var NL = "NL";
+var OPENBRACE = "OPENBRACE";
+var CLOSEBRACE = "CLOSEBRACE";
+var OPENBRACKET = "OPENBRACKET";
+var CLOSEBRACKET = "CLOSEBRACKET";
+var OPENPAREN = "OPENPAREN";
+var CLOSEPAREN = "CLOSEPAREN";
+var OPENANGLEBRACKET = "OPENANGLEBRACKET";
+var CLOSEANGLEBRACKET = "CLOSEANGLEBRACKET";
+var FULLWIDTHLEFTPAREN = "FULLWIDTHLEFTPAREN";
+var FULLWIDTHRIGHTPAREN = "FULLWIDTHRIGHTPAREN";
+var LEFTCORNERBRACKET = "LEFTCORNERBRACKET";
+var RIGHTCORNERBRACKET = "RIGHTCORNERBRACKET";
+var LEFTWHITECORNERBRACKET = "LEFTWHITECORNERBRACKET";
+var RIGHTWHITECORNERBRACKET = "RIGHTWHITECORNERBRACKET";
+var FULLWIDTHLESSTHAN = "FULLWIDTHLESSTHAN";
+var FULLWIDTHGREATERTHAN = "FULLWIDTHGREATERTHAN";
+var AMPERSAND = "AMPERSAND";
+var APOSTROPHE = "APOSTROPHE";
+var ASTERISK = "ASTERISK";
+var AT = "AT";
+var BACKSLASH = "BACKSLASH";
+var BACKTICK = "BACKTICK";
+var CARET = "CARET";
+var COLON = "COLON";
+var COMMA = "COMMA";
+var DOLLAR = "DOLLAR";
+var DOT = "DOT";
+var EQUALS = "EQUALS";
+var EXCLAMATION = "EXCLAMATION";
+var HYPHEN = "HYPHEN";
+var PERCENT = "PERCENT";
+var PIPE = "PIPE";
+var PLUS = "PLUS";
+var POUND = "POUND";
+var QUERY = "QUERY";
+var QUOTE = "QUOTE";
+var FULLWIDTHMIDDLEDOT = "FULLWIDTHMIDDLEDOT";
+var SEMI = "SEMI";
+var SLASH = "SLASH";
+var TILDE = "TILDE";
+var UNDERSCORE = "UNDERSCORE";
+var EMOJI$1 = "EMOJI";
+var SYM = "SYM";
+var tk = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  ALPHANUMERICAL,
+  AMPERSAND,
+  APOSTROPHE,
+  ASCIINUMERICAL,
+  ASTERISK,
+  AT,
+  BACKSLASH,
+  BACKTICK,
+  CARET,
+  CLOSEANGLEBRACKET,
+  CLOSEBRACE,
+  CLOSEBRACKET,
+  CLOSEPAREN,
+  COLON,
+  COMMA,
+  DOLLAR,
+  DOT,
+  EMOJI: EMOJI$1,
+  EQUALS,
+  EXCLAMATION,
+  FULLWIDTHGREATERTHAN,
+  FULLWIDTHLEFTPAREN,
+  FULLWIDTHLESSTHAN,
+  FULLWIDTHMIDDLEDOT,
+  FULLWIDTHRIGHTPAREN,
+  HYPHEN,
+  LEFTCORNERBRACKET,
+  LEFTWHITECORNERBRACKET,
+  LOCALHOST,
+  NL,
+  NUM,
+  OPENANGLEBRACKET,
+  OPENBRACE,
+  OPENBRACKET,
+  OPENPAREN,
+  PERCENT,
+  PIPE,
+  PLUS,
+  POUND,
+  QUERY,
+  QUOTE,
+  RIGHTCORNERBRACKET,
+  RIGHTWHITECORNERBRACKET,
+  SCHEME,
+  SEMI,
+  SLASH,
+  SLASH_SCHEME,
+  SYM,
+  TILDE,
+  TLD,
+  UNDERSCORE,
+  UTLD,
+  UWORD,
+  WORD,
+  WS
+});
+var ASCII_LETTER = /[a-z]/;
+var LETTER = /\p{L}/u;
+var EMOJI = /\p{Emoji}/u;
+var DIGIT = /\d/;
+var SPACE2 = /\s/;
+var CR = "\r";
+var LF = "\n";
+var EMOJI_VARIATION = "\uFE0F";
+var EMOJI_JOINER = "\u200D";
+var OBJECT_REPLACEMENT = "\uFFFC";
+var tlds = null;
+var utlds = null;
+function init$2(customSchemes = []) {
+  const groups = {};
+  State.groups = groups;
+  const Start = new State();
+  if (tlds == null) {
+    tlds = decodeTlds(encodedTlds);
+  }
+  if (utlds == null) {
+    utlds = decodeTlds(encodedUtlds);
+  }
+  tt(Start, "'", APOSTROPHE);
+  tt(Start, "{", OPENBRACE);
+  tt(Start, "}", CLOSEBRACE);
+  tt(Start, "[", OPENBRACKET);
+  tt(Start, "]", CLOSEBRACKET);
+  tt(Start, "(", OPENPAREN);
+  tt(Start, ")", CLOSEPAREN);
+  tt(Start, "<", OPENANGLEBRACKET);
+  tt(Start, ">", CLOSEANGLEBRACKET);
+  tt(Start, "\uFF08", FULLWIDTHLEFTPAREN);
+  tt(Start, "\uFF09", FULLWIDTHRIGHTPAREN);
+  tt(Start, "\u300C", LEFTCORNERBRACKET);
+  tt(Start, "\u300D", RIGHTCORNERBRACKET);
+  tt(Start, "\u300E", LEFTWHITECORNERBRACKET);
+  tt(Start, "\u300F", RIGHTWHITECORNERBRACKET);
+  tt(Start, "\uFF1C", FULLWIDTHLESSTHAN);
+  tt(Start, "\uFF1E", FULLWIDTHGREATERTHAN);
+  tt(Start, "&", AMPERSAND);
+  tt(Start, "*", ASTERISK);
+  tt(Start, "@", AT);
+  tt(Start, "`", BACKTICK);
+  tt(Start, "^", CARET);
+  tt(Start, ":", COLON);
+  tt(Start, ",", COMMA);
+  tt(Start, "$", DOLLAR);
+  tt(Start, ".", DOT);
+  tt(Start, "=", EQUALS);
+  tt(Start, "!", EXCLAMATION);
+  tt(Start, "-", HYPHEN);
+  tt(Start, "%", PERCENT);
+  tt(Start, "|", PIPE);
+  tt(Start, "+", PLUS);
+  tt(Start, "#", POUND);
+  tt(Start, "?", QUERY);
+  tt(Start, '"', QUOTE);
+  tt(Start, "/", SLASH);
+  tt(Start, ";", SEMI);
+  tt(Start, "~", TILDE);
+  tt(Start, "_", UNDERSCORE);
+  tt(Start, "\\", BACKSLASH);
+  tt(Start, "\u30FB", FULLWIDTHMIDDLEDOT);
+  const Num = tr(Start, DIGIT, NUM, {
+    [numeric]: true
+  });
+  tr(Num, DIGIT, Num);
+  const Asciinumeric = tr(Num, ASCII_LETTER, ASCIINUMERICAL, {
+    [asciinumeric]: true
+  });
+  const Alphanumeric = tr(Num, LETTER, ALPHANUMERICAL, {
+    [alphanumeric]: true
+  });
+  const Word = tr(Start, ASCII_LETTER, WORD, {
+    [ascii]: true
+  });
+  tr(Word, DIGIT, Asciinumeric);
+  tr(Word, ASCII_LETTER, Word);
+  tr(Asciinumeric, DIGIT, Asciinumeric);
+  tr(Asciinumeric, ASCII_LETTER, Asciinumeric);
+  const UWord = tr(Start, LETTER, UWORD, {
+    [alpha]: true
+  });
+  tr(UWord, ASCII_LETTER);
+  tr(UWord, DIGIT, Alphanumeric);
+  tr(UWord, LETTER, UWord);
+  tr(Alphanumeric, DIGIT, Alphanumeric);
+  tr(Alphanumeric, ASCII_LETTER);
+  tr(Alphanumeric, LETTER, Alphanumeric);
+  const Nl2 = tt(Start, LF, NL, {
+    [whitespace]: true
+  });
+  const Cr = tt(Start, CR, WS, {
+    [whitespace]: true
+  });
+  const Ws = tr(Start, SPACE2, WS, {
+    [whitespace]: true
+  });
+  tt(Start, OBJECT_REPLACEMENT, Ws);
+  tt(Cr, LF, Nl2);
+  tt(Cr, OBJECT_REPLACEMENT, Ws);
+  tr(Cr, SPACE2, Ws);
+  tt(Ws, CR);
+  tt(Ws, LF);
+  tr(Ws, SPACE2, Ws);
+  tt(Ws, OBJECT_REPLACEMENT, Ws);
+  const Emoji = tr(Start, EMOJI, EMOJI$1, {
+    [emoji]: true
+  });
+  tt(Emoji, "#");
+  tr(Emoji, EMOJI, Emoji);
+  tt(Emoji, EMOJI_VARIATION, Emoji);
+  const EmojiJoiner = tt(Emoji, EMOJI_JOINER);
+  tt(EmojiJoiner, "#");
+  tr(EmojiJoiner, EMOJI, Emoji);
+  const wordjr = [[ASCII_LETTER, Word], [DIGIT, Asciinumeric]];
+  const uwordjr = [[ASCII_LETTER, null], [LETTER, UWord], [DIGIT, Alphanumeric]];
+  for (let i2 = 0; i2 < tlds.length; i2++) {
+    fastts(Start, tlds[i2], TLD, WORD, wordjr);
+  }
+  for (let i2 = 0; i2 < utlds.length; i2++) {
+    fastts(Start, utlds[i2], UTLD, UWORD, uwordjr);
+  }
+  addToGroups(TLD, {
+    tld: true,
+    ascii: true
+  }, groups);
+  addToGroups(UTLD, {
+    utld: true,
+    alpha: true
+  }, groups);
+  fastts(Start, "file", SCHEME, WORD, wordjr);
+  fastts(Start, "mailto", SCHEME, WORD, wordjr);
+  fastts(Start, "http", SLASH_SCHEME, WORD, wordjr);
+  fastts(Start, "https", SLASH_SCHEME, WORD, wordjr);
+  fastts(Start, "ftp", SLASH_SCHEME, WORD, wordjr);
+  fastts(Start, "ftps", SLASH_SCHEME, WORD, wordjr);
+  addToGroups(SCHEME, {
+    scheme: true,
+    ascii: true
+  }, groups);
+  addToGroups(SLASH_SCHEME, {
+    slashscheme: true,
+    ascii: true
+  }, groups);
+  customSchemes = customSchemes.sort((a2, b) => a2[0] > b[0] ? 1 : -1);
+  for (let i2 = 0; i2 < customSchemes.length; i2++) {
+    const sch = customSchemes[i2][0];
+    const optionalSlashSlash = customSchemes[i2][1];
+    const flags = optionalSlashSlash ? {
+      [scheme]: true
+    } : {
+      [slashscheme]: true
+    };
+    if (sch.indexOf("-") >= 0) {
+      flags[domain] = true;
+    } else if (!ASCII_LETTER.test(sch)) {
+      flags[numeric] = true;
+    } else if (DIGIT.test(sch)) {
+      flags[asciinumeric] = true;
+    } else {
+      flags[ascii] = true;
+    }
+    ts(Start, sch, sch, flags);
+  }
+  ts(Start, "localhost", LOCALHOST, {
+    ascii: true
+  });
+  Start.jd = new State(SYM);
+  return {
+    start: Start,
+    tokens: Object.assign({
+      groups
+    }, tk)
+  };
+}
+function run$1(start, str) {
+  const iterable = stringToArray(str.replace(/[A-Z]/g, (c2) => c2.toLowerCase()));
+  const charCount = iterable.length;
+  const tokens = [];
+  let cursor = 0;
+  let charCursor = 0;
+  while (charCursor < charCount) {
+    let state3 = start;
+    let nextState = null;
+    let tokenLength = 0;
+    let latestAccepting = null;
+    let sinceAccepts = -1;
+    let charsSinceAccepts = -1;
+    while (charCursor < charCount && (nextState = state3.go(iterable[charCursor]))) {
+      state3 = nextState;
+      if (state3.accepts()) {
+        sinceAccepts = 0;
+        charsSinceAccepts = 0;
+        latestAccepting = state3;
+      } else if (sinceAccepts >= 0) {
+        sinceAccepts += iterable[charCursor].length;
+        charsSinceAccepts++;
+      }
+      tokenLength += iterable[charCursor].length;
+      cursor += iterable[charCursor].length;
+      charCursor++;
+    }
+    cursor -= sinceAccepts;
+    charCursor -= charsSinceAccepts;
+    tokenLength -= sinceAccepts;
+    tokens.push({
+      t: latestAccepting.t,
+      // token type/name
+      v: str.slice(cursor - tokenLength, cursor),
+      // string value
+      s: cursor - tokenLength,
+      // start index
+      e: cursor
+      // end index (excluding)
+    });
+  }
+  return tokens;
+}
+function stringToArray(str) {
+  const result = [];
+  const len = str.length;
+  let index2 = 0;
+  while (index2 < len) {
+    let first = str.charCodeAt(index2);
+    let second;
+    let char = first < 55296 || first > 56319 || index2 + 1 === len || (second = str.charCodeAt(index2 + 1)) < 56320 || second > 57343 ? str[index2] : str.slice(index2, index2 + 2);
+    result.push(char);
+    index2 += char.length;
+  }
+  return result;
+}
+function fastts(state3, input, t2, defaultt, jr) {
+  let next;
+  const len = input.length;
+  for (let i2 = 0; i2 < len - 1; i2++) {
+    const char = input[i2];
+    if (state3.j[char]) {
+      next = state3.j[char];
+    } else {
+      next = new State(defaultt);
+      next.jr = jr.slice();
+      state3.j[char] = next;
+    }
+    state3 = next;
+  }
+  next = new State(t2);
+  next.jr = jr.slice();
+  state3.j[input[len - 1]] = next;
+  return next;
+}
+function decodeTlds(encoded) {
+  const words = [];
+  const stack = [];
+  let i2 = 0;
+  let digits = "0123456789";
+  while (i2 < encoded.length) {
+    let popDigitCount = 0;
+    while (digits.indexOf(encoded[i2 + popDigitCount]) >= 0) {
+      popDigitCount++;
+    }
+    if (popDigitCount > 0) {
+      words.push(stack.join(""));
+      for (let popCount = parseInt(encoded.substring(i2, i2 + popDigitCount), 10); popCount > 0; popCount--) {
+        stack.pop();
+      }
+      i2 += popDigitCount;
+    } else {
+      stack.push(encoded[i2]);
+      i2++;
+    }
+  }
+  return words;
+}
+var defaults = {
+  defaultProtocol: "http",
+  events: null,
+  format: noop,
+  formatHref: noop,
+  nl2br: false,
+  tagName: "a",
+  target: null,
+  rel: null,
+  validate: true,
+  truncate: Infinity,
+  className: null,
+  attributes: null,
+  ignoreTags: [],
+  render: null
+};
+function Options(opts2, defaultRender = null) {
+  let o2 = Object.assign({}, defaults);
+  if (opts2) {
+    o2 = Object.assign(o2, opts2 instanceof Options ? opts2.o : opts2);
+  }
+  const ignoredTags = o2.ignoreTags;
+  const uppercaseIgnoredTags = [];
+  for (let i2 = 0; i2 < ignoredTags.length; i2++) {
+    uppercaseIgnoredTags.push(ignoredTags[i2].toUpperCase());
+  }
+  this.o = o2;
+  if (defaultRender) {
+    this.defaultRender = defaultRender;
+  }
+  this.ignoreTags = uppercaseIgnoredTags;
+}
+Options.prototype = {
+  o: defaults,
+  /**
+   * @type string[]
+   */
+  ignoreTags: [],
+  /**
+   * @param {IntermediateRepresentation} ir
+   * @returns {any}
+   */
+  defaultRender(ir) {
+    return ir;
+  },
+  /**
+   * Returns true or false based on whether a token should be displayed as a
+   * link based on the user options.
+   * @param {MultiToken} token
+   * @returns {boolean}
+   */
+  check(token) {
+    return this.get("validate", token.toString(), token);
+  },
+  // Private methods
+  /**
+   * Resolve an option's value based on the value of the option and the given
+   * params. If operator and token are specified and the target option is
+   * callable, automatically calls the function with the given argument.
+   * @template {keyof Opts} K
+   * @param {K} key Name of option to use
+   * @param {string} [operator] will be passed to the target option if it's a
+   * function. If not specified, RAW function value gets returned
+   * @param {MultiToken} [token] The token from linkify.tokenize
+   * @returns {Opts[K] | any}
+   */
+  get(key, operator, token) {
+    const isCallable = operator != null;
+    let option2 = this.o[key];
+    if (!option2) {
+      return option2;
+    }
+    if (typeof option2 === "object") {
+      option2 = token.t in option2 ? option2[token.t] : defaults[key];
+      if (typeof option2 === "function" && isCallable) {
+        option2 = option2(operator, token);
+      }
+    } else if (typeof option2 === "function" && isCallable) {
+      option2 = option2(operator, token.t, token);
+    }
+    return option2;
+  },
+  /**
+   * @template {keyof Opts} L
+   * @param {L} key Name of options object to use
+   * @param {string} [operator]
+   * @param {MultiToken} [token]
+   * @returns {Opts[L] | any}
+   */
+  getObj(key, operator, token) {
+    let obj = this.o[key];
+    if (typeof obj === "function" && operator != null) {
+      obj = obj(operator, token.t, token);
+    }
+    return obj;
+  },
+  /**
+   * Convert the given token to a rendered element that may be added to the
+   * calling-interface's DOM
+   * @param {MultiToken} token Token to render to an HTML element
+   * @returns {any} Render result; e.g., HTML string, DOM element, React
+   *   Component, etc.
+   */
+  render(token) {
+    const ir = token.render(this);
+    const renderFn = this.get("render", null, token) || this.defaultRender;
+    return renderFn(ir, token.t, token);
+  }
+};
+function noop(val) {
+  return val;
+}
+function MultiToken(value, tokens) {
+  this.t = "token";
+  this.v = value;
+  this.tk = tokens;
+}
+MultiToken.prototype = {
+  isLink: false,
+  /**
+   * Return the string this token represents.
+   * @return {string}
+   */
+  toString() {
+    return this.v;
+  },
+  /**
+   * What should the value for this token be in the `href` HTML attribute?
+   * Returns the `.toString` value by default.
+   * @param {string} [scheme]
+   * @return {string}
+   */
+  toHref(scheme2) {
+    return this.toString();
+  },
+  /**
+   * @param {Options} options Formatting options
+   * @returns {string}
+   */
+  toFormattedString(options) {
+    const val = this.toString();
+    const truncate = options.get("truncate", val, this);
+    const formatted = options.get("format", val, this);
+    return truncate && formatted.length > truncate ? formatted.substring(0, truncate) + "\u2026" : formatted;
+  },
+  /**
+   *
+   * @param {Options} options
+   * @returns {string}
+   */
+  toFormattedHref(options) {
+    return options.get("formatHref", this.toHref(options.get("defaultProtocol")), this);
+  },
+  /**
+   * The start index of this token in the original input string
+   * @returns {number}
+   */
+  startIndex() {
+    return this.tk[0].s;
+  },
+  /**
+   * The end index of this token in the original input string (up to this
+   * index but not including it)
+   * @returns {number}
+   */
+  endIndex() {
+    return this.tk[this.tk.length - 1].e;
+  },
+  /**
+  	Returns an object  of relevant values for this token, which includes keys
+  	* type - Kind of token ('url', 'email', etc.)
+  	* value - Original text
+  	* href - The value that should be added to the anchor tag's href
+  		attribute
+  		@method toObject
+  	@param {string} [protocol] `'http'` by default
+  */
+  toObject(protocol = defaults.defaultProtocol) {
+    return {
+      type: this.t,
+      value: this.toString(),
+      isLink: this.isLink,
+      href: this.toHref(protocol),
+      start: this.startIndex(),
+      end: this.endIndex()
+    };
+  },
+  /**
+   *
+   * @param {Options} options Formatting option
+   */
+  toFormattedObject(options) {
+    return {
+      type: this.t,
+      value: this.toFormattedString(options),
+      isLink: this.isLink,
+      href: this.toFormattedHref(options),
+      start: this.startIndex(),
+      end: this.endIndex()
+    };
+  },
+  /**
+   * Whether this token should be rendered as a link according to the given options
+   * @param {Options} options
+   * @returns {boolean}
+   */
+  validate(options) {
+    return options.get("validate", this.toString(), this);
+  },
+  /**
+   * Return an object that represents how this link should be rendered.
+   * @param {Options} options Formattinng options
+   */
+  render(options) {
+    const token = this;
+    const href = this.toHref(options.get("defaultProtocol"));
+    const formattedHref = options.get("formatHref", href, this);
+    const tagName = options.get("tagName", href, token);
+    const content = this.toFormattedString(options);
+    const attributes = {};
+    const className = options.get("className", href, token);
+    const target = options.get("target", href, token);
+    const rel = options.get("rel", href, token);
+    const attrs = options.getObj("attributes", href, token);
+    const eventListeners = options.getObj("events", href, token);
+    attributes.href = formattedHref;
+    if (className) {
+      attributes.class = className;
+    }
+    if (target) {
+      attributes.target = target;
+    }
+    if (rel) {
+      attributes.rel = rel;
+    }
+    if (attrs) {
+      Object.assign(attributes, attrs);
+    }
+    return {
+      tagName,
+      attributes,
+      content,
+      eventListeners
+    };
+  }
+};
+function createTokenClass(type, props) {
+  class Token extends MultiToken {
+    constructor(value, tokens) {
+      super(value, tokens);
+      this.t = type;
+    }
+  }
+  for (const p in props) {
+    Token.prototype[p] = props[p];
+  }
+  Token.t = type;
+  return Token;
+}
+var Email = createTokenClass("email", {
+  isLink: true,
+  toHref() {
+    return "mailto:" + this.toString();
+  }
+});
+var Text2 = createTokenClass("text");
+var Nl = createTokenClass("nl");
+var Url = createTokenClass("url", {
+  isLink: true,
+  /**
+  	Lowercases relevant parts of the domain and adds the protocol if
+  	required. Note that this will not escape unsafe HTML characters in the
+  	URL.
+  		@param {string} [scheme] default scheme (e.g., 'https')
+  	@return {string} the full href
+  */
+  toHref(scheme2 = defaults.defaultProtocol) {
+    return this.hasProtocol() ? this.v : `${scheme2}://${this.v}`;
+  },
+  /**
+   * Check whether this URL token has a protocol
+   * @return {boolean}
+   */
+  hasProtocol() {
+    const tokens = this.tk;
+    return tokens.length >= 2 && tokens[0].t !== LOCALHOST && tokens[1].t === COLON;
+  }
+});
+var makeState = (arg) => new State(arg);
+function init$1({
+  groups
+}) {
+  const qsAccepting = groups.domain.concat([AMPERSAND, ASTERISK, AT, BACKSLASH, BACKTICK, CARET, DOLLAR, EQUALS, HYPHEN, NUM, PERCENT, PIPE, PLUS, POUND, SLASH, SYM, TILDE, UNDERSCORE]);
+  const qsNonAccepting = [APOSTROPHE, COLON, COMMA, DOT, EXCLAMATION, PERCENT, QUERY, QUOTE, SEMI, OPENANGLEBRACKET, CLOSEANGLEBRACKET, OPENBRACE, CLOSEBRACE, CLOSEBRACKET, OPENBRACKET, OPENPAREN, CLOSEPAREN, FULLWIDTHLEFTPAREN, FULLWIDTHRIGHTPAREN, LEFTCORNERBRACKET, RIGHTCORNERBRACKET, LEFTWHITECORNERBRACKET, RIGHTWHITECORNERBRACKET, FULLWIDTHLESSTHAN, FULLWIDTHGREATERTHAN];
+  const localpartAccepting = [AMPERSAND, APOSTROPHE, ASTERISK, BACKSLASH, BACKTICK, CARET, DOLLAR, EQUALS, HYPHEN, OPENBRACE, CLOSEBRACE, PERCENT, PIPE, PLUS, POUND, QUERY, SLASH, SYM, TILDE, UNDERSCORE];
+  const Start = makeState();
+  const Localpart = tt(Start, TILDE);
+  ta(Localpart, localpartAccepting, Localpart);
+  ta(Localpart, groups.domain, Localpart);
+  const Domain = makeState(), Scheme = makeState(), SlashScheme = makeState();
+  ta(Start, groups.domain, Domain);
+  ta(Start, groups.scheme, Scheme);
+  ta(Start, groups.slashscheme, SlashScheme);
+  ta(Domain, localpartAccepting, Localpart);
+  ta(Domain, groups.domain, Domain);
+  const LocalpartAt = tt(Domain, AT);
+  tt(Localpart, AT, LocalpartAt);
+  tt(Scheme, AT, LocalpartAt);
+  tt(SlashScheme, AT, LocalpartAt);
+  const LocalpartDot = tt(Localpart, DOT);
+  ta(LocalpartDot, localpartAccepting, Localpart);
+  ta(LocalpartDot, groups.domain, Localpart);
+  const EmailDomain = makeState();
+  ta(LocalpartAt, groups.domain, EmailDomain);
+  ta(EmailDomain, groups.domain, EmailDomain);
+  const EmailDomainDot = tt(EmailDomain, DOT);
+  ta(EmailDomainDot, groups.domain, EmailDomain);
+  const Email$1 = makeState(Email);
+  ta(EmailDomainDot, groups.tld, Email$1);
+  ta(EmailDomainDot, groups.utld, Email$1);
+  tt(LocalpartAt, LOCALHOST, Email$1);
+  const EmailDomainHyphen = tt(EmailDomain, HYPHEN);
+  tt(EmailDomainHyphen, HYPHEN, EmailDomainHyphen);
+  ta(EmailDomainHyphen, groups.domain, EmailDomain);
+  ta(Email$1, groups.domain, EmailDomain);
+  tt(Email$1, DOT, EmailDomainDot);
+  tt(Email$1, HYPHEN, EmailDomainHyphen);
+  const DomainHyphen = tt(Domain, HYPHEN);
+  const DomainDot = tt(Domain, DOT);
+  tt(DomainHyphen, HYPHEN, DomainHyphen);
+  ta(DomainHyphen, groups.domain, Domain);
+  ta(DomainDot, localpartAccepting, Localpart);
+  ta(DomainDot, groups.domain, Domain);
+  const DomainDotTld = makeState(Url);
+  ta(DomainDot, groups.tld, DomainDotTld);
+  ta(DomainDot, groups.utld, DomainDotTld);
+  ta(DomainDotTld, groups.domain, Domain);
+  ta(DomainDotTld, localpartAccepting, Localpart);
+  tt(DomainDotTld, DOT, DomainDot);
+  tt(DomainDotTld, HYPHEN, DomainHyphen);
+  tt(DomainDotTld, AT, LocalpartAt);
+  const DomainDotTldColon = tt(DomainDotTld, COLON);
+  const DomainDotTldColonPort = makeState(Url);
+  ta(DomainDotTldColon, groups.numeric, DomainDotTldColonPort);
+  const Url$1 = makeState(Url);
+  const UrlNonaccept = makeState();
+  ta(Url$1, qsAccepting, Url$1);
+  ta(Url$1, qsNonAccepting, UrlNonaccept);
+  ta(UrlNonaccept, qsAccepting, Url$1);
+  ta(UrlNonaccept, qsNonAccepting, UrlNonaccept);
+  tt(DomainDotTld, SLASH, Url$1);
+  tt(DomainDotTldColonPort, SLASH, Url$1);
+  const SchemeColon = tt(Scheme, COLON);
+  const SlashSchemeColon = tt(SlashScheme, COLON);
+  const SlashSchemeColonSlash = tt(SlashSchemeColon, SLASH);
+  const UriPrefix = tt(SlashSchemeColonSlash, SLASH);
+  ta(Scheme, groups.domain, Domain);
+  tt(Scheme, DOT, DomainDot);
+  tt(Scheme, HYPHEN, DomainHyphen);
+  ta(SlashScheme, groups.domain, Domain);
+  tt(SlashScheme, DOT, DomainDot);
+  tt(SlashScheme, HYPHEN, DomainHyphen);
+  ta(SchemeColon, groups.domain, Url$1);
+  tt(SchemeColon, SLASH, Url$1);
+  tt(SchemeColon, QUERY, Url$1);
+  ta(UriPrefix, groups.domain, Url$1);
+  ta(UriPrefix, qsAccepting, Url$1);
+  tt(UriPrefix, SLASH, Url$1);
+  const bracketPairs = [
+    [OPENBRACE, CLOSEBRACE],
+    // {}
+    [OPENBRACKET, CLOSEBRACKET],
+    // []
+    [OPENPAREN, CLOSEPAREN],
+    // ()
+    [OPENANGLEBRACKET, CLOSEANGLEBRACKET],
+    // <>
+    [FULLWIDTHLEFTPAREN, FULLWIDTHRIGHTPAREN],
+    // （）
+    [LEFTCORNERBRACKET, RIGHTCORNERBRACKET],
+    // 「」
+    [LEFTWHITECORNERBRACKET, RIGHTWHITECORNERBRACKET],
+    // 『』
+    [FULLWIDTHLESSTHAN, FULLWIDTHGREATERTHAN]
+    // ＜＞
+  ];
+  for (let i2 = 0; i2 < bracketPairs.length; i2++) {
+    const [OPEN, CLOSE] = bracketPairs[i2];
+    const UrlOpen = tt(Url$1, OPEN);
+    tt(UrlNonaccept, OPEN, UrlOpen);
+    const UrlOpenQ = makeState(Url);
+    ta(UrlOpen, qsAccepting, UrlOpenQ);
+    const UrlOpenSyms = makeState();
+    ta(UrlOpen, qsNonAccepting, UrlOpenSyms);
+    tt(UrlOpen, CLOSE, Url$1);
+    ta(UrlOpenQ, qsAccepting, UrlOpenQ);
+    ta(UrlOpenQ, qsNonAccepting, UrlOpenSyms);
+    ta(UrlOpenSyms, qsAccepting, UrlOpenQ);
+    ta(UrlOpenSyms, qsNonAccepting, UrlOpenSyms);
+    tt(UrlOpenQ, CLOSE, Url$1);
+    tt(UrlOpenSyms, CLOSE, Url$1);
+  }
+  tt(Start, LOCALHOST, DomainDotTld);
+  tt(Start, NL, Nl);
+  return {
+    start: Start,
+    tokens: tk
+  };
+}
+function run(start, input, tokens) {
+  let len = tokens.length;
+  let cursor = 0;
+  let multis = [];
+  let textTokens = [];
+  while (cursor < len) {
+    let state3 = start;
+    let secondState = null;
+    let nextState = null;
+    let multiLength = 0;
+    let latestAccepting = null;
+    let sinceAccepts = -1;
+    while (cursor < len && !(secondState = state3.go(tokens[cursor].t))) {
+      textTokens.push(tokens[cursor++]);
+    }
+    while (cursor < len && (nextState = secondState || state3.go(tokens[cursor].t))) {
+      secondState = null;
+      state3 = nextState;
+      if (state3.accepts()) {
+        sinceAccepts = 0;
+        latestAccepting = state3;
+      } else if (sinceAccepts >= 0) {
+        sinceAccepts++;
+      }
+      cursor++;
+      multiLength++;
+    }
+    if (sinceAccepts < 0) {
+      cursor -= multiLength;
+      if (cursor < len) {
+        textTokens.push(tokens[cursor]);
+        cursor++;
+      }
+    } else {
+      if (textTokens.length > 0) {
+        multis.push(initMultiToken(Text2, input, textTokens));
+        textTokens = [];
+      }
+      cursor -= sinceAccepts;
+      multiLength -= sinceAccepts;
+      const Multi = latestAccepting.t;
+      const subtokens = tokens.slice(cursor - multiLength, cursor);
+      multis.push(initMultiToken(Multi, input, subtokens));
+    }
+  }
+  if (textTokens.length > 0) {
+    multis.push(initMultiToken(Text2, input, textTokens));
+  }
+  return multis;
+}
+function initMultiToken(Multi, input, tokens) {
+  const startIdx = tokens[0].s;
+  const endIdx = tokens[tokens.length - 1].e;
+  const value = input.slice(startIdx, endIdx);
+  return new Multi(value, tokens);
+}
+var warn = typeof console !== "undefined" && console && console.warn || (() => {
+});
+var warnAdvice = "until manual call of linkify.init(). Register all schemes and plugins before invoking linkify the first time.";
+var INIT = {
+  scanner: null,
+  parser: null,
+  tokenQueue: [],
+  pluginQueue: [],
+  customSchemes: [],
+  initialized: false
+};
+function reset() {
+  State.groups = {};
+  INIT.scanner = null;
+  INIT.parser = null;
+  INIT.tokenQueue = [];
+  INIT.pluginQueue = [];
+  INIT.customSchemes = [];
+  INIT.initialized = false;
+  return INIT;
+}
+function registerCustomProtocol(scheme2, optionalSlashSlash = false) {
+  if (INIT.initialized) {
+    warn(`linkifyjs: already initialized - will not register custom scheme "${scheme2}" ${warnAdvice}`);
+  }
+  if (!/^[0-9a-z]+(-[0-9a-z]+)*$/.test(scheme2)) {
+    throw new Error(`linkifyjs: incorrect scheme format.
+1. Must only contain digits, lowercase ASCII letters or "-"
+2. Cannot start or end with "-"
+3. "-" cannot repeat`);
+  }
+  INIT.customSchemes.push([scheme2, optionalSlashSlash]);
+}
+function init() {
+  INIT.scanner = init$2(INIT.customSchemes);
+  for (let i2 = 0; i2 < INIT.tokenQueue.length; i2++) {
+    INIT.tokenQueue[i2][1]({
+      scanner: INIT.scanner
+    });
+  }
+  INIT.parser = init$1(INIT.scanner.tokens);
+  for (let i2 = 0; i2 < INIT.pluginQueue.length; i2++) {
+    INIT.pluginQueue[i2][1]({
+      scanner: INIT.scanner,
+      parser: INIT.parser
+    });
+  }
+  INIT.initialized = true;
+  return INIT;
+}
+function tokenize(str) {
+  if (!INIT.initialized) {
+    init();
+  }
+  return run(INIT.parser.start, str, run$1(INIT.scanner.start, str));
+}
+tokenize.scan = run$1;
+function find(str, type = null, opts2 = null) {
+  if (type && typeof type === "object") {
+    if (opts2) {
+      throw Error(`linkifyjs: Invalid link type ${type}; must be a string`);
+    }
+    opts2 = type;
+    type = null;
+  }
+  const options = new Options(opts2);
+  const tokens = tokenize(str);
+  const filtered = [];
+  for (let i2 = 0; i2 < tokens.length; i2++) {
+    const token = tokens[i2];
+    if (token.isLink && (!type || token.t === type) && options.check(token)) {
+      filtered.push(token.toFormattedObject(options));
+    }
+  }
+  return filtered;
+}
+var UNICODE_WHITESPACE_PATTERN = "[\0- \xA0\u1680\u180E\u2000-\u2029\u205F\u3000]";
+var UNICODE_WHITESPACE_REGEX = new RegExp(UNICODE_WHITESPACE_PATTERN);
+var UNICODE_WHITESPACE_REGEX_END = new RegExp(`${UNICODE_WHITESPACE_PATTERN}$`);
+var UNICODE_WHITESPACE_REGEX_GLOBAL = new RegExp(UNICODE_WHITESPACE_PATTERN, "g");
+function isValidLinkStructure(tokens) {
+  if (tokens.length === 1) {
+    return tokens[0].isLink;
+  }
+  if (tokens.length === 3 && tokens[1].isLink) {
+    return ["()", "[]"].includes(tokens[0].value + tokens[2].value);
+  }
+  return false;
+}
+function autolink(options) {
+  return new Plugin({
+    key: new PluginKey("autolink"),
+    appendTransaction: (transactions, oldState, newState) => {
+      const docChanges = transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc);
+      const preventAutolink = transactions.some(
+        (transaction) => transaction.getMeta("preventAutolink")
+      );
+      if (!docChanges || preventAutolink) {
+        return;
+      }
+      const { tr: tr2 } = newState;
+      const transform = combineTransactionSteps(oldState.doc, [...transactions]);
+      const changes = getChangedRanges(transform);
+      changes.forEach(({ newRange }) => {
+        const nodesInChangedRanges = findChildrenInRange(
+          newState.doc,
+          newRange,
+          (node) => node.isTextblock
+        );
+        let textBlock;
+        let textBeforeWhitespace;
+        if (nodesInChangedRanges.length > 1) {
+          textBlock = nodesInChangedRanges[0];
+          textBeforeWhitespace = newState.doc.textBetween(
+            textBlock.pos,
+            textBlock.pos + textBlock.node.nodeSize,
+            void 0,
+            " "
+          );
+        } else if (nodesInChangedRanges.length) {
+          const endText = newState.doc.textBetween(newRange.from, newRange.to, " ", " ");
+          if (!UNICODE_WHITESPACE_REGEX_END.test(endText)) {
+            return;
+          }
+          textBlock = nodesInChangedRanges[0];
+          textBeforeWhitespace = newState.doc.textBetween(
+            textBlock.pos,
+            newRange.to,
+            void 0,
+            " "
+          );
+        }
+        if (textBlock && textBeforeWhitespace) {
+          const wordsBeforeWhitespace = textBeforeWhitespace.split(UNICODE_WHITESPACE_REGEX).filter(Boolean);
+          if (wordsBeforeWhitespace.length <= 0) {
+            return false;
+          }
+          const lastWordBeforeSpace = wordsBeforeWhitespace[wordsBeforeWhitespace.length - 1];
+          const lastWordAndBlockOffset = textBlock.pos + textBeforeWhitespace.lastIndexOf(lastWordBeforeSpace);
+          if (!lastWordBeforeSpace) {
+            return false;
+          }
+          const linksBeforeSpace = tokenize(lastWordBeforeSpace).map(
+            (t2) => t2.toObject(options.defaultProtocol)
+          );
+          if (!isValidLinkStructure(linksBeforeSpace)) {
+            return false;
+          }
+          linksBeforeSpace.filter((link) => link.isLink).map((link) => ({
+            ...link,
+            from: lastWordAndBlockOffset + link.start + 1,
+            to: lastWordAndBlockOffset + link.end + 1
+          })).filter((link) => {
+            if (!newState.schema.marks.code) {
+              return true;
+            }
+            return !newState.doc.rangeHasMark(link.from, link.to, newState.schema.marks.code);
+          }).filter((link) => options.validate(link.value)).filter((link) => options.shouldAutoLink(link.value)).forEach((link) => {
+            if (getMarksBetween(link.from, link.to, newState.doc).some(
+              (item2) => item2.mark.type === options.type
+            )) {
+              return;
+            }
+            tr2.addMark(
+              link.from,
+              link.to,
+              options.type.create({
+                href: link.href
+              })
+            );
+          });
+        }
+      });
+      if (!tr2.steps.length) {
+        return;
+      }
+      return tr2;
+    }
+  });
+}
+function clickHandler(options) {
+  return new Plugin({
+    key: new PluginKey("handleClickLink"),
+    props: {
+      handleClick: (view, pos, event) => {
+        var _a, _b;
+        if (event.button !== 0) {
+          return false;
+        }
+        if (!view.editable) {
+          return false;
+        }
+        let link = null;
+        if (event.target instanceof HTMLAnchorElement) {
+          link = event.target;
+        } else {
+          const target = event.target;
+          if (!target) {
+            return false;
+          }
+          const root3 = options.editor.view.dom;
+          link = target.closest("a");
+          if (link && !root3.contains(link)) {
+            link = null;
+          }
+        }
+        if (!link) {
+          return false;
+        }
+        let handled = false;
+        if (options.enableClickSelection) {
+          const commandResult = options.editor.commands.extendMarkRange(options.type.name);
+          handled = commandResult;
+        }
+        if (options.openOnClick) {
+          const attrs = getAttributes(view.state, options.type.name);
+          const href = (_a = link.href) != null ? _a : attrs.href;
+          const target = (_b = link.target) != null ? _b : attrs.target;
+          if (href) {
+            window.open(href, target);
+            handled = true;
+          }
+        }
+        return handled;
+      }
+    }
+  });
+}
+function pasteHandler(options) {
+  return new Plugin({
+    key: new PluginKey("handlePasteLink"),
+    props: {
+      handlePaste: (view, _event, slice) => {
+        const { shouldAutoLink } = options;
+        const { state: state3 } = view;
+        const { selection } = state3;
+        const { empty } = selection;
+        if (empty) {
+          return false;
+        }
+        let textContent = "";
+        slice.content.forEach((node) => {
+          textContent += node.textContent;
+        });
+        const link = find(textContent, { defaultProtocol: options.defaultProtocol }).find(
+          (item2) => item2.isLink && item2.value === textContent
+        );
+        if (!textContent || !link || shouldAutoLink !== void 0 && !shouldAutoLink(link.value)) {
+          return false;
+        }
+        return options.editor.commands.setMark(options.type, {
+          href: link.href
+        });
+      }
+    }
+  });
+}
+function isAllowedUri(uri, protocols) {
+  const allowedProtocols = [
+    "http",
+    "https",
+    "ftp",
+    "ftps",
+    "mailto",
+    "tel",
+    "callto",
+    "sms",
+    "cid",
+    "xmpp"
+  ];
+  if (protocols) {
+    protocols.forEach((protocol) => {
+      const nextProtocol = typeof protocol === "string" ? protocol : protocol.scheme;
+      if (nextProtocol) {
+        allowedProtocols.push(nextProtocol);
+      }
+    });
+  }
+  return !uri || uri.replace(UNICODE_WHITESPACE_REGEX_GLOBAL, "").match(
+    new RegExp(
+      `^(?:(?:${allowedProtocols.map((protocol) => protocol.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")).join("|")}):|[^a-z]|[a-z0-9+.\\-]+(?:[^a-z+.\\-:]|$))`,
+      "i"
+    )
+  );
+}
+var Link3 = Mark.create({
+  name: "link",
+  priority: 1e3,
+  keepOnSplit: false,
+  exitable: true,
+  onCreate() {
+    if (this.options.validate && !this.options.shouldAutoLink) {
+      this.options.shouldAutoLink = this.options.validate;
+      console.warn(
+        "The `validate` option is deprecated. Rename to the `shouldAutoLink` option instead."
+      );
+    }
+    this.options.protocols.forEach((protocol) => {
+      if (typeof protocol === "string") {
+        registerCustomProtocol(protocol);
+        return;
+      }
+      registerCustomProtocol(protocol.scheme, protocol.optionalSlashes);
+    });
+  },
+  onDestroy() {
+    reset();
+  },
+  inclusive() {
+    return this.options.autolink;
+  },
+  addOptions() {
+    return {
+      openOnClick: true,
+      enableClickSelection: false,
+      linkOnPaste: true,
+      autolink: true,
+      protocols: [],
+      defaultProtocol: "http",
+      HTMLAttributes: {
+        target: "_blank",
+        rel: "noopener noreferrer nofollow",
+        class: null
+      },
+      isAllowedUri: (url, ctx) => !!isAllowedUri(url, ctx.protocols),
+      validate: (url) => !!url,
+      shouldAutoLink: (url) => {
+        const hasProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(url);
+        const hasMaybeProtocol = /^[a-z][a-z0-9+.-]*:/i.test(url);
+        if (hasProtocol || hasMaybeProtocol && !url.includes("@")) {
+          return true;
+        }
+        const urlWithoutUserinfo = url.includes("@") ? url.split("@").pop() : url;
+        const hostname = urlWithoutUserinfo.split(/[/?#:]/)[0];
+        if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) {
+          return false;
+        }
+        if (!/\./.test(hostname)) {
+          return false;
+        }
+        return true;
+      }
+    };
+  },
+  addAttributes() {
+    return {
+      href: {
+        default: null,
+        parseHTML(element) {
+          return element.getAttribute("href");
+        }
+      },
+      target: {
+        default: this.options.HTMLAttributes.target
+      },
+      rel: {
+        default: this.options.HTMLAttributes.rel
+      },
+      class: {
+        default: this.options.HTMLAttributes.class
+      },
+      title: {
+        default: null
+      }
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "a[href]",
+        getAttrs: (dom) => {
+          const href = dom.getAttribute("href");
+          if (!href || !this.options.isAllowedUri(href, {
+            defaultValidate: (url) => !!isAllowedUri(url, this.options.protocols),
+            protocols: this.options.protocols,
+            defaultProtocol: this.options.defaultProtocol
+          })) {
+            return false;
+          }
+          return null;
+        }
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    if (!this.options.isAllowedUri(HTMLAttributes.href, {
+      defaultValidate: (href) => !!isAllowedUri(href, this.options.protocols),
+      protocols: this.options.protocols,
+      defaultProtocol: this.options.defaultProtocol
+    })) {
+      return ["a", mergeAttributes(this.options.HTMLAttributes, { ...HTMLAttributes, href: "" }), 0];
+    }
+    return ["a", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  markdownTokenName: "link",
+  parseMarkdown: (token, helpers) => {
+    return helpers.applyMark("link", helpers.parseInline(token.tokens || []), {
+      href: token.href,
+      title: token.title || null
+    });
+  },
+  renderMarkdown: (node, h2) => {
+    var _a, _b, _c, _d;
+    const href = (_b = (_a = node.attrs) == null ? void 0 : _a.href) != null ? _b : "";
+    const title = (_d = (_c = node.attrs) == null ? void 0 : _c.title) != null ? _d : "";
+    const text2 = h2.renderChildren(node);
+    return title ? `[${text2}](${href} "${title}")` : `[${text2}](${href})`;
+  },
+  addCommands() {
+    return {
+      setLink: (attributes) => ({ chain: chain4 }) => {
+        const { href } = attributes;
+        if (!this.options.isAllowedUri(href, {
+          defaultValidate: (url) => !!isAllowedUri(url, this.options.protocols),
+          protocols: this.options.protocols,
+          defaultProtocol: this.options.defaultProtocol
+        })) {
+          return false;
+        }
+        return chain4().setMark(this.name, attributes).setMeta("preventAutolink", true).run();
+      },
+      toggleLink: (attributes) => ({ chain: chain4 }) => {
+        const { href } = attributes || {};
+        if (href && !this.options.isAllowedUri(href, {
+          defaultValidate: (url) => !!isAllowedUri(url, this.options.protocols),
+          protocols: this.options.protocols,
+          defaultProtocol: this.options.defaultProtocol
+        })) {
+          return false;
+        }
+        return chain4().toggleMark(this.name, attributes, { extendEmptyMarkRange: true }).setMeta("preventAutolink", true).run();
+      },
+      unsetLink: () => ({ chain: chain4 }) => {
+        return chain4().unsetMark(this.name, { extendEmptyMarkRange: true }).setMeta("preventAutolink", true).run();
+      }
+    };
+  },
+  addPasteRules() {
+    return [
+      markPasteRule({
+        find: (text2) => {
+          const foundLinks = [];
+          if (text2) {
+            const { protocols, defaultProtocol } = this.options;
+            const links = find(text2).filter(
+              (item2) => item2.isLink && this.options.isAllowedUri(item2.value, {
+                defaultValidate: (href) => !!isAllowedUri(href, protocols),
+                protocols,
+                defaultProtocol
+              })
+            );
+            if (links.length) {
+              links.forEach((link) => {
+                if (!this.options.shouldAutoLink(link.value)) {
+                  return;
+                }
+                foundLinks.push({
+                  text: link.value,
+                  data: {
+                    href: link.href
+                  },
+                  index: link.start
+                });
+              });
+            }
+          }
+          return foundLinks;
+        },
+        type: this.type,
+        getAttributes: (match) => {
+          var _a;
+          return {
+            href: (_a = match.data) == null ? void 0 : _a.href
+          };
+        }
+      })
+    ];
+  },
+  addProseMirrorPlugins() {
+    const plugins2 = [];
+    const { protocols, defaultProtocol } = this.options;
+    if (this.options.autolink) {
+      plugins2.push(
+        autolink({
+          type: this.type,
+          defaultProtocol: this.options.defaultProtocol,
+          validate: (url) => this.options.isAllowedUri(url, {
+            defaultValidate: (href) => !!isAllowedUri(href, protocols),
+            protocols,
+            defaultProtocol
+          }),
+          shouldAutoLink: this.options.shouldAutoLink
+        })
+      );
+    }
+    plugins2.push(
+      clickHandler({
+        type: this.type,
+        editor: this.editor,
+        openOnClick: this.options.openOnClick === "whenNotEditable" ? true : this.options.openOnClick,
+        enableClickSelection: this.options.enableClickSelection
+      })
+    );
+    if (this.options.linkOnPaste) {
+      plugins2.push(
+        pasteHandler({
+          editor: this.editor,
+          defaultProtocol: this.options.defaultProtocol,
+          type: this.type,
+          shouldAutoLink: this.options.shouldAutoLink
+        })
+      );
+    }
+    return plugins2;
+  }
+});
+var index_default13 = Link3;
+var inputRegexMatch = (text2) => {
+  const match = /`([^`]+)`(?!`)$/.exec(text2);
+  if (!match) {
+    return null;
+  }
+  if (match.index > 0 && text2[match.index - 1] === "`") {
+    return null;
+  }
+  return {
+    index: match.index,
+    text: match[0],
+    replaceWith: match[1]
+  };
+};
+var pasteRegexMatch = (text2) => {
+  const regex = /`([^`]+)`(?!`)/g;
+  const matches = [];
+  let match;
+  while ((match = regex.exec(text2)) !== null) {
+    if (match.index > 0 && text2[match.index - 1] === "`") {
+      continue;
+    }
+    matches.push({
+      index: match.index,
+      text: match[0],
+      replaceWith: match[1]
+    });
+  }
+  return matches;
+};
+var Code2 = Mark.create({
+  name: "code",
+  addOptions() {
+    return {
+      HTMLAttributes: {}
+    };
+  },
+  excludes: "_",
+  code: true,
+  exitable: true,
+  parseHTML() {
+    return [{ tag: "code" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["code", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  },
+  markdownTokenName: "codespan",
+  parseMarkdown: (token, helpers) => {
+    return helpers.applyMark("code", [{ type: "text", text: token.text || "" }]);
+  },
+  renderMarkdown: (node, h2) => {
+    if (!node.content) {
+      return "";
+    }
+    return `\`${h2.renderChildren(node.content)}\``;
+  },
+  addCommands() {
+    return {
+      setCode: () => ({ commands }) => {
+        return commands.setMark(this.name);
+      },
+      toggleCode: () => ({ commands }) => {
+        return commands.toggleMark(this.name);
+      },
+      unsetCode: () => ({ commands }) => {
+        return commands.unsetMark(this.name);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-e": () => this.editor.commands.toggleCode()
+    };
+  },
+  addInputRules() {
+    return [
+      markInputRule({
+        find: inputRegexMatch,
+        type: this.type
+      })
+    ];
+  },
+  addPasteRules() {
+    return [
+      markPasteRule({
+        find: pasteRegexMatch,
+        type: this.type
+      })
+    ];
+  }
+});
+var index_default14 = Code2;
+var DEFAULT_TAB_SIZE = 4;
+var backtickInputRegex = /^```([a-z]+)?[\s\n]$/;
+var tildeInputRegex = /^~~~([a-z]+)?[\s\n]$/;
+var CodeBlock = Node$1.create({
+  name: "codeBlock",
+  addOptions() {
+    return {
+      languageClassPrefix: "language-",
+      exitOnTripleEnter: true,
+      exitOnArrowDown: true,
+      defaultLanguage: null,
+      enableTabIndentation: false,
+      tabSize: DEFAULT_TAB_SIZE,
+      HTMLAttributes: {}
+    };
+  },
+  content: "text*",
+  marks: "",
+  group: "block",
+  code: true,
+  defining: true,
+  addAttributes() {
+    return {
+      language: {
+        default: this.options.defaultLanguage,
+        parseHTML: (element) => {
+          var _a;
+          const { languageClassPrefix } = this.options;
+          if (!languageClassPrefix) {
+            return null;
+          }
+          const classNames = [...((_a = element.firstElementChild) == null ? void 0 : _a.classList) || []];
+          const languages = classNames.filter((className) => className.startsWith(languageClassPrefix)).map((className) => className.replace(languageClassPrefix, ""));
+          const language = languages[0];
+          if (!language) {
+            return null;
+          }
+          return language;
+        },
+        rendered: false
+      }
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "pre",
+        preserveWhitespace: "full"
+      }
+    ];
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      "pre",
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      [
+        "code",
+        {
+          class: node.attrs.language ? this.options.languageClassPrefix + node.attrs.language : null
+        },
+        0
+      ]
+    ];
+  },
+  markdownTokenName: "code",
+  parseMarkdown: (token, helpers) => {
+    var _a, _b;
+    if (((_a = token.raw) == null ? void 0 : _a.startsWith("```")) === false && ((_b = token.raw) == null ? void 0 : _b.startsWith("~~~")) === false && token.codeBlockStyle !== "indented") {
+      return [];
+    }
+    return helpers.createNode(
+      "codeBlock",
+      { language: token.lang || null },
+      token.text ? [helpers.createTextNode(token.text)] : []
+    );
+  },
+  renderMarkdown: (node, h2) => {
+    var _a;
+    let output = "";
+    const language = ((_a = node.attrs) == null ? void 0 : _a.language) || "";
+    if (!node.content) {
+      output = `\`\`\`${language}
+
+\`\`\``;
+    } else {
+      const lines = [`\`\`\`${language}`, h2.renderChildren(node.content), "```"];
+      output = lines.join("\n");
+    }
+    return output;
+  },
+  addCommands() {
+    return {
+      setCodeBlock: (attributes) => ({ commands }) => {
+        return commands.setNode(this.name, attributes);
+      },
+      toggleCodeBlock: (attributes) => ({ commands }) => {
+        return commands.toggleNode(this.name, "paragraph", attributes);
+      }
+    };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-Alt-c": () => this.editor.commands.toggleCodeBlock(),
+      // remove code block when at start of document or code block is empty
+      Backspace: () => {
+        const { empty, $anchor } = this.editor.state.selection;
+        const isAtStart = $anchor.pos === 1;
+        if (!empty || $anchor.parent.type.name !== this.name) {
+          return false;
+        }
+        if (isAtStart || !$anchor.parent.textContent.length) {
+          return this.editor.commands.clearNodes();
+        }
+        return false;
+      },
+      // handle tab indentation
+      Tab: ({ editor: editor2 }) => {
+        var _a;
+        if (!this.options.enableTabIndentation) {
+          return false;
+        }
+        const tabSize = (_a = this.options.tabSize) != null ? _a : DEFAULT_TAB_SIZE;
+        const { state: state3 } = editor2;
+        const { selection } = state3;
+        const { $from, empty } = selection;
+        if ($from.parent.type !== this.type) {
+          return false;
+        }
+        const indent = " ".repeat(tabSize);
+        if (empty) {
+          return editor2.commands.insertContent(indent);
+        }
+        return editor2.commands.command(({ tr: tr2 }) => {
+          const { from, to } = selection;
+          const text2 = state3.doc.textBetween(from, to, "\n", "\n");
+          const lines = text2.split("\n");
+          const indentedText = lines.map((line2) => indent + line2).join("\n");
+          tr2.replaceWith(from, to, state3.schema.text(indentedText));
+          return true;
+        });
+      },
+      // handle shift+tab reverse indentation
+      "Shift-Tab": ({ editor: editor2 }) => {
+        var _a;
+        if (!this.options.enableTabIndentation) {
+          return false;
+        }
+        const tabSize = (_a = this.options.tabSize) != null ? _a : DEFAULT_TAB_SIZE;
+        const { state: state3 } = editor2;
+        const { selection } = state3;
+        const { $from, empty } = selection;
+        if ($from.parent.type !== this.type) {
+          return false;
+        }
+        if (empty) {
+          return editor2.commands.command(({ tr: tr2 }) => {
+            var _a2;
+            const { pos } = $from;
+            const codeBlockStart = $from.start();
+            const codeBlockEnd = $from.end();
+            const allText = state3.doc.textBetween(codeBlockStart, codeBlockEnd, "\n", "\n");
+            const lines = allText.split("\n");
+            let currentLineIndex = 0;
+            let charCount = 0;
+            const relativeCursorPos = pos - codeBlockStart;
+            for (let i2 = 0; i2 < lines.length; i2 += 1) {
+              if (charCount + lines[i2].length >= relativeCursorPos) {
+                currentLineIndex = i2;
+                break;
+              }
+              charCount += lines[i2].length + 1;
+            }
+            const currentLine = lines[currentLineIndex];
+            const leadingSpaces = ((_a2 = currentLine.match(/^ */)) == null ? void 0 : _a2[0]) || "";
+            const spacesToRemove = Math.min(leadingSpaces.length, tabSize);
+            if (spacesToRemove === 0) {
+              return true;
+            }
+            let lineStartPos = codeBlockStart;
+            for (let i2 = 0; i2 < currentLineIndex; i2 += 1) {
+              lineStartPos += lines[i2].length + 1;
+            }
+            tr2.delete(lineStartPos, lineStartPos + spacesToRemove);
+            const cursorPosInLine = pos - lineStartPos;
+            if (cursorPosInLine <= spacesToRemove) {
+              tr2.setSelection(TextSelection$1.create(tr2.doc, lineStartPos));
+            }
+            return true;
+          });
+        }
+        return editor2.commands.command(({ tr: tr2 }) => {
+          const { from, to } = selection;
+          const text2 = state3.doc.textBetween(from, to, "\n", "\n");
+          const lines = text2.split("\n");
+          const reverseIndentText = lines.map((line2) => {
+            var _a2;
+            const leadingSpaces = ((_a2 = line2.match(/^ */)) == null ? void 0 : _a2[0]) || "";
+            const spacesToRemove = Math.min(leadingSpaces.length, tabSize);
+            return line2.slice(spacesToRemove);
+          }).join("\n");
+          tr2.replaceWith(from, to, state3.schema.text(reverseIndentText));
+          return true;
+        });
+      },
+      // exit node on triple enter
+      Enter: ({ editor: editor2 }) => {
+        if (!this.options.exitOnTripleEnter) {
+          return false;
+        }
+        const { state: state3 } = editor2;
+        const { selection } = state3;
+        const { $from, empty } = selection;
+        if (!empty || $from.parent.type !== this.type) {
+          return false;
+        }
+        const isAtEnd = $from.parentOffset === $from.parent.nodeSize - 2;
+        const endsWithDoubleNewline = $from.parent.textContent.endsWith("\n\n");
+        if (!isAtEnd || !endsWithDoubleNewline) {
+          return false;
+        }
+        return editor2.chain().command(({ tr: tr2 }) => {
+          tr2.delete($from.pos - 2, $from.pos);
+          return true;
+        }).exitCode().run();
+      },
+      // exit node on arrow down
+      ArrowDown: ({ editor: editor2 }) => {
+        if (!this.options.exitOnArrowDown) {
+          return false;
+        }
+        const { state: state3 } = editor2;
+        const { selection, doc } = state3;
+        const { $from, empty } = selection;
+        if (!empty || $from.parent.type !== this.type) {
+          return false;
+        }
+        const isAtEnd = $from.parentOffset === $from.parent.nodeSize - 2;
+        if (!isAtEnd) {
+          return false;
+        }
+        const after = $from.after();
+        if (after === void 0) {
+          return false;
+        }
+        const nodeAfter = doc.nodeAt(after);
+        if (nodeAfter) {
+          return editor2.commands.command(({ tr: tr2 }) => {
+            tr2.setSelection(Selection$1.near(doc.resolve(after)));
+            return true;
+          });
+        }
+        return editor2.commands.exitCode();
+      }
+    };
+  },
+  addInputRules() {
+    return [
+      textblockTypeInputRule({
+        find: backtickInputRegex,
+        type: this.type,
+        getAttributes: (match) => ({
+          language: match[1]
+        })
+      }),
+      textblockTypeInputRule({
+        find: tildeInputRegex,
+        type: this.type,
+        getAttributes: (match) => ({
+          language: match[1]
+        })
+      })
+    ];
+  },
+  addProseMirrorPlugins() {
+    return [
+      // this plugin creates a code block for pasted content from VS Code
+      // we can also detect the copied code language
+      new Plugin({
+        key: new PluginKey("codeBlockVSCodeHandler"),
+        props: {
+          handlePaste: (view, event) => {
+            if (!event.clipboardData) {
+              return false;
+            }
+            if (this.editor.isActive(this.type.name)) {
+              return false;
+            }
+            const text2 = event.clipboardData.getData("text/plain");
+            const vscode = event.clipboardData.getData("vscode-editor-data");
+            const vscodeData = vscode ? JSON.parse(vscode) : void 0;
+            const language = vscodeData == null ? void 0 : vscodeData.mode;
+            if (!text2 || !language) {
+              return false;
+            }
+            const { tr: tr2, schema } = view.state;
+            const textNode2 = schema.text(text2.replace(/\r\n?/g, "\n"));
+            tr2.replaceSelectionWith(this.type.create({ language }, textNode2));
+            if (tr2.selection.$from.parent.type !== this.type) {
+              tr2.setSelection(
+                TextSelection$1.near(tr2.doc.resolve(Math.max(0, tr2.selection.from - 2)))
+              );
+            }
+            tr2.setMeta("paste", true);
+            view.dispatch(tr2);
+            return true;
+          }
+        }
+      })
+    ];
+  }
+});
+var index_default15 = CodeBlock;
+var inputRegex4 = /(?:^|\s)(!\[(.+|:?)]\((\S+)(?:(?:\s+)["'](\S+)["'])?\))$/;
+var Image3 = Node$1.create({
+  name: "image",
+  addOptions() {
+    return {
+      inline: false,
+      allowBase64: false,
+      HTMLAttributes: {},
+      resize: false
+    };
+  },
+  inline() {
+    return this.options.inline;
+  },
+  group() {
+    return this.options.inline ? "inline" : "block";
+  },
+  draggable: true,
+  addAttributes() {
+    return {
+      src: {
+        default: null
+      },
+      alt: {
+        default: null
+      },
+      title: {
+        default: null
+      },
+      width: {
+        default: null
+      },
+      height: {
+        default: null
+      }
+    };
+  },
+  parseHTML() {
+    return [
+      {
+        tag: this.options.allowBase64 ? "img[src]" : 'img[src]:not([src^="data:"])'
+      }
+    ];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["img", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+  },
+  parseMarkdown: (token, helpers) => {
+    return helpers.createNode("image", {
+      src: token.href,
+      title: token.title,
+      alt: token.text
+    });
+  },
+  renderMarkdown: (node) => {
+    var _a, _b, _c, _d, _e2, _f;
+    const src = (_b = (_a = node.attrs) == null ? void 0 : _a.src) != null ? _b : "";
+    const alt = (_d = (_c = node.attrs) == null ? void 0 : _c.alt) != null ? _d : "";
+    const title = (_f = (_e2 = node.attrs) == null ? void 0 : _e2.title) != null ? _f : "";
+    return title ? `![${alt}](${src} "${title}")` : `![${alt}](${src})`;
+  },
+  addNodeView() {
+    if (!this.options.resize || !this.options.resize.enabled || typeof document === "undefined") {
+      return null;
+    }
+    const { directions, minWidth, minHeight, alwaysPreserveAspectRatio } = this.options.resize;
+    return ({ node, getPos, HTMLAttributes, editor: editor2 }) => {
+      const el = document.createElement("img");
+      el.draggable = false;
+      const mergedAttributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes);
+      Object.entries(mergedAttributes).forEach(([key, value]) => {
+        if (value != null) {
+          switch (key) {
+            case "width":
+            case "height":
+              break;
+            default:
+              el.setAttribute(key, value);
+              break;
+          }
+        }
+      });
+      if (mergedAttributes.src !== null) {
+        el.src = mergedAttributes.src;
+      }
+      const nodeView = new ResizableNodeView({
+        element: el,
+        editor: editor2,
+        node,
+        getPos,
+        onResize: (width, height) => {
+          el.style.width = `${width}px`;
+          el.style.height = `${height}px`;
+        },
+        onCommit: (width, height) => {
+          const pos = getPos();
+          if (pos === void 0) {
+            return;
+          }
+          this.editor.chain().setNodeSelection(pos).updateAttributes(this.name, {
+            width,
+            height
+          }).run();
+        },
+        onUpdate: (updatedNode, _decorations, _innerDecorations) => {
+          if (updatedNode.type !== node.type) {
+            return false;
+          }
+          return true;
+        },
+        options: {
+          directions,
+          min: {
+            width: minWidth,
+            height: minHeight
+          },
+          preserveAspectRatio: alwaysPreserveAspectRatio === true
+        }
+      });
+      const dom = nodeView.dom;
+      dom.style.visibility = "hidden";
+      dom.style.pointerEvents = "none";
+      el.onload = () => {
+        dom.style.visibility = "";
+        dom.style.pointerEvents = "";
+      };
+      return nodeView;
+    };
+  },
+  addCommands() {
+    return {
+      setImage: (options) => ({ commands }) => {
+        return commands.insertContent({
+          type: this.name,
+          attrs: options
+        });
+      }
+    };
+  },
+  addInputRules() {
+    return [
+      nodeInputRule({
+        find: inputRegex4,
+        type: this.type,
+        getAttributes: (match) => {
+          const [, , alt, src, title] = match;
+          return { src, alt, title };
+        }
+      })
+    ];
+  }
+});
+var index_default16 = Image3;
 function composeEventHandlers(originalEventHandler, ourEventHandler, { checkForDefaultPrevented = true } = {}) {
   return function handleEvent(event) {
     originalEventHandler?.(event);
@@ -4174,7 +11145,7 @@ function createContextScope(scopeName, createContextScopeDeps = []) {
     }
     return [Provider, useContext22];
   }
-  const createScope = () => {
+  const createScope2 = () => {
     const scopeContexts = defaultContexts.map((defaultContext) => {
       return React__default.createContext(defaultContext);
     });
@@ -4186,28 +11157,28 @@ function createContextScope(scopeName, createContextScopeDeps = []) {
       );
     };
   };
-  createScope.scopeName = scopeName;
-  return [createContext32, composeContextScopes(createScope, ...createContextScopeDeps)];
+  createScope2.scopeName = scopeName;
+  return [createContext32, composeContextScopes(createScope2, ...createContextScopeDeps)];
 }
 function composeContextScopes(...scopes) {
   const baseScope = scopes[0];
   if (scopes.length === 1) return baseScope;
-  const createScope = () => {
-    const scopeHooks = scopes.map((createScope2) => ({
-      useScope: createScope2(),
-      scopeName: createScope2.scopeName
+  const createScope2 = () => {
+    const scopeHooks = scopes.map((createScope22) => ({
+      useScope: createScope22(),
+      scopeName: createScope22.scopeName
     }));
     return function useComposedScopes(overrideScopes) {
       const nextScopes = scopeHooks.reduce((nextScopes2, { useScope, scopeName }) => {
         const scopeProps = useScope(overrideScopes);
-        const currentScope = scopeProps[`__scope${scopeName}`];
-        return { ...nextScopes2, ...currentScope };
+        const currentScope2 = scopeProps[`__scope${scopeName}`];
+        return { ...nextScopes2, ...currentScope2 };
       }, {});
       return React__default.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
     };
   };
-  createScope.scopeName = baseScope.scopeName;
-  return createScope;
+  createScope2.scopeName = baseScope.scopeName;
+  return createScope2;
 }
 var useLayoutEffect2 = globalThis?.document ? React__default.useLayoutEffect : () => {
 };
@@ -4253,7 +11224,7 @@ function useControllableState({
   const setValue = React__default.useCallback(
     (nextValue) => {
       if (isControlled) {
-        const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
+        const value2 = isFunction2(nextValue) ? nextValue(prop) : nextValue;
         if (value2 !== prop) {
           onChangeRef.current?.(value2);
         }
@@ -4283,7 +11254,7 @@ function useUncontrolledState({
   }, [value, prevValueRef]);
   return [value, setValue, onChangeRef];
 }
-function isFunction(value) {
+function isFunction2(value) {
   return typeof value === "function";
 }
 // @__NO_SIDE_EFFECTS__
@@ -4389,7 +11360,7 @@ var NODES = [
 ];
 var Primitive = NODES.reduce((primitive, node) => {
   const Slot2 = createSlot(`Primitive.${node}`);
-  const Node2 = React__default.forwardRef((props, forwardedRef) => {
+  const Node12 = React__default.forwardRef((props, forwardedRef) => {
     const { asChild, ...primitiveProps } = props;
     const Comp = asChild ? Slot2 : node;
     if (typeof window !== "undefined") {
@@ -4397,8 +11368,8 @@ var Primitive = NODES.reduce((primitive, node) => {
     }
     return /* @__PURE__ */ jsx(Comp, { ...primitiveProps, ref: forwardedRef });
   });
-  Node2.displayName = `Primitive.${node}`;
-  return { ...primitive, [node]: Node2 };
+  Node12.displayName = `Primitive.${node}`;
+  return { ...primitive, [node]: Node12 };
 }, {});
 function dispatchDiscreteCustomEvent(target, event) {
   if (target) ReactDOM.flushSync(() => target.dispatchEvent(event));
@@ -5085,7 +12056,7 @@ function useMergeRefs(refs, defaultValue) {
 function ItoI(a2) {
   return a2;
 }
-function innerCreateMedium(defaults3, middleware) {
+function innerCreateMedium(defaults4, middleware) {
   if (middleware === void 0) {
     middleware = ItoI;
   }
@@ -5099,7 +12070,7 @@ function innerCreateMedium(defaults3, middleware) {
       if (buffer.length) {
         return buffer[buffer.length - 1];
       }
-      return defaults3;
+      return defaults4;
     },
     useMedium: function(data3) {
       var item2 = middleware(data3, assigned);
@@ -5411,20 +12382,20 @@ var elementCouldBeHScrolled = function(node) {
 };
 var locationCouldBeScrolled = function(axis, node) {
   var ownerDocument = node.ownerDocument;
-  var current = node;
+  var current2 = node;
   do {
-    if (typeof ShadowRoot !== "undefined" && current instanceof ShadowRoot) {
-      current = current.host;
+    if (typeof ShadowRoot !== "undefined" && current2 instanceof ShadowRoot) {
+      current2 = current2.host;
     }
-    var isScrollable2 = elementCouldBeScrolled(axis, current);
+    var isScrollable2 = elementCouldBeScrolled(axis, current2);
     if (isScrollable2) {
-      var _a = getScrollVariables(axis, current), scrollHeight = _a[1], clientHeight = _a[2];
+      var _a = getScrollVariables(axis, current2), scrollHeight = _a[1], clientHeight = _a[2];
       if (scrollHeight > clientHeight) {
         return true;
       }
     }
-    current = current.parentNode;
-  } while (current && current !== ownerDocument.body);
+    current2 = current2.parentNode;
+  } while (current2 && current2 !== ownerDocument.body);
   return false;
 };
 var getVScrollVariables = function(_a) {
@@ -6363,7 +13334,7 @@ function useComposedRefs2(...refs) {
   return React__default.useCallback(composeRefs2(...refs), refs);
 }
 var cache = /* @__PURE__ */ new WeakMap();
-function set(el, styles3, ignoreCache = false) {
+function set2(el, styles3, ignoreCache = false) {
   if (!el || !(el instanceof HTMLElement)) return;
   let originalStyles = {};
   Object.entries(styles3).forEach(([key, value]) => {
@@ -6377,7 +13348,7 @@ function set(el, styles3, ignoreCache = false) {
   if (ignoreCache) return;
   cache.set(el, originalStyles);
 }
-function reset(el, prop) {
+function reset2(el, prop) {
   if (!el || !(el instanceof HTMLElement)) return;
   let originalStyles = cache.get(el);
   if (!originalStyles) {
@@ -6580,17 +13551,17 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     var _snapPointsOffset_findIndex;
     const newSnapPointIndex = (_snapPointsOffset_findIndex = snapPointsOffset == null ? void 0 : snapPointsOffset.findIndex((snapPointDim) => snapPointDim === dimension)) != null ? _snapPointsOffset_findIndex : null;
     onSnapPointChange(newSnapPointIndex);
-    set(drawerRef.current, {
+    set2(drawerRef.current, {
       transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
       transform: isVertical(direction) ? `translate3d(0, ${dimension}px, 0)` : `translate3d(${dimension}px, 0, 0)`
     });
     if (snapPointsOffset && newSnapPointIndex !== snapPointsOffset.length - 1 && fadeFromIndex !== void 0 && newSnapPointIndex !== fadeFromIndex && newSnapPointIndex < fadeFromIndex) {
-      set(overlayRef.current, {
+      set2(overlayRef.current, {
         transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
         opacity: "0"
       });
     } else {
-      set(overlayRef.current, {
+      set2(overlayRef.current, {
         transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
         opacity: "1"
       });
@@ -6626,7 +13597,7 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     const isFirst = activeSnapPointIndex === 0;
     const hasDraggedUp = draggedDistance > 0;
     if (isOverlaySnapPoint) {
-      set(overlayRef.current, {
+      set2(overlayRef.current, {
         transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`
       });
     }
@@ -6668,7 +13639,7 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     if ((direction === "top" || direction === "left") && newValue > snapPointsOffset[snapPointsOffset.length - 1]) {
       return;
     }
-    set(drawerRef.current, {
+    set2(drawerRef.current, {
       transform: isVertical(direction) ? `translate3d(0, ${newValue}px, 0)` : `translate3d(${newValue}px, 0, 0)`
     });
   }
@@ -6702,7 +13673,7 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     snapPointsOffset
   };
 }
-var noop = () => () => {
+var noop2 = () => () => {
 };
 function useScaleBackground() {
   const { direction, isOpen, shouldScaleBackground, setBackgroundColorOnScale, noBodyStyles } = useDrawerContext();
@@ -6718,7 +13689,7 @@ function useScaleBackground() {
       if (!wrapper2) return;
       chain(setBackgroundColorOnScale && !noBodyStyles ? assignStyle(document.body, {
         background: "black"
-      }) : noop, assignStyle(wrapper2, {
+      }) : noop2, assignStyle(wrapper2, {
         transformOrigin: isVertical(direction) ? "top" : "left",
         transitionProperty: "transform, border-radius",
         transitionDuration: `${TRANSITIONS.DURATION}s`,
@@ -7008,10 +13979,10 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       if (!isAllowedToDrag.current && !shouldDrag(event.target, isDraggingInDirection)) return;
       drawerRef.current.classList.add(DRAG_CLASS);
       isAllowedToDrag.current = true;
-      set(drawerRef.current, {
+      set2(drawerRef.current, {
         transition: "none"
       });
-      set(overlayRef.current, {
+      set2(overlayRef.current, {
         transition: "none"
       });
       if (snapPoints) {
@@ -7022,7 +13993,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       if (isDraggingInDirection && !snapPoints) {
         const dampenedDraggedDistance = dampenValue(draggedDistance);
         const translateValue = Math.min(dampenedDraggedDistance * -1, 0) * directionMultiplier;
-        set(drawerRef.current, {
+        set2(drawerRef.current, {
           transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
         });
         return;
@@ -7030,7 +14001,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       const opacityValue = 1 - percentageDragged;
       if (shouldFade || fadeFromIndex && activeSnapPointIndex === fadeFromIndex - 1) {
         onDragProp == null ? void 0 : onDragProp(event, percentageDragged);
-        set(overlayRef.current, {
+        set2(overlayRef.current, {
           opacity: `${opacityValue}`,
           transition: "none"
         }, true);
@@ -7039,7 +14010,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
         const scaleValue = Math.min(getScale() + percentageDragged * (1 - getScale()), 1);
         const borderRadiusValue = 8 - percentageDragged * 8;
         const translateValue = Math.max(0, 14 - percentageDragged * 14);
-        set(wrapper2, {
+        set2(wrapper2, {
           borderRadius: `${borderRadiusValue}px`,
           transform: isVertical(direction) ? `scale(${scaleValue}) translate3d(0, ${translateValue}px, 0)` : `scale(${scaleValue}) translate3d(${translateValue}px, 0, 0)`,
           transition: "none"
@@ -7047,7 +14018,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       }
       if (!snapPoints) {
         const translateValue = absDraggedDistance * directionMultiplier;
-        set(drawerRef.current, {
+        set2(drawerRef.current, {
           transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
         });
       }
@@ -7129,16 +14100,16 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
     if (!drawerRef.current) return;
     const wrapper2 = document.querySelector("[data-vaul-drawer-wrapper]");
     const currentSwipeAmount = getTranslate(drawerRef.current, direction);
-    set(drawerRef.current, {
+    set2(drawerRef.current, {
       transform: "translate3d(0, 0, 0)",
       transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`
     });
-    set(overlayRef.current, {
+    set2(overlayRef.current, {
       transition: `opacity ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
       opacity: "1"
     });
     if (shouldScaleBackground && currentSwipeAmount && currentSwipeAmount > 0 && isOpen) {
-      set(wrapper2, {
+      set2(wrapper2, {
         borderRadius: `${BORDER_RADIUS}px`,
         overflow: "hidden",
         ...isVertical(direction) ? {
@@ -7215,13 +14186,13 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
   }
   React__default__default.useEffect(() => {
     if (isOpen) {
-      set(document.documentElement, {
+      set2(document.documentElement, {
         scrollBehavior: "auto"
       });
       openTime.current = /* @__PURE__ */ new Date();
     }
     return () => {
-      reset(document.documentElement, "scrollBehavior");
+      reset2(document.documentElement, "scrollBehavior");
     };
   }, [
     isOpen
@@ -7232,14 +14203,14 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
     if (nestedOpenChangeTimer.current) {
       window.clearTimeout(nestedOpenChangeTimer.current);
     }
-    set(drawerRef.current, {
+    set2(drawerRef.current, {
       transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
       transform: isVertical(direction) ? `scale(${scale2}) translate3d(0, ${initialTranslate}px, 0)` : `scale(${scale2}) translate3d(${initialTranslate}px, 0, 0)`
     });
     if (!o2 && drawerRef.current) {
       nestedOpenChangeTimer.current = setTimeout(() => {
         const translateValue = getTranslate(drawerRef.current, direction);
-        set(drawerRef.current, {
+        set2(drawerRef.current, {
           transition: "none",
           transform: isVertical(direction) ? `translate3d(0, ${translateValue}px, 0)` : `translate3d(${translateValue}px, 0, 0)`
         });
@@ -7251,7 +14222,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
     const initialScale = (window.innerWidth - NESTED_DISPLACEMENT) / window.innerWidth;
     const newScale = initialScale + percentageDragged * (1 - initialScale);
     const newTranslate = -NESTED_DISPLACEMENT + percentageDragged * NESTED_DISPLACEMENT;
-    set(drawerRef.current, {
+    set2(drawerRef.current, {
       transform: isVertical(direction) ? `scale(${newScale}) translate3d(0, ${newTranslate}px, 0)` : `scale(${newScale}) translate3d(${newTranslate}px, 0, 0)`,
       transition: "none"
     });
@@ -7261,7 +14232,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
     const scale2 = o2 ? (dim - NESTED_DISPLACEMENT) / dim : 1;
     const translate2 = o2 ? -NESTED_DISPLACEMENT : 0;
     if (o2) {
-      set(drawerRef.current, {
+      set2(drawerRef.current, {
         transition: `transform ${TRANSITIONS.DURATION}s cubic-bezier(${TRANSITIONS.EASE.join(",")})`,
         transform: isVertical(direction) ? `scale(${scale2}) translate3d(0, ${translate2}px, 0)` : `scale(${scale2}) translate3d(${translate2}px, 0, 0)`
       });
@@ -7692,26 +14663,26 @@ var MediaDrawer = ({
   ] }) });
 };
 var createExtensions = () => [
-  Document,
-  Paragraph,
-  Text,
-  Bold,
-  Italic,
-  Strike,
-  Underline,
-  Heading.configure({ levels: [2, 3, 4] }),
+  index_default,
+  index_default2,
+  index_default3,
+  index_default4,
+  index_default5,
+  index_default6,
+  index_default7,
+  index_default8.configure({ levels: [2, 3, 4] }),
   BulletList,
   OrderedList,
   ListItem,
   ListKeymap,
-  Blockquote,
-  HardBreak,
-  HorizontalRule,
-  Code2,
-  CodeBlock,
-  TextAlign.configure({ types: ["heading", "paragraph"] }),
-  Link3.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } }),
-  Image3.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: "tecof-editor-image" } })
+  index_default9,
+  index_default10,
+  index_default11,
+  index_default14,
+  index_default15,
+  index_default12.configure({ types: ["heading", "paragraph"] }),
+  index_default13.configure({ openOnClick: false, HTMLAttributes: { target: "_blank" } }),
+  index_default16.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: "tecof-editor-image" } })
 ];
 var ToolbarBtn = ({
   onClick,
@@ -7960,9 +14931,9 @@ var EditorField = ({
   const { cdnUrl } = useTecof();
   const values = useMemo(() => {
     if (!merchantInfo) return value || [];
-    const current = value || [];
+    const current2 = value || [];
     return merchantInfo.languages.map((code) => {
-      const existing = current.find((v2) => v2.code === code);
+      const existing = current2.find((v2) => v2.code === code);
       return existing || { code, value: "" };
     });
   }, [value, merchantInfo]);
@@ -7971,8 +14942,8 @@ var EditorField = ({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const handleChange = useCallback((code, html) => {
-    const current = valuesRef.current;
-    const updated = [...current];
+    const current2 = valuesRef.current;
+    const updated = [...current2];
     const idx = updated.findIndex((v2) => v2.code === code);
     if (idx >= 0) {
       updated[idx] = { ...updated[idx], value: html };
@@ -8035,7 +15006,7 @@ var createEditorField = (options = {}) => {
 
 // node_modules/filepond/dist/filepond.esm.js
 var isNode = (value) => value instanceof HTMLElement;
-var createStore = (initialState, queries3 = [], actions3 = []) => {
+var createStore2 = (initialState, queries3 = [], actions3 = []) => {
   const state3 = {
     ...initialState
   };
@@ -8229,7 +15200,7 @@ var spring = (
     let position = null;
     let velocity = 0;
     let resting = false;
-    const interpolate = (ts, skipToEndState) => {
+    const interpolate = (ts2, skipToEndState) => {
       if (resting) return;
       if (!(isNumber(target) && isNumber(position))) {
         resting = true;
@@ -8295,13 +15266,13 @@ var tween = (
     let resting = true;
     let reverse = false;
     let target = null;
-    const interpolate = (ts, skipToEndState) => {
+    const interpolate = (ts2, skipToEndState) => {
       if (resting || target === null) return;
       if (start === null) {
-        start = ts;
+        start = ts2;
       }
-      if (ts - start < delay) return;
-      t2 = ts - start - delay;
+      if (ts2 - start < delay) return;
+      t2 = ts2 - start - delay;
       if (t2 >= duration || skipToEndState) {
         t2 = 1;
         p = reverse ? 0 : 1;
@@ -8404,12 +15375,12 @@ var animations = ({ mixinConfig, viewProps, viewInternalAPI, viewExternalAPI }) 
     animations3.push(animator3);
   });
   return {
-    write: (ts) => {
+    write: (ts2) => {
       let skipToEndState = document.hidden;
       let resting = true;
       animations3.forEach((animation) => {
         if (!animation.resting) resting = false;
-        animation.interpolate(ts, skipToEndState);
+        animation.interpolate(ts2, skipToEndState);
       });
       return resting;
     },
@@ -8460,7 +15431,7 @@ var apis = ({ mixinConfig, viewProps, viewExternalAPI }) => {
   addGetSet(mixinConfig, viewExternalAPI, viewProps);
 };
 var isDefined = (value) => value != null;
-var defaults = {
+var defaults2 = {
   opacity: 1,
   scaleX: 1,
   scaleY: 1,
@@ -8482,7 +15453,7 @@ var styles = ({ mixinConfig, viewProps, viewInternalAPI, viewExternalAPI, view }
   viewInternalAPI.rect = { get: getRect };
   viewExternalAPI.rect = { get: getRect };
   mixinConfig.forEach((key) => {
-    viewProps[key] = typeof initialProps[key] === "undefined" ? defaults[key] : initialProps[key];
+    viewProps[key] = typeof initialProps[key] === "undefined" ? defaults2[key] : initialProps[key];
   });
   return {
     write: () => {
@@ -8607,7 +15578,7 @@ var createView = (
     },
     write: write2 = () => {
     },
-    create: create6 = () => {
+    create: create5 = () => {
     },
     destroy: destroy3 = () => {
     },
@@ -8666,14 +15637,14 @@ var createView = (
       const api = { root: internalAPI, props, rect };
       readers.forEach((reader) => reader(api));
     };
-    const _write = (ts, frameActions, shouldOptimize) => {
+    const _write = (ts2, frameActions, shouldOptimize) => {
       let resting = frameActions.length === 0;
       writers.forEach((writer) => {
         const writerResting = writer({
           props,
           root: internalAPI,
           actions: frameActions,
-          timestamp: ts,
+          timestamp: ts2,
           shouldOptimize
         });
         if (writerResting === false) {
@@ -8681,14 +15652,14 @@ var createView = (
         }
       });
       activeMixins.forEach((mixin) => {
-        const mixinResting = mixin.write(ts);
+        const mixinResting = mixin.write(ts2);
         if (mixinResting === false) {
           resting = false;
         }
       });
       childViews.filter((child) => !!child.element.parentNode).forEach((child) => {
         const childResting = child._write(
-          ts,
+          ts2,
           filterFrameActionsForChild(child, frameActions),
           shouldOptimize
         );
@@ -8703,7 +15674,7 @@ var createView = (
         internalAPI.appendChild(child.element, index2);
         child._read();
         child._write(
-          ts,
+          ts2,
           filterFrameActionsForChild(child, frameActions),
           shouldOptimize
         );
@@ -8714,7 +15685,7 @@ var createView = (
         props,
         root: internalAPI,
         actions: frameActions,
-        timestamp: ts
+        timestamp: ts2
       });
       return resting;
     };
@@ -8811,7 +15782,7 @@ var createView = (
       }
     });
     const internalAPI = createObject(internalAPIDefinition);
-    create6({
+    create5({
       root: internalAPI,
       props
     });
@@ -8854,18 +15825,18 @@ var createPainter = (read, write2, fps = 60) => {
     setTimerType();
     tick(performance.now());
   });
-  const tick = (ts) => {
+  const tick = (ts2) => {
     id = requestTick(tick);
     if (!last) {
-      last = ts;
+      last = ts2;
     }
-    const delta = ts - last;
+    const delta = ts2 - last;
     if (delta <= interval) {
       return;
     }
-    last = ts - delta % interval;
+    last = ts2 - delta % interval;
     painter.readers.forEach((read2) => read2());
-    painter.writers.forEach((write3) => write3(ts));
+    painter.writers.forEach((write3) => write3(ts2));
   };
   setTimerType();
   tick(performance.now());
@@ -8887,7 +15858,7 @@ var insertBefore = (newNode, referenceNode) => referenceNode.parentNode.insertBe
 var insertAfter = (newNode, referenceNode) => {
   return referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
 };
-var isArray = (value) => Array.isArray(value);
+var isArray2 = (value) => Array.isArray(value);
 var isEmpty = (value) => value == null;
 var trim = (str) => str.trim();
 var toString = (value) => "" + value;
@@ -8895,13 +15866,13 @@ var toArray = (value, splitter = ",") => {
   if (isEmpty(value)) {
     return [];
   }
-  if (isArray(value)) {
+  if (isArray2(value)) {
     return value;
   }
   return toString(value).split(splitter).map(trim).filter((str) => str.length);
 };
-var isBoolean = (value) => typeof value === "boolean";
-var toBoolean = (value) => isBoolean(value) ? value : value === "true";
+var isBoolean2 = (value) => typeof value === "boolean";
+var toBoolean = (value) => isBoolean2(value) ? value : value === "true";
 var isString = (value) => typeof value === "string";
 var toNumber = (value) => isNumber(value) ? value : isString(value) ? toString(value).replace(/[a-z]+/gi, "") : 0;
 var toInt = (value) => parseInt(toNumber(value), 10);
@@ -8922,7 +15893,7 @@ var toBytes = (value, base = 1e3) => {
   }
   return toInt(naturalFileSize);
 };
-var isFunction2 = (value) => typeof value === "function";
+var isFunction3 = (value) => typeof value === "function";
 var toFunctionReference = (string) => {
   let ref = self;
   let levels = string.split(".");
@@ -8995,7 +15966,7 @@ var isAPI = (value) => {
   return isObject(value) && isString(value.url) && isObject(value.process) && isObject(value.revert) && isObject(value.restore) && isObject(value.fetch);
 };
 var getType = (value) => {
-  if (isArray(value)) {
+  if (isArray2(value)) {
     return "array";
   }
   if (isNull(value)) {
@@ -9020,7 +15991,7 @@ var conversionTable = {
   number: toFloat,
   float: toFloat,
   bytes: toBytes,
-  string: (value) => isFunction2(value) ? value : toString(value),
+  string: (value) => isFunction3(value) ? value : toString(value),
   function: (value) => toFunctionReference(value),
   serverapi: toServerAPI,
   object: (value) => {
@@ -9123,7 +16094,7 @@ var InteractionMethod = {
 };
 var getUniqueId = () => Math.random().toString(36).substring(2, 11);
 var arrayRemove2 = (arr, index2) => arr.splice(index2, 1);
-var run = (cb, sync) => {
+var run2 = (cb, sync) => {
   if (sync) {
     cb();
   } else if (document.hidden) {
@@ -9141,7 +16112,7 @@ var on = () => {
     );
   };
   const fire = (event, args, sync) => {
-    listeners3.filter((listener) => listener.event === event).map((listener) => listener.cb).forEach((cb) => run(() => cb(...args), sync));
+    listeners3.filter((listener) => listener.event === event).map((listener) => listener.cb).forEach((cb) => run2(() => cb(...args), sync));
   };
   return {
     fireSync: (event, ...args) => {
@@ -9248,7 +16219,7 @@ var applyFilterChain = (key, value, utils) => new Promise((resolve, reject) => {
   const initialFilter = matchingFilters.shift();
   matchingFilters.reduce(
     // loop over promises passing value to next promise
-    (current, next) => current.then((value2) => next(value2, utils)),
+    (current2, next) => current2.then((value2) => next(value2, utils)),
     // call initial filter, will return a promise
     initialFilter(value, utils)
     // all executed
@@ -9519,7 +16490,7 @@ var ITEM_READY = [ItemStatus.PROCESSING_COMPLETE];
 var isItemInErrorState = (item2) => ITEM_ERROR.includes(item2.status);
 var isItemInBusyState = (item2) => ITEM_BUSY.includes(item2.status);
 var isItemInReadyState = (item2) => ITEM_READY.includes(item2.status);
-var isAsync = (state3) => isObject(state3.options.server) && (isObject(state3.options.server.process) || isFunction2(state3.options.server.process));
+var isAsync = (state3) => isObject(state3.options.server) && (isObject(state3.options.server.process) || isFunction3(state3.options.server.process));
 var queries = (state3) => ({
   GET_STATUS: () => {
     const items = getActiveItems(state3.items);
@@ -9792,7 +16763,7 @@ var createFileLoader = (fetchFn) => {
           } : error2
         );
       },
-      (computable, current, total) => {
+      (computable, current2, total) => {
         if (total) {
           state3.size = total;
         }
@@ -9801,7 +16772,7 @@ var createFileLoader = (fetchFn) => {
           state3.progress = null;
           return;
         }
-        state3.progress = current / total;
+        state3.progress = current2 / total;
         api.fire("progress", state3.progress);
       },
       () => {
@@ -9864,8 +16835,8 @@ var sendRequest = (data3, url, options) => {
     url = `${url}${encodeURIComponent(typeof data3 === "string" ? data3 : JSON.stringify(data3))}`;
   }
   const xhr = new XMLHttpRequest();
-  const process = isGet(options.method) ? xhr : xhr.upload;
-  process.onprogress = (e3) => {
+  const process2 = isGet(options.method) ? xhr : xhr.upload;
+  process2.onprogress = (e3) => {
     if (aborted) {
       return;
     }
@@ -10319,7 +17290,7 @@ var createFileProcessor = (processFn, options) => {
     response: null
   };
   const { allowMinimumUploadDuration } = options;
-  const process = (file2, metadata) => {
+  const process2 = (file2, metadata) => {
     const progressFn = () => {
       if (state3.duration === 0 || state3.progress === null) return;
       api.fire("progress", api.getProgress());
@@ -10378,9 +17349,9 @@ var createFileProcessor = (processFn, options) => {
         );
       },
       // actual processing progress
-      (computable, current, total) => {
+      (computable, current2, total) => {
         state3.duration = Date.now() - state3.timestamp;
-        state3.progress = computable ? current / total : null;
+        state3.progress = computable ? current2 / total : null;
         progressFn();
       },
       // abort does not expect a value
@@ -10400,7 +17371,7 @@ var createFileProcessor = (processFn, options) => {
     if (state3.request.abort) state3.request.abort();
     state3.complete = true;
   };
-  const reset3 = () => {
+  const reset4 = () => {
     abort();
     state3.complete = false;
     state3.perceivedProgress = 0;
@@ -10415,13 +17386,13 @@ var createFileProcessor = (processFn, options) => {
   const getDuration = allowMinimumUploadDuration ? () => Math.min(state3.duration, state3.perceivedDuration) : () => state3.duration;
   const api = {
     ...on(),
-    process,
+    process: process2,
     // start processing file
     abort,
     // abort active process request
     getProgress,
     getDuration,
-    reset: reset3
+    reset: reset4
   };
   return api;
 };
@@ -10447,7 +17418,7 @@ var createFileStub = (source) => {
 var isFile = (value) => !!(value instanceof File || value instanceof Blob && value.name);
 var deepCloneObject = (src) => {
   if (!isObject(src)) return src;
-  const target = isArray(src) ? [] : {};
+  const target = isArray2(src) ? [] : {};
   for (const key in src) {
     if (!src.hasOwnProperty(key)) continue;
     const v2 = src[key];
@@ -10565,7 +17536,7 @@ var createItem = (origin = null, serverFileReference = null, file2 = null) => {
     setStatus(ItemStatus.INIT);
     fire("load-abort");
   };
-  const process = (processor, onprocess) => {
+  const process2 = (processor, onprocess) => {
     if (state3.processingAborted) {
       state3.processingAborted = false;
       return;
@@ -10574,7 +17545,7 @@ var createItem = (origin = null, serverFileReference = null, file2 = null) => {
     abortProcessingRequestComplete = null;
     if (!(state3.file instanceof Blob)) {
       api.on("load", () => {
-        process(processor, onprocess);
+        process2(processor, onprocess);
       });
       return;
     }
@@ -10710,7 +17681,7 @@ var createItem = (origin = null, serverFileReference = null, file2 = null) => {
     requestProcessing,
     abortProcessing,
     load,
-    process,
+    process: process2,
     revert,
     ...on(),
     freeze: () => state3.frozen = true,
@@ -10768,7 +17739,7 @@ var getDomainFromURL = (url) => {
   return url.toLowerCase().replace("blob:", "").replace(/([a-z])?:\/\//, "$1").split("/")[0];
 };
 var isExternalURL = (url) => (url.indexOf(":") > -1 || url.indexOf("//") > -1) && getDomainFromURL(location.href) !== getDomainFromURL(url);
-var dynamicLabel = (label) => (...params) => isFunction2(label) ? label(...params) : label;
+var dynamicLabel = (label) => (...params) => isFunction3(label) ? label(...params) : label;
 var isMockItem = (item2) => !isFile(item2.file);
 var listUpdated = (dispatch, state3) => {
   clearTimeout(state3.listUpdateTimeout);
@@ -11028,7 +17999,7 @@ var actions = (dispatch, query, state3) => ({
       index2 = itemInsertLocation === "before" ? -1 : state3.items.length;
     }
     insertItem(state3.items, item2, index2);
-    if (isFunction2(itemInsertLocation) && source) {
+    if (isFunction3(itemInsertLocation) && source) {
       sortItems(state3, itemInsertLocation);
     }
     const id = item2.id;
@@ -11231,7 +18202,7 @@ var actions = (dispatch, query, state3) => ({
   COMPLETE_LOAD_ITEM: ({ item: item2, data: data3 }) => {
     const { success, source } = data3;
     const itemInsertLocation = query("GET_ITEM_INSERT_LOCATION");
-    if (isFunction2(itemInsertLocation) && source) {
+    if (isFunction3(itemInsertLocation) && source) {
       sortItems(state3, itemInsertLocation);
     }
     dispatch("DID_LOAD_ITEM", {
@@ -11289,15 +18260,15 @@ var actions = (dispatch, query, state3) => ({
     );
     if (!itemCanBeQueuedForProcessing) {
       const processNow = () => dispatch("REQUEST_ITEM_PROCESSING", { query: item2, success, failure });
-      const process = () => document.hidden ? processNow() : setTimeout(processNow, 32);
+      const process2 = () => document.hidden ? processNow() : setTimeout(processNow, 32);
       if (item2.status === ItemStatus.PROCESSING_COMPLETE || item2.status === ItemStatus.PROCESSING_REVERT_ERROR) {
         item2.revert(
           createRevertFunction(state3.options.server.url, state3.options.server.revert),
           query("GET_FORCE_REVERT")
-        ).then(process).catch(() => {
+        ).then(process2).catch(() => {
         });
       } else if (item2.status === ItemStatus.PROCESSING) {
-        item2.abortProcessing().then(process);
+        item2.abortProcessing().then(process2);
       }
       return;
     }
@@ -11334,11 +18305,11 @@ var actions = (dispatch, query, state3) => ({
       processNext();
       const server = state3.options.server;
       const instantUpload = state3.options.instantUpload;
-      if (instantUpload && item2.origin === FileOrigin.LOCAL && isFunction2(server.remove)) {
-        const noop2 = () => {
+      if (instantUpload && item2.origin === FileOrigin.LOCAL && isFunction3(server.remove)) {
+        const noop3 = () => {
         };
         item2.origin = FileOrigin.LIMBO;
-        state3.options.server.remove(item2.source, noop2, noop2);
+        state3.options.server.remove(item2.source, noop3, noop3);
       }
       const allItemsProcessed = query("GET_ITEMS_BY_STATUS", ItemStatus.PROCESSING_COMPLETE).length === state3.items.length;
       if (allItemsProcessed) {
@@ -11399,7 +18370,7 @@ var actions = (dispatch, query, state3) => ({
       success(createItemAPI(item2));
     };
     const server = state3.options.server;
-    if (item2.origin === FileOrigin.LOCAL && server && isFunction2(server.remove) && options.remove !== false) {
+    if (item2.origin === FileOrigin.LOCAL && server && isFunction3(server.remove) && options.remove !== false) {
       dispatch("DID_START_ITEM_REMOVE", { id: item2.id });
       server.remove(
         item2.source,
@@ -11541,7 +18512,7 @@ var percentageArc = (x, y, radius, from, to) => {
     arcSweep
   );
 };
-var create3 = ({ root: root3, props }) => {
+var create2 = ({ root: root3, props }) => {
   props.spin = false;
   props.progress = 0;
   props.opacity = 0;
@@ -11581,7 +18552,7 @@ var progressIndicator = createView({
   name: "progress-indicator",
   ignoreRectUpdate: true,
   ignoreRect: true,
-  create: create3,
+  create: create2,
   write,
   mixins: {
     apis: ["progress", "spin", "align"],
@@ -12193,7 +19164,7 @@ var createSection = (root3, section, className) => {
 };
 var write$3 = ({ root: root3, props }) => {
   if (root3.ref.scalable === null || props.scalable !== root3.ref.scalable) {
-    root3.ref.scalable = isBoolean(props.scalable) ? props.scalable : true;
+    root3.ref.scalable = isBoolean2(props.scalable) ? props.scalable : true;
     root3.element.dataset.scalable = root3.ref.scalable;
   }
   if (!props.height) return;
@@ -12297,12 +19268,12 @@ var create$7 = ({ root: root3, props }) => {
         x: e4.pageX - origin.x,
         y: e4.pageY - origin.y
       };
-      reset3();
+      reset4();
     };
     const cancel = () => {
-      reset3();
+      reset4();
     };
-    const reset3 = () => {
+    const reset4 = () => {
       document.removeEventListener("pointercancel", cancel);
       document.removeEventListener("pointermove", drag);
       document.removeEventListener("pointerup", drop2);
@@ -14086,7 +21057,7 @@ var root = createView({
 var createApp = (initialOptions = {}) => {
   let originalElement = null;
   const defaultOptions3 = getOptions();
-  const store = createStore(
+  const store = createStore2(
     // initial state (should be serializable)
     createInitialState(defaultOptions3),
     // queries
@@ -14152,11 +21123,11 @@ var createApp = (initialOptions = {}) => {
      * Writes to dom (never call manually)
      * @private
      */
-    _write: (ts) => {
+    _write: (ts2) => {
       const actions3 = store.processActionQueue().filter((action) => !/^SET_/.test(action.type));
       if (isResting && !actions3.length) return;
       routeActionsToEvents(actions3);
-      isResting = view._write(ts, actions3, isResizingHorizontally);
+      isResting = view._write(ts2, actions3, isResizingHorizontally);
       removeReleasedItems(store.query("GET_ITEMS"));
       if (isResting) {
         store.processDispatchQueue();
@@ -14293,7 +21264,7 @@ var createApp = (initialOptions = {}) => {
   const addFiles = (...args) => new Promise((resolve, reject) => {
     const sources = [];
     const options = {};
-    if (isArray(args[0])) {
+    if (isArray2(args[0])) {
       sources.push.apply(sources, args[0]);
       Object.assign(options, args[1] || {});
     } else {
@@ -14735,7 +21706,7 @@ var OptionTypes = {};
 var create$f = fn;
 var destroy = fn;
 var parse2 = fn;
-var find = fn;
+var find2 = fn;
 var registerPlugin = fn;
 var getOptions$1 = fn;
 var setOptions$1 = fn;
@@ -14744,8 +21715,8 @@ if (supported()) {
     () => {
       state.apps.forEach((app) => app._read());
     },
-    (ts) => {
-      state.apps.forEach((app) => app._write(ts));
+    (ts2) => {
+      state.apps.forEach((app) => app._write(ts2));
     }
   );
   const dispatch = () => {
@@ -14756,7 +21727,7 @@ if (supported()) {
           create: create$f,
           destroy,
           parse: parse2,
-          find,
+          find: find2,
           registerPlugin,
           setOptions: setOptions$1
         }
@@ -14796,15 +21767,15 @@ if (supported()) {
     );
     return newHooks.map((hook) => create$f(hook));
   };
-  find = (hook) => {
+  find2 = (hook) => {
     const app = state.apps.find((app2) => app2.isAttachedTo(hook));
     if (!app) {
       return null;
     }
     return createAppAPI(app);
   };
-  registerPlugin = (...plugins) => {
-    plugins.forEach(createAppPlugin);
+  registerPlugin = (...plugins2) => {
+    plugins2.forEach(createAppPlugin);
     updateOptionTypes();
   };
   getOptions$1 = () => {
@@ -15655,7 +22626,7 @@ var getRotatedRectSize = (rect, rotation) => {
   const hor = getOffsetPointOnEdge(w, rotation);
   const ver = getOffsetPointOnEdge(h2, rotation);
   const tl = createVector$1(rect.x + Math.abs(hor.x), rect.y - Math.abs(hor.y));
-  const tr = createVector$1(
+  const tr2 = createVector$1(
     rect.x + rect.width + Math.abs(ver.y),
     rect.y + Math.abs(ver.x)
   );
@@ -15664,7 +22635,7 @@ var getRotatedRectSize = (rect, rotation) => {
     rect.y + rect.height - Math.abs(ver.x)
   );
   return {
-    width: vectorDistance(tl, tr),
+    width: vectorDistance(tl, tr2),
     height: vectorDistance(tl, bl)
   };
 };
@@ -16421,7 +23392,7 @@ var createImageWrapperView = (_2) => {
     root3.ref.overlayShadow.opacity = 0.25;
     root3.ref.overlaySuccess.opacity = 1;
   };
-  const create6 = ({ root: root3 }) => {
+  const create5 = ({ root: root3 }) => {
     root3.ref.images = [];
     root3.ref.imageData = null;
     root3.ref.imageViewBin = [];
@@ -16446,7 +23417,7 @@ var createImageWrapperView = (_2) => {
   };
   return _2.utils.createView({
     name: "image-preview-wrapper",
-    create: create6,
+    create: create5,
     styles: ["height"],
     apis: ["height"],
     destroy: ({ root: root3 }) => {
@@ -16493,8 +23464,8 @@ var plugin4 = (fpAPI) => {
   const { Type: Type3, createRoute: createRoute3, isFile: isFile2 } = utils;
   const imagePreviewView = createImageWrapperView(fpAPI);
   addFilter2("CREATE_VIEW", (viewAPI) => {
-    const { is, view, query } = viewAPI;
-    if (!is("file") || !query("GET_ALLOW_IMAGE_PREVIEW")) return;
+    const { is: is2, view, query } = viewAPI;
+    if (!is2("file") || !query("GET_ALLOW_IMAGE_PREVIEW")) return;
     const didLoadItem2 = ({ root: root3, props }) => {
       const { id } = props;
       const item2 = query("GET_ITEM", id);
@@ -16877,10 +23848,10 @@ var getRotatedRectSize2 = (rect, rotation) => {
   const hor = getOffsetPointOnEdge2(w, rotation);
   const ver = getOffsetPointOnEdge2(h2, rotation);
   const tl = createVector2(rect.x + Math.abs(hor.x), rect.y - Math.abs(hor.y));
-  const tr = createVector2(rect.x + rect.width + Math.abs(ver.y), rect.y + Math.abs(ver.x));
+  const tr2 = createVector2(rect.x + rect.width + Math.abs(ver.y), rect.y + Math.abs(ver.x));
   const bl = createVector2(rect.x - Math.abs(ver.y), rect.y + rect.height - Math.abs(ver.x));
   return {
-    width: vectorDistance2(tl, tr),
+    width: vectorDistance2(tl, tr2),
     height: vectorDistance2(tl, bl)
   };
 };
@@ -18256,7 +25227,7 @@ var plugin7 = ({ addFilter: addFilter2, utils }) => {
           }).catch(reject);
         });
         const variantPromises = variants.map(
-          (create6) => create6(transform, file2, item2.getMetadata())
+          (create5) => create5(transform, file2, item2.getMetadata())
         );
         Promise.all(variantPromises).then((files) => {
           resolve(
@@ -18385,10 +25356,10 @@ var plugin8 = (_2) => {
     return editRequest;
   };
   addFilter2("CREATE_VIEW", (viewAPI) => {
-    const { is, view, query } = viewAPI;
+    const { is: is2, view, query } = viewAPI;
     if (!query("GET_ALLOW_IMAGE_EDIT")) return;
     const canShowImagePreview = query("GET_ALLOW_IMAGE_PREVIEW");
-    const shouldExtendView = is("file-info") && !canShowImagePreview || is("file") && canShowImagePreview;
+    const shouldExtendView = is2("file-info") && !canShowImagePreview || is2("file") && canShowImagePreview;
     if (!shouldExtendView) return;
     const editor2 = query("GET_IMAGE_EDIT_EDITOR");
     if (!editor2) return;
@@ -18646,7 +25617,7 @@ var insertAfter2 = function(e3, t2) {
 var isObject2 = function(e3) {
   return "object" === _typeof(e3) && null !== e3;
 };
-var createStore2 = function(e3) {
+var createStore3 = function(e3) {
   var t2 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : [], r2 = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : [], n = _objectSpread({}, e3), i2 = [], o2 = [], a2 = function(e4, t3, r3) {
     r3 ? o2.push({ type: e4, data: t3 }) : (s2[e4] && s2[e4](t3), i2.push({ type: e4, data: t3 }));
   }, c2 = function(e4) {
@@ -18846,7 +25817,7 @@ var apis2 = function(e3) {
   var t2 = e3.mixinConfig, r2 = e3.viewProps, n = e3.viewExternalAPI;
   addGetSet2(t2, n, r2);
 };
-var defaults2 = { opacity: 1, scaleX: 1, scaleY: 1, translateX: 0, translateY: 0, rotateX: 0, rotateY: 0, rotateZ: 0, originX: 0, originY: 0 };
+var defaults3 = { opacity: 1, scaleX: 1, scaleY: 1, translateX: 0, translateY: 0, rotateX: 0, rotateY: 0, rotateZ: 0, originX: 0, originY: 0 };
 var styles2 = function(e3) {
   var t2 = e3.mixinConfig, r2 = e3.viewProps, n = e3.viewInternalAPI, i2 = e3.viewExternalAPI, o2 = e3.view, a2 = _objectSpread({}, r2), c2 = {};
   addGetSet2(t2, [n, i2], r2);
@@ -18854,7 +25825,7 @@ var styles2 = function(e3) {
     return o2.rect ? getViewRect2(o2.rect, o2.childViews, [r2.translateX || 0, r2.translateY || 0], [r2.scaleX || 0, r2.scaleY || 0]) : null;
   };
   return n.rect = { get: l3 }, i2.rect = { get: l3 }, t2.forEach(function(e4) {
-    r2[e4] = void 0 === a2[e4] ? defaults2[e4] : a2[e4];
+    r2[e4] = void 0 === a2[e4] ? defaults3[e4] : a2[e4];
   }), { write: function() {
     if (propsHaveChanged2(c2, r2)) return applyStyles2(o2.element, r2), Object.assign(c2, _objectSpread({}, r2)), true;
   }, destroy: function() {
@@ -18897,7 +25868,7 @@ var createView2 = function() {
   } : v2, E = e3.didWriteView, T = void 0 === E ? function() {
   } : E, _2 = e3.shouldUpdateChildViews, R = void 0 === _2 ? function() {
     return true;
-  } : _2, w = e3.ignoreRect, A = void 0 !== w && w, I = e3.ignoreRectUpdate, S2 = void 0 !== I && I, C2 = e3.mixins, O = void 0 === C2 ? [] : C2;
+  } : _2, w = e3.ignoreRect, A = void 0 !== w && w, I = e3.ignoreRectUpdate, S2 = void 0 !== I && I, C2 = e3.mixins, O2 = void 0 === C2 ? [] : C2;
   return function(e4) {
     var t3 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {}, n2 = createElement11(r2, i2 ? "doka--".concat(i2) : null, a2), o3 = window.getComputedStyle(n2, null), c3 = updateRect4(), u2 = null, d2 = false, f3 = [], g2 = [], v3 = {}, E2 = {}, _3 = [s2], w2 = [l3], I2 = [h2], C3 = function() {
       return n2;
@@ -18963,10 +25934,10 @@ var createView2 = function() {
     } }, k2 = _objectSpread({}, L, { rect: { get: function() {
       return c3;
     } } });
-    Object.keys(O).sort(function(e5, t4) {
+    Object.keys(O2).sort(function(e5, t4) {
       return "styles" === e5 ? 1 : "styles" === t4 ? -1 : 0;
     }).forEach(function(e5) {
-      var r3 = Mixins2[e5]({ mixinConfig: O[e5], viewProps: t3, viewState: E2, viewInternalAPI: P, viewExternalAPI: G, view: createObject2(k2) });
+      var r3 = Mixins2[e5]({ mixinConfig: O2[e5], viewProps: t3, viewState: E2, viewInternalAPI: P, viewExternalAPI: G, view: createObject2(k2) });
       r3 && g2.push(r3);
     });
     var D2 = createObject2(P);
@@ -19020,7 +25991,7 @@ var createRoute2 = function(e3, t2) {
     }), t2) return t2({ root: n, props: i2, actions: a2, timestamp: c2 });
   };
 };
-var isArray2 = function(e3) {
+var isArray3 = function(e3) {
   return Array.isArray(e3);
 };
 var isEmpty2 = function(e3) {
@@ -19034,15 +26005,15 @@ var toString2 = function(e3) {
 };
 var toArray2 = function(e3) {
   var t2 = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : ",";
-  return isEmpty2(e3) ? [] : isArray2(e3) ? e3 : toString2(e3).split(t2).map(trim2).filter(function(e4) {
+  return isEmpty2(e3) ? [] : isArray3(e3) ? e3 : toString2(e3).split(t2).map(trim2).filter(function(e4) {
     return e4.length;
   });
 };
-var isBoolean2 = function(e3) {
+var isBoolean3 = function(e3) {
   return "boolean" == typeof e3;
 };
 var toBoolean2 = function(e3) {
-  return isBoolean2(e3) ? e3 : "true" === e3;
+  return isBoolean3(e3) ? e3 : "true" === e3;
 };
 var isString2 = function(e3) {
   return "string" == typeof e3;
@@ -19064,7 +26035,7 @@ var toBytes2 = function(e3) {
   var t2 = toString2(e3).trim();
   return /MB$/i.test(t2) ? (t2 = t2.replace(/MB$i/, "").trim(), 1e3 * toInt2(t2) * 1e3) : /KB/i.test(t2) ? (t2 = t2.replace(/KB$i/, "").trim(), 1e3 * toInt2(t2)) : toInt2(t2);
 };
-var isFunction3 = function(e3) {
+var isFunction4 = function(e3) {
   return "function" == typeof e3;
 };
 var toFunctionReference2 = function(e3) {
@@ -19075,7 +26046,7 @@ var isNull2 = function(e3) {
   return null === e3;
 };
 var getType2 = function(e3) {
-  return isArray2(e3) ? "array" : isNull2(e3) ? "null" : isInt2(e3) ? "int" : /^[0-9]+ ?(?:GB|MB|KB)$/gi.test(e3) ? "bytes" : _typeof(e3);
+  return isArray3(e3) ? "array" : isNull2(e3) ? "null" : isInt2(e3) ? "int" : /^[0-9]+ ?(?:GB|MB|KB)$/gi.test(e3) ? "bytes" : _typeof(e3);
 };
 var replaceSingleQuotes2 = function(e3) {
   return e3.replace(/{\s*'/g, '{"').replace(/'\s*}/g, '"}').replace(/'\s*:/g, '":').replace(/:\s*'/g, ':"').replace(/,\s*'/g, ',"').replace(/'\s*,/g, '",');
@@ -19083,7 +26054,7 @@ var replaceSingleQuotes2 = function(e3) {
 var conversionTable2 = { array: toArray2, boolean: toBoolean2, int: function(e3) {
   return "bytes" === getType2(e3) ? toBytes2(e3) : toInt2(e3);
 }, float: toFloat2, bytes: toBytes2, number: toFloat2, string: function(e3) {
-  return isFunction3(e3) ? e3 : toString2(e3);
+  return isFunction4(e3) ? e3 : toString2(e3);
 }, object: function(e3) {
   try {
     return JSON.parse(replaceSingleQuotes2(e3));
@@ -19588,8 +26559,8 @@ var getCropView = function(e3) {
   var A = { x: 0, y: 0 }, I = 0, S2 = 0;
   if (s2 && a2) {
     if (a2.translation) {
-      var C2 = a2.translation.x - i2.x, O = a2.translation.y - i2.y;
-      A.x = 100 * Math.sign(C2) * Math.log10(1 + Math.abs(C2) / 100), A.y = 100 * Math.sign(O) * Math.log10(1 + Math.abs(O) / 100);
+      var C2 = a2.translation.x - i2.x, O2 = a2.translation.y - i2.y;
+      A.x = 100 * Math.sign(C2) * Math.log10(1 + Math.abs(C2) / 100), A.y = 100 * Math.sign(O2) * Math.log10(1 + Math.abs(O2) / 100);
     }
     if (a2.scale) {
       var x = a2.scale - o2;
@@ -19825,7 +26796,7 @@ var cropSVG2 = function(e3, t2, r2, n) {
           return updateMarkupByType3(r3, t3[0], t3[1], R), r3.removeAttribute("id"), 1 === r3.getAttribute("opacity") && r3.removeAttribute("opacity"), e5 + "\n" + r3.outerHTML + "\n";
         }, ""), _2 = "\n\n<g>".concat(_2.replace(/&nbsp;/g, " "), "</g>\n\n");
       }
-      var w = t2.aspectRatio || T / E, A = E, I = A * w, S2 = void 0 === t2.scaleToFit || t2.scaleToFit, C2 = getImageRectZoomFactor3({ width: E, height: T }, getCenteredCropRect3({ width: A, height: I }, w), t2.rotation, S2 ? t2.center : { x: 0.5, y: 0.5 }), O = t2.zoom * C2, x = t2.rotation * (180 / Math.PI), b = { x: 0.5 * A, y: 0.5 * I }, M = { x: b.x - E * t2.center.x, y: b.y - T * t2.center.y }, L = ["rotate(".concat(x, " ").concat(b.x, " ").concat(b.y, ")"), "translate(".concat(b.x, " ").concat(b.y, ")"), "scale(".concat(O, ")"), "translate(".concat(-b.x, " ").concat(-b.y, ")"), "translate(".concat(M.x, " ").concat(M.y, ")")], P = ["scale(".concat(t2.flip.horizontal ? -1 : 1, " ").concat(t2.flip.vertical ? -1 : 1, ")"), "translate(".concat(t2.flip.horizontal ? -E : 0, " ").concat(t2.flip.vertical ? -T : 0, ")")], G = '<?xml version="1.0" encoding="UTF-8"?>\n<svg width="'.concat(A).concat(g, '" height="').concat(I).concat(m, '" \nviewBox="0 0 ').concat(A, " ").concat(I, '" ').concat(a2 ? 'style="background:' + a2 + '" ' : "", '\npreserveAspectRatio="xMinYMin"\nxmlns:xlink="http://www.w3.org/1999/xlink"\nxmlns="http://www.w3.org/2000/svg">\n<!-- Generated by PQINA - https://pqina.nl/ -->\n<title>').concat(u ? u.textContent : "", '</title>\n<g transform="').concat(L.join(" "), '">\n<g transform="').concat(P.join(" "), '">\n').concat(o3.outerHTML).concat(_2, "\n</g>\n</g>\n</svg>");
+      var w = t2.aspectRatio || T / E, A = E, I = A * w, S2 = void 0 === t2.scaleToFit || t2.scaleToFit, C2 = getImageRectZoomFactor3({ width: E, height: T }, getCenteredCropRect3({ width: A, height: I }, w), t2.rotation, S2 ? t2.center : { x: 0.5, y: 0.5 }), O2 = t2.zoom * C2, x = t2.rotation * (180 / Math.PI), b = { x: 0.5 * A, y: 0.5 * I }, M = { x: b.x - E * t2.center.x, y: b.y - T * t2.center.y }, L = ["rotate(".concat(x, " ").concat(b.x, " ").concat(b.y, ")"), "translate(".concat(b.x, " ").concat(b.y, ")"), "scale(".concat(O2, ")"), "translate(".concat(-b.x, " ").concat(-b.y, ")"), "translate(".concat(M.x, " ").concat(M.y, ")")], P = ["scale(".concat(t2.flip.horizontal ? -1 : 1, " ").concat(t2.flip.vertical ? -1 : 1, ")"), "translate(".concat(t2.flip.horizontal ? -E : 0, " ").concat(t2.flip.vertical ? -T : 0, ")")], G = '<?xml version="1.0" encoding="UTF-8"?>\n<svg width="'.concat(A).concat(g, '" height="').concat(I).concat(m, '" \nviewBox="0 0 ').concat(A, " ").concat(I, '" ').concat(a2 ? 'style="background:' + a2 + '" ' : "", '\npreserveAspectRatio="xMinYMin"\nxmlns:xlink="http://www.w3.org/1999/xlink"\nxmlns="http://www.w3.org/2000/svg">\n<!-- Generated by PQINA - https://pqina.nl/ -->\n<title>').concat(u ? u.textContent : "", '</title>\n<g transform="').concat(L.join(" "), '">\n<g transform="').concat(P.join(" "), '">\n').concat(o3.outerHTML).concat(_2, "\n</g>\n</g>\n</svg>");
       i2(G);
     }, c2.readAsText(e3);
   });
@@ -19850,11 +26821,11 @@ var TransformWorker2 = function() {
       u = e4.width * h2, s2 = e4.height * h2;
     }
     for (var g = e4.width, m = e4.height, v2 = Math.round(u), y = Math.round(s2), E = e4.data, T = new Uint8ClampedArray(v2 * y * 4), _2 = g / v2, R = m / y, w = Math.ceil(0.5 * _2), A = Math.ceil(0.5 * R), I = 0; I < y; I++) for (var S2 = 0; S2 < v2; S2++) {
-      for (var C2 = 4 * (S2 + I * v2), O = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = (I + 0.5) * R, D2 = Math.floor(I * R); D2 < (I + 1) * R; D2++) for (var U = Math.abs(k2 - (D2 + 0.5)) / A, B = (S2 + 0.5) * _2, V = U * U, N = Math.floor(S2 * _2); N < (S2 + 1) * _2; N++) {
+      for (var C2 = 4 * (S2 + I * v2), O2 = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = (I + 0.5) * R, D2 = Math.floor(I * R); D2 < (I + 1) * R; D2++) for (var U = Math.abs(k2 - (D2 + 0.5)) / A, B = (S2 + 0.5) * _2, V = U * U, N = Math.floor(S2 * _2); N < (S2 + 1) * _2; N++) {
         var F = Math.abs(B - (N + 0.5)) / w, z = Math.sqrt(V + F * F);
-        if (z >= -1 && z <= 1 && (O = 2 * z * z * z - 3 * z * z + 1) > 0) {
+        if (z >= -1 && z <= 1 && (O2 = 2 * z * z * z - 3 * z * z + 1) > 0) {
           var W2 = E[(F = 4 * (N + D2 * g)) + 3];
-          G += O * W2, b += O, W2 < 255 && (O = O * W2 / 250), M += O * E[F], L += O * E[F + 1], P += O * E[F + 2], x += O;
+          G += O2 * W2, b += O2, W2 < 255 && (O2 = O2 * W2 / 250), M += O2 * E[F], L += O2 * E[F + 1], P += O2 * E[F + 2], x += O2;
         }
       }
       T[C2] = M / x, T[C2 + 1] = L / x, T[C2 + 2] = P / x, T[C2 + 3] = G / b, d && o2(C2, T, d);
@@ -19894,7 +26865,7 @@ var TransformWorker2 = function() {
   }
   function l3(e4, t3) {
     if (!t3 || c2(t3)) return e4;
-    for (var o3 = e4.data, a3 = o3.length, l4 = t3[0], u = t3[1], s2 = t3[2], d = t3[3], p = t3[4], f2 = t3[5], h2 = t3[6], g = t3[7], m = t3[8], v2 = t3[9], y = t3[10], E = t3[11], T = t3[12], _2 = t3[13], R = t3[14], w = t3[15], A = t3[16], I = t3[17], S2 = t3[18], C2 = t3[19], O = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = 0, D2 = 0, U = 0, B = 0, V = 0; O < a3; O += 4) P = (x = o3[O] / 255) * l4 + (b = o3[O + 1] / 255) * u + (M = o3[O + 2] / 255) * s2 + (L = o3[O + 3] / 255) * d + p, G = x * f2 + b * h2 + M * g + L * m + v2, k2 = x * y + b * E + M * T + L * _2 + R, D2 = x * w + b * A + M * I + L * S2 + C2, U = Math.max(0, P * D2) + r2 * (1 - D2), B = Math.max(0, G * D2) + n * (1 - D2), V = Math.max(0, k2 * D2) + i2 * (1 - D2), o3[O] = 255 * Math.max(0, Math.min(1, U)), o3[O + 1] = 255 * Math.max(0, Math.min(1, B)), o3[O + 2] = 255 * Math.max(0, Math.min(1, V));
+    for (var o3 = e4.data, a3 = o3.length, l4 = t3[0], u = t3[1], s2 = t3[2], d = t3[3], p = t3[4], f2 = t3[5], h2 = t3[6], g = t3[7], m = t3[8], v2 = t3[9], y = t3[10], E = t3[11], T = t3[12], _2 = t3[13], R = t3[14], w = t3[15], A = t3[16], I = t3[17], S2 = t3[18], C2 = t3[19], O2 = 0, x = 0, b = 0, M = 0, L = 0, P = 0, G = 0, k2 = 0, D2 = 0, U = 0, B = 0, V = 0; O2 < a3; O2 += 4) P = (x = o3[O2] / 255) * l4 + (b = o3[O2 + 1] / 255) * u + (M = o3[O2 + 2] / 255) * s2 + (L = o3[O2 + 3] / 255) * d + p, G = x * f2 + b * h2 + M * g + L * m + v2, k2 = x * y + b * E + M * T + L * _2 + R, D2 = x * w + b * A + M * I + L * S2 + C2, U = Math.max(0, P * D2) + r2 * (1 - D2), B = Math.max(0, G * D2) + n * (1 - D2), V = Math.max(0, k2 * D2) + i2 * (1 - D2), o3[O2] = 255 * Math.max(0, Math.min(1, U)), o3[O2 + 1] = 255 * Math.max(0, Math.min(1, B)), o3[O2 + 2] = 255 * Math.max(0, Math.min(1, V));
     return e4;
   }
 };
@@ -20138,30 +27109,30 @@ var limitImageTransformsToCropRect = function(e3, t2, r2, n) {
       var S2 = { x: E.x - g.x, y: E.y - g.y }, C2 = { x: S2.x * Math.cos(l3.rotation) - S2.y * Math.sin(l3.rotation), y: S2.x * Math.sin(l3.rotation) + S2.y * Math.cos(l3.rotation) };
       l3.translation.x += C2.x, l3.translation.y += C2.y;
     } else if ("rotating" === n) {
-      var O = false;
+      var O2 = false;
       if (E.y > s2.y) {
         var x = E.y - s2.y;
-        E.y = s2.y, E.height += 2 * x, O = true;
+        E.y = s2.y, E.height += 2 * x, O2 = true;
       }
       if (E.y + E.height < p.bottom) {
         var b = p.bottom - (E.y + E.height);
-        E.y = p.bottom - E.height, E.height += 2 * b, O = true;
+        E.y = p.bottom - E.height, E.height += 2 * b, O2 = true;
       }
       if (E.x > s2.x) {
         var M = E.x - s2.x;
-        E.x = s2.x, E.width += 2 * M, O = true;
+        E.x = s2.x, E.width += 2 * M, O2 = true;
       }
       if (E.x + E.width < p.right) {
         var L = p.right - (E.x + E.width);
-        E.x = p.right - E.width, E.width += 2 * L, O = true;
+        E.x = p.right - E.width, E.width += 2 * L, O2 = true;
       }
-      O && (l3.scale = getImageRectZoomFactor3(e3, t2, l3.rotation, { x: (v2 - f2.x) / f2.width, y: (y - f2.y) / f2.height }));
+      O2 && (l3.scale = getImageRectZoomFactor3(e3, t2, l3.rotation, { x: (v2 - f2.x) / f2.width, y: (y - f2.y) / f2.height }));
     }
   }
   return _objectSpread({}, l3, { rotation: r2.rotation });
 };
 var getTransformOrigin = function(e3, t2, r2) {
-  var n = r2.origin, i2 = r2.translation, o2 = r2.scale, a2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), c2 = { x: n.x + i2.x, y: n.y + i2.y }, l3 = getAxisAlignedCropRect(n, i2, a2, t2), u = getAxisAlignedImageRect(e3, r2), s2 = rectCorners(u), d = rectCenter(u), p = vectorRotate3(s2.tl, a2, c2), f2 = vectorRotate3(s2.br, a2, c2), h2 = p.x + 0.5 * (f2.x - p.x), g = p.y + 0.5 * (f2.y - p.y), m = rectTranslate(u, { x: h2 - d.x, y: g - d.y }), v2 = rectTranslate(l3, { x: h2 - d.x, y: g - d.y }), y = rectCenter(v2), E = { x: m.x, y: m.y }, T = m.width, _2 = m.height, R = (y.x - E.x) / T, w = (y.y - E.y) / _2, A = { x: R * e3.width, y: w * e3.height }, I = 1 - o2, S2 = A.x * I, C2 = A.y * I, O = { x: E.x + T * R, y: E.y + _2 * w }, x = vectorRotate3(E, a2, { x: E.x + 0.5 * T, y: E.y + 0.5 * _2 }), b = vectorRotate3(E, a2, O), M = x.x - b.x, L = x.y - b.y;
+  var n = r2.origin, i2 = r2.translation, o2 = r2.scale, a2 = 2 * Math.PI + r2.rotation % (2 * Math.PI), c2 = { x: n.x + i2.x, y: n.y + i2.y }, l3 = getAxisAlignedCropRect(n, i2, a2, t2), u = getAxisAlignedImageRect(e3, r2), s2 = rectCorners(u), d = rectCenter(u), p = vectorRotate3(s2.tl, a2, c2), f2 = vectorRotate3(s2.br, a2, c2), h2 = p.x + 0.5 * (f2.x - p.x), g = p.y + 0.5 * (f2.y - p.y), m = rectTranslate(u, { x: h2 - d.x, y: g - d.y }), v2 = rectTranslate(l3, { x: h2 - d.x, y: g - d.y }), y = rectCenter(v2), E = { x: m.x, y: m.y }, T = m.width, _2 = m.height, R = (y.x - E.x) / T, w = (y.y - E.y) / _2, A = { x: R * e3.width, y: w * e3.height }, I = 1 - o2, S2 = A.x * I, C2 = A.y * I, O2 = { x: E.x + T * R, y: E.y + _2 * w }, x = vectorRotate3(E, a2, { x: E.x + 0.5 * T, y: E.y + 0.5 * _2 }), b = vectorRotate3(E, a2, O2), M = x.x - b.x, L = x.y - b.y;
   return { origin: roundVector(A), translation: roundVector({ x: E.x - S2 + M, y: E.y - C2 + L }) };
 };
 var EdgeMap = { n: function(e3) {
@@ -20193,7 +27164,7 @@ var getImageTransformsFromRect = function(e3, t2, r2) {
       p.right = u.left + S2, p.left = u.left, p.top -= 0.5 * C2, p.bottom += 0.5 * C2;
     }
     if (u.right >= p.right) {
-      var O = p.bottom - p.top, x = p.right - p.left, b = Math.max(1, l3.width / x), M = x * b, L = O * b - O;
+      var O2 = p.bottom - p.top, x = p.right - p.left, b = Math.max(1, l3.width / x), M = x * b, L = O2 * b - O2;
       p.right = u.right, p.left = u.right - M, p.top -= 0.5 * L, p.bottom += 0.5 * L;
     }
     d = createRect(p.left, p.top, p.right - p.left, p.bottom - p.top);
@@ -20214,8 +27185,8 @@ var getEdgeTargetRect = function(e3, t2, r2, n, i2, o2, a2, c2, l3) {
   }
   var _2, R, w, A, I = c2.width, S2 = c2.height;
   if (r2 === Direction.VERTICAL ? (_2 = n.x - 0.5 * I, R = n.x + 0.5 * I, e3.y < 0 ? (w = n.y - S2, A = n.y) : e3.y > 0 && (w = n.y, A = n.y + S2)) : (w = n.y - 0.5 * S2, A = n.y + 0.5 * S2, e3.x < 0 ? (_2 = n.x - I, R = n.x) : e3.x > 0 && (_2 = n.x, R = n.x + I)), a2) if (r2 === Direction.VERTICAL) {
-    var C2 = Math.min((y - v2) / a2, f2), O = C2 * a2;
-    g < u && (m = (g = u) + C2), m > s2 && (g = (m = s2) - C2), n.x = g + 0.5 * C2, e3.y < 0 ? v2 = n.y - O : e3.y > 0 && (y = n.y + O);
+    var C2 = Math.min((y - v2) / a2, f2), O2 = C2 * a2;
+    g < u && (m = (g = u) + C2), m > s2 && (g = (m = s2) - C2), n.x = g + 0.5 * C2, e3.y < 0 ? v2 = n.y - O2 : e3.y > 0 && (y = n.y + O2);
   } else {
     var x = Math.min((m - g) * a2, h2), b = x / a2;
     v2 < d && (y = (v2 = d) + x), y > p && (v2 = (y = p) - x), n.y = v2 + 0.5 * x, e3.x < 0 ? g = n.x - b : e3.x > 0 && (m = n.x + b);
@@ -20300,8 +27271,8 @@ var getCornerTargetRect = function(e3, t2, r2, n, i2, o2, a2) {
     }
     if (m > d) {
       m = d;
-      var O = Math.min(m - g, w);
-      g = m - O, i2 && (e3.x > 0 && (h2 = r2.x + O / i2), e3.x < 0 && (f2 = r2.x - O / i2));
+      var O2 = Math.min(m - g, w);
+      g = m - O2, i2 && (e3.x > 0 && (h2 = r2.x + O2 / i2), e3.x < 0 && (f2 = r2.x - O2 / i2));
     }
     y = rectFromBounds({ top: g, right: h2, bottom: m, left: f2 });
   }
@@ -20517,7 +27488,7 @@ var resetCrop = function(e3, t2) {
     o2 ? e3.crop.aspectRatio = o2 : a2 && i2.length ? e3.crop.aspectRatio = null : e3.crop.aspectRatio = t2("GET_CROP_ASPECT_RATIO"), e3.crop.isDirty = false;
   }
 };
-var reset2 = function(e3, t2, r2) {
+var reset3 = function(e3, t2, r2) {
   if (null !== e3.stage) {
     clearCenterTimeout(e3), e3.size.width = !!e3.instructions.size && e3.instructions.size.width, e3.size.height = !!e3.instructions.size && e3.instructions.size.height, e3.size.aspectRatioLocked = true, e3.size.aspectRatioPrevious = false;
     var n = void 0 === e3.instructions.crop.scaleToFit ? void 0 === e3.crop.limitToImageBounds ? e3.options.cropLimitToImageBounds : e3.crop.limitToImageBounds : e3.instructions.crop.scaleToFit;
@@ -20758,7 +27729,7 @@ var actions2 = function(e3, t2, r2) {
       r2.stage = createRect(0, 0, l3.width, l3.height), r2.stageOffset = createVector3(r2.stageOffset.x + l3.x, r2.stageOffset.y + l3.y);
     }
     if (c2) {
-      if (reset2(r2, t2, e3), e3("DID_SHOW_IMAGE", { image: { size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: r2.image.orientation, width: r2.image.naturalWidth, height: r2.image.naturalHeight } }), !r2.filePromise.resolveOnConfirm) {
+      if (reset3(r2, t2, e3), e3("DID_SHOW_IMAGE", { image: { size: r2.file.data.size, name: r2.file.data.name, type: r2.file.data.type, orientation: r2.image.orientation, width: r2.image.naturalWidth, height: r2.image.naturalHeight } }), !r2.filePromise.resolveOnConfirm) {
         var u = getCropFromStateRounded(r2.image, r2.crop), s2 = getOutputSize(t2);
         r2.filePromise.success({ crop: u, image: { orientation: r2.file.orientation }, size: s2, output: { type: t2("GET_OUTPUT_TYPE"), quality: t2("GET_OUTPUT_QUALITY") } });
       }
@@ -21039,7 +28010,7 @@ var actions2 = function(e3, t2, r2) {
     var i2 = n.success, o2 = n.failure, a2 = n.file, c2 = n.data;
     if (!r2.file) return o2("no-image-source");
     if (!r2.stage) return o2("image-not-fully-loaded");
-    var l3 = { file: isBoolean2(a2) ? a2 : t2("GET_OUTPUT_FILE"), data: isBoolean2(c2) ? c2 : t2("GET_OUTPUT_DATA"), success: i2, failure: o2 };
+    var l3 = { file: isBoolean3(a2) ? a2 : t2("GET_OUTPUT_FILE"), data: isBoolean3(c2) ? c2 : t2("GET_OUTPUT_DATA"), success: i2, failure: o2 };
     e3(l3.file ? "REQUEST_PREPARE_OUTPUT" : "PREPARE_OUTPUT", l3);
   }, REQUEST_PREPARE_OUTPUT: function(t3) {
     var r3 = t3.file, n = t3.data, i2 = t3.success, o2 = t3.failure;
@@ -21067,7 +28038,7 @@ var actions2 = function(e3, t2, r2) {
       u(t3);
     });
   }, EDIT_RESET: function() {
-    clearCenterTimeout(r2), reset2(r2, t2, e3);
+    clearCenterTimeout(r2), reset3(r2, t2, e3);
   }, EDIT_CONFIRM: function() {
     if (r2.file && r2.stage) {
       clearCenterTimeout(r2), e3("CROP_ZOOM");
@@ -21416,11 +28387,11 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
       t2.element.dataset.util = o2 || "";
       var a2 = i2.markup, c2 = i2.cropStatus, l3 = r2.onSelect, u = r2.onDrag, s2 = t2.ref, d = s2.clip, p = s2.manipulatorGroup, f2 = s2.drawPath, h2 = s2.viewSize, g = s2.shapeOffsetGroup, m = s2.manipulators, v2 = s2.manipulatorPath, y = s2.manipulatorRect, E = s2.removeButton, T = s2.drawState, _2 = t2.query("GET_OUTPUT_WIDTH"), R = t2.query("GET_OUTPUT_HEIGHT"), w = c2.image, A = c2.crop, I = A.width, S2 = A.height, C2 = A.widthFloat / A.heightFloat;
       if (_2 || R) {
-        var O = t2.query("GET_OUTPUT_FIT");
+        var O2 = t2.query("GET_OUTPUT_FIT");
         _2 && !R && (R = _2), R && !_2 && (_2 = R);
         var x, b = _2 / I, M = R / S2;
-        if ("force" === O) I = _2, S2 = R;
-        else "cover" === O ? x = Math.max(b, M) : "contain" === O && (x = Math.min(b, M)), I *= x, S2 *= x;
+        if ("force" === O2) I = _2, S2 = R;
+        else "cover" === O2 ? x = Math.max(b, M) : "contain" === O2 && (x = Math.min(b, M)), I *= x, S2 *= x;
       } else w.width && w.height ? (I = w.width, S2 = w.height) : w.width && !w.height ? (I = w.width, S2 = w.width / C2) : w.height && !w.width && (S2 = w.height, I = w.height * C2);
       var L = T.points.length, P = roundFloat(t2.markupX, 3), G = roundFloat(t2.markupY, 3), k2 = roundFloat(t2.markupWidth, 3), D2 = roundFloat(t2.markupHeight, 3), U = roundFloat(Math.min(t2.markupWidth / I, t2.markupHeight / S2), 4);
       if (h2.width = k2, h2.height = D2, h2.scale = U, stateHasChanged(t2, { drawLength: L, markupX: P, markupY: G, scale: U, markup: a2, currentWidth: I, currentHeight: S2 })) {
@@ -21463,8 +28434,8 @@ var imageMarkup = createView2({ tag: "div", name: "image-markup", ignoreRect: tr
               else C3.setAttribute("style", "pointer-events:none;");
               if (C3.dragger && (r2.allowInteraction ? C3.dragger.enable() : C3.dragger.disable()), n2 !== C3.index) {
                 C3.index = n2;
-                var O2 = t2.ref.shapeGroup;
-                O2.insertBefore(C3, O2.childNodes[n2 + 1]);
+                var O3 = t2.ref.shapeGroup;
+                O3.insertBefore(C3, O3.childNodes[n2 + 1]);
               }
               if (d2 && updateMarkupByType3(C3, o3, a3, h2, U), f3) {
                 var x2 = E.rect.element.width, b2 = E.rect.element.height, M2 = t2.markupX - 0.5 * x2, L2 = t2.markupY - b2 - 15, P2 = "text" === o3 ? C3.bbox : C3.rect, G2 = false, k3 = getColor$1(a3);
@@ -21596,7 +28567,7 @@ var createTexture = function(e3, t2, r2, n, i2) {
   }
   return o2;
 };
-var create4 = function() {
+var create3 = function() {
   var e3 = new Float32Array(16);
   return e3[0] = 1, e3[5] = 1, e3[10] = 1, e3[15] = 1, e3;
 };
@@ -21624,7 +28595,7 @@ var rotateZ = function(e3, t2) {
   var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[4], u = e3[5], s2 = e3[6], d = e3[7];
   e3[0] = i2 * n + l3 * r2, e3[1] = o2 * n + u * r2, e3[2] = a2 * n + s2 * r2, e3[3] = c2 * n + d * r2, e3[4] = l3 * n - i2 * r2, e3[5] = u * n - o2 * r2, e3[6] = s2 * n - a2 * r2, e3[7] = d * n - c2 * r2;
 };
-var mat4 = { create: create4, perspective, translate, scale, rotateX, rotateY, rotateZ };
+var mat4 = { create: create3, perspective, translate, scale, rotateX, rotateY, rotateZ };
 var degToRad = function(e3) {
   return e3 * Math.PI / 180;
 };
@@ -21641,9 +28612,9 @@ var setup = function(e3, t2, r2) {
   u.bindBuffer(u.ARRAY_BUFFER, y), u.bufferData(u.ARRAY_BUFFER, E, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var T = createProgram(u, simpleVertexShader, outlineFragmentShader), _2 = u.getAttribLocation(T, "aPosition"), R = u.getUniformLocation(T, "uOutlineWidth"), w = u.getUniformLocation(T, "uOutlineColor"), A = u.getUniformLocation(T, "uOverlayLeftTop"), I = u.getUniformLocation(T, "uOverlayRightBottom"), S2 = u.createBuffer(), C2 = new Float32Array([1, -1, 1, 1, -1, -1, -1, 1]);
   u.bindBuffer(u.ARRAY_BUFFER, S2), u.bufferData(u.ARRAY_BUFFER, C2, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
-  var O = createProgram(u, imageVertexShader, imageFragmentShader);
-  u.useProgram(O);
-  var x = u.getUniformLocation(O, "uMatrix"), b = u.getUniformLocation(O, "uTexture"), M = u.getUniformLocation(O, "uTextureSize"), L = u.getUniformLocation(O, "uOverlayColor"), P = u.getUniformLocation(O, "uOverlayLeftTop"), G = u.getUniformLocation(O, "uOverlayRightBottom"), k2 = u.getUniformLocation(O, "uColorOpacity"), D2 = u.getUniformLocation(O, "uColorOffset"), U = u.getUniformLocation(O, "uColorMatrix"), B = u.getAttribLocation(O, "aPosition"), V = u.getAttribLocation(O, "aTexCoord"), N = createTexture(u, b, M, 0, t2), F = t2.width * r2, z = t2.height * r2, W2 = -0.5 * F, q = 0.5 * z, H2 = 0.5 * F, Y2 = -0.5 * z, j = new Float32Array([W2, q, W2, Y2, H2, q, H2, Y2]), X2 = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), Z2 = j.length / 2, $2 = u.createBuffer();
+  var O2 = createProgram(u, imageVertexShader, imageFragmentShader);
+  u.useProgram(O2);
+  var x = u.getUniformLocation(O2, "uMatrix"), b = u.getUniformLocation(O2, "uTexture"), M = u.getUniformLocation(O2, "uTextureSize"), L = u.getUniformLocation(O2, "uOverlayColor"), P = u.getUniformLocation(O2, "uOverlayLeftTop"), G = u.getUniformLocation(O2, "uOverlayRightBottom"), k2 = u.getUniformLocation(O2, "uColorOpacity"), D2 = u.getUniformLocation(O2, "uColorOffset"), U = u.getUniformLocation(O2, "uColorMatrix"), B = u.getAttribLocation(O2, "aPosition"), V = u.getAttribLocation(O2, "aTexCoord"), N = createTexture(u, b, M, 0, t2), F = t2.width * r2, z = t2.height * r2, W2 = -0.5 * F, q = 0.5 * z, H2 = 0.5 * F, Y2 = -0.5 * z, j = new Float32Array([W2, q, W2, Y2, H2, q, H2, Y2]), X2 = new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), Z2 = j.length / 2, $2 = u.createBuffer();
   u.bindBuffer(u.ARRAY_BUFFER, $2), u.bufferData(u.ARRAY_BUFFER, j, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
   var K2 = u.createBuffer();
   u.bindBuffer(u.ARRAY_BUFFER, K2), u.bufferData(u.ARRAY_BUFFER, X2, u.STATIC_DRAW), u.bindBuffer(u.ARRAY_BUFFER, null);
@@ -21663,7 +28634,7 @@ var setup = function(e3, t2, r2) {
     var he2 = Y3.x * r2, ge2 = Y3.y * r2, me2 = Y3.width * r2, ve2 = Y3.height * r2, ye2 = he2, Ee2 = ye2 + me2, Te2 = n.height - ge2, _e2 = n.height - (ge2 + ve2);
     u.useProgram(s2), u.uniform3fv(d, te2), u.uniform3fv(p, re2), u.uniform4fv(v2, oe2.map(function(e5, t3) {
       return t3 < 3 ? e5 / 255 : e5;
-    })), u.uniform2f(f2, n.width, n.height), u.uniform2f(g, ye2, Te2), u.uniform2f(m, Ee2, _e2), u.bindBuffer(u.ARRAY_BUFFER, y), u.vertexAttribPointer(h2, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(h2), u.drawArrays(u.TRIANGLE_STRIP, 0, 4), u.useProgram(O), u.bindFramebuffer(u.FRAMEBUFFER, null), u.bindTexture(u.TEXTURE_2D, N), u.bindBuffer(u.ARRAY_BUFFER, $2), u.vertexAttribPointer(B, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(B), u.bindBuffer(u.ARRAY_BUFFER, K2), u.vertexAttribPointer(V, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(V), u.uniformMatrix4fv(x, false, fe2), u.uniform2f(P, ye2, Te2), u.uniform2f(G, Ee2, _e2), u.uniform4fv(L, j2), u.uniform1f(k2, q2), u.uniform4f(D2, W3[4], W3[9], W3[14], W3[19]), u.uniformMatrix4fv(U, false, [].concat(_toConsumableArray(W3.slice(0, 4)), _toConsumableArray(W3.slice(5, 9)), _toConsumableArray(W3.slice(10, 14)), _toConsumableArray(W3.slice(15, 19)))), u.drawArrays(u.TRIANGLE_STRIP, 0, Z2), u.useProgram(T), u.uniform1f(R, ne2), u.uniform4fv(w, ie2), u.uniform2f(A, ye2, Te2), u.uniform2f(I, Ee2, _e2), u.bindBuffer(u.ARRAY_BUFFER, S2), u.vertexAttribPointer(_2, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(_2), u.drawArrays(u.TRIANGLE_STRIP, 0, 4), ee2.onupdate(u);
+    })), u.uniform2f(f2, n.width, n.height), u.uniform2f(g, ye2, Te2), u.uniform2f(m, Ee2, _e2), u.bindBuffer(u.ARRAY_BUFFER, y), u.vertexAttribPointer(h2, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(h2), u.drawArrays(u.TRIANGLE_STRIP, 0, 4), u.useProgram(O2), u.bindFramebuffer(u.FRAMEBUFFER, null), u.bindTexture(u.TEXTURE_2D, N), u.bindBuffer(u.ARRAY_BUFFER, $2), u.vertexAttribPointer(B, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(B), u.bindBuffer(u.ARRAY_BUFFER, K2), u.vertexAttribPointer(V, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(V), u.uniformMatrix4fv(x, false, fe2), u.uniform2f(P, ye2, Te2), u.uniform2f(G, Ee2, _e2), u.uniform4fv(L, j2), u.uniform1f(k2, q2), u.uniform4f(D2, W3[4], W3[9], W3[14], W3[19]), u.uniformMatrix4fv(U, false, [].concat(_toConsumableArray(W3.slice(0, 4)), _toConsumableArray(W3.slice(5, 9)), _toConsumableArray(W3.slice(10, 14)), _toConsumableArray(W3.slice(15, 19)))), u.drawArrays(u.TRIANGLE_STRIP, 0, Z2), u.useProgram(T), u.uniform1f(R, ne2), u.uniform4fv(w, ie2), u.uniform2f(A, ye2, Te2), u.uniform2f(I, Ee2, _e2), u.bindBuffer(u.ARRAY_BUFFER, S2), u.vertexAttribPointer(_2, 2, u.FLOAT, false, 0, 0), u.enableVertexAttribArray(_2), u.drawArrays(u.TRIANGLE_STRIP, 0, 4), ee2.onupdate(u);
   }, onupdate: function() {
   } };
   return ee2;
@@ -21860,7 +28831,7 @@ var image = createView2({ name: "image", ignoreRect: true, mixins: { apis: ["off
   if (a2) {
     var c2 = a2.isDraft, l3 = a2.cropRect, u = a2.cropStatus, s2 = a2.origin, d = a2.translation, p = a2.translationBand, f2 = a2.scale, h2 = a2.scaleBand, g = a2.rotation, m = a2.rotationBand, v2 = a2.flip, y = a2.colorMatrix, E = t2.query("GET_ROOT"), T = t2.query("GET_STAGE"), _2 = T.x, R = T.y;
     c2 && (i2.scale = null, i2.zRotation = null, i2.xTranslation = null, i2.yTranslation = null, i2.xOrigin = null, i2.yOrigin = null), i2.colorMatrix = y;
-    var w = t2.query("IS_ACTIVE_VIEW", "crop"), A = t2.query("IS_ACTIVE_VIEW", "markup") || t2.query("IS_ACTIVE_VIEW", "sticker"), I = w ? 0.75 : 0.95, S2 = _objectSpread({}, l3), C2 = 1, O = w ? 1 : 5;
+    var w = t2.query("IS_ACTIVE_VIEW", "crop"), A = t2.query("IS_ACTIVE_VIEW", "markup") || t2.query("IS_ACTIVE_VIEW", "sticker"), I = w ? 0.75 : 0.95, S2 = _objectSpread({}, l3), C2 = 1, O2 = w ? 1 : 5;
     if (t2.query("IS_ACTIVE_VIEW", "resize")) {
       var x = u.image.width, b = u.image.height;
       C2 = null === x && null === b ? u.crop.width / l3.width : null === x ? b / l3.height : x / l3.width, C2 /= window.devicePixelRatio;
@@ -21868,7 +28839,7 @@ var image = createView2({ name: "image", ignoreRect: true, mixins: { apis: ["off
       S2.x = S2.x + (0.5 * l3.width - 0.5 * M), S2.y = S2.y + (0.5 * l3.height - 0.5 * L), S2.width = M, S2.height = L;
     }
     var P = t2.ref.isModal ? 0 : E.left, G = t2.ref.isModal ? 0 : E.top, k2 = t2.ref.isModal ? 0 : E.width - t2.rect.element.width, D2 = t2.ref.isModal ? 0 : E.height - t2.rect.element.height - r2.offsetTop, U = (f2 + h2) * C2;
-    i2.isDraft = c2, i2.overlayOpacity = I, i2.xOrigin = s2.x, i2.yOrigin = s2.y, i2.xTranslation = d.x + p.x + _2, i2.yTranslation = d.y + p.y + R, i2.left = P, i2.top = G + r2.offsetTop, i2.width = t2.rect.element.width + k2, i2.height = t2.rect.element.height + D2 + r2.offsetTop, i2.scale = U, i2.xRotation = v2.vertical ? Math.PI : 0, i2.yRotation = v2.horizontal ? Math.PI : 0, i2.zRotation = g.main + g.sub + m, i2.stage = { x: T.x + P, y: T.y + G + r2.offsetTop, width: T.width, height: T.height }, i2.overlay = { x: S2.x + _2 + P, y: S2.y + R + G + r2.offsetTop, width: S2.width, height: S2.height }, i2.outlineWidth = O, o2 && (c2 && (o2.translateX = null, o2.translateY = null, o2.markupX = null, o2.markupY = null, o2.markupWidth = null, o2.markupHeight = null), o2.opacity = w ? 0.3 : 1, o2.stageOffsetX = _2, o2.stageOffsetY = R, o2.markupX = S2.x + _2, o2.markupY = S2.y + R, o2.markupWidth = S2.width, o2.markupHeight = S2.height, o2.allowInteraction = A);
+    i2.isDraft = c2, i2.overlayOpacity = I, i2.xOrigin = s2.x, i2.yOrigin = s2.y, i2.xTranslation = d.x + p.x + _2, i2.yTranslation = d.y + p.y + R, i2.left = P, i2.top = G + r2.offsetTop, i2.width = t2.rect.element.width + k2, i2.height = t2.rect.element.height + D2 + r2.offsetTop, i2.scale = U, i2.xRotation = v2.vertical ? Math.PI : 0, i2.yRotation = v2.horizontal ? Math.PI : 0, i2.zRotation = g.main + g.sub + m, i2.stage = { x: T.x + P, y: T.y + G + r2.offsetTop, width: T.width, height: T.height }, i2.overlay = { x: S2.x + _2 + P, y: S2.y + R + G + r2.offsetTop, width: S2.width, height: S2.height }, i2.outlineWidth = O2, o2 && (c2 && (o2.translateX = null, o2.translateY = null, o2.markupX = null, o2.markupY = null, o2.markupWidth = null, o2.markupHeight = null), o2.opacity = w ? 0.3 : 1, o2.stageOffsetX = _2, o2.stageOffsetY = R, o2.markupX = S2.x + _2, o2.markupY = S2.y + R, o2.markupWidth = S2.width, o2.markupHeight = S2.height, o2.allowInteraction = A);
   }
 }) });
 var createGroup = function() {
@@ -22095,8 +29066,8 @@ var cropRect = createView2({ ignoreRect: true, ignoreRectUpdate: true, name: "cr
       S2.forEach(function(e4, t3) {
         transformTranslateScale(i2, e4, y, E + R * (C2 + t3 * C2), w / 100, 0.01), e4.opacity = 0.5;
       });
-      var O = m.slice(5);
-      C2 = 1 / O.length, O.forEach(function(e4, t3) {
+      var O2 = m.slice(5);
+      C2 = 1 / O2.length, O2.forEach(function(e4, t3) {
         transformTranslateScale(i2, e4, y + w * (C2 + t3 * C2), E, 0.01, R / 100), e4.opacity = 0.5;
       });
     } else if (i2) {
@@ -22172,14 +29143,14 @@ var wrapper = function(e3, t2) {
     });
   } });
 };
-var warn = function() {
+var warn2 = function() {
   return console.log("Doka: localStorage not available");
 };
 var getData = function(e3) {
   try {
     JSON.parse(localStorage.getItem(e3) || "{}");
   } catch (e4) {
-    warn();
+    warn2();
   }
   return {};
 };
@@ -22189,7 +29160,7 @@ var setStoredValue = function(e3, t2, r2) {
   try {
     localStorage.setItem(e3, JSON.stringify(n));
   } catch (e4) {
-    warn();
+    warn2();
   }
   return r2;
 };
@@ -23492,7 +30463,7 @@ var getViewportBySize = function(e3, t2) {
   return 0 === e3 && 0 === t2 ? "detached" : (r2 += t2 > e3 ? "portrait" : "landscape", (r2 += e3 <= 600 ? " x-cramped" : e3 <= 1e3 ? " x-comfortable" : " x-spacious").trim());
 };
 var createApp2 = function() {
-  var e3 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, t2 = getOptions2(), r2 = createStore2(createInitialState2(t2), [queries2, createOptionQueries2(t2)], [actions2, createOptionActions2(t2)]);
+  var e3 = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : {}, t2 = getOptions2(), r2 = createStore3(createInitialState2(t2), [queries2, createOptionQueries2(t2)], [actions2, createOptionActions2(t2)]);
   r2.dispatch("SET_OPTIONS", { options: e3 });
   var n = function() {
     document.hidden || r2.dispatch("KICK");
@@ -23685,7 +30656,7 @@ var OptionTypes2 = {};
 var create$12 = fn2;
 var destroy2 = fn2;
 var parse3 = fn2;
-var find2 = fn2;
+var find3 = fn2;
 var getOptions$12 = fn2;
 var setOptions$12 = fn2;
 if (supported2()) {
@@ -23699,7 +30670,7 @@ if (supported2()) {
     });
   });
   dispatch = function e3() {
-    document.dispatchEvent(new CustomEvent("doka:loaded", { detail: { supported: supported2, create: create$12, destroy: destroy2, parse: parse3, find: find2, setOptions: setOptions$12 } })), document.removeEventListener("DOMContentLoaded", e3);
+    document.dispatchEvent(new CustomEvent("doka:loaded", { detail: { supported: supported2, create: create$12, destroy: destroy2, parse: parse3, find: find3, setOptions: setOptions$12 } })), document.removeEventListener("DOMContentLoaded", e3);
   };
   "loading" !== document.readyState ? setTimeout(function() {
     return dispatch();
@@ -23725,7 +30696,7 @@ if (supported2()) {
     }).map(function(e4) {
       return create$12(e4);
     });
-  }, find2 = function(e3) {
+  }, find3 = function(e3) {
     var t2 = state2.apps.find(function(t3) {
       return t3.isAttachedTo(e3);
     });
@@ -24038,7 +31009,7 @@ var t = { get exports() {
       for (var M = a2, x = 0; x < r3; x += 2) {
         for (var S2 = t2[x], R = S2 >>> 23, T = M + (8388607 & S2); M < T; ) l3 = UZIP2.F._writeLit(o2[M++], C2, f2, l3);
         if (0 != R) {
-          var O = t2[x + 1], P = O >> 16, H2 = O >> 8 & 255, L = 255 & O;
+          var O2 = t2[x + 1], P = O2 >> 16, H2 = O2 >> 8 & 255, L = 255 & O2;
           y(f2, l3 = UZIP2.F._writeLit(257 + H2, C2, f2, l3), R - v2.of0[H2]), l3 += v2.exb[H2], b(f2, l3 = UZIP2.F._writeLit(L, I, f2, l3), P - v2.df0[L]), l3 += v2.dxb[L], M += R;
         }
       }
@@ -24157,8 +31128,8 @@ var t = { get exports() {
           }
           var R = A[c2(e4, F) & y];
           F += 15 & R;
-          var T = R >>> 4, O = u.ddef[T], P = (O >>> 4) + o2(e4, F, 15 & O);
-          for (F += 15 & O, h2 && (t2 = UZIP2.F._check(t2, E + (1 << 17))); E < x; ) t2[E] = t2[E++ - P], t2[E] = t2[E++ - P], t2[E] = t2[E++ - P], t2[E] = t2[E++ - P];
+          var T = R >>> 4, O2 = u.ddef[T], P = (O2 >>> 4) + o2(e4, F, 15 & O2);
+          for (F += 15 & O2, h2 && (t2 = UZIP2.F._check(t2, E + (1 << 17))); E < x; ) t2[E] = t2[E++ - P], t2[E] = t2[E++ - P], t2[E] = t2[E++ - P], t2[E] = t2[E++ - P];
           E = x;
         }
       }
@@ -26170,7 +33141,7 @@ function isObject3(value) {
 function isEmpty3(obj) {
   return !Object.keys(obj).length;
 }
-function isFunction4(value) {
+function isFunction5(value) {
   return typeof value === "function";
 }
 function hasOwnProperty(object, property) {
@@ -26184,12 +33155,12 @@ function validateChanges(initial, changes) {
   return changes;
 }
 function validateSelector(selector) {
-  if (!isFunction4(selector)) errorHandler("selectorType");
+  if (!isFunction5(selector)) errorHandler("selectorType");
 }
 function validateHandler(handler) {
-  if (!(isFunction4(handler) || isObject3(handler))) errorHandler("handlerType");
+  if (!(isFunction5(handler) || isObject3(handler))) errorHandler("handlerType");
   if (isObject3(handler) && Object.values(handler).some(function(_handler) {
-    return !isFunction4(_handler);
+    return !isFunction5(_handler);
   })) errorHandler("handlersType");
 }
 function validateInitial(initial) {
@@ -26218,7 +33189,7 @@ var validators = {
   handler: validateHandler,
   initial: validateInitial
 };
-function create5(initial) {
+function create4(initial) {
   var handler = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
   validators.initial(initial);
   validators.handler(handler);
@@ -26242,21 +33213,21 @@ function create5(initial) {
   return [getState3, setState2];
 }
 function extractChanges(state3, causedChanges) {
-  return isFunction4(causedChanges) ? causedChanges(state3.current) : causedChanges;
+  return isFunction5(causedChanges) ? causedChanges(state3.current) : causedChanges;
 }
 function updateState(state3, changes) {
   state3.current = _objectSpread22(_objectSpread22({}, state3.current), changes);
   return changes;
 }
 function didStateUpdate(state3, handler, changes) {
-  isFunction4(handler) ? handler(state3.current) : Object.keys(changes).forEach(function(field) {
+  isFunction5(handler) ? handler(state3.current) : Object.keys(changes).forEach(function(field) {
     var _handler$field;
     return (_handler$field = handler[field]) === null || _handler$field === void 0 ? void 0 : _handler$field.call(handler, state3.current[field]);
   });
   return changes;
 }
 var index = {
-  create: create5
+  create: create4
 };
 var state_local_default = index;
 
@@ -26382,7 +33353,7 @@ function config2(globalConfig) {
     };
   });
 }
-function init() {
+function init2() {
   var state3 = getState2(function(_ref) {
     var monaco = _ref.monaco, isInitialized = _ref.isInitialized, resolve = _ref.resolve;
     return {
@@ -26470,7 +33441,7 @@ var wrapperPromise = new Promise(function(resolve, reject) {
 });
 var loader = {
   config: config2,
-  init,
+  init: init2,
   __getMonacoInstance
 };
 var le = { wrapper: { display: "flex", position: "relative", textAlign: "initial" }, fullWidth: { width: "100%" }, hide: { display: "none" } };
@@ -26513,7 +33484,7 @@ function te(e3, r2) {
   return e3.Uri.parse(r2);
 }
 function Oe({ original: e3, modified: r2, language: n, originalLanguage: t2, modifiedLanguage: a2, originalModelPath: m, modifiedModelPath: E, keepCurrentOriginalModel: g = false, keepCurrentModifiedModel: N = false, theme: x = "light", loading: P = "Loading...", options: y = {}, height: V = "100%", width: z = "100%", className: F, wrapperProps: j = {}, beforeMount: A = D, onMount: q = D }) {
-  let [M, O] = useState(false), [T, s2] = useState(true), u = useRef(null), c2 = useRef(null), w = useRef(null), d = useRef(q), o2 = useRef(A), b = useRef(false);
+  let [M, O2] = useState(false), [T, s2] = useState(true), u = useRef(null), c2 = useRef(null), w = useRef(null), d = useRef(q), o2 = useRef(A), b = useRef(false);
   k(() => {
     let i2 = loader.init();
     return i2.then((f2) => (c2.current = f2) && s2(false)).catch((f2) => f2?.type !== "cancelation" && console.error("Monaco initialization: error:", f2)), () => u.current ? I() : i2.cancel();
@@ -26546,7 +33517,7 @@ function Oe({ original: e3, modified: r2, language: n, originalLanguage: t2, mod
     let i2 = h(c2.current, e3 || "", t2 || n || "text", m || ""), f2 = h(c2.current, r2 || "", a2 || n || "text", E || "");
     u.current?.setModel({ original: i2, modified: f2 });
   }, [n, r2, a2, e3, t2, m, E]), U = useCallback(() => {
-    !b.current && w.current && (u.current = c2.current.editor.createDiffEditor(w.current, { automaticLayout: true, ...y }), L(), c2.current?.editor.setTheme(x), O(true), b.current = true);
+    !b.current && w.current && (u.current = c2.current.editor.createDiffEditor(w.current, { automaticLayout: true, ...y }), L(), c2.current?.editor.setTheme(x), O2(true), b.current = true);
   }, [y, x, L]);
   useEffect(() => {
     M && d.current(u.current, c2.current);
@@ -26569,7 +33540,7 @@ function He(e3) {
 }
 var se = He;
 var _ = /* @__PURE__ */ new Map();
-function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, language: a2, path: m, theme: E = "light", line: g, loading: N = "Loading...", options: x = {}, overrideServices: P = {}, saveViewState: y = true, keepCurrentModel: V = false, width: z = "100%", height: F = "100%", className: j, wrapperProps: A = {}, beforeMount: q = D, onMount: M = D, onChange: O, onValidate: T = D }) {
+function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, language: a2, path: m, theme: E = "light", line: g, loading: N = "Loading...", options: x = {}, overrideServices: P = {}, saveViewState: y = true, keepCurrentModel: V = false, width: z = "100%", height: F = "100%", className: j, wrapperProps: A = {}, beforeMount: q = D, onMount: M = D, onChange: O2, onValidate: T = D }) {
   let [s2, u] = useState(false), [c2, w] = useState(true), d = useRef(null), o2 = useRef(null), b = useRef(null), L = useRef(M), U = useRef(q), I = useRef(), i2 = useRef(t2), f2 = se(m), Q = useRef(false), B = useRef(false);
   k(() => {
     let p = loader.init();
@@ -26601,10 +33572,10 @@ function Ve({ defaultValue: e3, defaultLanguage: r2, defaultPath: n, value: t2, 
   }, [s2]), useEffect(() => {
     !c2 && !s2 && X2();
   }, [c2, s2, X2]), i2.current = t2, useEffect(() => {
-    s2 && O && (I.current?.dispose(), I.current = o2.current?.onDidChangeModelContent((p) => {
-      B.current || O(o2.current.getValue(), p);
+    s2 && O2 && (I.current?.dispose(), I.current = o2.current?.onDidChangeModelContent((p) => {
+      B.current || O2(o2.current.getValue(), p);
     }));
-  }, [s2, O]), useEffect(() => {
+  }, [s2, O2]), useEffect(() => {
     if (s2) {
       let p = d.current.editor.onDidChangeMarkers((R) => {
         let G = o2.current.getModel()?.uri;
@@ -26716,9 +33687,9 @@ var LinkField = ({
   const [manualTarget, setManualTarget] = useState("_self");
   const values = useMemo(() => {
     if (!merchantInfo) return value || [];
-    const current = value || [];
+    const current2 = value || [];
     return merchantInfo.languages.map((code) => {
-      const existing = current.find((v2) => v2.code === code);
+      const existing = current2.find((v2) => v2.code === code);
       return existing || { code, value: { url: "" } };
     });
   }, [value, merchantInfo]);
