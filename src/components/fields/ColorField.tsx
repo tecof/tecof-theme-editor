@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FieldLabel } from '@puckeditor/core';
+import { FieldLabel } from './FieldLabel';
 import { RotateCcw } from 'lucide-react';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 

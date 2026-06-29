@@ -1,10 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Puck, blocksPlugin, outlinePlugin, fieldsPlugin, type Data, type Config } from '@puckeditor/core';
-import { useTecof } from './TecofProvider';
-import type { TecofEditorProps, PuckPageData } from '../types';
+import { ActionBar, Puck, blocksPlugin, fieldsPlugin, outlinePlugin, usePuck, type Config, type Data } from '@puckeditor/core';
+import { ArrowDown, ArrowUp, Search, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, createContext, useContext } from 'react';
 import type { TecofApiClient } from '../api';
+import type { PuckPageData, TecofEditorProps } from '../types';
+import { useTecof } from './TecofProvider';
 
 const EMPTY_PAGE: PuckPageData = { content: [], root: { props: {} }, zones: {} };
+
+interface DrawerSearchContextType {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  config: any;
+}
+
+const DrawerSearchContext = createContext<DrawerSearchContextType | null>(null);
 
 /* ─── ComponentDrawerItem — Hover-triggered lazy preview ─── */
 
@@ -75,6 +84,180 @@ const ComponentDrawerItem = ({
   );
 };
 
+/* ─── CustomDrawer & CustomDrawerItem stable overrides ─── */
+
+const CustomDrawer = ({ children }: { children: React.ReactNode }) => {
+  const context = useContext(DrawerSearchContext);
+  if (!context) return <div className="tecof-drawer-list-layout">{children}</div>;
+  const { searchQuery, setSearchQuery } = context;
+
+  return (
+    <div className="tecof-drawer-wrapper-layout">
+      <div className="tecof-drawer-search-wrapper">
+        <div className="tecof-drawer-search-box">
+          <Search size={14} color="#71717a" />
+          <input
+            type="text"
+            placeholder="Blok ara..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="tecof-drawer-search-input"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="tecof-drawer-clear-btn"
+              title="Temizle"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="tecof-drawer-list-layout">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const CustomDrawerItem = ({ children, name }: { children: React.ReactNode, name: string }) => {
+  const context = useContext(DrawerSearchContext);
+  const { apiClient } = useTecof();
+
+  if (!context) {
+    return <ComponentDrawerItem name={name} apiClient={apiClient}>{children}</ComponentDrawerItem>;
+  }
+
+  const { searchQuery, config } = context;
+  const componentConfig = (config as any).components?.[name];
+  const label = componentConfig?.label || name;
+
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    const matchesName = name.toLowerCase().includes(query);
+    const matchesLabel = label.toLowerCase().includes(query);
+    if (!matchesName && !matchesLabel) {
+      return <></>;
+    }
+  }
+
+  return <ComponentDrawerItem name={name} apiClient={apiClient}>{children}</ComponentDrawerItem>;
+};
+
+/* ─── AutoFieldsOnSelect — Switch to fields plugin when a component is selected ─── */
+
+const AutoFieldsOnSelect = () => {
+  const { selectedItem, dispatch } = usePuck();
+  const prevSelectedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const currentId = selectedItem?.props?.id || null;
+    if (currentId && currentId !== prevSelectedRef.current) {
+      dispatch({
+        type: 'setUi',
+        ui: { plugin: { current: 'fields' } },
+      });
+    }
+    prevSelectedRef.current = currentId;
+  }, [selectedItem, dispatch]);
+
+  return null;
+};
+
+/* ─── CustomActionBar — Adds up and down sorting arrows to the action bar ─── */
+
+const CustomActionBar = ({ children, label }: { children: React.ReactNode; label?: string }) => {
+  const { appState, dispatch, getSelectorForId, selectedItem } = usePuck();
+
+  const canMoveUp = useMemo(() => {
+    if (!selectedItem || !selectedItem.props?.id) return false;
+    const selector = getSelectorForId(selectedItem.props.id);
+    if (!selector) return false;
+    return selector.index > 0;
+  }, [selectedItem, getSelectorForId]);
+
+  const canMoveDown = useMemo(() => {
+    if (!selectedItem || !selectedItem.props?.id) return false;
+    const selector = getSelectorForId(selectedItem.props.id);
+    if (!selector) return false;
+    const { index, zone } = selector;
+    const items = zone ? (appState.data.zones?.[zone] || []) : (appState.data.content || []);
+    return index < items.length - 1;
+  }, [selectedItem, getSelectorForId, appState.data]);
+
+  const handleMove = useCallback((direction: 'up' | 'down') => {
+    if (!selectedItem || !selectedItem.props?.id) return;
+    const selector = getSelectorForId(selectedItem.props.id);
+    if (!selector) return;
+
+    const { index, zone } = selector;
+    let items = zone ? [...(appState.data.zones?.[zone] || [])] : [...(appState.data.content || [])];
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+
+    // Swap items in place
+    const temp = items[index];
+    items[index] = items[targetIndex];
+    items[targetIndex] = temp;
+
+    if (zone) {
+      dispatch({
+        type: 'setData',
+        data: {
+          ...appState.data,
+          zones: {
+            ...appState.data.zones,
+            [zone]: items,
+          },
+        },
+      });
+      dispatch({
+        type: 'setUi',
+        ui: {
+          itemSelector: {
+            index: targetIndex,
+            zone,
+          },
+        },
+      });
+    } else {
+      dispatch({
+        type: 'setData',
+        data: {
+          ...appState.data,
+          content: items,
+        },
+      });
+      dispatch({
+        type: 'setUi',
+        ui: {
+          itemSelector: {
+            index: targetIndex,
+          },
+        },
+      });
+    }
+  }, [selectedItem, getSelectorForId, appState.data, dispatch]);
+
+  return (
+    <ActionBar label={label}>
+      <ActionBar.Group>
+        <ActionBar.Action onClick={() => handleMove('up')} disabled={!canMoveUp} label="Yukarı Taşı">
+          <ArrowUp size={14} />
+        </ActionBar.Action>
+        <ActionBar.Action onClick={() => handleMove('down')} disabled={!canMoveDown} label="Aşağı Taşı">
+          <ArrowDown size={14} />
+        </ActionBar.Action>
+        <ActionBar.Separator />
+        {children}
+      </ActionBar.Group>
+    </ActionBar>
+  );
+};
+
 /**
  * TecofEditor — Puck CMS page editor.
  *
@@ -108,6 +291,7 @@ export const TecofEditor = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const draftDataRef = useRef<Data | null>(null);
   const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
@@ -247,6 +431,40 @@ export const TecofEditor = ({
     };
   }, [isEmbedded]);
 
+  /* ── Context & Memoized Overrides ── */
+  const searchContextValue = useMemo(() => ({
+    searchQuery,
+    setSearchQuery,
+    config
+  }), [searchQuery, config]);
+
+  const plugins = useMemo(() => [
+    { ...blocksPlugin(), label: 'Bloklar' },
+    { ...outlinePlugin(), label: 'Anahat' },
+    { ...fieldsPlugin({ desktopSideBar: 'right' }), label: 'Alanlar' },
+    ...(extraPlugins || []),
+  ], [extraPlugins]);
+
+  const mergedOverrides = useMemo(() => {
+    return {
+      header: () => <></>,
+      drawer: CustomDrawer,
+      drawerItem: CustomDrawerItem,
+      actionBar: ({ children, label }: { children: React.ReactNode, label?: string }) => {
+        return <CustomActionBar label={label}>{children}</CustomActionBar>;
+      },
+      puck: ({ children }: { children: React.ReactNode }) => {
+        return (
+          <>
+            <AutoFieldsOnSelect />
+            {children}
+          </>
+        );
+      },
+      ...(overrides || {})
+    };
+  }, [overrides]);
+
   /* ── Loading ── */
   if (loading || !initialData) {
     return (
@@ -259,39 +477,25 @@ export const TecofEditor = ({
     );
   }
 
-  /* ── Plugins & Overrides ── */
-  const plugins = [
-    { ...blocksPlugin(), label: 'Bloklar' },
-    { ...outlinePlugin(), label: 'Anahat' },
-    { ...fieldsPlugin({ desktopSideBar: 'right' }), label: 'Alanlar' },
-    ...(extraPlugins || []),
-  ];
-
-  const mergedOverrides = {
-    header: () => <></>,
-    drawerItem: ({ children, name }: { children: React.ReactNode, name: string }) => {
-      return <ComponentDrawerItem name={name} apiClient={apiClient}>{children}</ComponentDrawerItem>;
-    },
-    ...(overrides || {})
-  };
-
   return (
-    <div className={`tecof-editor-wrapper ${className || ''}`.trim()}>
-      <Puck
-        plugins={plugins}
-        config={config as Config}
-        data={initialData}
-        onPublish={handlePuckPublish}
-        onChange={handleChange}
-        overrides={mergedOverrides}
-        metadata={{ editMode: true }}
-      />
-      {saving && (
-        <div className="tecof-editor-save-indicator">
-          {saveStatus === 'error' ? 'Save failed' : 'Saving...'}
-        </div>
-      )}
-    </div>
+    <DrawerSearchContext.Provider value={searchContextValue}>
+      <div className={`tecof-editor-wrapper ${className || ''}`.trim()}>
+        <Puck
+          plugins={plugins}
+          config={config as Config}
+          data={initialData}
+          onPublish={handlePuckPublish}
+          onChange={handleChange}
+          overrides={mergedOverrides}
+          metadata={{ editMode: true }}
+        />
+        {saving && (
+          <div className="tecof-editor-save-indicator">
+            {saveStatus === 'error' ? 'Save failed' : 'Saving...'}
+          </div>
+        )}
+      </div>
+    </DrawerSearchContext.Provider>
   );
 };
 

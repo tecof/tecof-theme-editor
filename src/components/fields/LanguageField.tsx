@@ -4,7 +4,7 @@ import { useLanguages } from './useLanguages';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import { Languages, Copy, Loader2 } from 'lucide-react';
-import { FieldLabel } from '@puckeditor/core';
+import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 
 /* ─── Shared Tab Bar Component ─── */

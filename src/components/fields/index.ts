@@ -24,3 +24,5 @@ export type { CmsCollectionFieldProps, CmsCollectionFieldOptions, CmsCollectionF
 
 export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';
+export { FieldLabel } from './FieldLabel';
+export type { FieldLabelProps } from './FieldLabel';

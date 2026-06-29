@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import React, { forwardRef, useCallback, useRef } from 'react';
-import { FieldLabel } from '@puckeditor/core';
+import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 import Editor from '@monaco-editor/react';
 

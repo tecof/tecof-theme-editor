@@ -1,7 +1,12 @@
 import * as React__default from 'react';
-import React__default__default, { createContext, memo, forwardRef, createElement, useRef, useCallback, useContext, useState, useEffect, useMemo, Component, useLayoutEffect } from 'react';
+import React__default__default, { createContext, forwardRef, createElement, memo, useRef, useCallback, useContext, useState, useEffect, useMemo, Component, useLayoutEffect } from 'react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
-import { blocksPlugin, outlinePlugin, fieldsPlugin, Puck, Render, FieldLabel } from '@puckeditor/core';
+import { blocksPlugin, outlinePlugin, fieldsPlugin, Puck, Render, usePuck, ActionBar } from '@puckeditor/core';
+import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
+import { nanoid } from 'nanoid';
+import * as ReactDOM from 'react-dom';
+import ReactDOM__default, { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -20,8 +25,6 @@ import Link3 from '@tiptap/extension-link';
 import Code2 from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
 import Image3 from '@tiptap/extension-image';
-import * as ReactDOM from 'react-dom';
-import ReactDOM__default from 'react-dom';
 
 // src/components/TecofProvider.tsx
 
@@ -294,7 +297,348 @@ function useTecof() {
   }
   return ctx;
 }
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.js
+var mergeClasses = (...classes) => classes.filter((className, index2, array) => {
+  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
+}).join(" ").trim();
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.js
+var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toCamelCase.js
+var toCamelCase = (string) => string.replace(
+  /^([A-Z])|[\s-_]+(\w)/g,
+  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
+);
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/toPascalCase.js
+var toPascalCase = (string) => {
+  const camelCase = toCamelCase(string);
+  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
+};
+
+// node_modules/lucide-react/dist/esm/defaultAttributes.js
+var defaultAttributes = {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: 24,
+  height: 24,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round"
+};
+
+// node_modules/lucide-react/dist/esm/shared/src/utils/hasA11yProp.js
+var hasA11yProp = (props) => {
+  for (const prop in props) {
+    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
+      return true;
+    }
+  }
+  return false;
+};
+var LucideContext = createContext({});
+var useLucideContext = () => useContext(LucideContext);
+
+// node_modules/lucide-react/dist/esm/Icon.js
+var Icon = forwardRef(
+  ({ color, size, strokeWidth, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => {
+    const {
+      size: contextSize = 24,
+      strokeWidth: contextStrokeWidth = 2,
+      absoluteStrokeWidth: contextAbsoluteStrokeWidth = false,
+      color: contextColor = "currentColor",
+      className: contextClass = ""
+    } = useLucideContext() ?? {};
+    const calculatedStrokeWidth = absoluteStrokeWidth ?? contextAbsoluteStrokeWidth ? Number(strokeWidth ?? contextStrokeWidth) * 24 / Number(size ?? contextSize) : strokeWidth ?? contextStrokeWidth;
+    return createElement(
+      "svg",
+      {
+        ref,
+        ...defaultAttributes,
+        width: size ?? contextSize ?? defaultAttributes.width,
+        height: size ?? contextSize ?? defaultAttributes.height,
+        stroke: color ?? contextColor,
+        strokeWidth: calculatedStrokeWidth,
+        className: mergeClasses("lucide", contextClass, className),
+        ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
+        ...rest
+      },
+      [
+        ...iconNode.map(([tag, attrs]) => createElement(tag, attrs)),
+        ...Array.isArray(children) ? children : [children]
+      ]
+    );
+  }
+);
+
+// node_modules/lucide-react/dist/esm/createLucideIcon.js
+var createLucideIcon = (iconName, iconNode) => {
+  const Component2 = forwardRef(
+    ({ className, ...props }, ref) => createElement(Icon, {
+      ref,
+      iconNode,
+      className: mergeClasses(
+        `lucide-${toKebabCase(toPascalCase(iconName))}`,
+        `lucide-${iconName}`,
+        className
+      ),
+      ...props
+    })
+  );
+  Component2.displayName = toPascalCase(iconName);
+  return Component2;
+};
+
+// node_modules/lucide-react/dist/esm/icons/arrow-down.js
+var __iconNode = [
+  ["path", { d: "M12 5v14", key: "s699le" }],
+  ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
+];
+var ArrowDown = createLucideIcon("arrow-down", __iconNode);
+
+// node_modules/lucide-react/dist/esm/icons/arrow-up.js
+var __iconNode2 = [
+  ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
+  ["path", { d: "M12 19V5", key: "x0mq9r" }]
+];
+var ArrowUp = createLucideIcon("arrow-up", __iconNode2);
+
+// node_modules/lucide-react/dist/esm/icons/check.js
+var __iconNode3 = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+var Check = createLucideIcon("check", __iconNode3);
+
+// node_modules/lucide-react/dist/esm/icons/chevron-down.js
+var __iconNode4 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+var ChevronDown = createLucideIcon("chevron-down", __iconNode4);
+
+// node_modules/lucide-react/dist/esm/icons/chevron-right.js
+var __iconNode5 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+var ChevronRight = createLucideIcon("chevron-right", __iconNode5);
+
+// node_modules/lucide-react/dist/esm/icons/chevron-up.js
+var __iconNode6 = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+var ChevronUp = createLucideIcon("chevron-up", __iconNode6);
+
+// node_modules/lucide-react/dist/esm/icons/code.js
+var __iconNode7 = [
+  ["path", { d: "m16 18 6-6-6-6", key: "eg8j8" }],
+  ["path", { d: "m8 6-6 6 6 6", key: "ppft3o" }]
+];
+var Code = createLucideIcon("code", __iconNode7);
+
+// node_modules/lucide-react/dist/esm/icons/copy.js
+var __iconNode8 = [
+  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
+  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
+];
+var Copy = createLucideIcon("copy", __iconNode8);
+
+// node_modules/lucide-react/dist/esm/icons/database.js
+var __iconNode9 = [
+  ["ellipse", { cx: "12", cy: "5", rx: "9", ry: "3", key: "msslwz" }],
+  ["path", { d: "M3 5V19A9 3 0 0 0 21 19V5", key: "1wlel7" }],
+  ["path", { d: "M3 12A9 3 0 0 0 21 12", key: "mv7ke4" }]
+];
+var Database = createLucideIcon("database", __iconNode9);
+
+// node_modules/lucide-react/dist/esm/icons/external-link.js
+var __iconNode10 = [
+  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
+  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
+  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
+];
+var ExternalLink = createLucideIcon("external-link", __iconNode10);
+
+// node_modules/lucide-react/dist/esm/icons/file-text.js
+var __iconNode11 = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+      key: "1oefj6"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
+  ["path", { d: "M10 9H8", key: "b1mrlr" }],
+  ["path", { d: "M16 13H8", key: "t4e002" }],
+  ["path", { d: "M16 17H8", key: "z1uh3a" }]
+];
+var FileText = createLucideIcon("file-text", __iconNode11);
+
+// node_modules/lucide-react/dist/esm/icons/file.js
+var __iconNode12 = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+      key: "1oefj6"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
+];
+var File2 = createLucideIcon("file", __iconNode12);
+
+// node_modules/lucide-react/dist/esm/icons/folder-open.js
+var __iconNode13 = [
+  [
+    "path",
+    {
+      d: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2",
+      key: "usdka0"
+    }
+  ]
+];
+var FolderOpen = createLucideIcon("folder-open", __iconNode13);
+
+// node_modules/lucide-react/dist/esm/icons/globe.js
+var __iconNode14 = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
+  ["path", { d: "M2 12h20", key: "9i4pu4" }]
+];
+var Globe = createLucideIcon("globe", __iconNode14);
+
+// node_modules/lucide-react/dist/esm/icons/grip-vertical.js
+var __iconNode15 = [
+  ["circle", { cx: "9", cy: "12", r: "1", key: "1vctgf" }],
+  ["circle", { cx: "9", cy: "5", r: "1", key: "hp0tcf" }],
+  ["circle", { cx: "9", cy: "19", r: "1", key: "fkjjf6" }],
+  ["circle", { cx: "15", cy: "12", r: "1", key: "1tmaij" }],
+  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
+  ["circle", { cx: "15", cy: "19", r: "1", key: "f4zoj3" }]
+];
+var GripVertical = createLucideIcon("grip-vertical", __iconNode15);
+
+// node_modules/lucide-react/dist/esm/icons/image-plus.js
+var __iconNode16 = [
+  ["path", { d: "M16 5h6", key: "1vod17" }],
+  ["path", { d: "M19 2v6", key: "4bpg5p" }],
+  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
+];
+var ImagePlus = createLucideIcon("image-plus", __iconNode16);
+
+// node_modules/lucide-react/dist/esm/icons/image.js
+var __iconNode17 = [
+  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
+  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
+  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+];
+var Image2 = createLucideIcon("image", __iconNode17);
+
+// node_modules/lucide-react/dist/esm/icons/languages.js
+var __iconNode18 = [
+  ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
+  ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
+  ["path", { d: "M2 5h12", key: "or177f" }],
+  ["path", { d: "M7 2h1", key: "1t2jsx" }],
+  ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
+  ["path", { d: "M14 18h6", key: "1m8k6r" }]
+];
+var Languages = createLucideIcon("languages", __iconNode18);
+
+// node_modules/lucide-react/dist/esm/icons/link-2.js
+var __iconNode19 = [
+  ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
+  ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
+  ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
+];
+var Link2 = createLucideIcon("link-2", __iconNode19);
+
+// node_modules/lucide-react/dist/esm/icons/link.js
+var __iconNode20 = [
+  ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
+  ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
+];
+var Link = createLucideIcon("link", __iconNode20);
+
+// node_modules/lucide-react/dist/esm/icons/loader-circle.js
+var __iconNode21 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+var LoaderCircle = createLucideIcon("loader-circle", __iconNode21);
+
+// node_modules/lucide-react/dist/esm/icons/pencil.js
+var __iconNode22 = [
+  [
+    "path",
+    {
+      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+      key: "1a8usu"
+    }
+  ],
+  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+];
+var Pencil = createLucideIcon("pencil", __iconNode22);
+
+// node_modules/lucide-react/dist/esm/icons/plus.js
+var __iconNode23 = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+var Plus = createLucideIcon("plus", __iconNode23);
+
+// node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
+var __iconNode24 = [
+  ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
+  ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
+  ["path", { d: "M16 16h5v5", key: "ccwih5" }]
+];
+var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode24);
+
+// node_modules/lucide-react/dist/esm/icons/refresh-cw.js
+var __iconNode25 = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+var RefreshCw = createLucideIcon("refresh-cw", __iconNode25);
+
+// node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
+var __iconNode26 = [
+  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
+];
+var RotateCcw = createLucideIcon("rotate-ccw", __iconNode26);
+
+// node_modules/lucide-react/dist/esm/icons/search.js
+var __iconNode27 = [
+  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
+  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
+];
+var Search = createLucideIcon("search", __iconNode27);
+
+// node_modules/lucide-react/dist/esm/icons/trash-2.js
+var __iconNode28 = [
+  ["path", { d: "M10 11v6", key: "nco0om" }],
+  ["path", { d: "M14 11v6", key: "outv1u" }],
+  ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
+  ["path", { d: "M3 6h18", key: "d0wm0j" }],
+  ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
+];
+var Trash2 = createLucideIcon("trash-2", __iconNode28);
+
+// node_modules/lucide-react/dist/esm/icons/upload.js
+var __iconNode29 = [
+  ["path", { d: "M12 3v12", key: "1x0j5s" }],
+  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
+];
+var Upload = createLucideIcon("upload", __iconNode29);
+
+// node_modules/lucide-react/dist/esm/icons/x.js
+var __iconNode30 = [
+  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
+  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
+];
+var X = createLucideIcon("x", __iconNode30);
 var EMPTY_PAGE = { content: [], root: { props: {} }, zones: {} };
+var DrawerSearchContext = createContext(null);
 var ComponentDrawerItem = ({
   name: name3,
   apiClient,
@@ -344,6 +688,143 @@ var ComponentDrawerItem = ({
     ] })
   ] });
 };
+var CustomDrawer = ({ children }) => {
+  const context = useContext(DrawerSearchContext);
+  if (!context) return /* @__PURE__ */ jsx("div", { className: "tecof-drawer-list-layout", children });
+  const { searchQuery, setSearchQuery } = context;
+  return /* @__PURE__ */ jsxs("div", { className: "tecof-drawer-wrapper-layout", children: [
+    /* @__PURE__ */ jsx("div", { className: "tecof-drawer-search-wrapper", children: /* @__PURE__ */ jsxs("div", { className: "tecof-drawer-search-box", children: [
+      /* @__PURE__ */ jsx(Search, { size: 14, color: "#71717a" }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "text",
+          placeholder: "Blok ara...",
+          value: searchQuery,
+          onChange: (e3) => setSearchQuery(e3.target.value),
+          className: "tecof-drawer-search-input"
+        }
+      ),
+      searchQuery && /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: () => setSearchQuery(""),
+          className: "tecof-drawer-clear-btn",
+          title: "Temizle",
+          children: /* @__PURE__ */ jsx(X, { size: 14 })
+        }
+      )
+    ] }) }),
+    /* @__PURE__ */ jsx("div", { className: "tecof-drawer-list-layout", children })
+  ] });
+};
+var CustomDrawerItem = ({ children, name: name3 }) => {
+  const context = useContext(DrawerSearchContext);
+  const { apiClient } = useTecof();
+  if (!context) {
+    return /* @__PURE__ */ jsx(ComponentDrawerItem, { name: name3, apiClient, children });
+  }
+  const { searchQuery, config: config3 } = context;
+  const componentConfig = config3.components?.[name3];
+  const label = componentConfig?.label || name3;
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    const matchesName = name3.toLowerCase().includes(query);
+    const matchesLabel = label.toLowerCase().includes(query);
+    if (!matchesName && !matchesLabel) {
+      return /* @__PURE__ */ jsx(Fragment, {});
+    }
+  }
+  return /* @__PURE__ */ jsx(ComponentDrawerItem, { name: name3, apiClient, children });
+};
+var AutoFieldsOnSelect = () => {
+  const { selectedItem, dispatch } = usePuck();
+  const prevSelectedRef = useRef(null);
+  useEffect(() => {
+    const currentId = selectedItem?.props?.id || null;
+    if (currentId && currentId !== prevSelectedRef.current) {
+      dispatch({
+        type: "setUi",
+        ui: { plugin: { current: "fields" } }
+      });
+    }
+    prevSelectedRef.current = currentId;
+  }, [selectedItem, dispatch]);
+  return null;
+};
+var CustomActionBar = ({ children, label }) => {
+  const { appState, dispatch, getSelectorForId, selectedItem } = usePuck();
+  const canMoveUp = useMemo(() => {
+    if (!selectedItem || !selectedItem.props?.id) return false;
+    const selector = getSelectorForId(selectedItem.props.id);
+    if (!selector) return false;
+    return selector.index > 0;
+  }, [selectedItem, getSelectorForId]);
+  const canMoveDown = useMemo(() => {
+    if (!selectedItem || !selectedItem.props?.id) return false;
+    const selector = getSelectorForId(selectedItem.props.id);
+    if (!selector) return false;
+    const { index: index2, zone } = selector;
+    const items = zone ? appState.data.zones?.[zone] || [] : appState.data.content || [];
+    return index2 < items.length - 1;
+  }, [selectedItem, getSelectorForId, appState.data]);
+  const handleMove = useCallback((direction) => {
+    if (!selectedItem || !selectedItem.props?.id) return;
+    const selector = getSelectorForId(selectedItem.props.id);
+    if (!selector) return;
+    const { index: index2, zone } = selector;
+    let items = zone ? [...appState.data.zones?.[zone] || []] : [...appState.data.content || []];
+    const targetIndex = direction === "up" ? index2 - 1 : index2 + 1;
+    if (targetIndex < 0 || targetIndex >= items.length) return;
+    const temp = items[index2];
+    items[index2] = items[targetIndex];
+    items[targetIndex] = temp;
+    if (zone) {
+      dispatch({
+        type: "setData",
+        data: {
+          ...appState.data,
+          zones: {
+            ...appState.data.zones,
+            [zone]: items
+          }
+        }
+      });
+      dispatch({
+        type: "setUi",
+        ui: {
+          itemSelector: {
+            index: targetIndex,
+            zone
+          }
+        }
+      });
+    } else {
+      dispatch({
+        type: "setData",
+        data: {
+          ...appState.data,
+          content: items
+        }
+      });
+      dispatch({
+        type: "setUi",
+        ui: {
+          itemSelector: {
+            index: targetIndex
+          }
+        }
+      });
+    }
+  }, [selectedItem, getSelectorForId, appState.data, dispatch]);
+  return /* @__PURE__ */ jsx(ActionBar, { label, children: /* @__PURE__ */ jsxs(ActionBar.Group, { children: [
+    /* @__PURE__ */ jsx(ActionBar.Action, { onClick: () => handleMove("up"), disabled: !canMoveUp, label: "Yukar\u0131 Ta\u015F\u0131", children: /* @__PURE__ */ jsx(ArrowUp, { size: 14 }) }),
+    /* @__PURE__ */ jsx(ActionBar.Action, { onClick: () => handleMove("down"), disabled: !canMoveDown, label: "A\u015Fa\u011F\u0131 Ta\u015F\u0131", children: /* @__PURE__ */ jsx(ArrowDown, { size: 14 }) }),
+    /* @__PURE__ */ jsx(ActionBar.Separator, {}),
+    children
+  ] }) });
+};
 var TecofEditor = ({
   pageId,
   config: config3,
@@ -359,6 +840,7 @@ var TecofEditor = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
+  const [searchQuery, setSearchQuery] = useState("");
   const draftDataRef = useRef(null);
   const isEmbedded = typeof window !== "undefined" && window.parent !== window;
   useEffect(() => {
@@ -472,26 +954,41 @@ var TecofEditor = ({
       document.removeEventListener("click", handleDeselect, false);
     };
   }, [isEmbedded]);
+  const searchContextValue = useMemo(() => ({
+    searchQuery,
+    setSearchQuery,
+    config: config3
+  }), [searchQuery, config3]);
+  const plugins = useMemo(() => [
+    { ...blocksPlugin(), label: "Bloklar" },
+    { ...outlinePlugin(), label: "Anahat" },
+    { ...fieldsPlugin({ desktopSideBar: "right" }), label: "Alanlar" },
+    ...extraPlugins || []
+  ], [extraPlugins]);
+  const mergedOverrides = useMemo(() => {
+    return {
+      header: () => /* @__PURE__ */ jsx(Fragment, {}),
+      drawer: CustomDrawer,
+      drawerItem: CustomDrawerItem,
+      actionBar: ({ children, label }) => {
+        return /* @__PURE__ */ jsx(CustomActionBar, { label, children });
+      },
+      puck: ({ children }) => {
+        return /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx(AutoFieldsOnSelect, {}),
+          children
+        ] });
+      },
+      ...overrides || {}
+    };
+  }, [overrides]);
   if (loading || !initialData) {
     return /* @__PURE__ */ jsx("div", { className: `tecof-editor-loading ${className || ""}`.trim(), children: /* @__PURE__ */ jsxs("div", { className: "tecof-editor-loading-inner", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-editor-spinner" }),
       /* @__PURE__ */ jsx("p", { className: "tecof-editor-loading-text", children: "Loading editor..." })
     ] }) });
   }
-  const plugins = [
-    { ...blocksPlugin(), label: "Bloklar" },
-    { ...outlinePlugin(), label: "Anahat" },
-    { ...fieldsPlugin({ desktopSideBar: "right" }), label: "Alanlar" },
-    ...extraPlugins || []
-  ];
-  const mergedOverrides = {
-    header: () => /* @__PURE__ */ jsx(Fragment, {}),
-    drawerItem: ({ children, name: name3 }) => {
-      return /* @__PURE__ */ jsx(ComponentDrawerItem, { name: name3, apiClient, children });
-    },
-    ...overrides || {}
-  };
-  return /* @__PURE__ */ jsxs("div", { className: `tecof-editor-wrapper ${className || ""}`.trim(), children: [
+  return /* @__PURE__ */ jsx(DrawerSearchContext.Provider, { value: searchContextValue, children: /* @__PURE__ */ jsxs("div", { className: `tecof-editor-wrapper ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsx(
       Puck,
       {
@@ -505,7 +1002,1414 @@ var TecofEditor = ({
       }
     ),
     saving && /* @__PURE__ */ jsx("div", { className: "tecof-editor-save-indicator", children: saveStatus === "error" ? "Save failed" : "Saving..." })
-  ] });
+  ] }) });
+};
+
+// src/engine/document.ts
+var EMPTY_DOCUMENT = {
+  root: { props: {} },
+  content: [],
+  zones: {}
+};
+var parseDocument = (rawData) => {
+  if (!rawData) return { ...EMPTY_DOCUMENT };
+  return {
+    root: rawData.root || { props: {} },
+    content: rawData.content || [],
+    zones: rawData.zones || {}
+  };
+};
+var serializeDocument = (doc) => {
+  return {
+    root: doc.root,
+    content: doc.content,
+    zones: doc.zones
+  };
+};
+
+// src/engine/zones.ts
+var parseZoneKey = (zoneKey) => {
+  const parts = zoneKey.split(":");
+  return {
+    parentId: parts[0],
+    slotName: parts[1] || "default"
+  };
+};
+var findNodeById = (doc, id) => {
+  for (let i2 = 0; i2 < doc.content.length; i2++) {
+    if (doc.content[i2].props.id === id) {
+      return { node: doc.content[i2], path: { index: i2 } };
+    }
+  }
+  for (const [zoneKey, items] of Object.entries(doc.zones)) {
+    for (let i2 = 0; i2 < items.length; i2++) {
+      if (items[i2].props.id === id) {
+        return { node: items[i2], path: { zoneKey, index: i2 } };
+      }
+    }
+  }
+  return null;
+};
+var getDescendantZoneKeys = (zones, nodeId, acc = []) => {
+  const prefix = `${nodeId}:`;
+  for (const zoneKey of Object.keys(zones)) {
+    if (zoneKey.startsWith(prefix)) {
+      acc.push(zoneKey);
+      for (const child of zones[zoneKey]) {
+        getDescendantZoneKeys(zones, child.props.id, acc);
+      }
+    }
+  }
+  return acc;
+};
+var getParentId = (doc, id) => {
+  const res2 = findNodeById(doc, id);
+  if (!res2 || !res2.path.zoneKey) return null;
+  return parseZoneKey(res2.path.zoneKey).parentId;
+};
+var getBreadcrumbs = (doc, id) => {
+  const crumbs = [];
+  let currentId = id;
+  while (currentId) {
+    const res2 = findNodeById(doc, currentId);
+    if (!res2) break;
+    crumbs.unshift({ id: currentId, type: res2.node.type });
+    currentId = res2.path.zoneKey ? parseZoneKey(res2.path.zoneKey).parentId : null;
+  }
+  return crumbs;
+};
+var generateId = () => nanoid(8);
+var remapNodeIds = (node, sourceZones, idMap = /* @__PURE__ */ new Map()) => {
+  const oldId = node.props.id;
+  const newId = generateId();
+  idMap.set(oldId, newId);
+  const remappedNode = {
+    ...node,
+    props: {
+      ...node.props,
+      id: newId
+    }
+  };
+  const newZones = {};
+  const prefix = `${oldId}:`;
+  for (const [zoneKey, zoneItems] of Object.entries(sourceZones)) {
+    if (zoneKey.startsWith(prefix)) {
+      const slotName = zoneKey.split(":")[1];
+      const newZoneKey = `${newId}:${slotName}`;
+      const newZoneItems = [];
+      for (const item2 of zoneItems) {
+        const { remappedNode: childNode, newZones: childZones } = remapNodeIds(item2, sourceZones, idMap);
+        newZoneItems.push(childNode);
+        Object.assign(newZones, childZones);
+      }
+      newZones[newZoneKey] = newZoneItems;
+    }
+  }
+  return { remappedNode, newZones };
+};
+
+// src/engine/operations.ts
+var insertNode = (draft, node, targetZoneKey, index2) => {
+  if (!node.props.id) {
+    node.props.id = generateId();
+  }
+  let list3 = targetZoneKey ? draft.zones[targetZoneKey] : draft.content;
+  if (!list3) {
+    list3 = [];
+    if (targetZoneKey) {
+      draft.zones[targetZoneKey] = list3;
+    }
+  }
+  const insertIndex = typeof index2 === "number" ? index2 : list3.length;
+  list3.splice(insertIndex, 0, node);
+};
+var removeNode = (draft, id) => {
+  const result = findNodeById(draft, id);
+  if (!result) return;
+  const { path } = result;
+  const list3 = path.zoneKey ? draft.zones[path.zoneKey] : draft.content;
+  if (list3) {
+    list3.splice(path.index, 1);
+  }
+  const descendantZoneKeys = getDescendantZoneKeys(draft.zones, id);
+  for (const zoneKey of descendantZoneKeys) {
+    delete draft.zones[zoneKey];
+  }
+};
+var moveNode = (draft, id, targetZoneKey, targetIndex) => {
+  const result = findNodeById(draft, id);
+  if (!result) return;
+  const { node, path: sourcePath } = result;
+  const sourceList = sourcePath.zoneKey ? draft.zones[sourcePath.zoneKey] : draft.content;
+  let targetList = targetZoneKey ? draft.zones[targetZoneKey] : draft.content;
+  if (!targetList && targetZoneKey) {
+    targetList = [];
+    draft.zones[targetZoneKey] = targetList;
+  }
+  if (!sourceList || !targetList) return;
+  sourceList.splice(sourcePath.index, 1);
+  let finalIndex = targetIndex ?? targetList.length;
+  if (sourcePath.zoneKey === targetZoneKey && sourcePath.index < finalIndex) {
+    finalIndex -= 1;
+  }
+  targetList.splice(finalIndex, 0, node);
+};
+var duplicateNode = (draft, id) => {
+  const result = findNodeById(draft, id);
+  if (!result) return;
+  const { node, path } = result;
+  const { remappedNode, newZones } = remapNodeIds(node, draft.zones);
+  const targetList = path.zoneKey ? draft.zones[path.zoneKey] : draft.content;
+  if (targetList) {
+    targetList.splice(path.index + 1, 0, remappedNode);
+  }
+  Object.assign(draft.zones, newZones);
+};
+var updateProps = (draft, id, patch) => {
+  const result = findNodeById(draft, id);
+  if (!result) return;
+  Object.assign(result.node.props, patch);
+};
+var setRootProps = (draft, patch) => {
+  Object.assign(draft.root.props, patch);
+};
+
+// src/engine/store.ts
+var pushToHistory = (state3) => {
+  state3.history.past.push(JSON.parse(JSON.stringify(state3.document)));
+  state3.history.future = [];
+};
+var useEditorStore = create()(
+  immer((set2) => ({
+    // Initial State
+    document: { ...EMPTY_DOCUMENT },
+    history: {
+      past: [],
+      future: []
+    },
+    selection: {
+      selectedId: null,
+      hoveredId: null
+    },
+    viewport: "desktop",
+    // Actions
+    setDocument: (doc) => set2((state3) => {
+      state3.document = doc;
+      state3.history = { past: [], future: [] };
+      state3.selection = { selectedId: null, hoveredId: null };
+    }),
+    selectNode: (id) => set2((state3) => {
+      state3.selection.selectedId = id;
+    }),
+    hoverNode: (id) => set2((state3) => {
+      state3.selection.hoveredId = id;
+    }),
+    setViewport: (viewport) => set2((state3) => {
+      state3.viewport = viewport;
+    }),
+    insertNode: (node, targetZoneKey, index2) => set2((state3) => {
+      pushToHistory(state3);
+      insertNode(state3.document, node, targetZoneKey, index2);
+    }),
+    removeNode: (id) => set2((state3) => {
+      pushToHistory(state3);
+      removeNode(state3.document, id);
+      if (state3.selection.selectedId === id) {
+        state3.selection.selectedId = null;
+      }
+    }),
+    moveNode: (id, targetZoneKey, index2) => set2((state3) => {
+      pushToHistory(state3);
+      moveNode(state3.document, id, targetZoneKey, index2);
+    }),
+    duplicateNode: (id) => set2((state3) => {
+      pushToHistory(state3);
+      duplicateNode(state3.document, id);
+    }),
+    updateProps: (id, patch) => set2((state3) => {
+      pushToHistory(state3);
+      updateProps(state3.document, id, patch);
+    }),
+    setRootProps: (patch) => set2((state3) => {
+      pushToHistory(state3);
+      setRootProps(state3.document, patch);
+    }),
+    undo: () => set2((state3) => {
+      if (state3.history.past.length === 0) return;
+      const previous = state3.history.past.pop();
+      state3.history.future.push(JSON.parse(JSON.stringify(state3.document)));
+      state3.document = previous;
+    }),
+    redo: () => set2((state3) => {
+      if (state3.history.future.length === 0) return;
+      const next = state3.history.future.pop();
+      state3.history.past.push(JSON.parse(JSON.stringify(state3.document)));
+      state3.document = next;
+    })
+  }))
+);
+var StudioContext = createContext(null);
+var useStudio = () => {
+  const ctx = useContext(StudioContext);
+  if (!ctx) {
+    throw new Error("useStudio must be used within a StudioProvider");
+  }
+  return ctx;
+};
+var ParentNodeContext = createContext(null);
+var DropZone = ({ zone, className, style }) => {
+  const parentId = useContext(ParentNodeContext);
+  const zoneKey = parentId ? `${parentId}:${zone}` : zone;
+  const items = useEditorStore((state3) => state3.document.zones[zoneKey] || []);
+  return /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: `tecof-dropzone ${className || ""}`,
+      style: { minHeight: items.length === 0 ? "40px" : void 0, ...style },
+      "data-tecof-zone": zoneKey,
+      children: items.map((item2, index2) => /* @__PURE__ */ jsx(NodeRenderer, { node: item2, index: index2, zoneKey }, item2.props.id))
+    }
+  );
+};
+var renderDropZone = ({ zone, className, style }) => {
+  return /* @__PURE__ */ jsx(DropZone, { zone, className, style });
+};
+var NodeRenderer = ({ node, index: index2, zoneKey }) => {
+  const { config: config3, metadata, readOnly } = useStudio();
+  const componentConfig = config3.components[node.type];
+  const selectNode = useEditorStore((state3) => state3.selectNode);
+  const hoverNode = useEditorStore((state3) => state3.hoverNode);
+  const hoveredId = useEditorStore((state3) => state3.selection.hoveredId);
+  const handleMouseEnter = useCallback(
+    (e3) => {
+      if (readOnly) return;
+      e3.stopPropagation();
+      hoverNode(node.props.id);
+    },
+    [hoverNode, node.props.id, readOnly]
+  );
+  const handleMouseLeave = useCallback(
+    (e3) => {
+      if (readOnly) return;
+      e3.stopPropagation();
+      if (hoveredId === node.props.id) {
+        hoverNode(null);
+      }
+    },
+    [hoverNode, node.props.id, hoveredId, readOnly]
+  );
+  const handleClick = useCallback(
+    (e3) => {
+      if (readOnly) return;
+      e3.stopPropagation();
+      selectNode(node.props.id);
+      const isEmbedded = typeof window !== "undefined" && window.parent !== window;
+      if (isEmbedded) {
+        window.parent.postMessage(
+          {
+            type: "puck:itemSelected",
+            item: {
+              type: node.type,
+              id: node.props.id
+            }
+          },
+          "*"
+        );
+      }
+    },
+    [selectNode, node.props.id, node.type, readOnly]
+  );
+  if (!componentConfig) {
+    return /* @__PURE__ */ jsxs("div", { style: { padding: "12px", background: "#fee2e2", color: "#991b1b", fontSize: "12px", borderRadius: "4px" }, children: [
+      "Bile\u015Fen bulunamad\u0131: ",
+      node.type
+    ] });
+  }
+  const componentProps = {
+    ...node.props,
+    puck: {
+      renderDropZone,
+      isEditing: !readOnly,
+      metadata: {
+        ...metadata || {},
+        ...componentConfig.metadata || {}
+      }
+    },
+    editMode: !readOnly
+  };
+  return /* @__PURE__ */ jsx(ParentNodeContext.Provider, { value: node.props.id, children: /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: "tecof-node-wrapper",
+      "data-tecof-id": node.props.id,
+      "data-tecof-type": node.type,
+      "data-tecof-index": index2,
+      "data-tecof-zone": zoneKey || "root",
+      onMouseEnter: handleMouseEnter,
+      onMouseLeave: handleMouseLeave,
+      onClick: handleClick,
+      style: {
+        cursor: readOnly ? void 0 : "pointer"
+      },
+      children: componentConfig.render(componentProps)
+    }
+  ) });
+};
+var Frame = ({ children, title = "Canvas Frame", ...props }) => {
+  const [contentRef, setContentRef] = useState(null);
+  const mountNode = contentRef?.contentWindow?.document?.body;
+  useEffect(() => {
+    if (!contentRef) return;
+    const doc = contentRef.contentDocument;
+    if (!doc) return;
+    const copyStyles = () => {
+      doc.head.innerHTML = "";
+      Array.from(document.styleSheets).forEach((styleSheet) => {
+        try {
+          if (styleSheet.href) {
+            const link = doc.createElement("link");
+            link.rel = "stylesheet";
+            link.href = styleSheet.href;
+            doc.head.appendChild(link);
+          } else {
+            const cssRules = Array.from(styleSheet.cssRules).map((rule) => rule.cssText).join("\n");
+            const style2 = doc.createElement("style");
+            style2.textContent = cssRules;
+            doc.head.appendChild(style2);
+          }
+        } catch (e3) {
+        }
+      });
+      const style = doc.createElement("style");
+      style.textContent = `
+        html, body {
+          margin: 0;
+          padding: 0;
+          background-color: transparent;
+          min-height: 100vh;
+        }
+        body {
+          padding: 32px 16px;
+          box-sizing: border-box;
+        }
+        .tecof-node-wrapper {
+          position: relative;
+          transition: outline 0.15s ease-in-out;
+        }
+        /* Custom scrollbars for iframe */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.15);
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(0, 0, 0, 0.25);
+        }
+      `;
+      doc.head.appendChild(style);
+    };
+    copyStyles();
+    if (doc.body) {
+      doc.body.className = "tecof-canvas-body";
+      const handleBodyClick = (e3) => {
+        const target = e3.target;
+        if (!target.closest(".tecof-node-wrapper")) {
+          useEditorStore.getState().selectNode(null);
+          const isEmbedded = typeof window !== "undefined" && window.parent !== window;
+          if (isEmbedded) {
+            window.parent.postMessage({ type: "puck:itemDeselected" }, "*");
+          }
+        }
+      };
+      doc.body.addEventListener("click", handleBodyClick);
+      return () => {
+        doc.body.removeEventListener("click", handleBodyClick);
+      };
+    }
+  }, [contentRef]);
+  return /* @__PURE__ */ jsx(
+    "iframe",
+    {
+      title,
+      ref: setContentRef,
+      style: {
+        width: "100%",
+        height: "100%",
+        border: "none",
+        background: "#ffffff",
+        ...props.style
+      },
+      ...props,
+      children: mountNode && createPortal(children, mountNode)
+    }
+  );
+};
+var Canvas = () => {
+  const content = useEditorStore((state3) => state3.document.content);
+  const viewport = useEditorStore((state3) => state3.viewport);
+  const getWidth2 = () => {
+    switch (viewport) {
+      case "tablet":
+        return "768px";
+      case "mobile":
+        return "375px";
+      case "desktop":
+      default:
+        return "100%";
+    }
+  };
+  return /* @__PURE__ */ jsx("div", { className: "tecof-canvas-container", style: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#f4f4f5",
+    padding: "24px",
+    overflow: "auto",
+    height: "100%",
+    boxSizing: "border-box"
+  }, children: /* @__PURE__ */ jsx(
+    "div",
+    {
+      className: "tecof-canvas-viewport-wrapper",
+      style: {
+        width: getWidth2(),
+        height: "100%",
+        maxWidth: "100%",
+        transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)",
+        borderRadius: viewport === "desktop" ? "0" : "12px",
+        overflow: "hidden",
+        backgroundColor: "#ffffff"
+      },
+      children: /* @__PURE__ */ jsx(Frame, { children: /* @__PURE__ */ jsx("div", { className: "tecof-canvas-root", style: { minHeight: "100%" }, children: content.map((item2, index2) => /* @__PURE__ */ jsx(NodeRenderer, { node: item2, index: index2 }, item2.props.id)) }) })
+    }
+  ) });
+};
+var useOverlayCoords = (id, iframeEl, containerEl, documentState) => {
+  const [coords, setCoords] = useState(null);
+  useEffect(() => {
+    if (!id || !iframeEl || !containerEl) {
+      setCoords(null);
+      return;
+    }
+    let resizeObserver = null;
+    let targetResizeObserver = null;
+    const updateCoords = () => {
+      const doc = iframeEl.contentDocument;
+      if (!doc) return;
+      const element = doc.querySelector(`[data-tecof-id="${id}"]`);
+      if (!element) {
+        setCoords(null);
+        return;
+      }
+      const rect = element.getBoundingClientRect();
+      const iframeRect = iframeEl.getBoundingClientRect();
+      const containerRect = containerEl.getBoundingClientRect();
+      setCoords({
+        top: rect.top + iframeRect.top - containerRect.top,
+        left: rect.left + iframeRect.left - containerRect.left,
+        width: rect.width,
+        height: rect.height
+      });
+      if (!targetResizeObserver) {
+        targetResizeObserver = new ResizeObserver(() => {
+          updateCoords();
+        });
+        targetResizeObserver.observe(element);
+      }
+    };
+    updateCoords();
+    const iframeWin = iframeEl.contentWindow;
+    resizeObserver = new ResizeObserver(() => {
+      updateCoords();
+    });
+    resizeObserver.observe(iframeEl);
+    iframeWin?.addEventListener("scroll", updateCoords);
+    window.addEventListener("resize", updateCoords);
+    return () => {
+      if (resizeObserver) resizeObserver.disconnect();
+      if (targetResizeObserver) targetResizeObserver.disconnect();
+      iframeWin?.removeEventListener("scroll", updateCoords);
+      window.removeEventListener("resize", updateCoords);
+    };
+  }, [id, iframeEl, containerEl, documentState]);
+  return coords;
+};
+var SelectionOverlay = () => {
+  const documentState = useEditorStore((state3) => state3.document);
+  const selectedId = useEditorStore((state3) => state3.selection.selectedId);
+  const hoveredId = useEditorStore((state3) => state3.selection.hoveredId);
+  const selectNode = useEditorStore((state3) => state3.selectNode);
+  const removeNode2 = useEditorStore((state3) => state3.removeNode);
+  const duplicateNode2 = useEditorStore((state3) => state3.duplicateNode);
+  const moveNode2 = useEditorStore((state3) => state3.moveNode);
+  const [iframeEl, setIframeEl] = useState(null);
+  const containerRef = useRef(null);
+  useEffect(() => {
+    const iframe = document.querySelector(".tecof-canvas-viewport-wrapper iframe");
+    setIframeEl(iframe);
+  }, [documentState]);
+  const selectedCoords = useOverlayCoords(selectedId, iframeEl, containerRef.current, documentState);
+  const hoveredCoords = useOverlayCoords(
+    hoveredId !== selectedId ? hoveredId : null,
+    iframeEl,
+    containerRef.current,
+    documentState
+  );
+  const nodeDetails = selectedId ? findNodeById(documentState, selectedId) : null;
+  const parentId = selectedId ? getParentId(documentState, selectedId) : null;
+  const canMoveUp = nodeDetails ? nodeDetails.path.index > 0 : false;
+  const canMoveDown = nodeDetails ? (() => {
+    const { zoneKey, index: index2 } = nodeDetails.path;
+    const items = zoneKey ? documentState.zones[zoneKey] || [] : documentState.content;
+    return index2 < items.length - 1;
+  })() : false;
+  const handleMove = (direction) => {
+    if (!selectedId || !nodeDetails) return;
+    const { zoneKey, index: index2 } = nodeDetails.path;
+    const newIndex = direction === "up" ? index2 - 1 : index2 + 1;
+    moveNode2(selectedId, zoneKey, newIndex);
+  };
+  const breadcrumbs = selectedId ? getBreadcrumbs(documentState, selectedId) : [];
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      ref: containerRef,
+      className: "tecof-selection-overlay-container",
+      style: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        pointerEvents: "none",
+        zIndex: 1e3
+      },
+      children: [
+        hoveredCoords && /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "tecof-hover-outline",
+            style: {
+              position: "absolute",
+              top: hoveredCoords.top,
+              left: hoveredCoords.left,
+              width: hoveredCoords.width,
+              height: hoveredCoords.height,
+              border: "1.5px dashed #3b82f6",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              transition: "all 0.1s ease-out"
+            }
+          }
+        ),
+        selectedCoords && /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: "tecof-selected-outline",
+            style: {
+              position: "absolute",
+              top: selectedCoords.top,
+              left: selectedCoords.left,
+              width: selectedCoords.width,
+              height: selectedCoords.height,
+              border: "2px solid #3b82f6",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              transition: "all 0.1s ease-out"
+            },
+            children: [
+              /* @__PURE__ */ jsxs(
+                "div",
+                {
+                  className: "tecof-floating-toolbar",
+                  style: {
+                    position: "absolute",
+                    top: "-36px",
+                    right: "-2px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    background: "#3b82f6",
+                    borderRadius: "6px",
+                    padding: "4px",
+                    pointerEvents: "auto",
+                    boxShadow: "0 4px 6px -1px rgba(59, 130, 246, 0.2)"
+                  },
+                  children: [
+                    parentId && /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        onClick: () => selectNode(parentId),
+                        title: "\xDCst \xD6\u011Feyi Se\xE7",
+                        style: {
+                          background: "transparent",
+                          border: "none",
+                          color: "#ffffff",
+                          cursor: "pointer",
+                          padding: "4px",
+                          borderRadius: "4px",
+                          display: "flex"
+                        },
+                        children: /* @__PURE__ */ jsx(ChevronUp, { size: 14 })
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        onClick: () => handleMove("up"),
+                        disabled: !canMoveUp,
+                        title: "Yukar\u0131 Ta\u015F\u0131",
+                        style: {
+                          background: "transparent",
+                          border: "none",
+                          color: "#ffffff",
+                          opacity: canMoveUp ? 1 : 0.5,
+                          cursor: canMoveUp ? "pointer" : "not-allowed",
+                          padding: "4px",
+                          borderRadius: "4px",
+                          display: "flex"
+                        },
+                        children: /* @__PURE__ */ jsx(ArrowUp, { size: 14 })
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        onClick: () => handleMove("down"),
+                        disabled: !canMoveDown,
+                        title: "A\u015Fa\u011F\u0131 Ta\u015F\u0131",
+                        style: {
+                          background: "transparent",
+                          border: "none",
+                          color: "#ffffff",
+                          opacity: canMoveDown ? 1 : 0.5,
+                          cursor: canMoveDown ? "pointer" : "not-allowed",
+                          padding: "4px",
+                          borderRadius: "4px",
+                          display: "flex"
+                        },
+                        children: /* @__PURE__ */ jsx(ArrowDown, { size: 14 })
+                      }
+                    ),
+                    /* @__PURE__ */ jsx("div", { style: { width: "1px", height: "14px", background: "rgba(255,255,255,0.3)", margin: "0 2px" } }),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        onClick: () => duplicateNode2(selectedId),
+                        title: "Kopyala",
+                        style: {
+                          background: "transparent",
+                          border: "none",
+                          color: "#ffffff",
+                          cursor: "pointer",
+                          padding: "4px",
+                          borderRadius: "4px",
+                          display: "flex"
+                        },
+                        children: /* @__PURE__ */ jsx(Copy, { size: 14 })
+                      }
+                    ),
+                    /* @__PURE__ */ jsx(
+                      "button",
+                      {
+                        onClick: () => removeNode2(selectedId),
+                        title: "Sil",
+                        style: {
+                          background: "transparent",
+                          border: "none",
+                          color: "#ffffff",
+                          cursor: "pointer",
+                          padding: "4px",
+                          borderRadius: "4px",
+                          display: "flex"
+                        },
+                        children: /* @__PURE__ */ jsx(Trash2, { size: 14 })
+                      }
+                    )
+                  ]
+                }
+              ),
+              nodeDetails && /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "tecof-outline-label",
+                  style: {
+                    position: "absolute",
+                    top: "-26px",
+                    left: "-2px",
+                    background: "#3b82f6",
+                    color: "#ffffff",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    padding: "2px 8px",
+                    borderRadius: "4px 4px 0 0",
+                    userSelect: "none"
+                  },
+                  children: nodeDetails.node.type
+                }
+              ),
+              breadcrumbs.length > 1 && /* @__PURE__ */ jsx(
+                "div",
+                {
+                  className: "tecof-selected-breadcrumbs",
+                  style: {
+                    position: "absolute",
+                    bottom: "-28px",
+                    left: "-2px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    background: "#18181b",
+                    color: "#a1a1aa",
+                    fontSize: "10px",
+                    padding: "4px 8px",
+                    borderRadius: "0 0 6px 6px",
+                    pointerEvents: "auto",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+                  },
+                  children: breadcrumbs.map((crumb, idx) => /* @__PURE__ */ jsxs(React__default__default.Fragment, { children: [
+                    idx > 0 && /* @__PURE__ */ jsx("span", { style: { color: "#52525b" }, children: ">" }),
+                    /* @__PURE__ */ jsx(
+                      "span",
+                      {
+                        onClick: () => selectNode(crumb.id),
+                        style: {
+                          cursor: "pointer",
+                          color: crumb.id === selectedId ? "#ffffff" : void 0,
+                          fontWeight: crumb.id === selectedId ? 600 : void 0
+                        },
+                        onMouseEnter: () => useEditorStore.getState().hoverNode(crumb.id),
+                        onMouseLeave: () => useEditorStore.getState().hoverNode(null),
+                        children: crumb.type
+                      }
+                    )
+                  ] }, crumb.id))
+                }
+              )
+            ]
+          }
+        )
+      ]
+    }
+  );
+};
+var FieldLabel = ({
+  label,
+  icon,
+  readOnly,
+  children,
+  el = "label"
+}) => {
+  const Component2 = el;
+  return /* @__PURE__ */ jsxs(
+    Component2,
+    {
+      className: "tecof-field-label-container",
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        marginBottom: "16px",
+        width: "100%",
+        boxSizing: "border-box",
+        userSelect: "none"
+      },
+      children: [
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            className: "tecof-field-label-header",
+            style: {
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#27272a"
+              // zinc-800
+            },
+            children: [
+              icon && /* @__PURE__ */ jsx("span", { style: { display: "inline-flex" }, children: icon }),
+              /* @__PURE__ */ jsx("span", { children: label }),
+              readOnly && /* @__PURE__ */ jsx(
+                "span",
+                {
+                  style: {
+                    fontSize: "10px",
+                    color: "#a1a1aa",
+                    fontWeight: 400,
+                    marginLeft: "auto"
+                  },
+                  children: "Salt Okunur"
+                }
+              )
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx("div", { className: "tecof-field-label-content", style: { width: "100%" }, children })
+      ]
+    }
+  );
+};
+var FieldRenderer = ({
+  name: name3,
+  definition,
+  value,
+  onChange,
+  readOnly = false
+}) => {
+  const label = definition.label || name3;
+  const type = definition.type;
+  if (definition.render) {
+    return /* @__PURE__ */ jsx("div", { className: "tecof-custom-field-wrapper", style: { width: "100%" }, children: definition.render({
+      field: definition,
+      name: name3,
+      id: `field-${name3}`,
+      value,
+      onChange,
+      readOnly
+    }) });
+  }
+  switch (type) {
+    case "text":
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsx(
+        "input",
+        {
+          id: `field-${name3}`,
+          type: "text",
+          value: value || "",
+          disabled: readOnly,
+          onChange: (e3) => onChange(e3.target.value),
+          style: {
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            border: "1px solid #e4e4e7",
+            fontSize: "13px",
+            color: "#18181b",
+            backgroundColor: readOnly ? "#f4f4f5" : "#ffffff",
+            outline: "none",
+            boxSizing: "border-box",
+            transition: "border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out"
+          },
+          className: "tecof-input-text"
+        }
+      ) });
+    case "textarea":
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsx(
+        "textarea",
+        {
+          id: `field-${name3}`,
+          rows: 4,
+          value: value || "",
+          disabled: readOnly,
+          onChange: (e3) => onChange(e3.target.value),
+          style: {
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            border: "1px solid #e4e4e7",
+            fontSize: "13px",
+            color: "#18181b",
+            backgroundColor: readOnly ? "#f4f4f5" : "#ffffff",
+            outline: "none",
+            resize: "vertical",
+            boxSizing: "border-box",
+            transition: "border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out"
+          },
+          className: "tecof-input-textarea"
+        }
+      ) });
+    case "select":
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxs("div", { style: { position: "relative", width: "100%" }, children: [
+        /* @__PURE__ */ jsx(
+          "select",
+          {
+            id: `field-${name3}`,
+            value: value || "",
+            disabled: readOnly,
+            onChange: (e3) => onChange(e3.target.value),
+            style: {
+              width: "100%",
+              padding: "10px 32px 10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #e4e4e7",
+              fontSize: "13px",
+              color: "#18181b",
+              backgroundColor: readOnly ? "#f4f4f5" : "#ffffff",
+              outline: "none",
+              appearance: "none",
+              boxSizing: "border-box",
+              cursor: readOnly ? "not-allowed" : "pointer"
+            },
+            className: "tecof-input-select",
+            children: (definition.options || []).map((opt) => /* @__PURE__ */ jsx("option", { value: opt.value, children: opt.label || opt.value }, opt.value))
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            style: {
+              position: "absolute",
+              top: "50%",
+              right: "12px",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              display: "flex",
+              alignItems: "center",
+              color: "#71717a"
+            },
+            children: /* @__PURE__ */ jsx("svg", { width: "12", height: "12", viewBox: "0 0 12 12", fill: "none", xmlns: "http://www.w3.org/2000/svg", children: /* @__PURE__ */ jsx("path", { d: "M2.5 4.5L6 8L9.5 4.5", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round" }) })
+          }
+        )
+      ] }) });
+    case "number":
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsx(
+        "input",
+        {
+          id: `field-${name3}`,
+          type: "number",
+          value: value !== void 0 ? value : "",
+          disabled: readOnly,
+          onChange: (e3) => {
+            const val = e3.target.value;
+            onChange(val === "" ? void 0 : Number(val));
+          },
+          style: {
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            border: "1px solid #e4e4e7",
+            fontSize: "13px",
+            color: "#18181b",
+            backgroundColor: readOnly ? "#f4f4f5" : "#ffffff",
+            outline: "none",
+            boxSizing: "border-box"
+          },
+          className: "tecof-input-number"
+        }
+      ) });
+    case "radio":
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsx("div", { style: { display: "flex", flexDirection: "column", gap: "8px" }, children: (definition.options || []).map((opt) => /* @__PURE__ */ jsxs(
+        "label",
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "13px",
+            color: "#27272a",
+            cursor: readOnly ? "not-allowed" : "pointer"
+          },
+          children: [
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "radio",
+                name: name3,
+                value: opt.value,
+                checked: value === opt.value,
+                disabled: readOnly,
+                onChange: () => onChange(opt.value),
+                style: {
+                  cursor: readOnly ? "not-allowed" : "pointer"
+                }
+              }
+            ),
+            /* @__PURE__ */ jsx("span", { children: opt.label || opt.value })
+          ]
+        },
+        opt.value
+      )) }) });
+    default:
+      return /* @__PURE__ */ jsxs("div", { style: { padding: "8px", fontSize: "11px", color: "#71717a", background: "#fafafa", borderRadius: "4px" }, children: [
+        'Desteklenmeyen alan t\xFCr\xFC: "',
+        type,
+        '" (',
+        name3,
+        ")"
+      ] });
+  }
+};
+var Inspector = () => {
+  const documentState = useEditorStore((state3) => state3.document);
+  const selectedId = useEditorStore((state3) => state3.selection.selectedId);
+  const updateProps2 = useEditorStore((state3) => state3.updateProps);
+  const setRootProps2 = useEditorStore((state3) => state3.setRootProps);
+  const selectNode = useEditorStore((state3) => state3.selectNode);
+  const { config: config3, readOnly } = useStudio();
+  if (selectedId) {
+    const nodeDetails = findNodeById(documentState, selectedId);
+    if (!nodeDetails) {
+      return /* @__PURE__ */ jsx("div", { style: { padding: "24px", color: "#71717a", fontSize: "13px", textAlign: "center" }, children: "Bile\u015Fen y\xFCkleniyor veya bulunamad\u0131." });
+    }
+    const { node } = nodeDetails;
+    const componentConfig = config3.components[node.type];
+    const fields = componentConfig?.fields || {};
+    const label = componentConfig?.label || node.type;
+    return /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "tecof-inspector",
+        style: {
+          width: "320px",
+          height: "100%",
+          borderLeft: "1px solid #e4e4e7",
+          background: "#ffffff",
+          display: "flex",
+          flexDirection: "column",
+          boxSizing: "border-box"
+        },
+        children: [
+          /* @__PURE__ */ jsxs(
+            "div",
+            {
+              style: {
+                padding: "16px 20px",
+                borderBottom: "1px solid #f4f4f5",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+              },
+              children: [
+                /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsx("h3", { style: { margin: 0, fontSize: "14px", fontWeight: 700, color: "#18181b" }, children: label }),
+                  /* @__PURE__ */ jsx("span", { style: { fontSize: "11px", color: "#a1a1aa", fontFamily: "monospace" }, children: selectedId })
+                ] }),
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    onClick: () => selectNode(null),
+                    style: {
+                      background: "transparent",
+                      border: "none",
+                      color: "#71717a",
+                      cursor: "pointer",
+                      fontSize: "11px",
+                      fontWeight: 500,
+                      padding: "4px 8px",
+                      borderRadius: "4px",
+                      hover: { background: "#f4f4f5" }
+                    },
+                    children: "Se\xE7imi Kald\u0131r"
+                  }
+                )
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "div",
+            {
+              className: "tecof-inspector-fields",
+              style: {
+                flex: 1,
+                overflowY: "auto",
+                padding: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px"
+              },
+              children: Object.keys(fields).length === 0 ? /* @__PURE__ */ jsx("div", { style: { color: "#a1a1aa", fontSize: "12px", textAlign: "center", marginTop: "16px" }, children: "Bu bile\u015Fenin d\xFCzenlenebilir alan\u0131 bulunmuyor." }) : Object.entries(fields).map(([fieldName, fieldDef]) => /* @__PURE__ */ jsx(
+                FieldRenderer,
+                {
+                  name: fieldName,
+                  definition: fieldDef,
+                  value: node.props[fieldName],
+                  onChange: (newVal) => updateProps2(selectedId, { [fieldName]: newVal }),
+                  readOnly
+                },
+                fieldName
+              ))
+            }
+          )
+        ]
+      }
+    );
+  }
+  const rootFields = config3.root?.fields || {};
+  const hasRootFields = Object.keys(rootFields).length > 0;
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: "tecof-inspector",
+      style: {
+        width: "320px",
+        height: "100%",
+        borderLeft: "1px solid #e4e4e7",
+        background: "#ffffff",
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box"
+      },
+      children: [
+        /* @__PURE__ */ jsxs(
+          "div",
+          {
+            style: {
+              padding: "16px 20px",
+              borderBottom: "1px solid #f4f4f5"
+            },
+            children: [
+              /* @__PURE__ */ jsx("h3", { style: { margin: 0, fontSize: "14px", fontWeight: 700, color: "#18181b" }, children: "Sayfa Ayarlar\u0131" }),
+              /* @__PURE__ */ jsx("span", { style: { fontSize: "11px", color: "#a1a1aa" }, children: "Genel sayfa konfig\xFCrasyonu" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "div",
+          {
+            className: "tecof-inspector-fields",
+            style: {
+              flex: 1,
+              overflowY: "auto",
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px"
+            },
+            children: hasRootFields ? Object.entries(rootFields).map(([fieldName, fieldDef]) => /* @__PURE__ */ jsx(
+              FieldRenderer,
+              {
+                name: fieldName,
+                definition: fieldDef,
+                value: documentState.root.props[fieldName],
+                onChange: (newVal) => setRootProps2({ [fieldName]: newVal }),
+                readOnly
+              },
+              fieldName
+            )) : /* @__PURE__ */ jsxs(
+              "div",
+              {
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  color: "#a1a1aa",
+                  fontSize: "12px",
+                  textAlign: "center",
+                  padding: "20px"
+                },
+                children: [
+                  /* @__PURE__ */ jsxs(
+                    "svg",
+                    {
+                      width: "24",
+                      height: "24",
+                      viewBox: "0 0 24 24",
+                      fill: "none",
+                      stroke: "currentColor",
+                      strokeWidth: "2",
+                      strokeLinecap: "round",
+                      strokeLinejoin: "round",
+                      style: { marginBottom: "8px", opacity: 0.6 },
+                      children: [
+                        /* @__PURE__ */ jsx("rect", { width: "18", height: "18", x: "3", y: "3", rx: "2" }),
+                        /* @__PURE__ */ jsx("path", { d: "M9 3v18" })
+                      ]
+                    }
+                  ),
+                  "Bile\u015Fen se\xE7ilmedi. D\xFCzenlemek istedi\u011Finiz bir bile\u015Fene t\u0131klay\u0131n."
+                ]
+              }
+            )
+          }
+        )
+      ]
+    }
+  );
+};
+var TecofStudio = ({
+  pageId,
+  config: config3,
+  accessToken,
+  onSave,
+  onChange,
+  className
+}) => {
+  const { apiClient } = useTecof();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("idle");
+  const setDocument = useEditorStore((state3) => state3.setDocument);
+  const documentState = useEditorStore((state3) => state3.document);
+  const undo = useEditorStore((state3) => state3.undo);
+  const redo = useEditorStore((state3) => state3.redo);
+  const setViewport = useEditorStore((state3) => state3.setViewport);
+  const documentStateRef = useRef(documentState);
+  documentStateRef.current = documentState;
+  const isEmbedded = typeof window !== "undefined" && window.parent !== window;
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res2 = await apiClient.getPage(pageId);
+        if (cancelled) return;
+        const rawData = res2.success && res2.data?.draftData ? res2.data.draftData : null;
+        const parsedDoc = parseDocument(rawData);
+        setDocument(parsedDoc);
+      } catch (err) {
+        console.error("Failed to load page:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [pageId, apiClient, setDocument]);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (loading) return;
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const serialized = serializeDocument(documentState);
+    onChange?.(serialized);
+    if (isEmbedded) {
+      window.parent.postMessage({ type: "puck:changed" }, "*");
+    }
+  }, [documentState, loading, onChange, isEmbedded]);
+  const handleSaveDraft = useCallback(async () => {
+    const currentDoc = documentStateRef.current;
+    const serialized = serializeDocument(currentDoc);
+    setSaving(true);
+    setSaveStatus("idle");
+    try {
+      const res2 = await apiClient.savePage(pageId, serialized, void 0, accessToken);
+      if (res2.success) {
+        setSaveStatus("success");
+        setTimeout(() => setSaveStatus("idle"), 3e3);
+        onSave?.(serialized);
+        if (isEmbedded) {
+          window.parent.postMessage({ type: "puck:saved" }, "*");
+        }
+      } else {
+        setSaveStatus("error");
+        if (isEmbedded) {
+          window.parent.postMessage({ type: "puck:saveError", message: res2.message }, "*");
+        }
+      }
+    } catch (err) {
+      setSaveStatus("error");
+      if (isEmbedded) {
+        window.parent.postMessage({ type: "puck:saveError", message: err.message }, "*");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [pageId, apiClient, accessToken, onSave, isEmbedded]);
+  useEffect(() => {
+    if (!isEmbedded) return;
+    const onMessage = (e3) => {
+      switch (e3.data?.type) {
+        case "puck:save":
+          handleSaveDraft();
+          break;
+        case "puck:undo":
+          undo();
+          break;
+        case "puck:redo":
+          redo();
+          break;
+        case "puck:viewport":
+          if (e3.data.width) {
+            const width = e3.data.width;
+            if (width === "375px" || width === 375) {
+              setViewport("mobile");
+            } else if (width === "768px" || width === 768) {
+              setViewport("tablet");
+            } else {
+              setViewport("desktop");
+            }
+          }
+          break;
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [isEmbedded, handleSaveDraft, undo, redo, setViewport]);
+  const studioContextValue = useMemo(() => ({
+    config: config3,
+    readOnly: false,
+    apiClient
+  }), [config3, apiClient]);
+  if (loading) {
+    return /* @__PURE__ */ jsx("div", { className: `tecof-editor-loading ${className || ""}`.trim(), style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "100vh",
+      background: "#f4f4f5"
+    }, children: /* @__PURE__ */ jsxs("div", { style: { textAlign: "center" }, children: [
+      /* @__PURE__ */ jsx("div", { className: "tecof-editor-spinner", style: {
+        width: "40px",
+        height: "40px",
+        border: "3px solid #e4e4e7",
+        borderTopColor: "#3b82f6",
+        borderRadius: "50%",
+        animation: "spin 1s linear infinite",
+        margin: "0 auto 16px"
+      } }),
+      /* @__PURE__ */ jsx("p", { style: { color: "#71717a", fontSize: "14px", margin: 0 }, children: "St\xFCdyo y\xFCkleniyor..." })
+    ] }) });
+  }
+  return /* @__PURE__ */ jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), style: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    width: "100vw",
+    overflow: "hidden",
+    position: "relative",
+    background: "#f4f4f5"
+  }, children: [
+    /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace-container", style: {
+      display: "flex",
+      flex: 1,
+      height: "100%",
+      width: "100%",
+      overflow: "hidden"
+    }, children: [
+      /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace", style: {
+        display: "flex",
+        flex: 1,
+        height: "100%",
+        position: "relative",
+        overflow: "hidden"
+      }, children: [
+        /* @__PURE__ */ jsx(Canvas, {}),
+        /* @__PURE__ */ jsx(SelectionOverlay, {})
+      ] }),
+      /* @__PURE__ */ jsx(Inspector, {})
+    ] }),
+    saving && /* @__PURE__ */ jsx("div", { className: "tecof-editor-save-indicator", style: {
+      position: "absolute",
+      bottom: "24px",
+      right: "24px",
+      background: saveStatus === "error" ? "#ef4444" : "#18181b",
+      color: "#ffffff",
+      padding: "8px 16px",
+      borderRadius: "24px",
+      fontSize: "12px",
+      fontWeight: 500,
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      zIndex: 9999
+    }, children: saveStatus === "error" ? "Kaydedilemedi" : "Kaydediliyor..." })
+  ] }) });
 };
 var TecofRender = ({ data: data3, config: config3, className, cmsData }) => {
   if (!data3) return null;
@@ -918,328 +2822,6 @@ function useLanguages() {
   }, [apiClient, cacheKey]);
   return { merchantInfo, loading, error: error2, activeTab, setActiveTab };
 }
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/mergeClasses.js
-var mergeClasses = (...classes) => classes.filter((className, index2, array) => {
-  return Boolean(className) && className.trim() !== "" && array.indexOf(className) === index2;
-}).join(" ").trim();
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toKebabCase.js
-var toKebabCase = (string) => string.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toCamelCase.js
-var toCamelCase = (string) => string.replace(
-  /^([A-Z])|[\s-_]+(\w)/g,
-  (match, p1, p2) => p2 ? p2.toUpperCase() : p1.toLowerCase()
-);
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/toPascalCase.js
-var toPascalCase = (string) => {
-  const camelCase = toCamelCase(string);
-  return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
-};
-
-// node_modules/lucide-react/dist/esm/defaultAttributes.js
-var defaultAttributes = {
-  xmlns: "http://www.w3.org/2000/svg",
-  width: 24,
-  height: 24,
-  viewBox: "0 0 24 24",
-  fill: "none",
-  stroke: "currentColor",
-  strokeWidth: 2,
-  strokeLinecap: "round",
-  strokeLinejoin: "round"
-};
-
-// node_modules/lucide-react/dist/esm/shared/src/utils/hasA11yProp.js
-var hasA11yProp = (props) => {
-  for (const prop in props) {
-    if (prop.startsWith("aria-") || prop === "role" || prop === "title") {
-      return true;
-    }
-  }
-  return false;
-};
-var LucideContext = createContext({});
-var useLucideContext = () => useContext(LucideContext);
-
-// node_modules/lucide-react/dist/esm/Icon.js
-var Icon = forwardRef(
-  ({ color, size, strokeWidth, absoluteStrokeWidth, className = "", children, iconNode, ...rest }, ref) => {
-    const {
-      size: contextSize = 24,
-      strokeWidth: contextStrokeWidth = 2,
-      absoluteStrokeWidth: contextAbsoluteStrokeWidth = false,
-      color: contextColor = "currentColor",
-      className: contextClass = ""
-    } = useLucideContext() ?? {};
-    const calculatedStrokeWidth = absoluteStrokeWidth ?? contextAbsoluteStrokeWidth ? Number(strokeWidth ?? contextStrokeWidth) * 24 / Number(size ?? contextSize) : strokeWidth ?? contextStrokeWidth;
-    return createElement(
-      "svg",
-      {
-        ref,
-        ...defaultAttributes,
-        width: size ?? contextSize ?? defaultAttributes.width,
-        height: size ?? contextSize ?? defaultAttributes.height,
-        stroke: color ?? contextColor,
-        strokeWidth: calculatedStrokeWidth,
-        className: mergeClasses("lucide", contextClass, className),
-        ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
-        ...rest
-      },
-      [
-        ...iconNode.map(([tag, attrs]) => createElement(tag, attrs)),
-        ...Array.isArray(children) ? children : [children]
-      ]
-    );
-  }
-);
-
-// node_modules/lucide-react/dist/esm/createLucideIcon.js
-var createLucideIcon = (iconName, iconNode) => {
-  const Component2 = forwardRef(
-    ({ className, ...props }, ref) => createElement(Icon, {
-      ref,
-      iconNode,
-      className: mergeClasses(
-        `lucide-${toKebabCase(toPascalCase(iconName))}`,
-        `lucide-${iconName}`,
-        className
-      ),
-      ...props
-    })
-  );
-  Component2.displayName = toPascalCase(iconName);
-  return Component2;
-};
-
-// node_modules/lucide-react/dist/esm/icons/check.js
-var __iconNode = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-var Check = createLucideIcon("check", __iconNode);
-
-// node_modules/lucide-react/dist/esm/icons/chevron-down.js
-var __iconNode2 = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-var ChevronDown = createLucideIcon("chevron-down", __iconNode2);
-
-// node_modules/lucide-react/dist/esm/icons/chevron-right.js
-var __iconNode3 = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-var ChevronRight = createLucideIcon("chevron-right", __iconNode3);
-
-// node_modules/lucide-react/dist/esm/icons/code.js
-var __iconNode4 = [
-  ["path", { d: "m16 18 6-6-6-6", key: "eg8j8" }],
-  ["path", { d: "m8 6-6 6 6 6", key: "ppft3o" }]
-];
-var Code = createLucideIcon("code", __iconNode4);
-
-// node_modules/lucide-react/dist/esm/icons/copy.js
-var __iconNode5 = [
-  ["rect", { width: "14", height: "14", x: "8", y: "8", rx: "2", ry: "2", key: "17jyea" }],
-  ["path", { d: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2", key: "zix9uf" }]
-];
-var Copy = createLucideIcon("copy", __iconNode5);
-
-// node_modules/lucide-react/dist/esm/icons/database.js
-var __iconNode6 = [
-  ["ellipse", { cx: "12", cy: "5", rx: "9", ry: "3", key: "msslwz" }],
-  ["path", { d: "M3 5V19A9 3 0 0 0 21 19V5", key: "1wlel7" }],
-  ["path", { d: "M3 12A9 3 0 0 0 21 12", key: "mv7ke4" }]
-];
-var Database = createLucideIcon("database", __iconNode6);
-
-// node_modules/lucide-react/dist/esm/icons/external-link.js
-var __iconNode7 = [
-  ["path", { d: "M15 3h6v6", key: "1q9fwt" }],
-  ["path", { d: "M10 14 21 3", key: "gplh6r" }],
-  ["path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", key: "a6xqqp" }]
-];
-var ExternalLink = createLucideIcon("external-link", __iconNode7);
-
-// node_modules/lucide-react/dist/esm/icons/file-text.js
-var __iconNode8 = [
-  [
-    "path",
-    {
-      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
-      key: "1oefj6"
-    }
-  ],
-  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
-  ["path", { d: "M10 9H8", key: "b1mrlr" }],
-  ["path", { d: "M16 13H8", key: "t4e002" }],
-  ["path", { d: "M16 17H8", key: "z1uh3a" }]
-];
-var FileText = createLucideIcon("file-text", __iconNode8);
-
-// node_modules/lucide-react/dist/esm/icons/file.js
-var __iconNode9 = [
-  [
-    "path",
-    {
-      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
-      key: "1oefj6"
-    }
-  ],
-  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }]
-];
-var File2 = createLucideIcon("file", __iconNode9);
-
-// node_modules/lucide-react/dist/esm/icons/folder-open.js
-var __iconNode10 = [
-  [
-    "path",
-    {
-      d: "m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2",
-      key: "usdka0"
-    }
-  ]
-];
-var FolderOpen = createLucideIcon("folder-open", __iconNode10);
-
-// node_modules/lucide-react/dist/esm/icons/globe.js
-var __iconNode11 = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
-  ["path", { d: "M2 12h20", key: "9i4pu4" }]
-];
-var Globe = createLucideIcon("globe", __iconNode11);
-
-// node_modules/lucide-react/dist/esm/icons/grip-vertical.js
-var __iconNode12 = [
-  ["circle", { cx: "9", cy: "12", r: "1", key: "1vctgf" }],
-  ["circle", { cx: "9", cy: "5", r: "1", key: "hp0tcf" }],
-  ["circle", { cx: "9", cy: "19", r: "1", key: "fkjjf6" }],
-  ["circle", { cx: "15", cy: "12", r: "1", key: "1tmaij" }],
-  ["circle", { cx: "15", cy: "5", r: "1", key: "19l28e" }],
-  ["circle", { cx: "15", cy: "19", r: "1", key: "f4zoj3" }]
-];
-var GripVertical = createLucideIcon("grip-vertical", __iconNode12);
-
-// node_modules/lucide-react/dist/esm/icons/image-plus.js
-var __iconNode13 = [
-  ["path", { d: "M16 5h6", key: "1vod17" }],
-  ["path", { d: "M19 2v6", key: "4bpg5p" }],
-  ["path", { d: "M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5", key: "1ue2ih" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }]
-];
-var ImagePlus = createLucideIcon("image-plus", __iconNode13);
-
-// node_modules/lucide-react/dist/esm/icons/image.js
-var __iconNode14 = [
-  ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
-  ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
-  ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
-];
-var Image2 = createLucideIcon("image", __iconNode14);
-
-// node_modules/lucide-react/dist/esm/icons/languages.js
-var __iconNode15 = [
-  ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
-  ["path", { d: "m4 14 6-6 2-3", key: "1k1g8d" }],
-  ["path", { d: "M2 5h12", key: "or177f" }],
-  ["path", { d: "M7 2h1", key: "1t2jsx" }],
-  ["path", { d: "m22 22-5-10-5 10", key: "don7ne" }],
-  ["path", { d: "M14 18h6", key: "1m8k6r" }]
-];
-var Languages = createLucideIcon("languages", __iconNode15);
-
-// node_modules/lucide-react/dist/esm/icons/link-2.js
-var __iconNode16 = [
-  ["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "8i5ue5" }],
-  ["path", { d: "M15 7h2a5 5 0 1 1 0 10h-2", key: "1b9ql8" }],
-  ["line", { x1: "8", x2: "16", y1: "12", y2: "12", key: "1jonct" }]
-];
-var Link2 = createLucideIcon("link-2", __iconNode16);
-
-// node_modules/lucide-react/dist/esm/icons/link.js
-var __iconNode17 = [
-  ["path", { d: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71", key: "1cjeqo" }],
-  ["path", { d: "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71", key: "19qd67" }]
-];
-var Link = createLucideIcon("link", __iconNode17);
-
-// node_modules/lucide-react/dist/esm/icons/loader-circle.js
-var __iconNode18 = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-var LoaderCircle = createLucideIcon("loader-circle", __iconNode18);
-
-// node_modules/lucide-react/dist/esm/icons/pencil.js
-var __iconNode19 = [
-  [
-    "path",
-    {
-      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
-      key: "1a8usu"
-    }
-  ],
-  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
-];
-var Pencil = createLucideIcon("pencil", __iconNode19);
-
-// node_modules/lucide-react/dist/esm/icons/plus.js
-var __iconNode20 = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
-];
-var Plus = createLucideIcon("plus", __iconNode20);
-
-// node_modules/lucide-react/dist/esm/icons/refresh-ccw.js
-var __iconNode21 = [
-  ["path", { d: "M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "14sxne" }],
-  ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
-  ["path", { d: "M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16", key: "1hlbsb" }],
-  ["path", { d: "M16 16h5v5", key: "ccwih5" }]
-];
-var RefreshCcw = createLucideIcon("refresh-ccw", __iconNode21);
-
-// node_modules/lucide-react/dist/esm/icons/refresh-cw.js
-var __iconNode22 = [
-  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-  ["path", { d: "M8 16H3v5", key: "1cv678" }]
-];
-var RefreshCw = createLucideIcon("refresh-cw", __iconNode22);
-
-// node_modules/lucide-react/dist/esm/icons/rotate-ccw.js
-var __iconNode23 = [
-  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
-  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
-];
-var RotateCcw = createLucideIcon("rotate-ccw", __iconNode23);
-
-// node_modules/lucide-react/dist/esm/icons/search.js
-var __iconNode24 = [
-  ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
-  ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
-];
-var Search = createLucideIcon("search", __iconNode24);
-
-// node_modules/lucide-react/dist/esm/icons/trash-2.js
-var __iconNode25 = [
-  ["path", { d: "M10 11v6", key: "nco0om" }],
-  ["path", { d: "M14 11v6", key: "outv1u" }],
-  ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
-  ["path", { d: "M3 6h18", key: "d0wm0j" }],
-  ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
-];
-var Trash2 = createLucideIcon("trash-2", __iconNode25);
-
-// node_modules/lucide-react/dist/esm/icons/upload.js
-var __iconNode26 = [
-  ["path", { d: "M12 3v12", key: "1x0j5s" }],
-  ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
-];
-var Upload = createLucideIcon("upload", __iconNode26);
-
-// node_modules/lucide-react/dist/esm/icons/x.js
-var __iconNode27 = [
-  ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
-  ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
-];
-var X = createLucideIcon("x", __iconNode27);
 var FieldErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
@@ -5140,7 +6722,7 @@ var MediaDrawer = ({
                     alt: file2.name,
                     size: "thumbnail",
                     className: "tecof-upload-gallery-thumb",
-                    imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }
+                    imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }
                   }
                 ) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsx(File2, { size: 24, color: "#a1a1aa" }) }),
                 /* @__PURE__ */ jsx("p", { className: "tecof-upload-gallery-file-name", children: file2.meta?.originalName || file2.name })
@@ -6060,7 +7642,7 @@ var createView = (
     },
     write: write2 = () => {
     },
-    create: create4 = () => {
+    create: create5 = () => {
     },
     destroy: destroy3 = () => {
     },
@@ -6264,7 +7846,7 @@ var createView = (
       }
     });
     const internalAPI = createObject(internalAPIDefinition);
-    create4({
+    create5({
       root: internalAPI,
       props
     });
@@ -8994,7 +10576,7 @@ var percentageArc = (x, y, radius, from, to) => {
     arcSweep
   );
 };
-var create = ({ root: root3, props }) => {
+var create2 = ({ root: root3, props }) => {
   props.spin = false;
   props.progress = 0;
   props.opacity = 0;
@@ -9034,7 +10616,7 @@ var progressIndicator = createView({
   name: "progress-indicator",
   ignoreRectUpdate: true,
   ignoreRect: true,
-  create,
+  create: create2,
   write,
   mixins: {
     apis: ["progress", "spin", "align"],
@@ -13874,7 +15456,7 @@ var createImageWrapperView = (_2) => {
     root3.ref.overlayShadow.opacity = 0.25;
     root3.ref.overlaySuccess.opacity = 1;
   };
-  const create4 = ({ root: root3 }) => {
+  const create5 = ({ root: root3 }) => {
     root3.ref.images = [];
     root3.ref.imageData = null;
     root3.ref.imageViewBin = [];
@@ -13899,7 +15481,7 @@ var createImageWrapperView = (_2) => {
   };
   return _2.utils.createView({
     name: "image-preview-wrapper",
-    create: create4,
+    create: create5,
     styles: ["height"],
     apis: ["height"],
     destroy: ({ root: root3 }) => {
@@ -15709,7 +17291,7 @@ var plugin7 = ({ addFilter: addFilter2, utils }) => {
           }).catch(reject);
         });
         const variantPromises = variants.map(
-          (create4) => create4(transform, file2, item2.getMetadata())
+          (create5) => create5(transform, file2, item2.getMetadata())
         );
         Promise.all(variantPromises).then((files) => {
           resolve(
@@ -19049,7 +20631,7 @@ var createTexture = function(e3, t2, r2, n, i2) {
   }
   return o2;
 };
-var create2 = function() {
+var create3 = function() {
   var e3 = new Float32Array(16);
   return e3[0] = 1, e3[5] = 1, e3[10] = 1, e3[15] = 1, e3;
 };
@@ -19077,7 +20659,7 @@ var rotateZ = function(e3, t2) {
   var r2 = Math.sin(t2), n = Math.cos(t2), i2 = e3[0], o2 = e3[1], a2 = e3[2], c2 = e3[3], l3 = e3[4], u = e3[5], s2 = e3[6], d = e3[7];
   e3[0] = i2 * n + l3 * r2, e3[1] = o2 * n + u * r2, e3[2] = a2 * n + s2 * r2, e3[3] = c2 * n + d * r2, e3[4] = l3 * n - i2 * r2, e3[5] = u * n - o2 * r2, e3[6] = s2 * n - a2 * r2, e3[7] = d * n - c2 * r2;
 };
-var mat4 = { create: create2, perspective, translate, scale, rotateX, rotateY, rotateZ };
+var mat4 = { create: create3, perspective, translate, scale, rotateX, rotateY, rotateZ };
 var degToRad = function(e3) {
   return e3 * Math.PI / 180;
 };
@@ -23018,16 +24600,16 @@ var FileItemRenderer = ({
   `${cdnUrl}/${file2.name}`;
   const ext = getFileExtension(file2.name);
   return /* @__PURE__ */ jsxs("div", { className: "tecof-upload-file-item", children: [
-    file2.type === "image/reference" ? /* @__PURE__ */ jsx("div", { className: "tecof-upload-file-icon", style: { backgroundColor: "#eef2ff", color: "#4f46e5" }, children: /* @__PURE__ */ jsx(Code, { size: 20 }) }) : isImageType2(file2.type) ? /* @__PURE__ */ jsx(
+    file2.type === "image/reference" ? /* @__PURE__ */ jsx("div", { className: "tecof-upload-file-icon", style: { backgroundColor: "#f4f4f5", color: "#18181b" }, children: /* @__PURE__ */ jsx(Code, { size: 16 }) }) : isImageType2(file2.type) ? /* @__PURE__ */ jsx(
       TecofPicture,
       {
         data: file2,
         alt: file2.meta?.originalName || file2.name,
         size: "thumbnail",
         className: "tecof-upload-file-thumb",
-        imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }
+        imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }
       }
-    ) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-file-icon", children: /* @__PURE__ */ jsx(File2, { size: 20 }) }),
+    ) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-file-icon", children: /* @__PURE__ */ jsx(File2, { size: 16 }) }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-upload-file-info", children: [
       /* @__PURE__ */ jsx("p", { className: "tecof-upload-file-name", title: file2.meta?.originalName || file2.name, children: file2.meta?.originalName || file2.name }),
       /* @__PURE__ */ jsxs("div", { className: "tecof-upload-file-meta", children: [
@@ -23156,10 +24738,6 @@ var UploadField = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showRefInput, setShowRefInput] = useState(false);
   const [refCode, setRefCode] = useState("{{ data. }}");
-  const [galleryFiles, setGalleryFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [gallerySearch, setGallerySearch] = useState("");
   const sourceToIdRef = useRef(/* @__PURE__ */ new Map());
   const compressFile = useCallback(async (file2) => {
     if (!imageCompressionEnabled) return file2;
@@ -23216,16 +24794,6 @@ var UploadField = ({
     setShowRefInput(false);
     setRefCode("{{ data. }}");
   }, [refCode, allowMultiple, value, onChange]);
-  useEffect(() => {
-    if (!drawerOpen) return;
-    setLoading(true);
-    apiClient.getUploads(1, 100).then((res2) => {
-      if (res2.success && res2.data) {
-        setGalleryFiles(res2.data);
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [drawerOpen, refreshKey, apiClient]);
   const toggleGalleryFile = useCallback((file2) => {
     if (allowMultiple) {
       const exists = value.some((f2) => f2._id === file2._id);
@@ -23298,9 +24866,6 @@ var UploadField = ({
     }
   };
   const canAddMore = allowMultiple ? value.length < maxFiles : value.length === 0;
-  const filteredGallery = gallerySearch.trim() ? galleryFiles.filter(
-    (f2) => f2.name?.toLowerCase().includes(gallerySearch.toLowerCase()) || f2.meta?.originalName?.toLowerCase().includes(gallerySearch.toLowerCase())
-  ) : galleryFiles;
   return /* @__PURE__ */ jsxs("div", { className: "tecof-upload-container", children: [
     value.length > 0 && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-file-list", children: [
       showUploadedFiles && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-uploaded-header", children: [
@@ -23318,52 +24883,50 @@ var UploadField = ({
         file2._id || idx
       ))
     ] }),
-    value.length === 0 && !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxs(
-      "div",
-      {
-        className: "tecof-upload-empty-state",
-        onClick: () => setDrawerOpen(true),
-        children: [
-          /* @__PURE__ */ jsx("div", { className: "tecof-upload-empty-icon", children: /* @__PURE__ */ jsx(ImagePlus, { size: 22 }) }),
-          /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-title", children: "Dosya ekleyin" }),
-          /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-desc", children: "Medya k\xFCt\xFCphanesinden se\xE7in veya yeni y\xFCkleyin" })
-        ]
-      }
-    ),
+    value.length === 0 && !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxs("div", { className: "flex flex-col gap-2", children: [
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "tecof-upload-empty-state",
+          onClick: () => setDrawerOpen(true),
+          children: [
+            /* @__PURE__ */ jsx("div", { className: "tecof-upload-empty-icon", children: /* @__PURE__ */ jsx(ImagePlus, { size: 16 }) }),
+            /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-title", children: "Dosya ekleyin" }),
+            /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-desc", children: "Medya k\xFCt\xFCphanesinden se\xE7in veya yeni y\xFCkleyin" })
+          ]
+        }
+      ),
+      !showRefInput && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-main-actions", children: [
+        /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
+          /* @__PURE__ */ jsx(Code, { size: 13 }),
+          " Referans Gir"
+        ] }),
+        /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
+          /* @__PURE__ */ jsx(Upload, { size: 13 }),
+          " Yeni Y\xFCkle"
+        ] })
+      ] })
+    ] }),
     !readOnly && canAddMore && !showPond && value.length > 0 && !showRefInput && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-main-actions", children: [
       /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
-        /* @__PURE__ */ jsx(Code, { size: 15 }),
+        /* @__PURE__ */ jsx(Code, { size: 13 }),
         " Referans"
       ] }),
       /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setDrawerOpen(true), children: [
-        /* @__PURE__ */ jsx(FolderOpen, { size: 15 }),
-        " Medya Se\xE7"
+        /* @__PURE__ */ jsx(FolderOpen, { size: 13 }),
+        " K\xFCt\xFCphane"
       ] }),
       /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
-        /* @__PURE__ */ jsx(Upload, { size: 15 }),
-        " Yeni Y\xFCkle"
+        /* @__PURE__ */ jsx(Upload, { size: 13 }),
+        " Y\xFCkle"
       ] })
     ] }),
-    value.length === 0 && !readOnly && canAddMore && !showPond && !showRefInput && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-main-actions", children: [
-      /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
-        /* @__PURE__ */ jsx(Code, { size: 15 }),
-        " Dinamik Referans Se\xE7"
+    showRefInput && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-ref-section", style: { background: "#ffffff", padding: "10px", borderRadius: "8px", border: "1px solid #e4e4e7", display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: "11px", fontWeight: 500, color: "#71717a" }, children: "Dinamik CMS De\u011Fi\u015Fkeni" }),
+        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setShowRefInput(false), style: { background: "none", border: "none", cursor: "pointer", color: "#a1a1aa", padding: 0 }, children: /* @__PURE__ */ jsx(X, { size: 12 }) })
       ] }),
-      /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
-        /* @__PURE__ */ jsx(Upload, { size: 15 }),
-        " Yeni Y\xFCkle"
-      ] })
-    ] }),
-    showRefInput && /* @__PURE__ */ jsxs("div", { className: "tecof-upload-ref-section", style: { background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0", marginTop: "10px" }, children: [
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }, children: [
-        /* @__PURE__ */ jsxs("span", { style: { fontSize: "12px", fontWeight: 500, color: "#475569" }, children: [
-          "Dinamik CMS De\u011Fi\u015Fkeni (\xD6rn: ",
-          `{{ data.image }}`,
-          ")"
-        ] }),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setShowRefInput(false), style: { background: "none", border: "none", cursor: "pointer", color: "#64748b" }, children: /* @__PURE__ */ jsx(X, { size: 14 }) })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: "8px" }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: "6px" }, children: [
         /* @__PURE__ */ jsx(
           "input",
           {
@@ -23371,7 +24934,7 @@ var UploadField = ({
             value: refCode,
             onChange: (e3) => setRefCode(e3.target.value),
             placeholder: "{{ data. }}",
-            style: { flex: 1, padding: "8px 10px", fontSize: "13px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none" },
+            style: { flex: 1, padding: "6px 8px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1", outline: "none" },
             autoFocus: true,
             onKeyDown: (e3) => {
               if (e3.key === "Enter") {
@@ -23386,7 +24949,7 @@ var UploadField = ({
           {
             type: "button",
             onClick: handleAddRef,
-            style: { padding: "0 12px", background: "#4f46e5", color: "#fff", fontSize: "12px", fontWeight: 500, borderRadius: "6px", border: "none", cursor: "pointer" },
+            style: { padding: "0 10px", background: "#18181b", color: "#fff", fontSize: "11px", fontWeight: 500, borderRadius: "6px", border: "none", cursor: "pointer" },
             children: "Ekle"
           }
         )
@@ -23430,97 +24993,18 @@ var UploadField = ({
         }
       ) })
     ] }),
-    /* @__PURE__ */ jsx(Drawer.Root, { open: drawerOpen, onOpenChange: (open) => {
-      setDrawerOpen(open);
-      if (!open) setGallerySearch("");
-    }, children: /* @__PURE__ */ jsxs(Drawer.Portal, { children: [
-      /* @__PURE__ */ jsx(Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
-      /* @__PURE__ */ jsxs(Drawer.Content, { className: "tecof-upload-drawer-content", children: [
-        /* @__PURE__ */ jsx(Drawer.Title, { className: "tecof-sr-only", children: "Medya Y\xF6neticisi" }),
-        /* @__PURE__ */ jsx(Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in veya yeni dosya y\xFCkleyin" }),
-        /* @__PURE__ */ jsx("div", { className: "tecof-upload-drawer-handle" }),
-        /* @__PURE__ */ jsxs("div", { className: "tecof-upload-drawer-inner", children: [
-          /* @__PURE__ */ jsxs("div", { className: "tecof-upload-drawer-header", children: [
-            /* @__PURE__ */ jsx("h2", { className: "tecof-upload-drawer-title", children: "Medya K\xFCt\xFCphanesi" }),
-            /* @__PURE__ */ jsxs("div", { className: "tecof-upload-drawer-header-actions", children: [
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  className: "tecof-upload-drawer-action-btn",
-                  onClick: () => setRefreshKey((k2) => k2 + 1),
-                  disabled: loading,
-                  title: "Yenile",
-                  children: /* @__PURE__ */ jsx(RefreshCcw, { size: 15, className: loading ? "tecof-upload-spin" : "" })
-                }
-              ),
-              /* @__PURE__ */ jsx(
-                "button",
-                {
-                  className: "tecof-upload-drawer-action-btn",
-                  onClick: () => setDrawerOpen(false),
-                  title: "Kapat",
-                  children: /* @__PURE__ */ jsx(X, { size: 15 })
-                }
-              )
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs("div", { className: "tecof-upload-search-box", children: [
-            /* @__PURE__ */ jsx(Search, { size: 15, color: "#a1a1aa" }),
-            /* @__PURE__ */ jsx(
-              "input",
-              {
-                type: "text",
-                placeholder: "Dosya ara...",
-                value: gallerySearch,
-                onChange: (e3) => setGallerySearch(e3.target.value),
-                className: "tecof-upload-search-input"
-              }
-            ),
-            gallerySearch && /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                className: "tecof-upload-action-btn tecof-upload-clear-search-btn",
-                onClick: () => setGallerySearch(""),
-                children: /* @__PURE__ */ jsx(X, { size: 13 })
-              }
-            )
-          ] }),
-          loading ? /* @__PURE__ */ jsxs("div", { className: "tecof-upload-gallery-empty", children: [
-            /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsx(RefreshCcw, { size: 24, color: "#a1a1aa", className: "tecof-upload-spin" }) }),
-            /* @__PURE__ */ jsx("p", { className: "tecof-upload-loading-text", children: "Y\xFCkleniyor..." })
-          ] }) : filteredGallery.length === 0 ? /* @__PURE__ */ jsxs("div", { className: "tecof-upload-gallery-empty", children: [
-            /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsx(Image2, { size: 24, color: "#a1a1aa" }) }),
-            /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-heading", children: gallerySearch ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz dosya yok" }),
-            /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-subheading", children: gallerySearch ? "Farkl\u0131 bir arama terimi deneyin" : "Dosyalar\u0131n\u0131z burada g\xF6r\xFCnecek" })
-          ] }) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-grid", children: filteredGallery.map((file2) => {
-            const selected = value.some((v2) => v2._id === file2._id);
-            return /* @__PURE__ */ jsxs(
-              "div",
-              {
-                className: `tecof-upload-gallery-item ${selected ? "selected" : ""}`,
-                onClick: () => toggleGalleryFile(file2),
-                children: [
-                  selected && /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsx(Check, { size: 12, strokeWidth: 3 }) }),
-                  isImageType2(file2.type) ? /* @__PURE__ */ jsx(
-                    TecofPicture,
-                    {
-                      data: file2,
-                      alt: file2.name,
-                      size: "thumbnail",
-                      className: "tecof-upload-gallery-thumb",
-                      imgStyle: { width: "100%", height: "100%", objectFit: "cover", borderRadius: "6px" }
-                    }
-                  ) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsx(File2, { size: 24, color: "#a1a1aa" }) }),
-                  /* @__PURE__ */ jsx("p", { className: "tecof-upload-gallery-file-name", children: file2.meta?.originalName || file2.name })
-                ]
-              },
-              file2._id
-            );
-          }) })
-        ] })
-      ] })
-    ] }) })
+    /* @__PURE__ */ jsx(
+      MediaDrawer,
+      {
+        open: drawerOpen,
+        onOpenChange: setDrawerOpen,
+        onSelect: toggleGalleryFile,
+        selectedIds: value.map((v2) => v2._id ?? ""),
+        allowMultiple,
+        filterImages: acceptedTypes.length > 0 && acceptedTypes.every((t2) => t2.startsWith("image/")),
+        title: "Medya K\xFCt\xFCphanesi"
+      }
+    )
   ] });
 };
 UploadField.displayName = "UploadField";
@@ -23770,7 +25254,7 @@ var validators = {
   handler: validateHandler,
   initial: validateInitial
 };
-function create3(initial) {
+function create4(initial) {
   var handler = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
   validators.initial(initial);
   validators.handler(handler);
@@ -23808,7 +25292,7 @@ function didStateUpdate(state3, handler, changes) {
   return changes;
 }
 var index = {
-  create: create3
+  create: create4
 };
 var state_local_default = index;
 
@@ -25450,9 +26934,12 @@ lucide-react/dist/esm/shared/src/utils/hasA11yProp.js:
 lucide-react/dist/esm/context.js:
 lucide-react/dist/esm/Icon.js:
 lucide-react/dist/esm/createLucideIcon.js:
+lucide-react/dist/esm/icons/arrow-down.js:
+lucide-react/dist/esm/icons/arrow-up.js:
 lucide-react/dist/esm/icons/check.js:
 lucide-react/dist/esm/icons/chevron-down.js:
 lucide-react/dist/esm/icons/chevron-right.js:
+lucide-react/dist/esm/icons/chevron-up.js:
 lucide-react/dist/esm/icons/code.js:
 lucide-react/dist/esm/icons/copy.js:
 lucide-react/dist/esm/icons/database.js:
@@ -25560,6 +27047,6 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
    *)
 */
 
-export { CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, RepeaterField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, UnderConstruction, UploadField, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, LanguageField, LinkField, RepeaterField, TecofApiClient, TecofEditor, TecofPicture, TecofProvider, TecofRender, TecofStudio, UnderConstruction, UploadField, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

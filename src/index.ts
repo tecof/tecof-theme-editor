@@ -1,6 +1,7 @@
 /* ─── Tecof Platform Components ─── */
 export { TecofProvider, useTecof } from './components/TecofProvider';
 export { TecofEditor } from './components/TecofEditor';
+export { TecofStudio } from './studio/TecofStudio';
 export { TecofRender } from './components/TecofRender';
 export { TecofPicture } from './components/TecofPicture';
 export { UnderConstruction } from './components/UnderConstruction';

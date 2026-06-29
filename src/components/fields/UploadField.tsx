@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
 import { useCallback, useRef, useState, useMemo, useEffect } from 'react';
-import { FieldLabel } from '@puckeditor/core';
+import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
+import { MediaDrawer } from './MediaDrawer';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
 import type { UploadedFile } from '../../types';
@@ -23,8 +24,7 @@ import { create } from '../../vendor/doka.esm.min';
 // Image Compression
 import imageCompression from 'browser-image-compression';
 
-// Vaul and Icons
-import { Drawer } from 'vaul';
+// Icons and Helpers
 import {
   Image as ImageIcon,
   FolderOpen,
@@ -153,8 +153,8 @@ const FileItemRenderer = ({
   return (
     <div className="tecof-upload-file-item">
       {file.type === 'image/reference' ? (
-        <div className="tecof-upload-file-icon" style={{ backgroundColor: '#eef2ff', color: '#4f46e5' }}>
-          <Code size={20} />
+        <div className="tecof-upload-file-icon" style={{ backgroundColor: '#f4f4f5', color: '#18181b' }}>
+          <Code size={16} />
         </div>
       ) : isImageType(file.type) ? (
         <TecofPicture
@@ -162,11 +162,11 @@ const FileItemRenderer = ({
           alt={file.meta?.originalName || file.name}
           size="thumbnail"
           className="tecof-upload-file-thumb"
-          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }}
+          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }}
         />
       ) : (
         <div className="tecof-upload-file-icon">
-          <FileIcon size={20} />
+          <FileIcon size={16} />
         </div>
       )}
       <div className="tecof-upload-file-info">
@@ -326,12 +326,6 @@ export const UploadField = ({
   const [showRefInput, setShowRefInput] = useState(false);
   const [refCode, setRefCode] = useState('{{ data. }}');
 
-  // Gallery State
-  const [galleryFiles, setGalleryFiles] = useState<UploadedFile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [gallerySearch, setGallerySearch] = useState('');
-
   // Source → _id tracking for edit/remove
   const sourceToIdRef = useRef<Map<string, string>>(new Map());
 
@@ -413,18 +407,7 @@ export const UploadField = ({
     setRefCode('{{ data. }}');
   }, [refCode, allowMultiple, value, onChange]);
 
-  /* ── Drawer Gallery ── */
 
-  useEffect(() => {
-    if (!drawerOpen) return;
-    setLoading(true);
-    apiClient.getUploads(1, 100).then((res) => {
-      if (res.success && res.data) {
-        setGalleryFiles(res.data);
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [drawerOpen, refreshKey, apiClient]);
 
   const toggleGalleryFile = useCallback((file: UploadedFile) => {
     if (allowMultiple) {
@@ -514,13 +497,7 @@ export const UploadField = ({
 
   const canAddMore = allowMultiple ? value.length < maxFiles : value.length === 0;
 
-  // Filter gallery files by search
-  const filteredGallery = gallerySearch.trim()
-    ? galleryFiles.filter(f =>
-      f.name?.toLowerCase().includes(gallerySearch.toLowerCase()) ||
-      f.meta?.originalName?.toLowerCase().includes(gallerySearch.toLowerCase())
-    )
-    : galleryFiles;
+
 
   return (
     <div className="tecof-upload-container">
@@ -548,63 +525,63 @@ export const UploadField = ({
 
       {/* Empty State (when no files and not in upload mode) */}
       {value.length === 0 && !readOnly && canAddMore && !showPond && (
-        <div
-          className="tecof-upload-empty-state"
-          onClick={() => setDrawerOpen(true)}
-        >
-          <div className="tecof-upload-empty-icon">
-            <ImagePlus size={22} />
+        <div className="flex flex-col gap-2">
+          <div
+            className="tecof-upload-empty-state"
+            onClick={() => setDrawerOpen(true)}
+          >
+            <div className="tecof-upload-empty-icon">
+              <ImagePlus size={16} />
+            </div>
+            <p className="tecof-upload-empty-title">Dosya ekleyin</p>
+            <p className="tecof-upload-empty-desc">
+              Medya kütüphanesinden seçin veya yeni yükleyin
+            </p>
           </div>
-          <p className="tecof-upload-empty-title">Dosya ekleyin</p>
-          <p className="tecof-upload-empty-desc">
-            Medya kütüphanesinden seçin veya yeni yükleyin
-          </p>
+          {!showRefInput && (
+            <div className="tecof-upload-main-actions">
+              <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
+                <Code size={13} /> Referans Gir
+              </button>
+              <button type="button" className="tecof-upload-btn-primary" onClick={() => setShowPond(true)}>
+                <Upload size={13} /> Yeni Yükle
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Buttons (when files are selected) */}
       {!readOnly && canAddMore && !showPond && value.length > 0 && !showRefInput && (
         <div className="tecof-upload-main-actions">
           <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
-            <Code size={15} /> Referans
+            <Code size={13} /> Referans
           </button>
           <button type="button" className="tecof-upload-btn-secondary" onClick={() => setDrawerOpen(true)}>
-            <FolderOpen size={15} /> Medya Seç
+            <FolderOpen size={13} /> Kütüphane
           </button>
           <button type="button" className="tecof-upload-btn-primary" onClick={() => setShowPond(true)}>
-            <Upload size={15} /> Yeni Yükle
-          </button>
-        </div>
-      )}
-
-      {/* Empty state — secondary actions row */}
-      {value.length === 0 && !readOnly && canAddMore && !showPond && !showRefInput && (
-        <div className="tecof-upload-main-actions">
-          <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
-            <Code size={15} /> Dinamik Referans Seç
-          </button>
-          <button type="button" className="tecof-upload-btn-primary" onClick={() => setShowPond(true)}>
-            <Upload size={15} /> Yeni Yükle
+            <Upload size={13} /> Yükle
           </button>
         </div>
       )}
 
       {/* Reference Code Input Mode */}
       {showRefInput && (
-        <div className="tecof-upload-ref-section" style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#475569' }}>Dinamik CMS Değişkeni (Örn: {`{{ data.image }}`})</span>
-            <button type="button" onClick={() => setShowRefInput(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-              <X size={14} />
+        <div className="tecof-upload-ref-section" style={{ background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e4e4e7', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#71717a' }}>Dinamik CMS Değişkeni</span>
+            <button type="button" onClick={() => setShowRefInput(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a1a1aa', padding: 0 }}>
+              <X size={12} />
             </button>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '6px' }}>
             <input
               type="text"
               value={refCode}
               onChange={(e) => setRefCode(e.target.value)}
               placeholder="{{ data. }}"
-              style={{ flex: 1, padding: '8px 10px', fontSize: '13px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
+              style={{ flex: 1, padding: '6px 8px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none' }}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -616,7 +593,7 @@ export const UploadField = ({
             <button
               type="button"
               onClick={handleAddRef}
-              style={{ padding: '0 12px', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 500, borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+              style={{ padding: '0 10px', background: '#18181b', color: '#fff', fontSize: '11px', fontWeight: 500, borderRadius: '6px', border: 'none', cursor: 'pointer' }}
             >
               Ekle
             </button>
@@ -662,121 +639,16 @@ export const UploadField = ({
         </div>
       )}
 
-      {/* Vaul Media Drawer */}
-      <Drawer.Root open={drawerOpen} onOpenChange={(open) => { setDrawerOpen(open); if (!open) setGallerySearch(''); }}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="tecof-upload-drawer-overlay" />
-          <Drawer.Content className="tecof-upload-drawer-content">
-            <Drawer.Title className="tecof-sr-only">Medya Yöneticisi</Drawer.Title>
-            <Drawer.Description className="tecof-sr-only">Sunucudaki dosyalardan birini seçin veya yeni dosya yükleyin</Drawer.Description>
-            {/* Drag Handle */}
-            <div className="tecof-upload-drawer-handle" />
-
-            <div className="tecof-upload-drawer-inner">
-              {/* Header */}
-              <div className="tecof-upload-drawer-header">
-                <h2 className="tecof-upload-drawer-title">Medya Kütüphanesi</h2>
-                <div className="tecof-upload-drawer-header-actions">
-                  <button
-                    className="tecof-upload-drawer-action-btn"
-                    onClick={() => setRefreshKey(k => k + 1)}
-                    disabled={loading}
-                    title="Yenile"
-                  >
-                    <RefreshCcw size={15} className={loading ? 'tecof-upload-spin' : ''} />
-                  </button>
-                  <button
-                    className="tecof-upload-drawer-action-btn"
-                    onClick={() => setDrawerOpen(false)}
-                    title="Kapat"
-                  >
-                    <X size={15} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Search */}
-              <div className="tecof-upload-search-box">
-                <Search size={15} color="#a1a1aa" />
-                <input
-                  type="text"
-                  placeholder="Dosya ara..."
-                  value={gallerySearch}
-                  onChange={(e) => setGallerySearch(e.target.value)}
-                  className="tecof-upload-search-input"
-                />
-                {gallerySearch && (
-                  <button
-                    type="button"
-                    className="tecof-upload-action-btn tecof-upload-clear-search-btn"
-                    onClick={() => setGallerySearch('')}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
-              {/* Gallery Grid */}
-              {loading ? (
-                <div className="tecof-upload-gallery-empty">
-                  <div className="tecof-upload-gallery-empty-icon">
-                    <RefreshCcw size={24} color="#a1a1aa" className="tecof-upload-spin" />
-                  </div>
-                  <p className="tecof-upload-loading-text">Yükleniyor...</p>
-                </div>
-              ) : filteredGallery.length === 0 ? (
-                <div className="tecof-upload-gallery-empty">
-                  <div className="tecof-upload-gallery-empty-icon">
-                    <ImageIcon size={24} color="#a1a1aa" />
-                  </div>
-                  <p className="tecof-upload-empty-heading">
-                    {gallerySearch ? 'Sonuç bulunamadı' : 'Henüz dosya yok'}
-                  </p>
-                  <p className="tecof-upload-empty-subheading">
-                    {gallerySearch ? 'Farklı bir arama terimi deneyin' : 'Dosyalarınız burada görünecek'}
-                  </p>
-                </div>
-              ) : (
-                <div className="tecof-upload-gallery-grid">
-                  {filteredGallery.map((file) => {
-                    const selected = value.some(v => v._id === file._id);
-                    return (
-                      <div
-                        key={file._id}
-                        className={`tecof-upload-gallery-item ${selected ? 'selected' : ''}`}
-                        onClick={() => toggleGalleryFile(file)}
-                      >
-                        {/* Selected check badge */}
-                        {selected && (
-                          <div className="tecof-upload-gallery-check">
-                            <Check size={12} strokeWidth={3} />
-                          </div>
-                        )}
-                        {isImageType(file.type) ? (
-                          <TecofPicture
-                            data={file}
-                            alt={file.name}
-                            size="thumbnail"
-                            className="tecof-upload-gallery-thumb"
-                            imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }}
-                          />
-                        ) : (
-                          <div className="tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap">
-                            <FileIcon size={24} color="#a1a1aa" />
-                          </div>
-                        )}
-                        <p className="tecof-upload-gallery-file-name">
-                          {file.meta?.originalName || file.name}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+      {/* Media Drawer */}
+      <MediaDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onSelect={toggleGalleryFile}
+        selectedIds={value.map(v => v._id ?? '')}
+        allowMultiple={allowMultiple}
+        filterImages={acceptedTypes.length > 0 && acceptedTypes.every(t => t.startsWith('image/'))}
+        title="Medya Kütüphanesi"
+      />
 
     </div>
   );

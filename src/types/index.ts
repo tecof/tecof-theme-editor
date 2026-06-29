@@ -193,3 +193,16 @@ export interface LocalizedLinkFieldValue {
   code: string;
   value: LinkFieldValue;
 }
+
+/* ─── Tecof Studio Types ─── */
+
+export interface TecofNode {
+  type: string;
+  props: { id: string } & Record<string, any>;
+}
+
+export interface TecofDocument {
+  root: { props: Record<string, any> };
+  content: TecofNode[];
+  zones: Record<string, TecofNode[]>;
+}

@@ -909,10 +909,11 @@
 }
 
 /* ─── UploadField ─── */
+/* ─── UploadField ─── */
 .tecof-upload-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   font-family: 'Inter', system-ui, sans-serif;
   max-width: 100%;
   overflow: hidden;
@@ -923,41 +924,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: 16px 12px;
   background: #fafafa;
-  border: 2px dashed #e4e4e7;
-  border-radius: 12px;
+  border: 1px dashed #e4e4e7;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .tecof-upload-empty-state:hover {
-  border-color: var(--tecof-primary-500, #3b82f6);
-  background: #f8fafc;
+  border-color: #18181b;
+  background: #fafafa;
 }
 
 .tecof-upload-empty-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f4f4f5;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--tecof-primary-500, #3b82f6);
-  margin-bottom: 12px;
+  color: #71717a;
+  margin-bottom: 8px;
 }
 
 .tecof-upload-empty-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #3f3f46;
-  margin: 0 0 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #18181b;
+  margin: 0 0 2px 0;
 }
 
 .tecof-upload-empty-desc {
-  font-size: 12px;
-  color: #a1a1aa;
+  font-size: 11px;
+  color: #71717a;
   margin: 0;
   text-align: center;
 }
@@ -965,26 +966,25 @@
 .tecof-upload-file-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 6px 8px;
   background: #ffffff;
   border: 1px solid #e4e4e7;
-  border-radius: 10px;
+  border-radius: 8px;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   max-width: 100%;
   overflow: hidden;
 }
 
 .tecof-upload-file-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border-color: #d4d4d8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .tecof-upload-file-thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
   overflow: hidden;
   background: #f4f4f5;
   flex-shrink: 0;
@@ -1003,14 +1003,14 @@
 }
 
 .tecof-upload-file-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #f4f4f5;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--tecof-primary-500, #3b82f6);
+  color: #71717a;
   flex-shrink: 0;
 }
 
@@ -1020,36 +1020,35 @@
 }
 
 .tecof-upload-file-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: #18181b;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0;
-  line-height: 18px;
+  line-height: 16px;
 }
 
 .tecof-upload-file-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 .tecof-upload-file-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  background: #dbeafe;
-  color: var(--tecof-primary-600, #2563eb);
-  border-radius: 4px;
-  line-height: 14px;
-  letter-spacing: 0.3px;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 4px;
+  background: #f4f4f5;
+  color: #71717a;
+  border-radius: 3px;
+  line-height: 12px;
 }
 
 .tecof-upload-file-size {
-  font-size: 11px;
+  font-size: 10px;
   color: #a1a1aa;
   margin: 0;
 }
@@ -1065,14 +1064,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  color: #a1a1aa;
+  width: 24px;
+  height: 24px;
+  color: #71717a;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.1s ease;
 }
 
 .tecof-upload-action-btn:hover {
@@ -1081,7 +1080,7 @@
 }
 
 .tecof-upload-action-btn-danger {
-  color: #ef4444;
+  color: #71717a;
 }
 
 .tecof-upload-action-btn-danger:hover {
@@ -1091,52 +1090,50 @@
 
 .tecof-upload-main-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tecof-upload-btn-primary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex: 1;
   justify-content: center;
-  padding: 12px 10px;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--tecof-primary-500, #3b82f6), var(--tecof-primary-600, #2563eb));
+  background: #18181b;
   border: none;
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  transition: all 0.15s ease;
 }
 
 .tecof-upload-btn-primary:hover {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
-  transform: translateY(-1px);
+  background: #27272a;
 }
 
 .tecof-upload-btn-secondary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex: 1;
   justify-content: center;
-  padding: 12px 10px;
-  font-size: 13px;
+  padding: 8px 10px;
+  font-size: 12px;
   font-weight: 500;
-  color: #3f3f46;
+  color: #27272a;
   background: #ffffff;
   border: 1px solid #e4e4e7;
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s ease;
 }
 
 .tecof-upload-btn-secondary:hover {
-  background: #f4f4f5;
+  background: #fafafa;
+  border-color: #d4d4d8;
 }
 
 .tecof-upload-pond-section {
@@ -1191,10 +1188,10 @@
 .tecof-upload-drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 9999;
+  background: rgba(9, 9, 11, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 999999 !important;
 }
 
 .tecof-upload-drawer-content {
@@ -1202,30 +1199,40 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 85vh;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 820px;
+  height: 82vh;
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border-top-left-radius: 20px;
-  border-top-right-radius: 20px;
-  z-index: 10000;
-  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.12);
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  z-index: 1000000 !important;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  border-bottom: none;
 }
 
 .tecof-upload-drawer-handle {
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: #d4d4d8;
-  margin: 10px auto 0;
+  width: 48px;
+  height: 5px;
+  border-radius: 9999px;
+  background: #e4e4e7;
+  margin: 12px auto 6px;
   flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.tecof-upload-drawer-handle:hover {
+  background: #d4d4d8;
 }
 
 .tecof-upload-drawer-inner {
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding: 12px 16px 16px;
+  padding: 12px 20px 20px;
   overflow: hidden;
 }
 
@@ -1233,60 +1240,65 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   flex-shrink: 0;
 }
 
 .tecof-upload-drawer-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  color: #18181b;
+  color: #09090b;
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .tecof-upload-drawer-header-actions {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
 }
 
 .tecof-upload-drawer-action-btn {
   background: #f4f4f5;
   border: 1px solid #e4e4e7;
-  border-radius: 8px;
-  width: 34px;
-  height: 34px;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
-  color: #52525b;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #3f3f46;
 }
 
 .tecof-upload-drawer-action-btn:hover {
   background: #e4e4e7;
-  color: #18181b;
+  color: #09090b;
+  transform: scale(1.05);
+}
+
+.tecof-upload-drawer-action-btn:active {
+  transform: scale(0.95);
 }
 
 .tecof-upload-search-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
+  gap: 10px;
+  padding: 10px 14px;
   background: #f4f4f5;
-  border-radius: 10px;
-  margin-bottom: 14px;
+  border-radius: 12px;
+  margin-bottom: 16px;
   flex-shrink: 0;
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
+  border: 1px solid #e4e4e7;
+  transition: all 0.2s ease;
 }
 
 .tecof-upload-search-box:focus-within {
   background: #ffffff;
   border-color: var(--tecof-primary-500, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .tecof-upload-search-input {
@@ -1295,17 +1307,37 @@
   background: transparent;
   outline: none;
   font-size: 13px;
-  color: #18181b;
+  color: #09090b;
   font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 450;
+}
+
+.tecof-upload-search-input::placeholder {
+  color: #71717a;
 }
 
 .tecof-upload-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
   overflow-y: auto;
   flex: 1;
-  padding-bottom: 16px;
+  padding: 4px 4px 20px 4px;
+}
+
+/* Custom Scrollbar for Grid */
+.tecof-upload-gallery-grid::-webkit-scrollbar {
+  width: 6px;
+}
+.tecof-upload-gallery-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tecof-upload-gallery-grid::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 9999px;
+}
+.tecof-upload-gallery-grid::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
 }
 
 .tecof-upload-gallery-item {
@@ -1315,45 +1347,67 @@
   align-items: center;
   padding: 6px;
   background: #ffffff;
-  border: 2px solid #f4f4f5;
-  border-radius: 10px;
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .tecof-upload-gallery-item:hover {
-  border-color: #d4d4d8;
+  border-color: var(--tecof-primary-300, #93c5fd);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(9, 9, 11, 0.06);
 }
 
 .tecof-upload-gallery-item.selected {
-  background: #eff6ff;
+  background: var(--tecof-primary-50, #eff6ff);
   border-color: var(--tecof-primary-500, #3b82f6);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
 }
 
 .tecof-upload-gallery-check {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 20px;
-  height: 20px;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--tecof-primary-500, #3b82f6);
+  border: 2px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  z-index: 1;
-  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  animation: tecof-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes tecof-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .tecof-upload-gallery-thumb {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 6px;
-  margin-bottom: 6px;
+  border-radius: 8px;
+  margin-bottom: 8px;
   overflow: hidden;
+  position: relative;
+}
+
+.tecof-upload-gallery-file-icon-wrap {
+  background: #f4f4f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.tecof-upload-gallery-item:hover .tecof-upload-gallery-file-icon-wrap {
+  background: #e4e4e7;
 }
 
 .tecof-upload-gallery-thumb .tecof-picture-wrapper {
@@ -1366,13 +1420,19 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.3s ease;
+}
+
+.tecof-upload-gallery-item:hover .tecof-upload-gallery-thumb .tecof-picture-wrapper img {
+  transform: scale(1.05);
 }
 
 .tecof-upload-gallery-file-name {
   font-size: 11px;
   font-weight: 500;
-  color: #52525b;
+  color: #27272a;
   width: 100%;
+  padding: 0 4px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -1386,20 +1446,21 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
-  color: #a1a1aa;
+  padding: 64px 24px;
+  color: #71717a;
   text-align: center;
 }
 
 .tecof-upload-gallery-empty-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
   background: #f4f4f5;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .tecof-upload-uploaded-header {
@@ -1641,6 +1702,76 @@
 
 .filepond--root {
   margin-bottom: 0 !important;
+}
+
+/* ─── Puck Drawer Component Search ─── */
+.tecof-drawer-search-wrapper {
+  padding: 10px 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e4e7;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tecof-drawer-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f4f4f5;
+  border-radius: 8px;
+  border: 1px solid #e4e4e7;
+  transition: all 0.2s ease;
+}
+
+.tecof-drawer-search-box:focus-within {
+  background: #ffffff;
+  border-color: var(--tecof-primary-500, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.tecof-drawer-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: #09090b;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+}
+
+.tecof-drawer-search-input::placeholder {
+  color: #71717a;
+}
+
+.tecof-drawer-clear-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #71717a;
+  transition: color 0.15s ease;
+}
+
+.tecof-drawer-clear-btn:hover {
+  color: #18181b;
+}
+
+.tecof-drawer-wrapper-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tecof-drawer-list-layout {
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* ─── Puck Drawer (Sidebar Component Preview) Settings ─── */
@@ -2035,46 +2166,59 @@
 
 /* ─── CmsCollectionField ─── */
 
+/* ─── CmsCollectionField ─── */
+
 .tecof-cms-col-container {
   width: 100%;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .tecof-cms-col-loading {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px;
-  font-size: 12px;
-  color: #a1a1aa;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #71717a;
+  background: #f4f4f5;
+  border-radius: 10px;
 }
 
 .tecof-cms-col-error {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px;
-  font-size: 12px;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
   color: #ef4444;
   background: #fef2f2;
-  border-radius: 8px;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
 }
 
 .tecof-cms-col-retry {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 6px;
+  padding: 6px 12px;
   font-size: 11px;
-  background: #fff;
+  font-weight: 500;
+  background: #ffffff;
   border: 1px solid #fca5a5;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   color: #ef4444;
   margin-left: auto;
+  transition: all 0.2s;
+}
+
+.tecof-cms-col-retry:hover {
+  background: #fef2f2;
+  transform: scale(1.02);
 }
 
 /* ── Selector Trigger ── */
@@ -2088,35 +2232,43 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #e4e4e7;
-  border-radius: 8px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 13px;
-  color: #3f3f46;
+  color: #18181b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .tecof-cms-col-trigger:hover {
   border-color: #d4d4d8;
+  background: #fafafa;
 }
 
 .tecof-cms-col-trigger.open {
   border-color: var(--tecof-primary-500, #3b82f6);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: #ffffff;
 }
 
 .tecof-cms-col-trigger-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
   flex: 1;
+  color: #52525b;
+}
+
+.tecof-cms-col-trigger-left svg {
   color: #71717a;
 }
 
 .tecof-cms-col-trigger-left span {
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2125,7 +2277,7 @@
 .tecof-cms-col-trigger-right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -2133,14 +2285,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: none;
+  width: 22px;
+  height: 22px;
+  background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  color: #a1a1aa;
+  color: #71717a;
   padding: 0;
+  transition: all 0.2s;
 }
 
 .tecof-cms-col-clear:hover {
@@ -2149,8 +2302,8 @@
 }
 
 .tecof-cms-col-chevron {
-  color: #a1a1aa;
-  transition: transform 0.2s ease;
+  color: #71717a;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tecof-cms-col-chevron.rotated {
@@ -2161,65 +2314,89 @@
 
 .tecof-cms-col-dropdown {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: #fff;
-  border: 1px solid #e4e4e7;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  border: 1px solid rgba(228, 228, 231, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(9, 9, 11, 0.08);
   z-index: 100;
   overflow: hidden;
+  animation: tecof-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tecof-cms-col-search {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 10px 14px;
   border-bottom: 1px solid #f4f4f5;
-  color: #a1a1aa;
+  color: #71717a;
+  background: #fafafa;
 }
 
 .tecof-cms-col-search-input {
   flex: 1;
   border: none;
   outline: none;
-  font-size: 12px;
+  font-size: 13px;
   background: transparent;
-  color: #3f3f46;
+  color: #09090b;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+}
+
+.tecof-cms-col-search-input::placeholder {
+  color: #a1a1aa;
 }
 
 .tecof-cms-col-options {
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
-  padding: 4px;
+  padding: 6px;
+}
+
+/* Custom Scrollbar for Options */
+.tecof-cms-col-options::-webkit-scrollbar {
+  width: 5px;
+}
+.tecof-cms-col-options::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tecof-cms-col-options::-webkit-scrollbar-thumb {
+  background: #e4e4e7;
+  border-radius: 9999px;
+}
+.tecof-cms-col-options::-webkit-scrollbar-thumb:hover {
+  background: #d4d4d8;
 }
 
 .tecof-cms-col-empty {
-  padding: 16px;
+  padding: 24px;
   text-align: center;
-  font-size: 12px;
-  color: #a1a1aa;
+  font-size: 13px;
+  color: #71717a;
 }
 
 .tecof-cms-col-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 8px 10px;
-  background: none;
+  padding: 8px 12px;
+  background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: all 0.2s;
   text-align: left;
-  color: #71717a;
+  color: #52525b;
 }
 
 .tecof-cms-col-option:hover {
   background: #f4f4f5;
+  color: #09090b;
 }
 
 .tecof-cms-col-option.selected {
@@ -2230,14 +2407,14 @@
 .tecof-cms-col-option-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
 }
 
 .tecof-cms-col-option-name {
   font-size: 13px;
-  font-weight: 500;
-  color: #3f3f46;
+  font-weight: 600;
+  color: #27272a;
 }
 
 .tecof-cms-col-option.selected .tecof-cms-col-option-name {
@@ -2245,78 +2422,87 @@
 }
 
 .tecof-cms-col-option-slug {
-  font-size: 10px;
-  color: #a1a1aa;
+  font-size: 11px;
+  color: #71717a;
+}
+
+.tecof-cms-col-option.selected .tecof-cms-col-option-slug {
+  color: var(--tecof-primary-400, #60a5fa);
 }
 
 /* ── Settings ── */
 
 .tecof-cms-col-settings {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-top: 4px;
 }
 
 .tecof-cms-col-setting {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .tecof-cms-col-setting-label {
   font-size: 10px;
-  font-weight: 600;
-  color: #a1a1aa;
+  font-weight: 700;
+  color: #71717a;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  margin-left: 2px;
 }
 
 .tecof-cms-col-setting-input {
-  padding: 6px 8px;
-  font-size: 12px;
-  border: 1px solid #e4e4e7;
-  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  border-radius: 8px;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s ease;
+  transition: all 0.2s ease;
+  color: #09090b;
+  font-weight: 500;
 }
 
 .tecof-cms-col-setting-input:focus {
   border-color: var(--tecof-primary-500, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .tecof-cms-col-sort-btns {
   display: flex;
-  gap: 0;
-  border: 1px solid #e4e4e7;
-  border-radius: 6px;
-  overflow: hidden;
+  gap: 2px;
+  background: #f4f4f5;
+  border: none;
+  padding: 3px;
+  border-radius: 10px;
 }
 
 .tecof-cms-col-sort-btn {
   flex: 1;
-  padding: 5px 6px;
+  padding: 6px 8px;
   font-size: 11px;
   font-weight: 500;
-  background: #fff;
+  background: transparent;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
   color: #71717a;
-  transition: all 0.12s ease;
-}
-
-.tecof-cms-col-sort-btn:first-child {
-  border-right: 1px solid #e4e4e7;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .tecof-cms-col-sort-btn.active {
-  background: var(--tecof-primary-50, #eff6ff);
+  background: #ffffff;
   color: var(--tecof-primary-600, #2563eb);
+  box-shadow: 0 2px 6px rgba(9, 9, 11, 0.06);
   font-weight: 600;
 }
 
 .tecof-cms-col-sort-btn:hover:not(.active) {
-  background: #f4f4f5;
+  color: #09090b;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 /* ── Badge ── */
@@ -2325,41 +2511,53 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 6px 12px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--tecof-primary-600, #2563eb);
   background: var(--tecof-primary-50, #eff6ff);
-  border-radius: 6px;
+  border-radius: 8px;
   align-self: flex-start;
+  box-shadow: 0 1px 2px rgba(59, 130, 246, 0.04);
+}
+
+.tecof-cms-col-badge svg {
+  color: var(--tecof-primary-500, #3b82f6);
 }
 
 .tecof-cms-col-badge-count {
   font-size: 10px;
-  color: #a1a1aa;
-  font-weight: 400;
+  color: var(--tecof-primary-400, #60a5fa);
+  font-weight: 500;
+  margin-left: 2px;
 }
 
 /* ── Field Mapping ── */
 
 .tecof-cms-col-mapping {
-  border: 1px solid #e4e4e7;
-  border-radius: 8px;
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  border-radius: 12px;
   overflow: hidden;
+  background: #ffffff;
+  margin-top: 4px;
 }
 
 .tecof-cms-col-mapping-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 8px;
+  padding: 10px 14px;
   font-size: 10px;
-  font-weight: 600;
-  color: #71717a;
+  font-weight: 700;
+  color: #52525b;
   background: #fafafa;
   border-bottom: 1px solid #f4f4f5;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+}
+
+.tecof-cms-col-mapping-header svg {
+  color: #71717a;
 }
 
 .tecof-cms-col-mapping-rows {
@@ -2371,8 +2569,8 @@
 .tecof-cms-col-mapping-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 12px;
+  padding: 10px 14px;
   border-bottom: 1px solid #f4f4f5;
 }
 
@@ -2382,28 +2580,30 @@
 
 .tecof-cms-col-mapping-label {
   flex-shrink: 0;
-  width: 80px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #52525b;
+  width: 90px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #27272a;
 }
 
 .tecof-cms-col-mapping-select {
   flex: 1;
-  padding: 5px 8px;
-  font-size: 12px;
-  border: 1px solid #e4e4e7;
-  border-radius: 6px;
-  background: #fff;
-  color: #3f3f46;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid rgba(228, 228, 231, 0.8);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #18181b;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: all 0.2s;
   appearance: auto;
+  font-weight: 500;
 }
 
 .tecof-cms-col-mapping-select:focus {
   border-color: var(--tecof-primary-500, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .tecof-cms-col-mapping-select:disabled {

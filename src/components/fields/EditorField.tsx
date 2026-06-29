@@ -18,7 +18,7 @@ import Link from '@tiptap/extension-link';
 import Code from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
 import Image from '@tiptap/extension-image';
-import { FieldLabel } from '@puckeditor/core';
+import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useLanguages } from './useLanguages';
 import { LanguageTabBar, FieldLoading } from './LanguageField';

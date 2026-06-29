@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { FieldLabel } from '@puckeditor/core';
+import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useTecof } from '../TecofProvider';
 import type { LinkFieldValue, LocalizedLinkFieldValue } from '../../types';

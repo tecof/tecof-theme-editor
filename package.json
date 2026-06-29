@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.33",
+    "version": "0.0.35",
     "description": "React theme editor library for Tecof projects",
     "keywords": [
         "react",
@@ -89,6 +89,9 @@
     "dependencies": {
         "@tiptap/extension-image": "^3.26.0",
         "i": "^0.3.7",
-        "npm": "^11.12.1"
+        "immer": "^11.1.8",
+        "nanoid": "^5.1.16",
+        "npm": "^11.12.1",
+        "zustand": "^5.0.14"
     }
 }

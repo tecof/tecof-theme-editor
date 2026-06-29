@@ -211,7 +211,7 @@ export const MediaDrawer = ({
                           alt={file.name}
                           size="thumbnail"
                           className="tecof-upload-gallery-thumb"
-                          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }}
+                          imgStyle={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
                         />
                       ) : (
                         <div className="tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap">
