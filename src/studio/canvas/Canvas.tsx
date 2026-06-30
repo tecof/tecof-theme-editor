@@ -1,61 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type React from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
 import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
-import { createEventAutoScroller, createNode, readDragData } from './dndUtils';
+import { useDropTarget } from './useDropTarget';
 
 export const Canvas = () => {
   const content = useEditorStore((state) => state.document.content);
   const viewport = useEditorStore((state) => state.viewport);
-  const insertNode = useEditorStore((state) => state.insertNode);
-  const endDrag = useEditorStore((state) => state.endDrag);
   const { config, readOnly } = useStudio();
   const rootProps = useEditorStore((state) => state.document.root?.props) || {};
-  const [isRootDragOver, setIsRootDragOver] = useState(false);
-  const autoScrollerRef = useRef(createEventAutoScroller());
 
-  useEffect(() => {
-    if (!readOnly) return;
-    autoScrollerRef.current.stop();
-    setIsRootDragOver(false);
-  }, [readOnly]);
-
-  const handleRootDragOver = useCallback(
-    (e: React.DragEvent) => {
-      if (readOnly) return;
-      e.preventDefault();
-      autoScrollerRef.current.update(e);
-      setIsRootDragOver(true);
-    },
-    [readOnly]
-  );
-
-  const handleRootDragLeave = useCallback((e: React.DragEvent) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    autoScrollerRef.current.stop();
-    setIsRootDragOver(false);
-  }, []);
-
-  const handleRootDrop = useCallback(
-    (e: React.DragEvent) => {
-      if (readOnly) return;
-      e.preventDefault();
-      autoScrollerRef.current.stop();
-      setIsRootDragOver(false);
-
-      const { nodeId, type } = readDragData(e);
-      if (nodeId) {
-        useEditorStore.getState().moveNode(nodeId, undefined, content.length);
-      } else if (type) {
-        insertNode(createNode(config, type), undefined, content.length);
-      }
-
-      endDrag();
-    },
-    [config, content.length, endDrag, insertNode, readOnly]
-  );
+  const {
+    isDragOver: isRootDragOver,
+    onDragOver: handleRootDragOver,
+    onDragLeave: handleRootDragLeave,
+    onDrop: handleRootDrop,
+  } = useDropTarget({
+    // Root content has no zone key.
+    zoneKey: undefined,
+    locked: readOnly,
+    getIndex: () => content.length,
+  });
 
   const rootClassName = [
     'tecof-canvas-root',

@@ -1,8 +1,9 @@
 import React, { createContext, useContext } from 'react';
 import type { TecofApiClient } from '../api';
+import type { StudioConfig } from '../types';
 
 export interface StudioContextType {
-  config: any;
+  config: StudioConfig;
   metadata?: Record<string, any>;
   apiClient?: TecofApiClient;
   readOnly?: boolean;

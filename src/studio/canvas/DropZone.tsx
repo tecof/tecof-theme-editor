@@ -1,8 +1,8 @@
-import React, { createContext, useContext, useRef, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
 import { NodeRenderer } from './NodeRenderer';
-import { createEventAutoScroller, createNode, readDragData } from './dndUtils';
+import { useDropTarget } from './useDropTarget';
 
 export const ParentNodeContext = createContext<string | null>(null);
 
@@ -15,52 +15,25 @@ export interface DropZoneProps {
 export const DropZone = ({ zone, className, style }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
-  const { config } = useStudio();
-  const insertNode = useEditorStore((state) => state.insertNode);
-  const endDrag = useEditorStore((state) => state.endDrag);
-  const drag = useEditorStore((state) => state.drag);
-  const autoScrollerRef = useRef(createEventAutoScroller());
-
-  const [isDragOver, setIsDragOver] = useState(false);
+  const { readOnly } = useStudio();
+  // Global "is any drag active" flag drives the dropzone affordance; this is a
+  // legitimately global subscription (not node-scoped).
+  const isDragActive = useEditorStore((state) => state.drag != null);
 
   // Get items for this zone from the store
   const items = useEditorStore((state) => state.document.zones[zoneKey]) || [];
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    autoScrollerRef.current.update(e);
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    autoScrollerRef.current.stop();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    autoScrollerRef.current.stop();
-    setIsDragOver(false);
-
-    const { nodeId, type } = readDragData(e);
-
-    if (nodeId) {
-      useEditorStore.getState().moveNode(nodeId, zoneKey, items.length);
-    } else if (type) {
-      insertNode(createNode(config, type), zoneKey, items.length);
-    }
-
-    endDrag();
-  };
+  const { isDragOver, onDragOver, onDragLeave, onDrop } = useDropTarget({
+    zoneKey,
+    locked: readOnly,
+    getIndex: () => items.length,
+  });
 
   const dropzoneClassName = [
     'tecof-dropzone',
     items.length === 0 ? 'is-empty' : '',
     isDragOver ? 'is-dragover' : '',
-    drag ? 'is-drag-active' : '',
+    isDragActive ? 'is-drag-active' : '',
     className,
   ]
     .filter(Boolean)
@@ -69,9 +42,9 @@ export const DropZone = ({ zone, className, style }: DropZoneProps) => {
   return (
     <div
       className={dropzoneClassName}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       style={style}
       data-tecof-zone={zoneKey}
     >

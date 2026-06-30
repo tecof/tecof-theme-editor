@@ -1,19 +1,58 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStudio } from '../context';
 import { useEditorStore } from '../../engine/store';
 import { LayersTree } from './LayersTree';
-import { Layers, Grid, Search, Plus } from 'lucide-react';
+import { BlockThumb } from './BlockThumb';
+import { Layers, Grid, Search } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
 
+/**
+ * Resolve the merchant domain used for component preview thumbnails.
+ *
+ * There is no first-class `domain` in the studio context, so we look in
+ * priority order and degrade gracefully (returning undefined) when nothing is
+ * found — in which case the palette renders text-only buttons as before.
+ *
+ *  1. A host-supplied value on the config (`config.domain` / `config.metadata.domain`).
+ *  2. A value on the studio `metadata` bag (`metadata.domain`).
+ *  3. The hostname derived from the API client's CDN/API URL.
+ */
+const resolveDomain = (
+  config: Record<string, any>,
+  metadata: Record<string, any> | undefined,
+  baseUrl: string | undefined
+): string | undefined => {
+  const explicit =
+    config?.domain ||
+    config?.metadata?.domain ||
+    metadata?.domain;
+  if (typeof explicit === 'string' && explicit.trim()) return explicit.trim();
+
+  if (baseUrl) {
+    try {
+      return new URL(baseUrl).hostname;
+    } catch {
+      /* not a parseable URL — fall through to undefined */
+    }
+  }
+  return undefined;
+};
+
 export const LeftPanel = () => {
-  const { config } = useStudio();
+  const { config, metadata, apiClient } = useStudio();
   const insertNode = useEditorStore((state) => state.insertNode);
   const beginDrag = useEditorStore((state) => state.beginDrag);
   const endDrag = useEditorStore((state) => state.endDrag);
 
   const [activeTab, setActiveTab] = useState<'blocks' | 'layers'>('blocks');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Domain for preview thumbnails (undefined → graceful text-only fallback).
+  const domain = useMemo(
+    () => resolveDomain(config as Record<string, any>, metadata, apiClient?.cdnUrl),
+    [config, metadata, apiClient]
+  );
 
   // Extract all categories and their components from config
   const categories = config.categories || {};
@@ -40,6 +79,14 @@ export const LeftPanel = () => {
   const handleAddBlock = (type: string) => {
     // If a zone or node is selected, try to append it near/inside if supported, otherwise add to root
     insertNode(createNode(config, type));
+  };
+
+  // Shared drag handlers (preserved from the original inline button).
+  const handleBlockDragStart = (e: React.DragEvent, type: string, label: string) => {
+    writeDragData(e, { type });
+    e.dataTransfer.effectAllowed = 'copy';
+    setDragGhost(e, label);
+    beginDrag({ type });
   };
 
   return (
@@ -103,24 +150,16 @@ export const LeftPanel = () => {
                       const label = compConfig.label || type;
 
                       return (
-                        <button
-                          type="button"
+                        <BlockThumb
                           key={type}
-                          onClick={() => handleAddBlock(type)}
-                          draggable={true}
-                          onDragStart={(e) => {
-                            writeDragData(e, { type });
-                            e.dataTransfer.effectAllowed = 'copy';
-                            setDragGhost(e, label);
-                            beginDrag({ type });
-                          }}
+                          type={type}
+                          label={label}
+                          domain={domain}
+                          apiClient={apiClient}
+                          onAdd={handleAddBlock}
+                          onDragStart={handleBlockDragStart}
                           onDragEnd={endDrag}
-                          className="tecof-block-btn"
-                          title={`${label} ekle`}
-                        >
-                          <span>{label}</span>
-                          <Plus size={14} className="tecof-block-btn-icon" />
-                        </button>
+                        />
                       );
                     })}
                   </div>

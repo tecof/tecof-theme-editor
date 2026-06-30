@@ -11,6 +11,7 @@ import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
+import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost } from './bridge';
 import type { TecofEditorProps } from '../types';
 
 export const TecofStudio = ({
@@ -19,6 +20,7 @@ export const TecofStudio = ({
   accessToken,
   onSave,
   onChange,
+  hostOrigin,
   className,
 }: TecofEditorProps) => {
   const { apiClient } = useTecof();
@@ -41,47 +43,86 @@ export const TecofStudio = ({
   const documentStateRef = useRef(documentState);
   documentStateRef.current = documentState;
 
-  const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
+  const isEmbedded = isEmbeddedHost();
+
+  // Lock down the host postMessage target origin (defaults to '*' when unset).
+  // Other host-messaging files (NodeRenderer.tsx, Frame.tsx) should adopt
+  // ./bridge's postToHost so this configured origin applies consistently.
+  useEffect(() => {
+    configureBridge(hostOrigin);
+  }, [hostOrigin]);
 
   // 1. Fetch Page and Load into Store
   useEffect(() => {
     let cancelled = false;
+    // Abort the in-flight request on cleanup so a slow earlier response can't
+    // land after a newer pageId load and overwrite it. A 15s timeout also
+    // trips the same abort path.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     const load = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.getPage(pageId);
+        const res = await apiClient.getPage(pageId, controller.signal);
         if (cancelled) return;
 
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
         const parsedDoc = parseDocument(rawData);
         setDocument(parsedDoc);
       } catch (err) {
+        // Aborted loads (newer pageId, unmount, or timeout) must NOT mutate
+        // state — bail out before touching loading/document below.
+        if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) {
+          return;
+        }
         console.error('Failed to load page:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
+      controller.abort();
     };
   }, [pageId, apiClient, setDocument]);
 
-  // 2. Trigger onChange when document state changes in store
+  // 2. Trigger onChange when document state changes in store.
+  // Debounced (~300ms, trailing) so a burst of keystrokes coalesces into a
+  // single onChange / `puck:changed`. The latest document is read from the ref
+  // at flush time (not captured at schedule time), so we never emit a stale doc.
   const isFirstRender = useRef(true);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const changeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (loading) return;
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    const serialized = serializeDocument(documentState);
-    onChange?.(serialized);
 
-    if (isEmbedded) {
-      window.parent.postMessage({ type: 'puck:changed' }, '*');
-    }
-  }, [documentState, loading, onChange, isEmbedded]);
+    if (changeTimerRef.current) clearTimeout(changeTimerRef.current);
+    changeTimerRef.current = setTimeout(() => {
+      changeTimerRef.current = null;
+      const serialized = serializeDocument(documentStateRef.current);
+      onChangeRef.current?.(serialized);
+
+      if (isEmbedded) {
+        postToHost('puck:changed');
+      }
+    }, 300);
+  }, [documentState, loading, isEmbedded]);
+
+  // Flush-cancel any pending debounce on unmount.
+  useEffect(() => {
+    return () => {
+      if (changeTimerRef.current) clearTimeout(changeTimerRef.current);
+    };
+  }, []);
 
   // 3. Save Draft Functionality
   const handleSaveDraft = useCallback(async () => {
@@ -98,18 +139,18 @@ export const TecofStudio = ({
         setTimeout(() => setSaveStatus('idle'), 3000);
         onSave?.(serialized);
         if (isEmbedded) {
-          window.parent.postMessage({ type: 'puck:saved', data: serialized }, '*');
+          postToHost('puck:saved', { data: serialized });
         }
       } else {
         setSaveStatus('error');
         if (isEmbedded) {
-          window.parent.postMessage({ type: 'puck:saveError', message: res.message }, '*');
+          postToHost('puck:saveError', { message: res.message });
         }
       }
     } catch (err: any) {
       setSaveStatus('error');
       if (isEmbedded) {
-        window.parent.postMessage({ type: 'puck:saveError', message: err.message }, '*');
+        postToHost('puck:saveError', { message: err.message });
       }
     } finally {
       setSaving(false);
@@ -121,6 +162,10 @@ export const TecofStudio = ({
     if (!isEmbedded) return;
 
     const onMessage = (e: MessageEvent) => {
+      // Drop messages from untrusted origins when a hostOrigin is locked in.
+      // When unset (or '*') everything is accepted (backward compatible).
+      if (!isAllowedOrigin(e.origin)) return;
+
       switch (e.data?.type) {
         case 'puck:save':
         case 'puck:publish':
@@ -176,13 +221,14 @@ export const TecofStudio = ({
       };
 
       const selectedId = useEditorStore.getState().selection.selectedId;
+      const selectedIds = useEditorStore.getState().selection.selectedIds;
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
 
       // Escape -> Deselect
       if (e.key === 'Escape') {
         useEditorStore.getState().selectNode(null);
         if (isEmbedded) {
-          window.parent.postMessage({ type: 'puck:itemDeselected' }, '*');
+          postToHost('puck:itemDeselected');
         }
         return;
       }
@@ -203,20 +249,38 @@ export const TecofStudio = ({
         return;
       }
 
-      // Block editor actions if input is focused
+      // Block editor actions (incl. clipboard) if input is focused, so the
+      // browser's native copy/cut/paste keeps working inside fields/inline-edit.
       if (isInput()) return;
 
-      // Delete selected
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+      // Copy / Cut / Paste
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'c' && selectedId) {
         e.preventDefault();
-        useEditorStore.getState().removeNode(selectedId);
+        useEditorStore.getState().copyNode();
+        return;
+      }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'x' && selectedId) {
+        e.preventDefault();
+        useEditorStore.getState().cutNode();
+        return;
+      }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        useEditorStore.getState().pasteClipboard();
         return;
       }
 
-      // Duplicate selected
-      if (isCmdOrCtrl && e.key.toLowerCase() === 'd' && selectedId) {
+      // Delete selected (bulk when multiple are selected -> one undo step).
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault();
-        useEditorStore.getState().duplicateNode(selectedId);
+        useEditorStore.getState().removeNodes(selectedIds);
+        return;
+      }
+
+      // Duplicate selected (bulk when multiple are selected -> one undo step).
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'd' && selectedIds.length > 0) {
+        e.preventDefault();
+        useEditorStore.getState().duplicateNodes(selectedIds);
         return;
       }
     };

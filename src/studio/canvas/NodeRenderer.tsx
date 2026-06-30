@@ -1,11 +1,15 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useStudio } from '../context';
 import { ParentNodeContext, renderDropZone } from './DropZone';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
 import { setDragGhost } from './dragGhost';
-import { createEventAutoScroller, createNode, readDragData, writeDragData } from './dndUtils';
+import { writeDragData } from './dndUtils';
+import { useInlineEdit } from './useInlineEdit';
+import { useDropTarget } from './useDropTarget';
+import { NodeErrorBoundary } from './NodeErrorBoundary';
+import { postToHost, isEmbedded } from '../bridge';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
 import { STYLES_PROP } from '../style/types';
 
@@ -24,12 +28,14 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const componentConfig = config.components[node.type];
 
   const selectNode = useEditorStore((state) => state.selectNode);
+  const toggleSelect = useEditorStore((state) => state.toggleSelect);
   const hoverNode = useEditorStore((state) => state.hoverNode);
-  const hoveredId = useEditorStore((state) => state.selection.hoveredId);
+  // Node-scoped derived selectors: each node only re-renders when ITS OWN hover/
+  // drag state flips, instead of every node re-rendering on any hover/drag change.
+  const isHovered = useEditorStore((state) => state.selection.hoveredId === node.props.id);
+  const isDragging = useEditorStore((state) => state.drag?.id === node.props.id);
   const beginDrag = useEditorStore((state) => state.beginDrag);
   const endDrag = useEditorStore((state) => state.endDrag);
-  const drag = useEditorStore((state) => state.drag);
-  const autoScrollerRef = useRef(createEventAutoScroller());
 
   const handleMouseEnter = useCallback(
     (e: React.MouseEvent) => {
@@ -44,201 +50,50 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     (e: React.MouseEvent) => {
       if (locked) return;
       e.stopPropagation();
-      if (hoveredId === node.props.id) {
+      if (isHovered) {
         hoverNode(null);
       }
     },
-    [hoverNode, node.props.id, hoveredId, locked]
+    [hoverNode, node.props.id, isHovered, locked]
   );
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (locked) return;
       e.stopPropagation();
+
+      // Cmd/Ctrl-click (or Shift-click) toggles multi-selection; plain click is
+      // single-select as before (and only the single path notifies the host of
+      // the primary, preserving existing puck:itemSelected behaviour).
+      if (e.metaKey || e.ctrlKey || e.shiftKey) {
+        toggleSelect(node.props.id);
+        return;
+      }
+
       selectNode(node.props.id);
 
-      // Post message to host if embedded
-      const isEmbedded = typeof window !== 'undefined' && window.parent !== window;
-      if (isEmbedded) {
-        window.parent.postMessage(
-          {
-            type: 'puck:itemSelected',
-            item: {
-              type: node.type,
-              id: node.props.id,
-            },
+      // Notify the host (when embedded) that an item was selected.
+      if (isEmbedded()) {
+        postToHost('puck:itemSelected', {
+          item: {
+            type: node.type,
+            id: node.props.id,
           },
-          '*'
-        );
+        });
       }
     },
-    [selectNode, node.props.id, node.type, locked]
+    [selectNode, toggleSelect, node.props.id, node.type, locked]
   );
 
-  const handleDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (locked) return;
-      const target = e.target as HTMLElement;
+  const { onDoubleClick } = useInlineEdit(node, locked);
 
-      const validTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'a', 'div'];
-      const tag = target.tagName.toLowerCase();
-      if (!validTags.includes(tag)) return;
-
-      const text = target.textContent?.trim() || '';
-      if (!text) return;
-
-      let matchingPropName: string | null = null;
-      let isMultilingual = false;
-      const ownerDoc = target.ownerDocument;
-      const ownerWin = ownerDoc.defaultView;
-      let matchedLangCode = ownerDoc.documentElement.lang || 'tr';
-
-      for (const [key, value] of Object.entries(node.props)) {
-        if (typeof value === 'string' && value.trim() === text) {
-          matchingPropName = key;
-          break;
-        }
-        if (Array.isArray(value)) {
-          // Check if it matches a translation item value
-          const matchedItem = value.find(
-            (item) =>
-              item &&
-              typeof item === 'object' &&
-              typeof item.value === 'string' &&
-              item.value.trim() === text
-          );
-          if (matchedItem) {
-            matchingPropName = key;
-            isMultilingual = true;
-            matchedLangCode = matchedItem.code;
-            break;
-          }
-        }
-      }
-
-      if (!matchingPropName) return;
-
-      e.stopPropagation();
-
-      const originalText = target.textContent || '';
-
-      target.contentEditable = 'true';
-      target.setAttribute('data-tecof-inline-editing', 'true');
-      target.focus();
-
-      // Range select
-      const range = ownerDoc.createRange();
-      range.selectNodeContents(target);
-      const sel = ownerWin?.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-
-      const propName = matchingPropName;
-      const finalIsMultilingual = isMultilingual;
-      const finalLangCode = matchedLangCode;
-
-      const commitInlineEdit = () => {
-        target.contentEditable = 'false';
-        target.removeAttribute('data-tecof-inline-editing');
-        target.removeEventListener('blur', handleBlur);
-        target.removeEventListener('keydown', handleKeyDown);
-
-        const newText = target.textContent?.trim() || '';
-
-        if (finalIsMultilingual) {
-          const currentArray = Array.isArray(node.props[propName]) ? node.props[propName] : [];
-          const updatedArray = currentArray.map((item: any) => {
-            if (item && item.code === finalLangCode) {
-              return { ...item, value: newText };
-            }
-            return item;
-          });
-
-          if (!updatedArray.some((item: any) => item && item.code === finalLangCode)) {
-            updatedArray.push({ code: finalLangCode, value: newText });
-          }
-
-          useEditorStore.getState().updateProps(node.props.id, {
-            [propName]: updatedArray
-          });
-        } else {
-          useEditorStore.getState().updateProps(node.props.id, {
-            [propName]: newText
-          });
-        }
-      };
-
-      const cancelInlineEdit = () => {
-        target.textContent = originalText;
-        target.contentEditable = 'false';
-        target.removeAttribute('data-tecof-inline-editing');
-        target.removeEventListener('blur', handleBlur);
-        target.removeEventListener('keydown', handleKeyDown);
-      };
-
-      const handleBlur = () => {
-        commitInlineEdit();
-      };
-
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          cancelInlineEdit();
-          return;
-        }
-
-        if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault();
-          target.blur();
-        }
-      };
-
-      target.addEventListener('blur', handleBlur);
-      target.addEventListener('keydown', handleKeyDown);
-    },
-    [node.props, node.props.id, locked]
-  );
-
-  const [dragOverPosition, setDragOverPosition] = useState<'top' | 'bottom' | null>(null);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    if (locked) return;
-    e.preventDefault();
-    e.stopPropagation();
-    autoScrollerRef.current.update(e);
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    const relativeY = e.clientY - rect.top;
-    if (relativeY < rect.height / 2) {
-      setDragOverPosition('top');
-    } else {
-      setDragOverPosition('bottom');
-    }
-  }, [locked]);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    autoScrollerRef.current.stop();
-    setDragOverPosition(null);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    if (locked) return;
-    e.preventDefault();
-    e.stopPropagation();
-    autoScrollerRef.current.stop();
-    setDragOverPosition(null);
-
-    const { nodeId, type } = readDragData(e);
-    const targetIndex = dragOverPosition === 'top' ? index : index + 1;
-
-    if (nodeId && nodeId !== node.props.id) {
-      useEditorStore.getState().moveNode(nodeId, zoneKey || undefined, targetIndex);
-    } else if (type) {
-      useEditorStore.getState().insertNode(createNode(config, type), zoneKey || undefined, targetIndex);
-    }
-    endDrag();
-  }, [dragOverPosition, index, node.props.id, zoneKey, config, locked, endDrag]);
+  const { position, onDragOver, onDragLeave, onDrop } = useDropTarget({
+    zoneKey,
+    positional: true,
+    index,
+    locked,
+    selfId: node.props.id,
+  });
 
   if (!componentConfig) {
     return (
@@ -252,7 +107,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const wrapperClassName = [
     'tecof-node-wrapper',
     locked ? 'is-readonly' : '',
-    drag?.id === node.props.id ? 'is-dragging' : '',
+    isDragging ? 'is-dragging' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -283,11 +138,15 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     });
   }
 
+  // Reset the error boundary when the node id or its props change, so the
+  // component can recover after the user edits the offending prop.
+  const errorResetKey = `${node.props.id}:${JSON.stringify(node.props)}`;
+
   // We wrap in ParentNodeContext so any inner DropZone knows its parent id
   return (
     <ParentNodeContext.Provider value={node.props.id}>
       <div className="tecof-node">
-        {dragOverPosition === 'top' && (
+        {position === 'top' && (
           <div className="tecof-drop-line" />
         )}
         <div
@@ -304,20 +163,21 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             beginDrag({ id: node.props.id });
           }}
           onDragEnd={() => {
-            autoScrollerRef.current.stop();
             endDrag();
           }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onClick={handleClick}
-          onDoubleClick={handleDoubleClick}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          onDoubleClick={onDoubleClick}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
         >
-          {componentConfig.render(componentProps)}
+          <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
+            {componentConfig.render(componentProps)}
+          </NodeErrorBoundary>
         </div>
-        {dragOverPosition === 'bottom' && (
+        {position === 'bottom' && (
           <div className="tecof-drop-line" />
         )}
       </div>

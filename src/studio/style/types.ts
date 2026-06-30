@@ -17,6 +17,10 @@ export type StateVariant = 'hover' | 'focus' | 'active';
 /**
  * One layer of style values, keyed by control id (see STYLE_CONTROLS).
  * Value is the *token* (e.g. `'4'`, `'primary-600'`, `'lg'`), not the class.
+ *
+ * Arbitrary (custom) values are bracket-wrapped (`'[10px]'`, `'[#ff0000]'`) so
+ * they round-trip losslessly and are distinguishable from bare presets; the
+ * control's `toClass` compiles them to Tailwind arbitrary syntax (`p-[10px]`).
  */
 export type StyleProps = Record<string, string | undefined>;
 

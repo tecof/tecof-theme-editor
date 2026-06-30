@@ -20,6 +20,15 @@ export { FieldErrorBoundary } from './components/fields';
 /* ─── API Client ─── */
 export { TecofApiClient } from './api';
 
+/* ─── Visual Style Editor / Tailwind ─── */
+// `getSafelist()` returns every Tailwind class the visual style editor can
+// emit — feed it into the host Tailwind config so production CSS always
+// contains the classes chosen in the editor. See docs/TAILWIND.md.
+export { getSafelist, STYLE_CONTROLS } from './studio/style/tokens';
+export { compileStyles } from './studio/style/compileStyles';
+export { STYLES_PROP } from './studio/style/types';
+export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';
+
 /* ─── Utilities ─── */
 export {
   hexToHsl,

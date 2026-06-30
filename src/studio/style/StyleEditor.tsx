@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { STYLE_CONTROLS, GROUP_LABELS, type StyleControl, type StyleGroup } from './tokens';
+import {
+  STYLE_CONTROLS,
+  GROUP_LABELS,
+  isArbitrary,
+  arbitraryRaw,
+  toArbitrary,
+  type StyleControl,
+  type StyleGroup,
+} from './tokens';
 import type { NodeStyles, StyleProps, Breakpoint, StateVariant } from './types';
+
+/** True when a style layer carries at least one set property. */
+const hasProps = (props?: StyleProps): boolean =>
+  !!props && Object.values(props).some(Boolean);
 
 export interface StyleEditorProps {
   value?: NodeStyles;
@@ -55,28 +67,39 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
       {/* Breakpoint + state selectors */}
       <div className="tecof-style-scopes">
         <div className="tecof-style-seg" role="group" aria-label="Breakpoint">
-          {BREAKPOINTS.map((b) => (
-            <button
-              key={b.key}
-              type="button"
-              className={`tecof-style-seg-btn${bp === b.key ? ' is-active' : ''}`}
-              onClick={() => setBp(b.key)}
-            >
-              {b.label}
-            </button>
-          ))}
+          {BREAKPOINTS.map((b) => {
+            const overridden = hasProps(styles[b.key]);
+            return (
+              <button
+                key={b.key}
+                type="button"
+                className={`tecof-style-seg-btn${bp === b.key ? ' is-active' : ''}`}
+                onClick={() => setBp(b.key)}
+              >
+                {b.label}
+                {overridden && <span className="tecof-style-seg-dot" aria-hidden="true" />}
+              </button>
+            );
+          })}
         </div>
         <div className="tecof-style-seg" role="group" aria-label="Durum">
-          {STATES.map((s) => (
-            <button
-              key={s.key}
-              type="button"
-              className={`tecof-style-seg-btn${state === s.key ? ' is-active' : ''}`}
-              onClick={() => setState(s.key)}
-            >
-              {s.label}
-            </button>
-          ))}
+          {STATES.map((s) => {
+            const overridden =
+              s.key === 'base'
+                ? BREAKPOINTS.some((b) => hasProps(styles[b.key]))
+                : hasProps(styles.states?.[s.key]);
+            return (
+              <button
+                key={s.key}
+                type="button"
+                className={`tecof-style-seg-btn${state === s.key ? ' is-active' : ''}`}
+                onClick={() => setState(s.key)}
+              >
+                {s.label}
+                {overridden && <span className="tecof-style-seg-dot" aria-hidden="true" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -107,6 +130,21 @@ const ControlRow = ({
   value: string;
   onChange: (value: string) => void;
 }) => {
+  const supportsArbitrary = !!control.arbitraryPrefix;
+  const valueIsArbitrary = supportsArbitrary && isArbitrary(value);
+  // Custom mode is on when the stored value is arbitrary, or the user toggled it.
+  const [customOpen, setCustomOpen] = useState(valueIsArbitrary);
+  const custom = customOpen || valueIsArbitrary;
+
+  // While in custom mode the presets read as "none-selected" (the active value
+  // lives in the text input instead).
+  const presetValue = valueIsArbitrary ? '' : value;
+
+  const commitCustom = (raw: string) => {
+    const trimmed = raw.trim();
+    onChange(trimmed ? toArbitrary(trimmed) : '');
+  };
+
   return (
     <div className="tecof-style-row">
       <span className="tecof-style-label">{control.label}</span>
@@ -120,7 +158,7 @@ const ControlRow = ({
                   key={opt.value || 'none'}
                   type="button"
                   title={opt.label}
-                  className={`tecof-style-swatch${value === opt.value ? ' is-active' : ''}${isNone ? ' is-none' : ''}`}
+                  className={`tecof-style-swatch${presetValue === opt.value ? ' is-active' : ''}${isNone ? ' is-none' : ''}`}
                   style={!isNone ? ({ '--swatch': opt.swatch || opt.value } as React.CSSProperties) : undefined}
                   onClick={() => onChange(opt.value)}
                 />
@@ -133,7 +171,7 @@ const ControlRow = ({
               <button
                 key={opt.value || 'none'}
                 type="button"
-                className={`tecof-style-seg-btn${value === opt.value ? ' is-active' : ''}`}
+                className={`tecof-style-seg-btn${presetValue === opt.value ? ' is-active' : ''}`}
                 onClick={() => onChange(opt.value)}
               >
                 {opt.label}
@@ -143,7 +181,7 @@ const ControlRow = ({
         ) : (
           <select
             className="tecof-input-select tecof-style-select"
-            value={value}
+            value={presetValue}
             onChange={(e) => onChange(e.target.value)}
           >
             {control.options.map((opt) => (
@@ -153,7 +191,38 @@ const ControlRow = ({
             ))}
           </select>
         )}
+        {supportsArbitrary && (
+          <button
+            type="button"
+            className={`tecof-style-custom-toggle${custom ? ' is-active' : ''}`}
+            title="Özel değer"
+            aria-pressed={custom}
+            onClick={() => {
+              if (custom) {
+                // Leaving custom mode clears any arbitrary value.
+                if (valueIsArbitrary) onChange('');
+                setCustomOpen(false);
+              } else {
+                setCustomOpen(true);
+              }
+            }}
+          >
+            {custom ? '×' : '+'}
+          </button>
+        )}
       </div>
+      {supportsArbitrary && custom && (
+        <input
+          type="text"
+          className="tecof-input tecof-style-custom-input"
+          placeholder={control.arbitraryPrefix + '-[…]'}
+          defaultValue={valueIsArbitrary ? arbitraryRaw(value) : ''}
+          onBlur={(e) => commitCustom(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+        />
+      )}
     </div>
   );
 };

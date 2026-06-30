@@ -63,9 +63,13 @@ export const parseDocument = (rawData: Partial<PuckPageData> | null | undefined)
  * It ensures a lossless round-trip.
  */
 export const serializeDocument = (doc: TecofDocument): PuckPageData => {
+  // Deep-copy so consumers mutating the returned object can't corrupt the
+  // store's live document state (bypassing immer/history). cloneDocument
+  // produces the same `{ content, root, zones }` shape PuckPageData expects.
+  const cloned = cloneDocument(doc);
   return {
-    root: doc.root,
-    content: doc.content,
-    zones: doc.zones,
+    root: cloned.root,
+    content: cloned.content,
+    zones: cloned.zones,
   };
 };

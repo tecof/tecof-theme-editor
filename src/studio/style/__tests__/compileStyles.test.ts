@@ -35,6 +35,26 @@ describe('compileStyles', () => {
     expect(compileStyles({ base: { p: '', bg: 'primary-600' } })).toBe('bg-primary-600');
   });
 
+  it('compiles arbitrary (custom) spacing values', () => {
+    expect(compileStyles({ base: { p: '[10px]' } })).toBe('p-[10px]');
+    expect(compileStyles({ base: { gap: '[2.5rem]' } })).toBe('gap-[2.5rem]');
+  });
+
+  it('compiles arbitrary color values', () => {
+    expect(compileStyles({ base: { bg: '[#ff0000]' } })).toBe('bg-[#ff0000]');
+    expect(compileStyles({ base: { text: '[#abc]' } })).toBe('text-[#abc]');
+  });
+
+  it('prefixes arbitrary values at breakpoints and states', () => {
+    expect(compileStyles({ md: { bg: '[#abc]' } })).toBe('md:bg-[#abc]');
+    expect(compileStyles({ states: { hover: { bg: '[#ff0000]' } } })).toBe('hover:bg-[#ff0000]');
+    expect(compileStyles({ base: { p: '4' }, md: { p: '[10px]' } })).toBe('p-4 md:p-[10px]');
+  });
+
+  it('mixes presets and arbitrary values in one layer', () => {
+    expect(compileStyles({ base: { p: '[10px]', bg: 'primary-600' } })).toBe('p-[10px] bg-primary-600');
+  });
+
   it('mergeClassName joins author + style classes', () => {
     expect(mergeClassName('card', 'p-4 bg-primary-600')).toBe('card p-4 bg-primary-600');
     expect(mergeClassName(undefined, 'p-4')).toBe('p-4');
@@ -51,5 +71,7 @@ describe('getSafelist', () => {
     expect(safelist).toContain('rounded'); // radius md special-case
     // No empty/null entries
     expect(safelist.every((c) => typeof c === 'string' && c.length > 0)).toBe(true);
+    // Arbitrary values are infinite (JIT-handled) and never enter the safelist.
+    expect(safelist.some((c) => c.includes('['))).toBe(false);
   });
 });

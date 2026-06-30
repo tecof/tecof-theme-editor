@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
-import react__default, { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
+import { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
 export { UnderConstruction } from './components/UnderConstruction.js';
 
 interface ThemeColors {
@@ -77,6 +77,82 @@ interface PageApiData {
     status?: string;
     [key: string]: any;
 }
+/** Option entry used by `select` / `radio` fields. */
+interface FieldOption {
+    label: string;
+    value: string | number | boolean;
+}
+/**
+ * Configuration for a single editable field. Covers the built-in field types
+ * plus a `render` escape hatch for fully custom fields. The `type` discriminant
+ * is optional/loose on purpose so legacy configs keep compiling.
+ */
+interface FieldConfig {
+    /** Built-in field kind. Custom fields may omit this and supply `render`. */
+    type?: 'text' | 'textarea' | 'select' | 'number' | 'radio' | 'array' | 'object' | 'slot' | string;
+    /** Human-readable label shown in the inspector. */
+    label?: string;
+    /** Options for `select` / `radio` fields. */
+    options?: FieldOption[];
+    /** Default value applied when the field is empty. */
+    defaultValue?: any;
+    /** Sub-fields for `array` items. */
+    arrayFields?: Record<string, FieldConfig>;
+    /** Sub-fields for `object` fields. */
+    objectFields?: Record<string, FieldConfig>;
+    /** Custom render escape hatch for non-built-in field types. */
+    render?: (props: any) => React.ReactNode;
+    /** Allow host-specific extra props without breaking typing. */
+    [key: string]: any;
+}
+/**
+ * Configuration for a single component registered in the studio. `render` is
+ * the only required member; everything else is optional metadata or behavior.
+ */
+interface ComponentConfig {
+    /** Display name in the component picker. */
+    label?: string;
+    /** Grouping category in the component picker. */
+    category?: string;
+    /** Editable fields for this component, keyed by prop name. */
+    fields?: Record<string, FieldConfig>;
+    /** Default props applied when the component is inserted. */
+    defaultProps?: Record<string, any>;
+    /** Renders the component for a given set of props. */
+    render: (props: any) => React.ReactNode;
+    /** Arbitrary host metadata. */
+    metadata?: Record<string, any>;
+    /** Whether this component can contain child nodes (slot/zones). */
+    acceptsChildren?: boolean;
+    /** Maximum number of direct children allowed. */
+    maxItems?: number;
+    /** Component types that may contain this component as a child. */
+    allowedParents?: string[];
+    /** Allow host-specific extra props without breaking typing. */
+    [key: string]: any;
+}
+/**
+ * Top-level studio configuration. Permissive index signature preserves
+ * compatibility with existing host configs.
+ */
+interface StudioConfig {
+    /** Registered components, keyed by component type. */
+    components: Record<string, ComponentConfig>;
+    /** Optional ordered category definitions for the component picker. */
+    categories?: Record<string, {
+        title?: string;
+        components?: string[];
+        [key: string]: any;
+    }>;
+    /** Root-level fields and renderer (page wrapper). */
+    root?: {
+        fields?: Record<string, FieldConfig>;
+        render?: (props: any) => React.ReactNode;
+        [key: string]: any;
+    };
+    /** Allow host-specific extra props without breaking typing. */
+    [key: string]: any;
+}
 interface TecofProviderProps {
     /** Tecof backend API base URL */
     apiUrl: string;
@@ -91,9 +167,15 @@ interface TecofEditorProps {
     /** Page ID to load and edit */
     pageId: string;
     /** Tecof/Puck-compatible component configuration */
-    config: any;
+    config: StudioConfig;
     /** Access token for save operations (sent as Authorization header) */
     accessToken?: string;
+    /**
+     * Target origin for host postMessage communication. When set, host messages
+     * are posted only to this origin instead of the wildcard `'*'`. Omit to keep
+     * the backward-compatible wildcard behavior.
+     */
+    hostOrigin?: string;
     /** Called after successful draft save */
     onSave?: (data: PuckPageData) => void;
     /** Called on every editor change */
@@ -109,7 +191,7 @@ interface TecofRenderProps {
     /** Pre-fetched page data */
     data: PuckPageData;
     /** Tecof/Puck-compatible component configuration */
-    config: any;
+    config: StudioConfig;
     /** Additional class name */
     className?: string;
     /** Raw CMS item data (only present for CMS template pages) */
@@ -174,8 +256,14 @@ declare class TecofApiClient {
     private get headers();
     /**
      * Fetch a page by ID (for the editor)
+     *
+     * @param signal Optional AbortSignal. When the caller aborts (e.g. a newer
+     *   page load supersedes this one), the underlying `fetch` rejects with an
+     *   `AbortError`, which we RETHROW so the caller's try/catch can distinguish
+     *   an abort from a real failure and skip mutating stale state. Non-abort
+     *   errors are still swallowed into an `{ success: false }` response.
      */
-    getPage(pageId: string): Promise<ApiResponse<PageApiData>>;
+    getPage(pageId: string, signal?: AbortSignal): Promise<ApiResponse<PageApiData>>;
     /**
      * Save a page by ID
      */
@@ -246,9 +334,9 @@ interface TecofContextValue {
 declare const TecofProvider: ({ apiUrl, secretKey, cdnUrl, children }: TecofProviderProps) => react_jsx_runtime.JSX.Element;
 declare function useTecof(): TecofContextValue;
 
-declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
+declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, hostOrigin, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
-declare const TecofStudio: ({ pageId, config, accessToken, onSave, onChange, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
+declare const TecofStudio: ({ pageId, config, accessToken, onSave, onChange, hostOrigin, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
 /**
  * TecofRender — Puck-compatible native page renderer.
@@ -359,9 +447,11 @@ interface EditorFieldOptions {
  * TipTap editor with toolbar (bold, italic, underline, headings, lists,
  * alignment, links, blockquote, undo/redo) instead of a plain text input.
  *
+ * The heavy TipTap editor is lazy-loaded behind <Suspense>.
+ *
  * Value format: [{ code: "tr", value: "<p>HTML content</p>" }, ...]
  */
-declare const EditorField: ({ value, onChange, readOnly, }: EditorFieldProps & EditorFieldOptions) => react_jsx_runtime.JSX.Element | null;
+declare const EditorField: (props: EditorFieldProps & EditorFieldOptions) => react_jsx_runtime.JSX.Element;
 /**
  * Creates a Puck custom field definition for multilingual rich text (TipTap) editor.
  *
@@ -428,8 +518,12 @@ interface UploadFieldOptions {
         fileType?: string;
     };
 }
+/**
+ * UploadField — A file upload custom field for Puck.
+ * Uses FilePond + the Doka image editor, lazy-loaded behind <Suspense>.
+ */
 declare const UploadField: {
-    ({ value: rawValue, onChange, allowMultiple, maxFiles, acceptedTypes, maxFileSize, maxTotalFileSize, folder, readOnly, showUploadedFiles, imagePreviewHeight, allowReorder, imageCompressionEnabled, imageCompressionOptions, }: UploadFieldProps & UploadFieldOptions): react_jsx_runtime.JSX.Element;
+    (props: UploadFieldProps & UploadFieldOptions): react_jsx_runtime.JSX.Element;
     displayName: string;
 };
 declare const createUploadField: (options?: UploadFieldOptions) => {
@@ -462,9 +556,9 @@ interface CodeEditorFieldOptions {
 }
 /**
  * CodeEditorField — A code editor custom field for Puck.
- * Uses Monaco Editor (@monaco-editor/react).
+ * Uses Monaco Editor (@monaco-editor/react), lazy-loaded behind <Suspense>.
  */
-declare const CodeEditorField: react__default.ForwardRefExoticComponent<CodeEditorFieldProps & CodeEditorFieldOptions & react__default.RefAttributes<any>>;
+declare const CodeEditorField: react.ForwardRefExoticComponent<CodeEditorFieldProps & CodeEditorFieldOptions & react.RefAttributes<any>>;
 /**
  * Creates a Puck custom field definition for code editing.
  *
@@ -493,7 +587,7 @@ declare const createCodeEditorField: (options?: CodeEditorFieldOptions) => {
     type: "custom";
     _fieldType: "code";
     label: string | undefined;
-    labelIcon: ReactElement<unknown, string | react__default.JSXElementConstructor<any>> | undefined;
+    labelIcon: ReactElement<unknown, string | react.JSXElementConstructor<any>> | undefined;
     visible: boolean | undefined;
     render: ({ value, onChange, readOnly, field, name, id }: CodeEditorFieldProps) => react_jsx_runtime.JSX.Element;
 };
@@ -712,8 +806,100 @@ declare class FieldErrorBoundary extends Component<FieldErrorBoundaryProps, Fiel
     static getDerivedStateFromError(error: Error): FieldErrorBoundaryState;
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
     handleRetry: () => void;
-    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | react_jsx_runtime.JSX.Element | null | undefined;
+    render(): string | number | bigint | boolean | react_jsx_runtime.JSX.Element | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined;
 }
+
+/**
+ * Single source of truth for the visual style editor.
+ *
+ * STYLE_CONTROLS drives three things at once:
+ *   1. the StyleEditor UI (which controls + options to render),
+ *   2. className compilation (token → Tailwind class via `toClass`),
+ *   3. the production safelist (every token × variant → finite class set).
+ *
+ * Targets Tailwind v4: theme tokens are CSS variables (`@theme`), so the
+ * editor palette (`--tecof-primary-*`) maps to `bg-primary-600` etc. once the
+ * host registers `--color-primary-*` in its `@theme`.
+ */
+type StyleGroup = 'layout' | 'spacing' | 'sizing' | 'typography' | 'background' | 'border' | 'effects';
+type StyleControlType = 'segment' | 'select' | 'color' | 'space';
+interface StyleControlOption {
+    label: string;
+    value: string;
+    /** Optional CSS color for color-swatch rendering in the UI. */
+    swatch?: string;
+}
+interface StyleControl {
+    id: string;
+    label: string;
+    group: StyleGroup;
+    type: StyleControlType;
+    options: StyleControlOption[];
+    /** Token value → Tailwind class (or null to emit nothing). */
+    toClass: (value: string) => string | null;
+    /**
+     * Tailwind utility prefix for arbitrary (custom) values. When set, the user
+     * can type a raw value `V` (e.g. `10px`, `#ff0000`) and it compiles to
+     * `<prefix>-[V]` (e.g. `p-[10px]`, `bg-[#ff0000]`).
+     *
+     * Encoding: an arbitrary value is stored in NodeStyles bracket-wrapped
+     * (`'[10px]'`); presets stay bare (`'4'`, `'primary-600'`). `isArbitrary`
+     * detects the wrapper so `toClass` round-trips losslessly through the model.
+     */
+    arbitraryPrefix?: string;
+}
+declare const STYLE_CONTROLS: StyleControl[];
+/**
+ * Every class the editor can ever emit (token × control × variant prefix).
+ * Feed this into the host Tailwind config `safelist` so production CSS always
+ * contains the classes chosen in the editor.
+ */
+declare function getSafelist(): string[];
+
+/**
+ * Structured, token-based style model for the Tailwind v4 visual style editor.
+ *
+ * We store *style intent* (which token is chosen per property) rather than raw
+ * class strings. This keeps the UI drivable (we can show the current value),
+ * makes responsive + state variants first-class, and — because every property
+ * maps to a finite token set — lets us generate a complete Tailwind safelist for
+ * production. The shape round-trips losslessly inside `node.props._tecofStyles`.
+ */
+/** Responsive breakpoints. `base` = no prefix; others map to Tailwind `sm:`…`xl:`. */
+type Breakpoint = 'base' | 'sm' | 'md' | 'lg' | 'xl';
+/** Interaction states → Tailwind `hover:` / `focus:` / `active:`. */
+type StateVariant = 'hover' | 'focus' | 'active';
+/**
+ * One layer of style values, keyed by control id (see STYLE_CONTROLS).
+ * Value is the *token* (e.g. `'4'`, `'primary-600'`, `'lg'`), not the class.
+ *
+ * Arbitrary (custom) values are bracket-wrapped (`'[10px]'`, `'[#ff0000]'`) so
+ * they round-trip losslessly and are distinguishable from bare presets; the
+ * control's `toClass` compiles them to Tailwind arbitrary syntax (`p-[10px]`).
+ */
+type StyleProps = Record<string, string | undefined>;
+/** Full style object stored on a node. */
+interface NodeStyles {
+    base?: StyleProps;
+    sm?: StyleProps;
+    md?: StyleProps;
+    lg?: StyleProps;
+    xl?: StyleProps;
+    states?: Partial<Record<StateVariant, StyleProps>>;
+}
+/** The prop key under which a node's structured styles live. */
+declare const STYLES_PROP = "_tecofStyles";
+
+/**
+ * Compile a structured NodeStyles object into a Tailwind className string.
+ * Because each property is a single keyed token, conflicting utilities can't
+ * coexist within a layer — no `tailwind-merge` needed.
+ *
+ * Example:
+ *   { base:{p:'4',bg:'primary-600'}, md:{p:'8'}, states:{hover:{bg:'primary-700'}} }
+ *   → "p-4 bg-primary-600 md:p-8 hover:bg-primary-700"
+ */
+declare function compileStyles(styles?: NodeStyles | null): string;
 
 declare function hexToHsl(hex: string): HSL;
 declare function hslToHex(h: number, s: number, l: number): string;
@@ -723,4 +909,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type NodeStyles, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

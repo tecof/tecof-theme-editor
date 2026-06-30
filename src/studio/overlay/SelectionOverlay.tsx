@@ -91,16 +91,56 @@ const useOverlayCoords = (
   return coords;
 };
 
+/**
+ * Renders a single secondary selection outline for a non-primary selected id.
+ * Kept as its own component so the coords hook can run per-id (hooks rules).
+ */
+const SecondaryOutline = ({
+  id,
+  iframeEl,
+  containerEl,
+  documentState,
+}: {
+  id: string;
+  iframeEl: HTMLIFrameElement | null;
+  containerEl: HTMLDivElement | null;
+  documentState: any;
+}) => {
+  const coords = useOverlayCoords(id, iframeEl, containerEl, documentState);
+  if (!coords) return null;
+  return (
+    <div
+      className="tecof-outline is-selected is-multi"
+      style={getOutlineStyle(coords)}
+    />
+  );
+};
+
 export const SelectionOverlay = () => {
   const documentState = useEditorStore((state) => state.document);
   const selectedId = useEditorStore((state) => state.selection.selectedId);
+  const selectedIds = useEditorStore((state) => state.selection.selectedIds);
   const hoveredId = useEditorStore((state) => state.selection.hoveredId);
   const mode = useUiStore((state) => state.mode);
 
   const selectNode = useEditorStore((state) => state.selectNode);
   const removeNode = useEditorStore((state) => state.removeNode);
+  const removeNodes = useEditorStore((state) => state.removeNodes);
   const duplicateNode = useEditorStore((state) => state.duplicateNode);
+  const duplicateNodes = useEditorStore((state) => state.duplicateNodes);
   const moveNode = useEditorStore((state) => state.moveNode);
+
+  const isMulti = selectedIds.length > 1;
+
+  // Bulk delete/duplicate when multiple nodes are selected; otherwise single.
+  const handleDelete = () => {
+    if (isMulti) removeNodes(selectedIds);
+    else if (selectedId) removeNode(selectedId);
+  };
+  const handleDuplicate = () => {
+    if (isMulti) duplicateNodes(selectedIds);
+    else if (selectedId) duplicateNode(selectedId);
+  };
 
   const [iframeEl, setIframeEl] = useState<HTMLIFrameElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -155,6 +195,20 @@ export const SelectionOverlay = () => {
         />
       )}
 
+      {/* Secondary selection outlines (every selected id except the primary).
+          The primary keeps the full outline + toolbar below. */}
+      {selectedIds
+        .filter((id) => id !== selectedId)
+        .map((id) => (
+          <SecondaryOutline
+            key={id}
+            id={id}
+            iframeEl={iframeEl}
+            containerEl={containerRef.current}
+            documentState={documentState}
+          />
+        ))}
+
       {/* Selection Box & Toolbar */}
       {selectedCoords && (
         <div
@@ -201,20 +255,20 @@ export const SelectionOverlay = () => {
 
             <button
               type="button"
-              onClick={() => duplicateNode(selectedId!)}
-              title="Kopyala"
+              onClick={handleDuplicate}
+              title={isMulti ? 'Tümünü Çoğalt' : 'Kopyala'}
               className="tecof-toolbar-btn"
-              aria-label="Kopyala"
+              aria-label={isMulti ? 'Seçili öğeleri çoğalt' : 'Kopyala'}
             >
               <Copy size={14} />
             </button>
 
             <button
               type="button"
-              onClick={() => removeNode(selectedId!)}
-              title="Sil"
+              onClick={handleDelete}
+              title={isMulti ? 'Tümünü Sil' : 'Sil'}
               className="tecof-toolbar-btn"
-              aria-label="Sil"
+              aria-label={isMulti ? 'Seçili öğeleri sil' : 'Sil'}
             >
               <Trash2 size={14} />
             </button>

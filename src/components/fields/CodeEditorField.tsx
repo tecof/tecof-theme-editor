@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
-import React, { forwardRef, useCallback, useRef } from 'react';
+import { forwardRef, lazy, Suspense } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
-import Editor from '@monaco-editor/react';
+import { FieldLoading } from './LanguageField';
 
 /* ─── Props ─── */
 
@@ -27,55 +27,22 @@ export interface CodeEditorFieldOptions {
   theme?: string;
 }
 
+/* ─── Lazy Heavy Implementation ─── */
+
+// Monaco (@monaco-editor/react) is heavy; load it only when this field renders.
+const CodeEditorFieldImpl = lazy(() => import('./CodeEditorField.impl'));
+
 /* ─── Component ─── */
 
 /**
  * CodeEditorField — A code editor custom field for Puck.
- * Uses Monaco Editor (@monaco-editor/react).
+ * Uses Monaco Editor (@monaco-editor/react), lazy-loaded behind <Suspense>.
  */
-export const CodeEditorField = forwardRef<any, CodeEditorFieldProps & CodeEditorFieldOptions>(({
-  value,
-  onChange,
-  readOnly,
-  defaultLanguage = 'html',
-  height = '300px',
-  theme = 'vs-dark',
-}, ref) => {
-  const editorRef = useRef<any>(null);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
-
-  const handleEditorDidMount = useCallback((editor: any) => {
-    editorRef.current = editor;
-
-    // Listen directly on the Monaco model for maximum reliability
-    editor.onDidChangeModelContent(() => {
-      const newValue = editor.getValue();
-      onChangeRef.current(newValue);
-    });
-  }, []);
-
-  return (
-    <div ref={ref} className="tecof-code-editor-container">
-      <Editor
-        onMount={handleEditorDidMount}
-        theme={theme}
-        width="100%"
-        height={height}
-        defaultLanguage={defaultLanguage}
-        defaultValue={value || ''}
-        options={{
-          readOnly,
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-          padding: { top: 12, bottom: 12 },
-          fontSize: 13,
-          wordWrap: 'on',
-        }}
-      />
-    </div>
-  );
-});
+export const CodeEditorField = forwardRef<any, CodeEditorFieldProps & CodeEditorFieldOptions>((props, ref) => (
+  <Suspense fallback={<FieldLoading />}>
+    <CodeEditorFieldImpl ref={ref} {...props} />
+  </Suspense>
+));
 
 CodeEditorField.displayName = 'CodeEditorField';
 

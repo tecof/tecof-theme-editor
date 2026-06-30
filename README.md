@@ -71,8 +71,11 @@ Tecof Studio sayfa editörü. Otomatik fetch/save, iframe postMessage desteği, 
 | `config` | `Config` | Tecof/Puck-compatible component configuration |
 | `accessToken` | `string` | Kayıt isteklerinde Authorization header |
 | `onSave` | `(data) => void` | Kayıt sonrası callback |
-| `onChange` | `(data) => void` | Her değişiklikte callback |
+| `onChange` | `(data) => void` | Her değişiklikte callback (≈300ms debounce'lu) |
+| `hostOrigin` | `string` | Embed senaryosunda izin verilen parent origin. Verilirse hem gönderilen hem **gelen** postMessage'lar bu origin'e kısıtlanır (güvenlik). Verilmezse `'*'` (geriye uyumlu). |
 | `className` | `string` | Ek CSS sınıfı |
+
+> `TecofEditor`, `TecofStudio`'nun takma adıdır (`TecofEditor = TecofStudio`) — ikisi de aynı editörü açar.
 
 ### `<TecofRender />`
 
@@ -426,11 +429,35 @@ iframe.postMessage({ type: "puck:viewport", width: "375px" }, "*");
 
 // Editor → Parent
 window.addEventListener("message", (e) => {
-  if (e.data.type === "puck:changed") { /* değişiklik var */ }
+  if (e.data.type === "puck:changed") { /* değişiklik var (debounce'lu) */ }
   if (e.data.type === "puck:saved") { /* başarıyla kaydedildi, e.data.data güncel draft */ }
   if (e.data.type === "puck:saveError") { /* kayıt hatası */ }
+  if (e.data.type === "puck:itemSelected") { /* e.data.item = { type, id } */ }
+  if (e.data.type === "puck:itemDeselected") { /* seçim kalktı */ }
 });
 ```
+
+> **Güvenlik:** `hostOrigin` prop'u verildiğinde gelen mesajlar `e.origin`'e göre
+> doğrulanır ve giden mesajlar yalnızca o origin'e gönderilir. Embed senaryosunda
+> `hostOrigin` vermeniz önerilir; aksi halde `'*'` kullanılır (geriye uyumluluk).
+> Tüm köprü `src/studio/bridge.ts` içinde soyutlanmıştır.
+
+---
+
+## Klavye Kısayolları (Studio)
+
+| Kısayol | İşlem |
+|---|---|
+| `⌘/Ctrl + Z` | Geri al |
+| `⌘/Ctrl + Shift + Z` · `⌘/Ctrl + Y` | Yinele |
+| `⌘/Ctrl + C` / `X` / `V` | Kopyala / Kes / Yapıştır (seçili node'lar) |
+| `⌘/Ctrl + D` | Çoğalt (çoklu seçimde toplu) |
+| `Delete` / `Backspace` | Sil (çoklu seçimde toplu) |
+| `⌘/Ctrl + Tık` · `Shift + Tık` | Çoklu seçime ekle/çıkar |
+| `Esc` | Seçimi kaldır |
+
+> Kopyalanan node'lar `localStorage` (`tecof:clipboard:v1`) üzerinden sekmeler/sayfalar
+> arası yapıştırılabilir; yapıştırmada id'ler taze üretilir.
 
 ---
 
@@ -461,9 +488,28 @@ Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, ins
 ### Studio Editör Özellikleri
 
 - **Düzenleme / Önizleme modu** — Üst bardaki toggle ile. Düzenleme'de tıklayınca bileşen seçilir, link/butonlar pasiftir; Önizleme'de link ve butonlar canlı çalışır, editör çerçevesi gizlenir.
-- **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; düzenlenen öğe accent kenarlıkla işaretlenir, Enter kaydeder, Esc iptal eder.
+- **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; düzenlenen öğe accent kenarlıkla işaretlenir (öğenin kendi arka plan/yazı rengi korunur), Enter kaydeder, Esc iptal eder. Bileşenler düzenlenebilir metni `data-tecof-prop="propAdı"` (ve çok dilli için `data-tecof-lang`) ile işaretleyebilir; aksi halde string-eşleştirme fallback'i devreye girer.
+- **Çoklu seçim + kopyala/yapıştır** — `⌘/Ctrl/Shift + tık` ile çoklu seçim; kopyala/kes/yapıştır (sekmeler arası `localStorage`), toplu sil/çoğalt. Bkz. [Klavye Kısayolları](#klavye-kısayolları-studio).
+- **Görsel stil editörü (Tailwind)** — Inspector'daki "Stil" sekmesi; breakpoint + state bazlı, preset token'lar ve serbest (arbitrary) değerler. Bkz. [docs/TAILWIND.md](docs/TAILWIND.md).
+- **Görsel blok paleti** — Sol panelde bileşenler, varsa render önizleme görselleriyle (lazy yüklenir).
+- **Çökme dayanıklılığı** — Bir bileşenin render hatası tüm canvas'ı düşürmez; node bazında error boundary ile izole edilir, prop düzeltilince kendiliğinden toparlanır.
 - **Global dil** — Çoklu dilli içerikte dil, üst bardaki tek seçiciden (merchant-info) değiştirilir. Alanlar yalnızca aktif dili düzenler; alan-içi dil sekmeleri Studio'da gizlenir (provider yoksa eski sekmeli mod geçerlidir — geriye uyum). Bkz. `studio/language/LanguageContext`.
 - **Daraltılabilir paneller** — Sol (blok/katman) ve sağ (inspector) paneller üst bar butonlarıyla daraltılıp ince ikon rayına iner; canvas genişler.
+- **Performans** — Ağır editör alanları (Monaco / TipTap / FilePond) ayrı chunk'lara bölünüp talep üzerine yüklenir; ana paket ~1.37 MB → ~210 KB.
+
+### Stil Editörü & Tailwind
+
+Inspector "Stil" sekmesi, node'lara yapısal token modeli (`node.props._tecofStyles`)
+olarak stil uygular ve bunu Tailwind class string'ine derler. Üretimde class'ların
+purge edilmemesi için host Tailwind config'ine safelist eklenmelidir:
+
+```js
+import { getSafelist } from "@tecof/theme-editor";
+export default { safelist: getSafelist(), /* ... */ };
+```
+
+Tam entegrasyon (Tailwind v4 `@theme`, arbitrary değerler, breakpoint/state) için:
+**[docs/TAILWIND.md](docs/TAILWIND.md)**.
 
 Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
 

@@ -35,12 +35,22 @@ Editör, tamamen headless (UI'dan bağımsız) ve test edilebilir bir mimariyle 
 
 ## 2. Drag & Drop Stratejisi
 
-- **Kütüphane:** `@dnd-kit/core` ve `@dnd-kit/sortable`
-  - *Neden?* Modern, erişilebilir ve en önemlisi iframe sınırlarında çalışacak kadar esnek.
-- **Uygulama:** 
-  - Sol paneldeki bloklar draggable item (`useDraggable`) olarak işaretlenecektir.
-  - Canvas üzerindeki drop zone'lar ve root alan droppable container (`useDroppable` / `SortableContext`) olacaktır.
-  - Dnd-kit'in sensörleri iframe içinden dışarıya event fırlatırken özel bir konfigürasyona veya pointer transformasyonuna ihtiyaç duyabilir.
+> **Güncelleme (uygulanan):** Tasarım başlangıçta `@dnd-kit` öngörüyordu; ancak
+> iframe sınırları arası sürüklemede en güvenilir ve bağımlılıksız çözüm olarak
+> **native HTML5 Drag & Drop** (`dataTransfer`, `dragover`/`drop`) tercih edildi.
+> Ortak sürükleme mantığı `studio/canvas/useDropTarget.ts` hook'unda toplanmıştır
+> (NodeRenderer, DropZone, Canvas onu kullanır; LayersTree tree-row semantiği için
+> kendi varyantını kullanır). Drop kuralları `engine/rules.ts` (`isValidDrop`) ile
+> doğrulanır; geçersiz bırakmalar `dropEffect='none'` ile reddedilir.
+>
+> **Açık iş:** Native DnD dokunmatik cihazlarda çalışmaz → tablet/mobil editleme
+> için pointer-event tabanlı bir DnD katmanı henüz eklenmedi (yol haritasında).
+
+- **Uygulama (özet):**
+  - Sol paneldeki bloklar ve canvas/layers node'ları `draggable` olarak işaretlenir;
+    yük `dataTransfer`'a yazılır (`TECOF_BLOCK_TYPE` = yeni blok, `TECOF_NODE_ID` = taşınan node).
+  - Drop hedefleri `useDropTarget` ile dragover pozisyonu (top/bottom), autoscroll
+    ve kural kontrolünü tek noktadan yönetir.
 
 ## 3. Canvas (iframe) Stratejisi
 
@@ -76,7 +86,32 @@ Geçiş güvenli olmak zorundadır.
 - **Risk: Dnd-kit Iframe Çapraz Sürükleme:** Sol panel (host DOM) üzerinden sürüklenen bir bloğun, iframe içerisindeki (child DOM) dropzone'a bırakılması teknik zorluklar yaratabilir.
   - *Çözüm:* İhtiyaç halinde sürükleme başladığında iframe'in üzerine transparent bir overlay koyup koordinatları host üzerinden hesaplayıp state güncelleyebiliriz (Puck'ın yaptığı overlay taktiği).
 - **Risk: Inline Editing (TipTap):** TipTap, focus ve blur işlemlerini iframe içinde ve dışında ayrı context'lerde yürütür. 
-- **Açık Soru:** PostMessage protokolünde "Puck" prefix'ini ilelebet korumalı mıyız? (Evet, host değişmemesi için şimdilik tutulacak, içerde `Bridge` modülünde soyutlanacak.)
+- **Açık Soru:** PostMessage protokolünde "Puck" prefix'ini ilelebet korumalı mıyız? (Evet, host değişmemesi için şimdilik tutulacak, içerde `Bridge` modülünde soyutlanmıştır → `studio/bridge.ts`.)
+
+---
+
+## 7. Uygulanan Modüller (Güncel Durum)
+
+| Alan | Modül | Not |
+|---|---|---|
+| Engine / state | `engine/store.ts` | zustand+immer; **patch-bazlı history** (50 adım, 500ms coalesce), çoklu seçim, clipboard |
+| Ağaç işlemleri | `engine/operations.ts`, `engine/zones.ts` | `findNodeById` **O(1) WeakMap cache**; bulk remove/duplicate |
+| Drop kuralları | `engine/rules.ts` | `isValidDrop` / `canDropInto` / `canAcceptMoreItems` (opt-in: `acceptsChildren`, `maxItems`, `allowedParents`) |
+| Canvas | `studio/canvas/*` | iframe `Frame` (artımlı stil sync), `NodeRenderer`, `useDropTarget`, `useInlineEdit`, `NodeErrorBoundary` |
+| Stil editörü | `studio/style/*` | Tailwind token modeli + arbitrary değerler + safelist (`getSafelist`) — bkz. `docs/TAILWIND.md` |
+| Köprü | `studio/bridge.ts` | `postToHost` / `isEmbedded` / origin doğrulama (`hostOrigin`) |
+| Field host | `studio/fields-host/FieldRenderer.tsx` | Puck-uyumlu: text, textarea, select, number, radio, array, object, slot, custom(`render`) |
+| Build | `tsup.config.ts` | `splitting: true` → ağır field'lar (Monaco/TipTap/FilePond) ayrı chunk |
+
+### Bilinen Boşluklar / Yol Haritası
+
+- Dokunmatik (pointer-event) DnD — mobil/tablet editleme.
+- **Dynamic props** (`resolveData`) ve **dynamic fields** (`resolveFields`) — Puck paritesi.
+- **Overlay Portals** (`registerOverlayPortal` muadili) — editör içinde belirli
+  elemanları etkileşimli bırakma + edit-mode'da link/buton tıklamasını engelleme.
+- `boolean`/`toggle` ve `external` field tipleri.
+- Editör arayüzü i18n (şu an sabit Türkçe).
+- Autosave + `beforeunload` koruması.
 
 ---
 *Hazırlayan: Tecof Core Team (AI Architect)*

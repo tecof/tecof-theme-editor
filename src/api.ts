@@ -31,15 +31,26 @@ export class TecofApiClient {
 
   /**
    * Fetch a page by ID (for the editor)
+   *
+   * @param signal Optional AbortSignal. When the caller aborts (e.g. a newer
+   *   page load supersedes this one), the underlying `fetch` rejects with an
+   *   `AbortError`, which we RETHROW so the caller's try/catch can distinguish
+   *   an abort from a real failure and skip mutating stale state. Non-abort
+   *   errors are still swallowed into an `{ success: false }` response.
    */
-  async getPage(pageId: string): Promise<ApiResponse<PageApiData>> {
+  async getPage(pageId: string, signal?: AbortSignal): Promise<ApiResponse<PageApiData>> {
     try {
       const res = await fetch(`${this.apiUrl}/api/store/editor/${pageId}`, {
         method: 'GET',
         headers: this.headers,
+        signal,
       });
       return await res.json();
     } catch (error) {
+      // Let aborts propagate so the caller can tell them apart from failures.
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error;
+      }
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to fetch page',

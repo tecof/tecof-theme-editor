@@ -24,30 +24,58 @@ export type NodePath = {
   index: number;
 };
 
+type NodeEntry = { node: TecofNode; path: NodePath };
+
+/**
+ * Per-document index cache for O(1) `findNodeById` lookups.
+ *
+ * Immer (and our own clones) produce a NEW document object on every mutation, so
+ * keying this WeakMap on the document instance means the cache invalidates itself
+ * automatically the moment the document changes — no manual invalidation needed.
+ * Stale documents are garbage-collected along with their index.
+ */
+const indexCache = new WeakMap<TecofDocument, Map<string, NodeEntry>>();
+
+/**
+ * Builds the full id -> {node, path} index for a single document version.
+ */
+const buildIndex = (doc: TecofDocument): Map<string, NodeEntry> => {
+  const index = new Map<string, NodeEntry>();
+
+  // Root content
+  for (let i = 0; i < doc.content.length; i++) {
+    const node = doc.content[i];
+    index.set(node.props.id, { node, path: { index: i } });
+  }
+
+  // All zones
+  for (const [zoneKey, items] of Object.entries(doc.zones)) {
+    for (let i = 0; i < items.length; i++) {
+      const node = items[i];
+      index.set(node.props.id, { node, path: { zoneKey, index: i } });
+    }
+  }
+
+  return index;
+};
+
 /**
  * Finds a node by ID in the document and returns its path and the node itself.
+ *
+ * Amortized O(1): on the first call for a given document version we build a
+ * complete id index and cache it (keyed on the document instance); subsequent
+ * lookups against the same document are constant-time Map gets.
  */
 export const findNodeById = (
   doc: TecofDocument,
   id: string
 ): { node: TecofNode; path: NodePath } | null => {
-  // Check root content
-  for (let i = 0; i < doc.content.length; i++) {
-    if (doc.content[i].props.id === id) {
-      return { node: doc.content[i], path: { index: i } };
-    }
+  let index = indexCache.get(doc);
+  if (!index) {
+    index = buildIndex(doc);
+    indexCache.set(doc, index);
   }
-
-  // Check all zones
-  for (const [zoneKey, items] of Object.entries(doc.zones)) {
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].props.id === id) {
-        return { node: items[i], path: { zoneKey, index: i } };
-      }
-    }
-  }
-
-  return null;
+  return index.get(id) ?? null;
 };
 
 /**
