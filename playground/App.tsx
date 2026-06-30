@@ -41,8 +41,8 @@ const mockConfig = {
           margin: '16px 0'
         }}>
           <h1 style={{ margin: '0 0 16px', fontSize: '32px' }}>{title || 'Hero Başlığı'}</h1>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '16px' }}>
-            {puck.renderDropZone({ zone: 'actions' })}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+            {puck.renderDropZone({ zone: 'actions', orientation: 'horizontal' })}
           </div>
         </div>
       ),
@@ -80,6 +80,37 @@ const mockConfig = {
       ),
     },
   },
+  // Pre-built section templates — inserted as a whole subtree (fresh ids) from
+  // the "Bölüm Ekle" → "Şablonlar" tab.
+  templates: [
+    {
+      id: 'hero-cta',
+      label: 'Hero + İki Buton',
+      payload: {
+        node: { type: 'Hero', props: { id: 'tpl-hero', title: 'Şablon Hero Başlığı' } },
+        zones: {
+          'tpl-hero:actions': [
+            { type: 'Button', props: { id: 'tpl-btn-1', text: 'Başla' } },
+            { type: 'Button', props: { id: 'tpl-btn-2', text: 'Daha Fazla' } },
+          ],
+        },
+      },
+    },
+    {
+      id: 'styled-box',
+      label: 'Stilli Kutu',
+      payload: {
+        node: {
+          type: 'Box',
+          props: {
+            id: 'tpl-box',
+            text: 'Şablondan gelen stilli kutu',
+            _tecofStyles: { base: { p: '8', bg: 'primary-100', radius: 'xl', text: 'primary-900', align: 'center', fontSize: 'xl', fontWeight: 'bold' } },
+          },
+        },
+      },
+    },
+  ],
 };
 
 const mockPageData = {
@@ -97,7 +128,8 @@ const mockPageData = {
   root: { props: { title: 'Ana Sayfa' } },
   zones: {
     'hero-1:actions': [
-      { type: 'Button', props: { id: 'btn-1', text: 'Hemen Keşfet' } }
+      { type: 'Button', props: { id: 'btn-1', text: 'Hemen Keşfet' } },
+      { type: 'Button', props: { id: 'btn-2', text: 'Daha Fazla' } }
     ]
   }
 };

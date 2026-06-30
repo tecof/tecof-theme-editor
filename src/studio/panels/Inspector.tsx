@@ -4,6 +4,7 @@ import { findNodeById } from '../../engine/zones';
 import { useStudio } from '../context';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
 import { StyleEditor } from '../style/StyleEditor';
+import { ThemeEditor } from '../theme/ThemeEditor';
 import { STYLES_PROP } from '../style/types';
 
 export const Inspector = () => {
@@ -15,6 +16,7 @@ export const Inspector = () => {
 
   const { config, readOnly } = useStudio();
   const [tab, setTab] = useState<'content' | 'style'>('content');
+  const [rootTab, setRootTab] = useState<'page' | 'theme'>('page');
 
   // Find active selected node details memoized to prevent expensive lookup on every render
   const activeNodeInfo = useMemo(() => {
@@ -126,9 +128,33 @@ export const Inspector = () => {
         </div>
       </div>
 
+      {/* Page / Theme tabs */}
+      <div className="tecof-inspector-tabs" role="tablist" aria-label="Sayfa görünümü">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={rootTab === 'page'}
+          className={`tecof-inspector-tab${rootTab === 'page' ? ' is-active' : ''}`}
+          onClick={() => setRootTab('page')}
+        >
+          Sayfa
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={rootTab === 'theme'}
+          className={`tecof-inspector-tab${rootTab === 'theme' ? ' is-active' : ''}`}
+          onClick={() => setRootTab('theme')}
+        >
+          Tema
+        </button>
+      </div>
+
       {/* Fields List */}
       <div className="tecof-inspector-fields">
-        {rootFieldEntries.length > 0 ? (
+        {rootTab === 'theme' ? (
+          <ThemeEditor />
+        ) : rootFieldEntries.length > 0 ? (
           rootFieldEntries.map(([fieldName, fieldDef]) => (
             <FieldRenderer
               key={fieldName}

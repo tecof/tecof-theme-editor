@@ -10,9 +10,11 @@ export interface DropZoneProps {
   zone: string;
   className?: string;
   style?: React.CSSProperties;
+  /** Lay children out side-by-side (row) instead of stacked (column). */
+  orientation?: 'vertical' | 'horizontal';
 }
 
-export const DropZone = ({ zone, className, style }: DropZoneProps) => {
+export const DropZone = ({ zone, className, style, orientation = 'vertical' }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const { readOnly } = useStudio();
@@ -31,6 +33,7 @@ export const DropZone = ({ zone, className, style }: DropZoneProps) => {
 
   const dropzoneClassName = [
     'tecof-dropzone',
+    orientation === 'horizontal' ? 'is-horizontal' : '',
     items.length === 0 ? 'is-empty' : '',
     isDragOver ? 'is-dragover' : '',
     isDragActive ? 'is-drag-active' : '',
@@ -47,10 +50,11 @@ export const DropZone = ({ zone, className, style }: DropZoneProps) => {
       onDrop={onDrop}
       style={style}
       data-tecof-zone={zoneKey}
+      data-tecof-orientation={orientation}
     >
       {items.length === 0 ? (
         <span className="tecof-dropzone-hint">
-          {isDragOver ? 'Buraya Bırakın' : 'Bileşen Sürükleyin veya Tıklayın'}
+          {isDragOver ? 'Buraya Bırakın' : 'Bileşen Sürükleyin'}
         </span>
       ) : (
         items.map((item, index) => (
@@ -62,7 +66,7 @@ export const DropZone = ({ zone, className, style }: DropZoneProps) => {
 };
 
 // Helper for puck.renderDropZone
-export const renderDropZone = ({ zone, className, style }: DropZoneProps) => {
-  return <DropZone zone={zone} className={className} style={style} />;
+export const renderDropZone = ({ zone, className, style, orientation }: DropZoneProps) => {
+  return <DropZone zone={zone} className={className} style={style} orientation={orientation} />;
 };
 export default DropZone;

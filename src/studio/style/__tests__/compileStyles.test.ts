@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compileStyles, mergeClassName } from '../compileStyles';
+import { compileStyles, mergeClassName, collectDocumentClasses } from '../compileStyles';
 import { getSafelist } from '../tokens';
 import type { NodeStyles } from '../types';
 
@@ -51,6 +51,13 @@ describe('compileStyles', () => {
     expect(compileStyles({ base: { p: '4' }, md: { p: '[10px]' } })).toBe('p-4 md:p-[10px]');
   });
 
+  it('compiles breakpoint-scoped state keys (md:hover)', () => {
+    expect(compileStyles({ states: { 'md:hover': { bg: 'primary-700' } } })).toBe('md:hover:bg-primary-700');
+    expect(compileStyles({ states: { 'lg:focus': { text: '[#abc]' } } })).toBe('lg:focus:text-[#abc]');
+    // Bare keys remain base-breakpoint (back-compat).
+    expect(compileStyles({ states: { hover: { bg: 'primary-700' } } })).toBe('hover:bg-primary-700');
+  });
+
   it('mixes presets and arbitrary values in one layer', () => {
     expect(compileStyles({ base: { p: '[10px]', bg: 'primary-600' } })).toBe('p-[10px] bg-primary-600');
   });
@@ -71,7 +78,47 @@ describe('getSafelist', () => {
     expect(safelist).toContain('rounded'); // radius md special-case
     // No empty/null entries
     expect(safelist.every((c) => typeof c === 'string' && c.length > 0)).toBe(true);
-    // Arbitrary values are infinite (JIT-handled) and never enter the safelist.
-    expect(safelist.some((c) => c.includes('['))).toBe(false);
+  });
+
+  it('includes responsive-state combinations (md:hover:)', () => {
+    const safelist = getSafelist();
+    expect(safelist).toContain('md:hover:bg-primary-600');
+    expect(safelist).toContain('lg:focus:p-4');
+  });
+
+  it('includes the finite theme-color arbitrary classes', () => {
+    const safelist = getSafelist();
+    expect(safelist).toContain('bg-[var(--theme-color-primary)]');
+    expect(safelist).toContain('text-[var(--theme-color-foreground)]');
+    expect(safelist).toContain('md:bg-[var(--theme-color-primary)]');
+  });
+});
+
+describe('collectDocumentClasses', () => {
+  it('collects style classes from root, content and zones (de-duplicated)', () => {
+    const doc = {
+      root: { props: { _tecofStyles: { base: { p: '4' } } } },
+      content: [
+        { props: { id: 'a', _tecofStyles: { base: { p: '[10px]', bg: 'primary-600' } } } },
+        { props: { id: 'b' } }, // no styles → ignored
+      ],
+      zones: {
+        'a:default': [
+          { props: { id: 'c', _tecofStyles: { md: { bg: '[#ff0000]' }, base: { p: '4' } } } },
+        ],
+      },
+    };
+    const classes = collectDocumentClasses(doc);
+    expect(classes).toContain('p-4');
+    expect(classes).toContain('p-[10px]');
+    expect(classes).toContain('bg-primary-600');
+    expect(classes).toContain('md:bg-[#ff0000]');
+    // `p-4` appears on root + zone node but is de-duplicated.
+    expect(classes.filter((c) => c === 'p-4')).toHaveLength(1);
+  });
+
+  it('returns an empty array for null/empty documents', () => {
+    expect(collectDocumentClasses(null)).toEqual([]);
+    expect(collectDocumentClasses({})).toEqual([]);
   });
 });

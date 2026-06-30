@@ -1,19 +1,17 @@
-'use strict';
-
-var chunkTI5PY4Z5_js = require('./chunk-TI5PY4Z5.js');
-var react = require('react');
-var jsxRuntime = require('react/jsx-runtime');
+import { useTecof, Copy, LoaderCircle, Languages } from './chunk-5MD5GTJT.mjs';
+import { createContext, useState, useMemo, useEffect, useContext, Component, useRef, useCallback } from 'react';
+import { jsx, jsxs } from 'react/jsx-runtime';
 
 var merchantInfoCache = /* @__PURE__ */ new Map();
 var CACHE_TTL = 5 * 60 * 1e3;
 function useLanguages() {
-  const { apiClient, secretKey, apiUrl } = chunkTI5PY4Z5_js.useTecof();
-  const [merchantInfo, setMerchantInfo] = react.useState(null);
-  const [loading, setLoading] = react.useState(true);
-  const [error, setError] = react.useState(null);
-  const [activeTab, setActiveTab] = react.useState("");
-  const cacheKey = react.useMemo(() => `${apiUrl}::${secretKey}`, [apiUrl, secretKey]);
-  react.useEffect(() => {
+  const { apiClient, secretKey, apiUrl } = useTecof();
+  const [merchantInfo, setMerchantInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("");
+  const cacheKey = useMemo(() => `${apiUrl}::${secretKey}`, [apiUrl, secretKey]);
+  useEffect(() => {
     let cancelled = false;
     const fetchInfo = async () => {
       const cached = merchantInfoCache.get(cacheKey);
@@ -46,10 +44,10 @@ function useLanguages() {
   }, [apiClient, cacheKey]);
   return { merchantInfo, loading, error, activeTab, setActiveTab };
 }
-var ActiveLanguageContext = react.createContext(null);
+var ActiveLanguageContext = createContext(null);
 var LanguageProvider = ({ children }) => {
   const { merchantInfo, activeTab, setActiveTab, loading } = useLanguages();
-  const value = react.useMemo(
+  const value = useMemo(
     () => ({
       languages: merchantInfo?.languages || [],
       defaultLanguage: merchantInfo?.defaultLanguage || "",
@@ -59,10 +57,10 @@ var LanguageProvider = ({ children }) => {
     }),
     [merchantInfo, activeTab, setActiveTab, loading]
   );
-  return /* @__PURE__ */ jsxRuntime.jsx(ActiveLanguageContext.Provider, { value, children });
+  return /* @__PURE__ */ jsx(ActiveLanguageContext.Provider, { value, children });
 };
-var useActiveLanguage = () => react.useContext(ActiveLanguageContext);
-var FieldErrorBoundary = class extends react.Component {
+var useActiveLanguage = () => useContext(ActiveLanguageContext);
+var FieldErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
     this.handleRetry = () => {
@@ -86,13 +84,13 @@ var FieldErrorBoundary = class extends react.Component {
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-error-boundary", children: [
-        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-error-icon", children: "\u26A0\uFE0F" }),
-        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-error-content", children: [
-          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-field-error-title", children: "Bu alan y\xFCklenemedi" }),
-          /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-field-error-detail", children: this.state.error?.message || "Beklenmeyen bir hata olu\u015Ftu" })
+      return /* @__PURE__ */ jsxs("div", { className: "tecof-field-error-boundary", children: [
+        /* @__PURE__ */ jsx("div", { className: "tecof-field-error-icon", children: "\u26A0\uFE0F" }),
+        /* @__PURE__ */ jsxs("div", { className: "tecof-field-error-content", children: [
+          /* @__PURE__ */ jsx("p", { className: "tecof-field-error-title", children: "Bu alan y\xFCklenemedi" }),
+          /* @__PURE__ */ jsx("p", { className: "tecof-field-error-detail", children: this.state.error?.message || "Beklenmeyen bir hata olu\u015Ftu" })
         ] }),
-        /* @__PURE__ */ jsxRuntime.jsx(
+        /* @__PURE__ */ jsx(
           "button",
           {
             type: "button",
@@ -114,13 +112,13 @@ var FieldLabel = ({
   el = "label"
 }) => {
   const Component2 = el;
-  return /* @__PURE__ */ jsxRuntime.jsxs(Component2, { className: "tecof-field-label-container", children: [
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-label-header", children: [
-      icon && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-field-label-icon", children: icon }),
-      /* @__PURE__ */ jsxRuntime.jsx("span", { children: label }),
-      readOnly && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-field-label-readonly", children: "Salt Okunur" })
+  return /* @__PURE__ */ jsxs(Component2, { className: "tecof-field-label-container", children: [
+    /* @__PURE__ */ jsxs("div", { className: "tecof-field-label-header", children: [
+      icon && /* @__PURE__ */ jsx("span", { className: "tecof-field-label-icon", children: icon }),
+      /* @__PURE__ */ jsx("span", { children: label }),
+      readOnly && /* @__PURE__ */ jsx("span", { className: "tecof-field-label-readonly", children: "Salt Okunur" })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-label-content", children })
+    /* @__PURE__ */ jsx("div", { className: "tecof-field-label-content", children })
   ] });
 };
 var LanguageTabBar = ({
@@ -130,7 +128,7 @@ var LanguageTabBar = ({
   onTabChange
 }) => {
   if (languages.length <= 1) return null;
-  return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-tab-bar", children: languages.map((code) => /* @__PURE__ */ jsxRuntime.jsxs(
+  return /* @__PURE__ */ jsx("div", { className: "tecof-lang-tab-bar", children: languages.map((code) => /* @__PURE__ */ jsxs(
     "button",
     {
       type: "button",
@@ -138,22 +136,22 @@ var LanguageTabBar = ({
       onClick: () => onTabChange(code),
       title: code.toUpperCase(),
       children: [
-        /* @__PURE__ */ jsxRuntime.jsx("span", { children: code.toUpperCase() }),
-        code === defaultLanguage && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-lang-default-badge", children: "DEFAULT" })
+        /* @__PURE__ */ jsx("span", { children: code.toUpperCase() }),
+        code === defaultLanguage && /* @__PURE__ */ jsx("span", { className: "tecof-lang-default-badge", children: "DEFAULT" })
       ]
     },
     code
   )) });
 };
-var FieldLoading = () => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-loading", "aria-busy": "true", children: [
-  /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-loading-row", children: [
-    /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-skeleton-circle tecof-field-loading-thumb" }),
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-loading-lines", children: [
-      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-skeleton-text w-60" }),
-      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-skeleton-text sm w-80" })
+var FieldLoading = () => /* @__PURE__ */ jsxs("div", { className: "tecof-field-loading", "aria-busy": "true", children: [
+  /* @__PURE__ */ jsxs("div", { className: "tecof-field-loading-row", children: [
+    /* @__PURE__ */ jsx("span", { className: "tecof-skeleton tecof-skeleton-circle tecof-field-loading-thumb" }),
+    /* @__PURE__ */ jsxs("div", { className: "tecof-field-loading-lines", children: [
+      /* @__PURE__ */ jsx("span", { className: "tecof-skeleton tecof-skeleton-text w-60" }),
+      /* @__PURE__ */ jsx("span", { className: "tecof-skeleton tecof-skeleton-text sm w-80" })
     ] })
   ] }),
-  /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-skeleton-block tecof-studio-skeleton-field" })
+  /* @__PURE__ */ jsx("span", { className: "tecof-skeleton tecof-skeleton-block tecof-studio-skeleton-field" })
 ] });
 var StableInput = ({
   value: externalValue,
@@ -162,9 +160,9 @@ var StableInput = ({
   placeholder,
   className
 }) => {
-  const [localValue, setLocalValue] = react.useState(externalValue);
-  const lastEmitted = react.useRef(externalValue);
-  react.useEffect(() => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const lastEmitted = useRef(externalValue);
+  useEffect(() => {
     if (externalValue !== lastEmitted.current) {
       setLocalValue(externalValue);
       lastEmitted.current = externalValue;
@@ -176,7 +174,7 @@ var StableInput = ({
     lastEmitted.current = val;
     onChange(val);
   };
-  return /* @__PURE__ */ jsxRuntime.jsx(
+  return /* @__PURE__ */ jsx(
     "input",
     {
       type: "text",
@@ -196,9 +194,9 @@ var StableTextarea = ({
   className,
   rows
 }) => {
-  const [localValue, setLocalValue] = react.useState(externalValue);
-  const lastEmitted = react.useRef(externalValue);
-  react.useEffect(() => {
+  const [localValue, setLocalValue] = useState(externalValue);
+  const lastEmitted = useRef(externalValue);
+  useEffect(() => {
     if (externalValue !== lastEmitted.current) {
       setLocalValue(externalValue);
       lastEmitted.current = externalValue;
@@ -210,7 +208,7 @@ var StableTextarea = ({
     lastEmitted.current = val;
     onChange(val);
   };
-  return /* @__PURE__ */ jsxRuntime.jsx(
+  return /* @__PURE__ */ jsx(
     "textarea",
     {
       value: localValue,
@@ -241,10 +239,10 @@ var LanguageField = ({
   const globalLang = useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
-  const { apiClient } = chunkTI5PY4Z5_js.useTecof();
-  const [translating, setTranslating] = react.useState(false);
-  const [statusMsg, setStatusMsg] = react.useState(null);
-  const values = react.useMemo(() => {
+  const { apiClient } = useTecof();
+  const [translating, setTranslating] = useState(false);
+  const [statusMsg, setStatusMsg] = useState(null);
+  const values = useMemo(() => {
     if (!merchantInfo) return value || [];
     const current = value || [];
     return merchantInfo.languages.map((code) => {
@@ -252,11 +250,11 @@ var LanguageField = ({
       return existing || { code, value: "" };
     });
   }, [value, merchantInfo]);
-  const valuesRef = react.useRef(values);
+  const valuesRef = useRef(values);
   valuesRef.current = values;
-  const onChangeRef = react.useRef(onChange);
+  const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const handleChange = react.useCallback((code, newVal) => {
+  const handleChange = useCallback((code, newVal) => {
     const current = valuesRef.current;
     const updated = [...current];
     const idx = updated.findIndex((v) => v.code === code);
@@ -267,10 +265,10 @@ var LanguageField = ({
     }
     onChangeRef.current(updated);
   }, []);
-  const getCurrentText = react.useCallback(() => {
+  const getCurrentText = useCallback(() => {
     return valuesRef.current.find((v) => v.code === activeTab)?.value || "";
   }, [activeTab]);
-  const handleFastFill = react.useCallback(() => {
+  const handleFastFill = useCallback(() => {
     const text = getCurrentText();
     if (!text) return;
     if (!merchantInfo) return;
@@ -282,7 +280,7 @@ var LanguageField = ({
     setStatusMsg({ text: "T\xFCm dillere kopyaland\u0131", type: "success" });
     setTimeout(() => setStatusMsg(null), 2e3);
   }, [getCurrentText, merchantInfo]);
-  const handleTranslate = react.useCallback(async () => {
+  const handleTranslate = useCallback(async () => {
     const text = getCurrentText();
     if (!text || !merchantInfo) return;
     const otherLocales = merchantInfo.languages.filter((l) => l !== activeTab);
@@ -313,14 +311,14 @@ var LanguageField = ({
       setTimeout(() => setStatusMsg(null), 3e3);
     }
   }, [getCurrentText, merchantInfo, activeTab, apiClient, isHtml]);
-  if (loading) return /* @__PURE__ */ jsxRuntime.jsx(FieldLoading, {});
-  if (error && !merchantInfo) return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-error", children: error });
+  if (loading) return /* @__PURE__ */ jsx(FieldLoading, {});
+  if (error && !merchantInfo) return /* @__PURE__ */ jsx("div", { className: "tecof-lang-error", children: error });
   if (!merchantInfo) return null;
   const { languages, defaultLanguage } = merchantInfo;
   const hasText = !!getCurrentText();
   const hasMultipleLanguages = languages.length > 1;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-container", children: [
-    !globalLang && /* @__PURE__ */ jsxRuntime.jsx(
+  return /* @__PURE__ */ jsxs("div", { className: "tecof-lang-container", children: [
+    !globalLang && /* @__PURE__ */ jsx(
       LanguageTabBar,
       {
         languages,
@@ -332,7 +330,7 @@ var LanguageField = ({
     languages.map((code) => {
       if (activeTab !== code) return null;
       const currentValue = values.find((v) => v.code === code)?.value || "";
-      return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-lang-input-wrapper", children: isTextarea ? /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsx("div", { className: "tecof-lang-input-wrapper", children: isTextarea ? /* @__PURE__ */ jsx(
         StableTextarea,
         {
           value: currentValue,
@@ -342,7 +340,7 @@ var LanguageField = ({
           disabled: readOnly,
           className: "tecof-lang-input tecof-lang-textarea"
         }
-      ) : /* @__PURE__ */ jsxRuntime.jsx(
+      ) : /* @__PURE__ */ jsx(
         StableInput,
         {
           value: currentValue,
@@ -353,8 +351,8 @@ var LanguageField = ({
         }
       ) }, code);
     }),
-    !readOnly && hasMultipleLanguages && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-lang-action-bar", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs(
+    !readOnly && hasMultipleLanguages && /* @__PURE__ */ jsxs("div", { className: "tecof-lang-action-bar", children: [
+      /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
@@ -363,12 +361,12 @@ var LanguageField = ({
           disabled: !hasText,
           title: "Aktif sekmedeki metni t\xFCm dillere kopyala",
           children: [
-            /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Copy, { size: 12 }),
+            /* @__PURE__ */ jsx(Copy, { size: 12 }),
             " H\u0131zl\u0131 Doldur"
           ]
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsxs(
+      /* @__PURE__ */ jsxs(
         "button",
         {
           type: "button",
@@ -377,12 +375,12 @@ var LanguageField = ({
           disabled: !hasText || translating,
           title: "Aktif sekmedeki metni di\u011Fer dillere \xE7evir",
           children: [
-            translating ? /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.LoaderCircle, { size: 12, className: "tecof-spin" }) : /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Languages, { size: 12 }),
+            translating ? /* @__PURE__ */ jsx(LoaderCircle, { size: 12, className: "tecof-spin" }) : /* @__PURE__ */ jsx(Languages, { size: 12 }),
             translating ? "\xC7evriliyor..." : "\xC7evir"
           ]
         }
       ),
-      statusMsg && /* @__PURE__ */ jsxRuntime.jsx("span", { className: `tecof-lang-status-msg ${statusMsg.type === "success" ? "success" : "error"}`, children: statusMsg.text })
+      statusMsg && /* @__PURE__ */ jsx("span", { className: `tecof-lang-status-msg ${statusMsg.type === "success" ? "success" : "error"}`, children: statusMsg.text })
     ] })
   ] });
 };
@@ -394,7 +392,7 @@ var createLanguageField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsx(FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsx(FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsx(
       LanguageField,
       {
         field,
@@ -409,14 +407,6 @@ var createLanguageField = (options = {}) => {
   };
 };
 
-exports.FieldErrorBoundary = FieldErrorBoundary;
-exports.FieldLabel = FieldLabel;
-exports.FieldLoading = FieldLoading;
-exports.LanguageField = LanguageField;
-exports.LanguageProvider = LanguageProvider;
-exports.LanguageTabBar = LanguageTabBar;
-exports.createLanguageField = createLanguageField;
-exports.useActiveLanguage = useActiveLanguage;
-exports.useLanguages = useLanguages;
-//# sourceMappingURL=chunk-KD7P3WA5.js.map
-//# sourceMappingURL=chunk-KD7P3WA5.js.map
+export { FieldErrorBoundary, FieldLabel, FieldLoading, LanguageField, LanguageProvider, LanguageTabBar, createLanguageField, useActiveLanguage, useLanguages };
+//# sourceMappingURL=chunk-IYNPDX7Q.mjs.map
+//# sourceMappingURL=chunk-IYNPDX7Q.mjs.map

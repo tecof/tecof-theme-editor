@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { FieldLabel } from '../../components/fields/FieldLabel';
+import { CmsBindingButton } from '../../components/fields/CmsBindingButton';
 
 export interface FieldRendererProps {
   name: string;
@@ -43,28 +44,38 @@ export const FieldRenderer = ({
     case 'text':
       return (
         <FieldLabel label={label} readOnly={readOnly}>
-          <input
-            id={`field-${name}`}
-            type="text"
-            value={value || ''}
-            disabled={readOnly}
-            onChange={(e) => onChange(e.target.value)}
-            className="tecof-input-text"
-          />
+          <div className="tecof-field-bindable">
+            <input
+              id={`field-${name}`}
+              type="text"
+              value={value || ''}
+              disabled={readOnly}
+              onChange={(e) => onChange(e.target.value)}
+              className="tecof-input-text"
+            />
+            {!readOnly && definition.bindable !== false && (
+              <CmsBindingButton onInsert={(t) => onChange(value ? `${value} ${t}` : t)} />
+            )}
+          </div>
         </FieldLabel>
       );
 
     case 'textarea':
       return (
         <FieldLabel label={label} readOnly={readOnly}>
-          <textarea
-            id={`field-${name}`}
-            rows={4}
-            value={value || ''}
-            disabled={readOnly}
-            onChange={(e) => onChange(e.target.value)}
-            className="tecof-input-textarea"
-          />
+          <div className="tecof-field-bindable is-textarea">
+            <textarea
+              id={`field-${name}`}
+              rows={4}
+              value={value || ''}
+              disabled={readOnly}
+              onChange={(e) => onChange(e.target.value)}
+              className="tecof-input-textarea"
+            />
+            {!readOnly && definition.bindable !== false && (
+              <CmsBindingButton onInsert={(t) => onChange(value ? `${value} ${t}` : t)} />
+            )}
+          </div>
         </FieldLabel>
       );
 

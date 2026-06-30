@@ -41,9 +41,25 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
   const [bp, setBp] = useState<Breakpoint>('base');
   const [state, setState] = useState<'base' | StateVariant>('base');
 
+  // State buckets are breakpoint-scoped: a bare `hover` key = base breakpoint,
+  // `md:hover` = the `md` breakpoint. The normal (non-state) layers stay keyed
+  // by breakpoint directly.
+  const stateKey = bp === 'base' ? state : `${bp}:${state}`;
+
   // The style layer currently being edited (breakpoint OR a state bucket).
   const layer: StyleProps =
-    state === 'base' ? styles[bp] || {} : styles.states?.[state] || {};
+    state === 'base' ? styles[bp] || {} : styles.states?.[stateKey] || {};
+
+  // Values inherited from a less-specific layer, shown as faint placeholders so
+  // the user can see what a property resolves to before overriding it here.
+  //   - higher breakpoint, normal state → inherits `base`
+  //   - any state layer                 → inherits the normal styles at this bp
+  const inheritedLayer: StyleProps =
+    state !== 'base'
+      ? { ...(styles.base || {}), ...(bp !== 'base' ? styles[bp] || {} : {}) }
+      : bp !== 'base'
+        ? styles.base || {}
+        : {};
 
   const setLayerValue = (controlId: string, raw: string) => {
     const nextLayer: StyleProps = { ...layer };
@@ -53,7 +69,7 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
     if (state === 'base') {
       onChange({ ...styles, [bp]: nextLayer });
     } else {
-      onChange({ ...styles, states: { ...styles.states, [state]: nextLayer } });
+      onChange({ ...styles, states: { ...styles.states, [stateKey]: nextLayer } });
     }
   };
 
@@ -87,7 +103,7 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
             const overridden =
               s.key === 'base'
                 ? BREAKPOINTS.some((b) => hasProps(styles[b.key]))
-                : hasProps(styles.states?.[s.key]);
+                : hasProps(styles.states?.[bp === 'base' ? s.key : `${bp}:${s.key}`]);
             return (
               <button
                 key={s.key}
@@ -112,6 +128,7 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
               key={control.id}
               control={control}
               value={layer[control.id] || ''}
+              inherited={inheritedLayer[control.id]}
               onChange={(v) => setLayerValue(control.id, v)}
             />
           ))}
@@ -124,16 +141,28 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
 const ControlRow = ({
   control,
   value,
+  inherited,
   onChange,
 }: {
   control: StyleControl;
   value: string;
+  inherited?: string;
   onChange: (value: string) => void;
 }) => {
   const supportsArbitrary = !!control.arbitraryPrefix;
-  const valueIsArbitrary = supportsArbitrary && isArbitrary(value);
+  // A value is "custom" only when it's an arbitrary literal the user typed — not
+  // when it's a known option that merely happens to be encoded as arbitrary (e.g.
+  // theme colors like `[var(--theme-color-primary)]`), which must render as a
+  // selectable preset, not pop the custom text input.
+  const matchesOption = control.options.some((o) => o.value === value);
+  const valueIsArbitrary = supportsArbitrary && isArbitrary(value) && !matchesOption;
   // Custom mode is on when the stored value is arbitrary, or the user toggled it.
   const [customOpen, setCustomOpen] = useState(valueIsArbitrary);
+
+  // Faint placeholder showing what this property resolves to from a less-specific
+  // layer, when nothing is set here.
+  const inheritedOption = inherited ? control.options.find((o) => o.value === inherited) : undefined;
+  const inheritedLabel = inherited ? inheritedOption?.label ?? arbitraryRaw(inherited) : '';
   const custom = customOpen || valueIsArbitrary;
 
   // While in custom mode the presets read as "none-selected" (the active value
@@ -146,8 +175,16 @@ const ControlRow = ({
   };
 
   return (
-    <div className="tecof-style-row">
-      <span className="tecof-style-label">{control.label}</span>
+    <div className={`tecof-style-row${value ? ' is-active' : ''}`}>
+      <span className="tecof-style-label">
+        {control.label}
+        {value && <span className="tecof-style-row-active-dot" title="Özel değer tanımlı" />}
+        {!value && inheritedLabel && (
+          <span className="tecof-style-inherited" title={`Devralınan değer: ${inheritedLabel}`}>
+            {inheritedLabel}
+          </span>
+        )}
+      </span>
       <div className="tecof-style-control">
         {control.type === 'color' ? (
           <div className="tecof-style-swatches">

@@ -1,5 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import type { TecofRenderProps, TecofNode } from '../types';
+import { compileStyles, mergeClassName } from '../studio/style/compileStyles';
+import { STYLES_PROP } from '../studio/style/types';
 
 const RenderContext = createContext<{
   zones: Record<string, TecofNode[]>;
@@ -13,9 +15,11 @@ interface DropZoneProps {
   zone: string;
   className?: string;
   style?: React.CSSProperties;
+  /** Lay children out side-by-side (row) instead of stacked. Mirrors the editor. */
+  orientation?: 'vertical' | 'horizontal';
 }
 
-const RenderDropZone = ({ zone, className, style }: DropZoneProps) => {
+const RenderDropZone = ({ zone, className, style, orientation = 'vertical' }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const context = useContext(RenderContext);
@@ -23,8 +27,16 @@ const RenderDropZone = ({ zone, className, style }: DropZoneProps) => {
 
   const items = context.zones[zoneKey] || [];
 
+  // Horizontal slots render side-by-side on the published site too, so the
+  // layout matches what the editor shows. Author styles still override via
+  // `style` (applied last) or a `className`.
+  const orientationStyle: React.CSSProperties | undefined =
+    orientation === 'horizontal'
+      ? { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px' }
+      : undefined;
+
   return (
-    <div className={className} style={style}>
+    <div className={className} style={{ ...orientationStyle, ...style }}>
       {items.map((item, index) => (
         <RenderNode key={item.props.id || index} node={item} index={index} />
       ))}
@@ -39,8 +51,14 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
   const componentConfig = context.config.components[node.type];
   if (!componentConfig) return null;
 
+  // Compile the node's structured Tailwind styles into `className` exactly as the
+  // editor's NodeRenderer does, so the visual style editor's output renders on the
+  // published site too (not only inside the editor canvas).
+  const styleClassName = compileStyles(node.props[STYLES_PROP]);
+
   const componentProps = {
     ...node.props,
+    className: mergeClassName(node.props.className, styleClassName),
     puck: {
       renderDropZone: RenderDropZone,
       isEditing: false,
@@ -55,7 +73,7 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
   if (componentConfig.fields) {
     Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]: [string, any]) => {
       if (fieldDef && fieldDef.type === 'slot') {
-        componentProps[fieldName] = <RenderDropZone zone={fieldName} />;
+        componentProps[fieldName] = <RenderDropZone zone={fieldName} orientation={fieldDef.orientation} />;
       }
     });
   }

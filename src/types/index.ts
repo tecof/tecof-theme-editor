@@ -127,13 +127,24 @@ export interface FieldConfig {
   /** Human-readable label shown in the inspector. */
   label?: string;
   /** Options for `select` / `radio` fields. */
-  options?: FieldOption[];
+  options?: any;
   /** Default value applied when the field is empty. */
   defaultValue?: any;
   /** Sub-fields for `array` items. */
   arrayFields?: Record<string, FieldConfig>;
   /** Sub-fields for `object` fields. */
   objectFields?: Record<string, FieldConfig>;
+  /**
+   * For `slot` fields: lay children out side-by-side (`'horizontal'`) instead of
+   * stacked (`'vertical'`, the default). Drives both the editor's drop axis /
+   * indicator and the published layout.
+   */
+  orientation?: 'vertical' | 'horizontal';
+  /**
+   * For `text` / `textarea` fields: show the CMS data-binding button that inserts
+   * a `{{ data.field }}` reference. Defaults to `true`; set `false` to hide it.
+   */
+  bindable?: boolean;
   /** Custom render escape hatch for non-built-in field types. */
   render?: (props: any) => React.ReactNode;
   /** Allow host-specific extra props without breaking typing. */
@@ -169,6 +180,27 @@ export interface ComponentConfig {
 }
 
 /**
+ * A pre-built section template: a self-contained subtree (a root node plus the
+ * zones describing its children) that the "Bölüm Ekle" library inserts in one
+ * click, with fresh ids. Great for hero/feature/CTA layouts.
+ */
+export interface SectionTemplate {
+  /** Stable id (also used as the React key). */
+  id: string;
+  /** Display name in the template library. */
+  label: string;
+  /** Optional category bucket in the picker. */
+  category?: string;
+  /** Optional preview image URL shown on the card. */
+  thumbnail?: string;
+  /** The subtree to insert: a root node and (optionally) its descendant zones. */
+  payload: {
+    node: TecofNode;
+    zones?: Record<string, TecofNode[]>;
+  };
+}
+
+/**
  * Top-level studio configuration. Permissive index signature preserves
  * compatibility with existing host configs.
  */
@@ -177,6 +209,8 @@ export interface StudioConfig {
   components: Record<string, ComponentConfig>;
   /** Optional ordered category definitions for the component picker. */
   categories?: Record<string, { title?: string; components?: string[]; [key: string]: any }>;
+  /** Optional pre-built section templates shown in the "Bölüm Ekle" library. */
+  templates?: SectionTemplate[];
   /** Root-level fields and renderer (page wrapper). */
   root?: {
     fields?: Record<string, FieldConfig>;

@@ -15,17 +15,21 @@ export { LinkField, createLinkField } from './components/fields';
 export { ColorField, createColorField } from './components/fields';
 export { RepeaterField, createRepeaterField } from './components/fields';
 export { CmsCollectionField, createCmsCollectionField } from './components/fields';
+export { IconField, createIconField } from './components/fields';
 export { FieldErrorBoundary } from './components/fields';
 
 /* ─── API Client ─── */
 export { TecofApiClient } from './api';
 
 /* ─── Visual Style Editor / Tailwind ─── */
-// `getSafelist()` returns every Tailwind class the visual style editor can
-// emit — feed it into the host Tailwind config so production CSS always
-// contains the classes chosen in the editor. See docs/TAILWIND.md.
+// `getSafelist()` returns every Tailwind class the editor's *preset* options can
+// emit — feed it into the host Tailwind config so production CSS always contains
+// those classes. For *arbitrary* values (e.g. `p-[10px]`, `bg-[#ff0000]`) — which
+// live in saved JSON and are invisible to Tailwind's content scanner — run
+// `collectDocumentClasses(pageData)` over your saved pages at build time and add
+// the result to the safelist as well. See docs/TAILWIND.md.
 export { getSafelist, STYLE_CONTROLS } from './studio/style/tokens';
-export { compileStyles } from './studio/style/compileStyles';
+export { compileStyles, collectStyleClasses, collectDocumentClasses } from './studio/style/compileStyles';
 export { STYLES_PROP } from './studio/style/types';
 export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';
 

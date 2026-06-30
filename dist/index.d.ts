@@ -1,6 +1,6 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
-import { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
+import react__default, { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
 export { UnderConstruction } from './components/UnderConstruction.js';
 
 interface ThemeColors {
@@ -77,11 +77,6 @@ interface PageApiData {
     status?: string;
     [key: string]: any;
 }
-/** Option entry used by `select` / `radio` fields. */
-interface FieldOption {
-    label: string;
-    value: string | number | boolean;
-}
 /**
  * Configuration for a single editable field. Covers the built-in field types
  * plus a `render` escape hatch for fully custom fields. The `type` discriminant
@@ -93,13 +88,24 @@ interface FieldConfig {
     /** Human-readable label shown in the inspector. */
     label?: string;
     /** Options for `select` / `radio` fields. */
-    options?: FieldOption[];
+    options?: any;
     /** Default value applied when the field is empty. */
     defaultValue?: any;
     /** Sub-fields for `array` items. */
     arrayFields?: Record<string, FieldConfig>;
     /** Sub-fields for `object` fields. */
     objectFields?: Record<string, FieldConfig>;
+    /**
+     * For `slot` fields: lay children out side-by-side (`'horizontal'`) instead of
+     * stacked (`'vertical'`, the default). Drives both the editor's drop axis /
+     * indicator and the published layout.
+     */
+    orientation?: 'vertical' | 'horizontal';
+    /**
+     * For `text` / `textarea` fields: show the CMS data-binding button that inserts
+     * a `{{ data.field }}` reference. Defaults to `true`; set `false` to hide it.
+     */
+    bindable?: boolean;
     /** Custom render escape hatch for non-built-in field types. */
     render?: (props: any) => React.ReactNode;
     /** Allow host-specific extra props without breaking typing. */
@@ -132,6 +138,26 @@ interface ComponentConfig {
     [key: string]: any;
 }
 /**
+ * A pre-built section template: a self-contained subtree (a root node plus the
+ * zones describing its children) that the "Bölüm Ekle" library inserts in one
+ * click, with fresh ids. Great for hero/feature/CTA layouts.
+ */
+interface SectionTemplate {
+    /** Stable id (also used as the React key). */
+    id: string;
+    /** Display name in the template library. */
+    label: string;
+    /** Optional category bucket in the picker. */
+    category?: string;
+    /** Optional preview image URL shown on the card. */
+    thumbnail?: string;
+    /** The subtree to insert: a root node and (optionally) its descendant zones. */
+    payload: {
+        node: TecofNode;
+        zones?: Record<string, TecofNode[]>;
+    };
+}
+/**
  * Top-level studio configuration. Permissive index signature preserves
  * compatibility with existing host configs.
  */
@@ -144,6 +170,8 @@ interface StudioConfig {
         components?: string[];
         [key: string]: any;
     }>;
+    /** Optional pre-built section templates shown in the "Bölüm Ekle" library. */
+    templates?: SectionTemplate[];
     /** Root-level fields and renderer (page wrapper). */
     root?: {
         fields?: Record<string, FieldConfig>;
@@ -238,6 +266,12 @@ interface LocalizedLinkFieldValue {
     code: string;
     value: LinkFieldValue;
 }
+interface TecofNode {
+    type: string;
+    props: {
+        id: string;
+    } & Record<string, any>;
+}
 
 /**
  * Tecof API Client — handles communication with the Tecof backend
@@ -321,6 +355,18 @@ declare class TecofApiClient {
         sort?: 'newest' | 'oldest' | 'custom';
         locale?: string;
     }): Promise<ApiResponse<any>>;
+    /**
+     * Fetch all global/shared components for the merchant/theme.
+     */
+    getSharedComponents(): Promise<ApiResponse<any>>;
+    /**
+     * Create a new global/shared component.
+     */
+    createSharedComponent(name: string, type: string, props: any): Promise<ApiResponse<any>>;
+    /**
+     * Update a global/shared component's props/data.
+     */
+    updateSharedComponent(id: string, name: string, type: string, props: any): Promise<ApiResponse<any>>;
     /** CDN base URL (defaults to apiUrl if not set) */
     get cdnUrl(): string;
 }
@@ -648,9 +694,11 @@ interface ColorFieldOptions {
     placeholder?: string;
     /** Show reset button */
     showReset?: boolean;
+    /** Quick-pick swatches shown in the popover (hex strings). */
+    swatches?: string[];
 }
 declare const ColorField: {
-    ({ value, onChange, readOnly, showOpacity, defaultColor, placeholder, showReset, }: ColorFieldProps & ColorFieldOptions): react_jsx_runtime.JSX.Element;
+    ({ value, onChange, readOnly, showOpacity, defaultColor, placeholder, showReset, swatches, }: ColorFieldProps & ColorFieldOptions): react_jsx_runtime.JSX.Element;
     displayName: string;
 };
 /**
@@ -666,6 +714,7 @@ declare const ColorField: {
  *     label: 'Metin Rengi',
  *     showOpacity: true,
  *     defaultColor: '#18181b',
+ *     swatches: ['#18181b', '#74b500', '#ffffff'],
  *   }),
  * }
  * ```
@@ -776,6 +825,32 @@ declare const createCmsCollectionField: (options?: CmsCollectionFieldOptions) =>
     render: ({ value, onChange, readOnly, field, name, id }: CmsCollectionFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
+interface IconFieldProps {
+    field: any;
+    name: string;
+    id: string;
+    value: string;
+    onChange: (value: string) => void;
+    readOnly?: boolean;
+}
+interface IconFieldOptions {
+    /** Field label displayed in the Puck sidebar */
+    label?: string;
+    /** Icon displayed next to the label (React element, e.g. Lucide icon) */
+    labelIcon?: react__default.ReactElement;
+    /** Whether this field is visible in the sidebar */
+    visible?: boolean;
+}
+declare const IconField: ({ value, onChange, readOnly }: IconFieldProps) => react_jsx_runtime.JSX.Element;
+declare const createIconField: (options?: IconFieldOptions) => {
+    type: "custom";
+    _fieldType: "icon";
+    label: string | undefined;
+    labelIcon: react__default.ReactElement<unknown, string | react__default.JSXElementConstructor<any>> | undefined;
+    visible: boolean | undefined;
+    render: ({ value, onChange, readOnly, field, name, id }: IconFieldProps) => react_jsx_runtime.JSX.Element;
+};
+
 interface FieldErrorBoundaryProps {
     /** The field name (for error reporting) */
     fieldName?: string;
@@ -806,7 +881,7 @@ declare class FieldErrorBoundary extends Component<FieldErrorBoundaryProps, Fiel
     static getDerivedStateFromError(error: Error): FieldErrorBoundaryState;
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
     handleRetry: () => void;
-    render(): string | number | bigint | boolean | react_jsx_runtime.JSX.Element | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined;
+    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | react_jsx_runtime.JSX.Element | null | undefined;
 }
 
 /**
@@ -878,6 +953,15 @@ type StateVariant = 'hover' | 'focus' | 'active';
  * control's `toClass` compiles them to Tailwind arbitrary syntax (`p-[10px]`).
  */
 type StyleProps = Record<string, string | undefined>;
+/**
+ * Interaction-state layers, keyed by either:
+ *   - a bare state variant (`'hover'`)            → applies at the base breakpoint
+ *   - a `${breakpoint}:${state}` key (`'md:hover'`) → applies only at that breakpoint
+ *
+ * Bare keys are the original (back-compatible) encoding; prefixed keys add
+ * responsive-state support (e.g. a hover style that only kicks in from `md` up).
+ */
+type StateLayers = Record<string, StyleProps>;
 /** Full style object stored on a node. */
 interface NodeStyles {
     base?: StyleProps;
@@ -885,7 +969,7 @@ interface NodeStyles {
     md?: StyleProps;
     lg?: StyleProps;
     xl?: StyleProps;
-    states?: Partial<Record<StateVariant, StyleProps>>;
+    states?: StateLayers;
 }
 /** The prop key under which a node's structured styles live. */
 declare const STYLES_PROP = "_tecofStyles";
@@ -900,6 +984,36 @@ declare const STYLES_PROP = "_tecofStyles";
  *   → "p-4 bg-primary-600 md:p-8 hover:bg-primary-700"
  */
 declare function compileStyles(styles?: NodeStyles | null): string;
+/**
+ * Every Tailwind class a single NodeStyles object compiles to — presets AND
+ * arbitrary (custom) values. Use this to enumerate the exact classes a saved
+ * node relies on.
+ */
+declare function collectStyleClasses(styles?: NodeStyles | null): string[];
+/** Minimal document shape consumed by {@link collectDocumentClasses}. */
+interface StyledDocLike {
+    root?: {
+        props?: Record<string, any>;
+    };
+    content?: Array<{
+        props?: Record<string, any>;
+    }>;
+    zones?: Record<string, Array<{
+        props?: Record<string, any>;
+    }>>;
+}
+/**
+ * Walks a Tecof document (root + content + every zone) and returns the
+ * de-duplicated set of all style classes used by any node.
+ *
+ * Why this exists: `getSafelist()` only covers the editor's *preset* options, so
+ * arbitrary values such as `p-[10px]` / `bg-[#ff0000]` — which live inside the
+ * saved JSON and are invisible to Tailwind's content scanner — would otherwise
+ * never get CSS generated in production. Run this over your saved pages at build
+ * time (or persist its output beside each page) and feed the result into the
+ * Tailwind `safelist` so those classes always exist in the published stylesheet.
+ */
+declare function collectDocumentClasses(doc?: StyledDocLike | null): string[];
 
 declare function hexToHsl(hex: string): HSL;
 declare function hslToHex(h: number, s: number, l: number): string;
@@ -909,4 +1023,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type NodeStyles, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type NodeStyles, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

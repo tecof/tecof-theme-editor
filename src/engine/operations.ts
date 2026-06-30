@@ -16,6 +16,35 @@ export interface ClipboardPayload {
  * All these functions are intended to be used with Immer, so they mutate the `draft` document directly.
  */
 
+function extractDefaultSlots(draft: TecofDocument, node: TecofNode) {
+  const parentId = node.props.id;
+  if (!parentId) return;
+
+  for (const [key, value] of Object.entries(node.props)) {
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      value.every(
+        (item) => item && typeof item === "object" && "type" in item && "props" in item
+      )
+    ) {
+      const zoneKey = `${parentId}:${key}`;
+      const remappedItems: TecofNode[] = [];
+
+      for (const item of value) {
+        const clonedItem = JSON.parse(JSON.stringify(item)) as TecofNode;
+        clonedItem.props.id = generateId();
+
+        extractDefaultSlots(draft, clonedItem);
+        remappedItems.push(clonedItem);
+      }
+
+      draft.zones[zoneKey] = remappedItems;
+      node.props[key] = [];
+    }
+  }
+}
+
 export const insertNode = (
   draft: TecofDocument,
   node: TecofNode,
@@ -26,6 +55,9 @@ export const insertNode = (
   if (!node.props.id) {
     node.props.id = generateId();
   }
+
+  // Extract any default slot contents recursively
+  extractDefaultSlots(draft, node);
 
   let list = targetZoneKey ? draft.zones[targetZoneKey] : draft.content;
   if (!list) {
@@ -45,7 +77,7 @@ export const removeNode = (draft: TecofDocument, id: string) => {
 
   const { path } = result;
   const list = path.zoneKey ? draft.zones[path.zoneKey] : draft.content;
-  
+
   if (list) {
     list.splice(path.index, 1);
   }
@@ -104,7 +136,7 @@ export const duplicateNode = (draft: TecofDocument, id: string) => {
   if (!result) return;
 
   const { node, path } = result;
-  
+
   const { remappedNode, newZones } = remapNodeIds(node, draft.zones);
 
   const targetList = path.zoneKey ? draft.zones[path.zoneKey] : draft.content;

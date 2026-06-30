@@ -1,7 +1,8 @@
 'use strict';
 
-var chunkXHYMM3BE_js = require('./chunk-XHYMM3BE.js');
-var chunkTI5PY4Z5_js = require('./chunk-TI5PY4Z5.js');
+var chunkUXHVAOSV_js = require('./chunk-UXHVAOSV.js');
+var chunkEC7VNWDF_js = require('./chunk-EC7VNWDF.js');
+require('./chunk-PZ5AY32C.js');
 var React = require('react');
 var jsxRuntime = require('react/jsx-runtime');
 
@@ -17525,38 +17526,40 @@ var getFileExtension = (filename) => {
   const parts = filename.split(".");
   return parts.length > 1 ? (parts.pop() || "").toUpperCase() : "";
 };
-var formatBytes = (bytes, decimals = 1) => {
-  if (!bytes || bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i2 = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i2)).toFixed(decimals)) + " " + sizes[i2];
-};
-var FileItemRenderer = ({
+var MediaTile = ({
   file: file2,
   onRemove,
-  cdnUrl,
   readOnly
 }) => {
   const ext = getFileExtension(file2.name);
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-item", children: [
-    file2.type === "image/reference" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-icon is-reference", children: /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Code, { size: 16 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
-      chunkTI5PY4Z5_js.TecofPicture,
-      {
-        data: file2,
-        alt: file2.meta?.originalName || file2.name,
-        size: "thumbnail",
-        className: "tecof-upload-file-thumb"
-      }
-    ) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-icon", children: /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.File, { size: 16 }) }),
-    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-info", children: [
-      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-file-name", title: file2.meta?.originalName || file2.name, children: file2.meta?.originalName || file2.name }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-meta", children: [
-        ext && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-file-badge", children: ext }),
-        file2.size > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-file-size", children: formatBytes(file2.size) })
-      ] })
+  const displayName = file2.meta?.originalName || file2.name;
+  const isReference = file2.type === "image/reference";
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile", title: displayName, children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-preview", children: [
+      isReference ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-tile-ref", children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Code, { size: 18 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+        chunkEC7VNWDF_js.TecofPicture,
+        {
+          data: file2,
+          alt: displayName,
+          size: "thumbnail",
+          className: "tecof-media-tile-img"
+        }
+      ) : /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-file", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.File, { size: 20 }),
+        ext && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-media-tile-ext", children: ext })
+      ] }),
+      !readOnly && onRemove && /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          className: "tecof-media-tile-remove",
+          onClick: onRemove,
+          title: "Kald\u0131r",
+          children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.X, { size: 13 })
+        }
+      )
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-file-actions", children: !readOnly && onRemove && /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", className: "tecof-upload-action-btn tecof-upload-action-btn-danger", onClick: onRemove, title: "Kald\u0131r", children: /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Trash2, { size: 13 }) }) })
+    /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-media-tile-caption", children: displayName })
   ] });
 };
 var FILEPOND_LABELS = {
@@ -17656,7 +17659,6 @@ var UploadFieldImpl = ({
   maxTotalFileSize = "200MB",
   folder = "/",
   readOnly,
-  showUploadedFiles = false,
   imagePreviewHeight = 256,
   allowReorder = true,
   imageCompressionEnabled = true,
@@ -17670,12 +17672,9 @@ var UploadFieldImpl = ({
   } else if (rawValue && typeof rawValue === "object") {
     value = [rawValue];
   }
-  const { apiUrl, secretKey, apiClient } = chunkTI5PY4Z5_js.useTecof();
-  const cdnUrl = apiClient.cdnUrl;
+  const { apiUrl, secretKey } = chunkEC7VNWDF_js.useTecof();
   const [filesForPond, setFilesForPond] = React.useState([]);
-  const [showPond, setShowPond] = React.useState(false);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [showRefInput, setShowRefInput] = React.useState(false);
   const [refCode, setRefCode] = React.useState("{{ data. }}");
   const sourceToIdRef = React.useRef(/* @__PURE__ */ new Map());
   const compressFile = React.useCallback(async (file2) => {
@@ -17700,10 +17699,8 @@ var UploadFieldImpl = ({
       }
       const updated = allowMultiple ? [...value, fileMeta] : [fileMeta];
       onChange(updated);
-      setTimeout(() => {
-        setFilesForPond([]);
-        setShowPond(false);
-      }, 1e3);
+      setTimeout(() => setFilesForPond([]), 600);
+      if (!allowMultiple) setDrawerOpen(false);
     } catch (e3) {
       console.error("FilePond upload parse error:", e3);
     }
@@ -17730,8 +17727,8 @@ var UploadFieldImpl = ({
     };
     const updated = allowMultiple ? [...value, refFile] : [refFile];
     onChange(updated);
-    setShowRefInput(false);
     setRefCode("{{ data. }}");
+    if (!allowMultiple) setDrawerOpen(false);
   }, [refCode, allowMultiple, value, onChange]);
   const toggleGalleryFile = React.useCallback((file2) => {
     if (allowMultiple) {
@@ -17805,66 +17802,38 @@ var UploadFieldImpl = ({
     }
   };
   const canAddMore = allowMultiple ? value.length < maxFiles : value.length === 0;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-container", children: [
-    value.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-file-list", children: [
-      showUploadedFiles && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-uploaded-header", children: [
-        /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-uploaded-label", children: "Y\xFCklenen Dosyalar" }),
-        /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-count-badge", children: value.length })
-      ] }),
-      value.map((file2, idx) => /* @__PURE__ */ jsxRuntime.jsx(
-        FileItemRenderer,
-        {
-          file: file2,
-          cdnUrl,
-          readOnly,
-          onRemove: readOnly ? void 0 : () => handleRemove(idx)
-        },
-        file2._id || idx
-      ))
-    ] }),
-    value.length === 0 && !readOnly && canAddMore && !showPond && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "flex flex-col gap-2", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs(
-        "div",
-        {
-          className: "tecof-upload-empty-state",
-          onClick: () => setDrawerOpen(true),
-          children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.ImagePlus, { size: 16 }) }),
-            /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-title", children: "Dosya ekleyin" }),
-            /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-desc", children: "Medya k\xFCt\xFCphanesinden se\xE7in veya yeni y\xFCkleyin" })
-          ]
-        }
-      ),
-      !showRefInput && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-main-actions", children: [
-        /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
-          /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Code, { size: 13 }),
-          " Referans Gir"
-        ] }),
-        /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
-          /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Upload, { size: 13 }),
-          " Yeni Y\xFCkle"
-        ] })
-      ] })
-    ] }),
-    !readOnly && canAddMore && !showPond && value.length > 0 && !showRefInput && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-main-actions", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setShowRefInput(true), children: [
-        /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Code, { size: 13 }),
-        " Referans"
-      ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-secondary", onClick: () => setDrawerOpen(true), children: [
-        /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.FolderOpen, { size: 13 }),
-        " K\xFCt\xFCphane"
-      ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("button", { type: "button", className: "tecof-upload-btn-primary", onClick: () => setShowPond(true), children: [
-        /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Upload, { size: 13 }),
-        " Y\xFCkle"
-      ] })
-    ] }),
-    showRefInput && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-ref-section", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-ref-header", children: [
-        /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-upload-ref-title", children: "Dinamik CMS De\u011Fi\u015Fkeni" }),
-        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: () => setShowRefInput(false), className: "tecof-upload-ref-close", title: "Kapat", children: /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.X, { size: 12 }) })
-      ] }),
+  const uploadTab = {
+    id: "upload",
+    label: "Y\xFCkle",
+    icon: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Upload, { size: 14 }),
+    render: () => /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-upload-panel", children: /* @__PURE__ */ jsxRuntime.jsx(
+      FilePond,
+      {
+        files: filesForPond,
+        onupdatefiles: setFilesForPond,
+        onprocessfile: handlePondProcess,
+        allowMultiple,
+        maxFiles: maxFiles - value.length,
+        maxFileSize,
+        maxTotalFileSize,
+        acceptedFileTypes: acceptedTypes,
+        allowReorder,
+        imagePreviewHeight,
+        imageResizeMode: "contain",
+        imageEditEditor: create$12(DOKA_LABELS),
+        server: serverConfig,
+        name: "files",
+        credits: false,
+        ...FILEPOND_LABELS
+      }
+    ) })
+  };
+  const referenceTab = {
+    id: "reference",
+    label: "Referans",
+    icon: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Code, { size: 14 }),
+    render: () => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-ref-panel", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-media-ref-desc", children: "CMS koleksiyonundan dinamik bir g\xF6rsel de\u011Fi\u015Fkeni ba\u011Flay\u0131n." }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-ref-row", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "input",
@@ -17874,7 +17843,6 @@ var UploadFieldImpl = ({
             onChange: (e3) => setRefCode(e3.target.value),
             placeholder: "{{ data. }}",
             className: "tecof-upload-ref-input",
-            autoFocus: true,
             onKeyDown: (e3) => {
               if (e3.key === "Enter") {
                 e3.preventDefault();
@@ -17883,57 +17851,36 @@ var UploadFieldImpl = ({
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          "button",
-          {
-            type: "button",
-            onClick: handleAddRef,
-            className: "tecof-upload-ref-add",
-            children: "Ekle"
-          }
-        )
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: handleAddRef, className: "tecof-upload-ref-add", children: "Ekle" })
       ] })
-    ] }),
-    !readOnly && showPond && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-pond-section", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-pond-header", children: [
-        /* @__PURE__ */ jsxRuntime.jsxs("p", { className: "tecof-upload-pond-header-title", children: [
-          /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.Upload, { size: 14 }),
-          " Dosya Y\xFCkle"
-        ] }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          "button",
-          {
-            type: "button",
-            className: "tecof-upload-pond-close-btn",
-            onClick: () => setShowPond(false),
-            children: /* @__PURE__ */ jsxRuntime.jsx(chunkTI5PY4Z5_js.X, { size: 14 })
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-pond-body", children: /* @__PURE__ */ jsxRuntime.jsx(
-        FilePond,
+    ] })
+  };
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-container", children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-grid", children: [
+      value.map((file2, idx) => /* @__PURE__ */ jsxRuntime.jsx(
+        MediaTile,
         {
-          files: filesForPond,
-          onupdatefiles: setFilesForPond,
-          onprocessfile: handlePondProcess,
-          allowMultiple,
-          maxFiles: maxFiles - value.length,
-          maxFileSize,
-          maxTotalFileSize,
-          acceptedFileTypes: acceptedTypes,
-          allowReorder,
-          imagePreviewHeight,
-          imageResizeMode: "contain",
-          imageEditEditor: create$12(DOKA_LABELS),
-          server: serverConfig,
-          name: "files",
-          credits: false,
-          ...FILEPOND_LABELS
+          file: file2,
+          readOnly,
+          onRemove: readOnly ? void 0 : () => handleRemove(idx)
+        },
+        file2._id || idx
+      )),
+      !readOnly && canAddMore && /* @__PURE__ */ jsxRuntime.jsxs(
+        "button",
+        {
+          type: "button",
+          className: `tecof-media-add-tile${value.length === 0 ? " is-empty" : ""}`,
+          onClick: () => setDrawerOpen(true),
+          children: [
+            /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.ImagePlus, { size: value.length === 0 ? 22 : 18 }),
+            /* @__PURE__ */ jsxRuntime.jsx("span", { children: value.length === 0 ? "Medya ekle" : "Ekle" })
+          ]
         }
-      ) })
+      )
     ] }),
     /* @__PURE__ */ jsxRuntime.jsx(
-      chunkXHYMM3BE_js.MediaDrawer,
+      chunkUXHVAOSV_js.MediaDrawer,
       {
         open: drawerOpen,
         onOpenChange: setDrawerOpen,
@@ -17941,7 +17888,8 @@ var UploadFieldImpl = ({
         selectedIds: value.map((v) => v._id ?? ""),
         allowMultiple,
         filterImages: acceptedTypes.length > 0 && acceptedTypes.every((t2) => t2.startsWith("image/")),
-        title: "Medya K\xFCt\xFCphanesi"
+        title: "Medya",
+        extraTabs: readOnly ? [] : [uploadTab, referenceTab]
       }
     )
   ] });
@@ -18030,5 +17978,5 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
 */
 
 module.exports = UploadField_impl_default;
-//# sourceMappingURL=UploadField.impl-Z6H7EWDE.js.map
-//# sourceMappingURL=UploadField.impl-Z6H7EWDE.js.map
+//# sourceMappingURL=UploadField.impl-WGITMXGV.js.map
+//# sourceMappingURL=UploadField.impl-WGITMXGV.js.map

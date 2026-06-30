@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { PanelLeft, PanelRight } from 'lucide-react';
 import { useEditorStore } from '../engine/store';
 import { useUiStore } from './uiStore';
+import { findNodeById } from '../engine/zones';
+import { CommandPalette } from './command/CommandPalette';
+import { ThemeVars } from './theme/ThemeVars';
 import { parseDocument, serializeDocument } from '../engine/document';
 import { StudioContext } from './context';
 import { LanguageProvider } from './language/LanguageContext';
@@ -224,8 +227,27 @@ export const TecofStudio = ({
       const selectedIds = useEditorStore.getState().selection.selectedIds;
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
 
-      // Escape -> Deselect
+      // Command palette toggle — handled before the input guard so it opens/closes
+      // from anywhere, including while typing in a field.
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        useUiStore.getState().toggleCommandPalette();
+        return;
+      }
+
+      // Save
+      if (isCmdOrCtrl && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSaveDraft();
+        return;
+      }
+
+      // Escape -> close the palette first, otherwise deselect.
       if (e.key === 'Escape') {
+        if (useUiStore.getState().commandPaletteOpen) {
+          useUiStore.getState().setCommandPaletteOpen(false);
+          return;
+        }
         useEditorStore.getState().selectNode(null);
         if (isEmbedded) {
           postToHost('puck:itemDeselected');
@@ -252,6 +274,29 @@ export const TecofStudio = ({
       // Block editor actions (incl. clipboard) if input is focused, so the
       // browser's native copy/cut/paste keeps working inside fields/inline-edit.
       if (isInput()) return;
+
+      // Arrow keys -> move selection to the previous/next sibling in the same
+      // list. Up/Left = previous, Down/Right = next (works for both column and
+      // row layouts, since either pair walks the sibling order).
+      if (
+        !isCmdOrCtrl &&
+        selectedId &&
+        (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')
+      ) {
+        const doc = useEditorStore.getState().document;
+        const res = findNodeById(doc, selectedId);
+        if (res) {
+          const { zoneKey, index } = res.path;
+          const list = zoneKey ? doc.zones[zoneKey] : doc.content;
+          const dir = e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 1;
+          const sibling = list?.[index + dir];
+          if (sibling) {
+            e.preventDefault();
+            useEditorStore.getState().selectNode(sibling.props.id);
+          }
+        }
+        return;
+      }
 
       // Copy / Cut / Paste
       if (isCmdOrCtrl && e.key.toLowerCase() === 'c' && selectedId) {
@@ -289,7 +334,7 @@ export const TecofStudio = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [undo, redo, isEmbedded]);
+  }, [undo, redo, isEmbedded, handleSaveDraft]);
 
   // 5. Context Value
   const studioContextValue = useMemo(() => ({
@@ -330,6 +375,9 @@ export const TecofStudio = ({
               {saveStatus === 'error' ? 'Kaydedilemedi' : 'Kaydediliyor...'}
             </div>
           )}
+
+          <CommandPalette onSave={handleSaveDraft} />
+          <ThemeVars />
         </div>
       </LanguageProvider>
     </StudioContext.Provider>

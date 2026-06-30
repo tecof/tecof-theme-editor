@@ -24,6 +24,16 @@ export type StateVariant = 'hover' | 'focus' | 'active';
  */
 export type StyleProps = Record<string, string | undefined>;
 
+/**
+ * Interaction-state layers, keyed by either:
+ *   - a bare state variant (`'hover'`)            → applies at the base breakpoint
+ *   - a `${breakpoint}:${state}` key (`'md:hover'`) → applies only at that breakpoint
+ *
+ * Bare keys are the original (back-compatible) encoding; prefixed keys add
+ * responsive-state support (e.g. a hover style that only kicks in from `md` up).
+ */
+export type StateLayers = Record<string, StyleProps>;
+
 /** Full style object stored on a node. */
 export interface NodeStyles {
   base?: StyleProps;
@@ -31,7 +41,7 @@ export interface NodeStyles {
   md?: StyleProps;
   lg?: StyleProps;
   xl?: StyleProps;
-  states?: Partial<Record<StateVariant, StyleProps>>;
+  states?: StateLayers;
 }
 
 /** The prop key under which a node's structured styles live. */

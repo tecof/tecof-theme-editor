@@ -4,11 +4,18 @@ import { useUiStore } from '../uiStore';
 import { getBreadcrumbs, getParentId, findNodeById } from '../../engine/zones';
 import { ArrowUp, ArrowDown, Copy, Trash2, ChevronUp } from 'lucide-react';
 
+/** Resolved padding/margin (px) for the spacing overlay. */
+interface BoxModel {
+  mt: number; mr: number; mb: number; ml: number;
+  pt: number; pr: number; pb: number; pl: number;
+}
+
 interface Coords {
   top: number;
   left: number;
   width: number;
   height: number;
+  box?: BoxModel;
 }
 
 const getOutlineStyle = (coords: Coords) =>
@@ -50,11 +57,25 @@ const useOverlayCoords = (
       const iframeRect = iframeEl.getBoundingClientRect();
       const containerRect = containerEl.getBoundingClientRect();
 
+      // Resolved padding/margin for the spacing overlay (read from the iframe's
+      // own window so computed values are correct).
+      let box: BoxModel | undefined;
+      const win = iframeEl.contentWindow;
+      if (win) {
+        const cs = win.getComputedStyle(element);
+        const num = (v: string) => parseFloat(v) || 0;
+        box = {
+          mt: num(cs.marginTop), mr: num(cs.marginRight), mb: num(cs.marginBottom), ml: num(cs.marginLeft),
+          pt: num(cs.paddingTop), pr: num(cs.paddingRight), pb: num(cs.paddingBottom), pl: num(cs.paddingLeft),
+        };
+      }
+
       setCoords({
         top: rect.top + iframeRect.top - containerRect.top,
         left: rect.left + iframeRect.left - containerRect.left,
         width: rect.width,
         height: rect.height,
+        box,
       });
 
       // Bind resize observer to element itself if not already bound
@@ -113,6 +134,40 @@ const SecondaryOutline = ({
       className="tecof-outline is-selected is-multi"
       style={getOutlineStyle(coords)}
     />
+  );
+};
+
+/**
+ * Devtools-style spacing visualization: padding drawn inside the element (green)
+ * and margin outside it (amber). Shown on hover so the user can read an element's
+ * box model at a glance while laying out the page.
+ */
+const SpacingBands = ({ coords }: { coords: Coords }) => {
+  const b = coords.box;
+  if (!b) return null;
+  const { top, left, width, height } = coords;
+  const innerH = Math.max(0, height - b.pt - b.pb);
+  const bands: { cls: string; style: React.CSSProperties }[] = [];
+  const push = (cls: string, style: React.CSSProperties) => bands.push({ cls, style });
+
+  // Margin — outside the border box.
+  if (b.mt > 0) push('tecof-space-margin', { top: top - b.mt, left, width, height: b.mt });
+  if (b.mb > 0) push('tecof-space-margin', { top: top + height, left, width, height: b.mb });
+  if (b.ml > 0) push('tecof-space-margin', { top, left: left - b.ml, width: b.ml, height });
+  if (b.mr > 0) push('tecof-space-margin', { top, left: left + width, width: b.mr, height });
+
+  // Padding — inside the border box (sides exclude the top/bottom strips).
+  if (b.pt > 0) push('tecof-space-padding', { top, left, width, height: b.pt });
+  if (b.pb > 0) push('tecof-space-padding', { top: top + height - b.pb, left, width, height: b.pb });
+  if (b.pl > 0) push('tecof-space-padding', { top: top + b.pt, left, width: b.pl, height: innerH });
+  if (b.pr > 0) push('tecof-space-padding', { top: top + b.pt, left: left + width - b.pr, width: b.pr, height: innerH });
+
+  return (
+    <>
+      {bands.map((band, i) => (
+        <div key={i} className={band.cls} style={band.style} />
+      ))}
+    </>
   );
 };
 
@@ -187,12 +242,15 @@ export const SelectionOverlay = () => {
       ref={containerRef}
       className="tecof-overlay"
     >
-      {/* Hover Highlight */}
+      {/* Hover Highlight + spacing (padding/margin) visualization */}
       {hoveredCoords && (
-        <div
-          className="tecof-outline is-hover"
-          style={getOutlineStyle(hoveredCoords)}
-        />
+        <>
+          <SpacingBands coords={hoveredCoords} />
+          <div
+            className="tecof-outline is-hover"
+            style={getOutlineStyle(hoveredCoords)}
+          />
+        </>
       )}
 
       {/* Secondary selection outlines (every selected id except the primary).

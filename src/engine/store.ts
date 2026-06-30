@@ -141,6 +141,12 @@ interface EditorActions {
   copyNode: (id?: string) => void;
   cutNode: (id?: string) => void;
   pasteClipboard: (targetZoneKey?: string, index?: number) => void;
+  /**
+   * Inserts a self-contained payload (node + its descendant zones) with FRESH
+   * ids at the target — used by section templates / shared blocks. Selects the
+   * inserted root. One undo step.
+   */
+  insertPayload: (payload: ClipboardPayload, targetZoneKey?: string, index?: number) => void;
 
   // History
   undo: () => void;
@@ -415,6 +421,20 @@ export const useEditorStore = create<EditorStore>()(
         commit(state, (doc) => {
           const pasted = ops.pastePayload(doc, payload, zoneKey, insertIndex);
           newId = pasted.props.id;
+        });
+        if (newId) {
+          state.selection.selectedId = newId;
+          state.selection.selectedIds = [newId];
+        }
+      }),
+
+    insertPayload: (payload, targetZoneKey, index) =>
+      set((state) => {
+        if (!payload?.node) return;
+        let newId: string | null = null;
+        commit(state, (doc) => {
+          const inserted = ops.pastePayload(doc, payload, targetZoneKey, index);
+          newId = inserted.props.id;
         });
         if (newId) {
           state.selection.selectedId = newId;

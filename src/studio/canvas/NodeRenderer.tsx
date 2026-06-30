@@ -87,7 +87,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
 
   const { onDoubleClick } = useInlineEdit(node, locked);
 
-  const { position, onDragOver, onDragLeave, onDrop } = useDropTarget({
+  const { position, axis, onDragOver, onDragLeave, onDrop } = useDropTarget({
     zoneKey,
     positional: true,
     index,
@@ -133,7 +133,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   if (componentConfig.fields) {
     Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]: [string, any]) => {
       if (fieldDef && fieldDef.type === 'slot') {
-        componentProps[fieldName] = renderDropZone({ zone: fieldName });
+        componentProps[fieldName] = renderDropZone({ zone: fieldName, orientation: fieldDef.orientation });
       }
     });
   }
@@ -146,8 +146,11 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   return (
     <ParentNodeContext.Provider value={node.props.id}>
       <div className="tecof-node">
-        {position === 'top' && (
-          <div className="tecof-drop-line" />
+        {/* Single absolutely-positioned indicator; `axis` decides whether it's a
+            horizontal bar (column layout) or a vertical bar (row/grid layout),
+            and `position` which edge it hugs. */}
+        {position && (
+          <div className={`tecof-drop-indicator is-${axis} is-${position}`} />
         )}
         <div
           className={wrapperClassName}
@@ -177,9 +180,6 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             {componentConfig.render(componentProps)}
           </NodeErrorBoundary>
         </div>
-        {position === 'bottom' && (
-          <div className="tecof-drop-line" />
-        )}
       </div>
     </ParentNodeContext.Provider>
   );

@@ -14,6 +14,8 @@ interface BlockThumbProps {
   domain?: string;
   /** API client exposing `getComponentPreview`. May be undefined in some contexts. */
   apiClient?: TecofApiClient;
+  /** Whether to show the preview image inline inside the card. */
+  showPreview?: boolean;
   /** Click-to-add handler (existing behavior). */
   onAdd: (type: string) => void;
   /** Drag start handler (existing behavior). */
@@ -29,7 +31,7 @@ type PreviewState = 'idle' | 'loading' | 'loaded' | 'failed';
  *
  * Renders the existing text + icon button, enhanced with a lazily-loaded
  * preview thumbnail. The image is only fetched once the card scrolls into view
- * (via IntersectionObserver), and any in-flight work is ignored after unmount.
+ * (via IntersectionObserver), or when it is hovered, and any in-flight work is ignored after unmount.
  * On a null/error preview — or when no domain/apiClient is available — it falls
  * back to the plain text button, preserving all drag/click behavior.
  */
@@ -38,6 +40,7 @@ export const BlockThumb = ({
   label,
   domain,
   apiClient,
+  showPreview = false,
   onAdd,
   onDragStart,
   onDragEnd,
@@ -45,9 +48,13 @@ export const BlockThumb = ({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [state, setState] = useState<PreviewState>('idle');
   const [src, setSrc] = useState<string | null>(null);
+  const [hovered, setHovered] = useState(false);
 
   // Thumbnails are only possible when we have both a client and a domain.
   const canPreview = Boolean(apiClient && domain);
+
+  // Function to load the preview image
+  const loadPreview = useRef<() => void>(() => {});
 
   useEffect(() => {
     // No client/domain → stay in fallback (text button) forever.
@@ -61,6 +68,8 @@ export const BlockThumb = ({
 
     const load = () => {
       if (cancelled) return;
+      // Already loading or loaded
+      if (state !== 'idle') return;
       setState('loading');
       apiClient!
         .getComponentPreview(domain!, type)
@@ -78,32 +87,43 @@ export const BlockThumb = ({
         });
     };
 
-    // Lazy: only fetch once the card is actually visible. Fall back to an
-    // immediate load if IntersectionObserver is unavailable.
-    if (typeof IntersectionObserver !== 'undefined') {
-      observer = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((entry) => entry.isIntersecting)) {
-            observer?.disconnect();
-            observer = null;
-            load();
-          }
-        },
-        { rootMargin: '200px' }
-      );
-      observer.observe(el);
-    } else {
-      load();
+    loadPreview.current = load;
+
+    // If showPreview is true, lazy load via observer.
+    if (showPreview) {
+      if (typeof IntersectionObserver !== 'undefined') {
+        observer = new IntersectionObserver(
+          (entries) => {
+            if (entries.some((entry) => entry.isIntersecting)) {
+              observer?.disconnect();
+              observer = null;
+              load();
+            }
+          },
+          { rootMargin: '200px' }
+        );
+        observer.observe(el);
+      } else {
+        load();
+      }
     }
 
     return () => {
       cancelled = true;
       observer?.disconnect();
     };
-  }, [canPreview, apiClient, domain, type]);
+  }, [canPreview, apiClient, domain, type, showPreview, state]);
 
-  const showImage = state === 'loaded' && src;
-  const showSkeleton = canPreview && (state === 'idle' || state === 'loading');
+  // Load preview immediately if hovered
+  useEffect(() => {
+    if (hovered && state === 'idle') {
+      loadPreview.current();
+    }
+  }, [hovered, state]);
+
+  const showImage = showPreview && state === 'loaded' && src;
+  const showSkeleton = showPreview && canPreview && (state === 'idle' || state === 'loading');
+  const showHoverPopover = !showPreview && state === 'loaded' && src && hovered;
 
   return (
     <button
@@ -113,6 +133,8 @@ export const BlockThumb = ({
       draggable={true}
       onDragStart={(e) => onDragStart(e, type, label)}
       onDragEnd={onDragEnd}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className={`tecof-block-btn${showImage ? ' tecof-block-btn--thumb' : ''}`}
       title={`${label} ekle`}
     >
@@ -133,6 +155,19 @@ export const BlockThumb = ({
       ) : null}
       <span className="tecof-block-btn-label">{label}</span>
       <Plus size={14} className="tecof-block-btn-icon" />
+
+      {/* Popover hover preview */}
+      {showHoverPopover && (
+        <span className="tecof-block-popover">
+          <span className="tecof-block-popover-title">{label} Önizleme</span>
+          <img
+            src={src!}
+            alt={label}
+            className="tecof-block-popover-img"
+            draggable={false}
+          />
+        </span>
+      )}
     </button>
   );
 };

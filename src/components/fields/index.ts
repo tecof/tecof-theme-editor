@@ -22,6 +22,9 @@ export type { RepeaterFieldProps, RepeaterFieldOptions } from './RepeaterField';
 export { CmsCollectionField, createCmsCollectionField } from './CmsCollectionField';
 export type { CmsCollectionFieldProps, CmsCollectionFieldOptions, CmsCollectionFieldValue } from './CmsCollectionField';
 
+export { IconField, createIconField } from './IconField';
+export type { IconFieldProps, IconFieldOptions } from './IconField';
+
 export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';
 export { FieldLabel } from './FieldLabel';

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { MediaDrawer } from './MediaDrawer';
+import { MediaDrawer, type MediaDrawerTab } from './MediaDrawer';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
 import type { UploadedFile } from '../../types';
@@ -24,12 +24,10 @@ import imageCompression from 'browser-image-compression';
 
 // Icons and Helpers
 import {
-  FolderOpen,
   X,
   Upload,
   FileIcon,
   ImagePlus,
-  Trash2,
   Code,
 } from 'lucide-react';
 
@@ -77,63 +75,54 @@ const getFileExtension = (filename: string) => {
   return parts.length > 1 ? (parts.pop() || '').toUpperCase() : '';
 };
 
-const formatBytes = (bytes: number, decimals = 1): string => {
-  if (!bytes || bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
-};
+/* ─── MediaTile ─── */
 
-/* ─── FileItem Component ─── */
-
-const FileItemRenderer = ({
+/** A single selected media item, rendered as a visual preview tile. */
+const MediaTile = ({
   file,
   onRemove,
-  cdnUrl,
   readOnly,
 }: {
   file: UploadedFile;
   onRemove?: () => void;
-  cdnUrl: string;
   readOnly?: boolean;
 }) => {
   const ext = getFileExtension(file.name);
+  const displayName = file.meta?.originalName || file.name;
+  const isReference = file.type === 'image/reference';
 
   return (
-    <div className="tecof-upload-file-item">
-      {file.type === 'image/reference' ? (
-        <div className="tecof-upload-file-icon is-reference">
-          <Code size={16} />
-        </div>
-      ) : isImageType(file.type) ? (
-        <TecofPicture
-          data={file}
-          alt={file.meta?.originalName || file.name}
-          size="thumbnail"
-          className="tecof-upload-file-thumb"
-        />
-      ) : (
-        <div className="tecof-upload-file-icon">
-          <FileIcon size={16} />
-        </div>
-      )}
-      <div className="tecof-upload-file-info">
-        <p className="tecof-upload-file-name" title={file.meta?.originalName || file.name}>
-          {file.meta?.originalName || file.name}
-        </p>
-        <div className="tecof-upload-file-meta">
-          {ext && <span className="tecof-upload-file-badge">{ext}</span>}
-          {file.size > 0 && <span className="tecof-upload-file-size">{formatBytes(file.size)}</span>}
-        </div>
-      </div>
-      <div className="tecof-upload-file-actions">
+    <div className="tecof-media-tile" title={displayName}>
+      <div className="tecof-media-tile-preview">
+        {isReference ? (
+          <div className="tecof-media-tile-ref">
+            <Code size={18} />
+          </div>
+        ) : isImageType(file.type) ? (
+          <TecofPicture
+            data={file}
+            alt={displayName}
+            size="thumbnail"
+            className="tecof-media-tile-img"
+          />
+        ) : (
+          <div className="tecof-media-tile-file">
+            <FileIcon size={20} />
+            {ext && <span className="tecof-media-tile-ext">{ext}</span>}
+          </div>
+        )}
         {!readOnly && onRemove && (
-          <button type="button" className="tecof-upload-action-btn tecof-upload-action-btn-danger" onClick={onRemove} title="Kaldır">
-            <Trash2 size={13} />
+          <button
+            type="button"
+            className="tecof-media-tile-remove"
+            onClick={onRemove}
+            title="Kaldır"
+          >
+            <X size={13} />
           </button>
         )}
       </div>
+      <span className="tecof-media-tile-caption">{displayName}</span>
     </div>
   );
 };
@@ -241,6 +230,12 @@ const DOKA_LABELS = {
 
 /**
  * UploadFieldImpl — The heavy FilePond/Doka-backed implementation.
+ *
+ * Single entry point: selected media render as visual preview tiles plus an
+ * "add" tile that opens the media drawer. The drawer hosts three tabs —
+ * Kütüphane (library), Yükle (FilePond upload) and Referans (CMS variable) —
+ * so every media source lives behind one affordance.
+ *
  * Statically imports react-filepond, FilePond plugins, the Doka editor and
  * browser-image-compression; loaded lazily via the UploadField wrapper so it
  * stays out of the initial bundle chunk.
@@ -255,7 +250,6 @@ const UploadFieldImpl = ({
   maxTotalFileSize = '200MB',
   folder = '/',
   readOnly,
-  showUploadedFiles = false,
   imagePreviewHeight = 256,
   allowReorder = true,
   imageCompressionEnabled = true,
@@ -272,13 +266,10 @@ const UploadFieldImpl = ({
     value = [rawValue as UploadedFile];
   }
 
-  const { apiUrl, secretKey, apiClient } = useTecof();
-  const cdnUrl = apiClient.cdnUrl;
+  const { apiUrl, secretKey } = useTecof();
 
   const [filesForPond, setFilesForPond] = useState<any[]>([]);
-  const [showPond, setShowPond] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [showRefInput, setShowRefInput] = useState(false);
   const [refCode, setRefCode] = useState('{{ data. }}');
 
   // Source → _id tracking for edit/remove
@@ -320,11 +311,9 @@ const UploadFieldImpl = ({
       const updated = allowMultiple ? [...value, fileMeta] : [fileMeta];
       onChange(updated);
 
-      // Clear pond after successful upload
-      setTimeout(() => {
-        setFilesForPond([]);
-        setShowPond(false);
-      }, 1000);
+      // Clear pond after successful upload; close the drawer for single-select.
+      setTimeout(() => setFilesForPond([]), 600);
+      if (!allowMultiple) setDrawerOpen(false);
     } catch (e) {
       console.error('FilePond upload parse error:', e);
     }
@@ -349,20 +338,20 @@ const UploadFieldImpl = ({
 
   const handleAddRef = useCallback(() => {
     if (!refCode.trim()) return;
-    const refFile = {
+    const refFile: UploadedFile = {
       _id: `ref_${Date.now()}`,
       name: refCode.trim(),
       size: 0,
       type: 'image/reference',
-      meta: { originalName: refCode.trim(), isReference: true }
+      meta: { originalName: refCode.trim(), isReference: true },
     };
     const updated = allowMultiple ? [...value, refFile] : [refFile];
     onChange(updated);
-    setShowRefInput(false);
     setRefCode('{{ data. }}');
+    if (!allowMultiple) setDrawerOpen(false);
   }, [refCode, allowMultiple, value, onChange]);
 
-
+  /* ── Library Select Handler ── */
 
   const toggleGalleryFile = useCallback((file: UploadedFile) => {
     if (allowMultiple) {
@@ -452,149 +441,91 @@ const UploadFieldImpl = ({
 
   const canAddMore = allowMultiple ? value.length < maxFiles : value.length === 0;
 
+  /* ── Drawer Tabs ── */
 
+  const uploadTab: MediaDrawerTab = {
+    id: 'upload',
+    label: 'Yükle',
+    icon: <Upload size={14} />,
+    render: () => (
+      <div className="tecof-media-upload-panel">
+        <FilePond
+          files={filesForPond}
+          onupdatefiles={setFilesForPond}
+          onprocessfile={handlePondProcess}
+          allowMultiple={allowMultiple}
+          maxFiles={maxFiles - value.length}
+          maxFileSize={maxFileSize}
+          maxTotalFileSize={maxTotalFileSize}
+          acceptedFileTypes={acceptedTypes}
+          allowReorder={allowReorder}
+          imagePreviewHeight={imagePreviewHeight}
+          imageResizeMode="contain"
+          imageEditEditor={(create as any)(DOKA_LABELS)}
+          server={serverConfig}
+          name="files"
+          credits={false}
+          {...FILEPOND_LABELS}
+        />
+      </div>
+    ),
+  };
+
+  const referenceTab: MediaDrawerTab = {
+    id: 'reference',
+    label: 'Referans',
+    icon: <Code size={14} />,
+    render: () => (
+      <div className="tecof-media-ref-panel">
+        <p className="tecof-media-ref-desc">
+          CMS koleksiyonundan dinamik bir görsel değişkeni bağlayın.
+        </p>
+        <div className="tecof-upload-ref-row">
+          <input
+            type="text"
+            value={refCode}
+            onChange={(e) => setRefCode(e.target.value)}
+            placeholder="{{ data. }}"
+            className="tecof-upload-ref-input"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddRef();
+              }
+            }}
+          />
+          <button type="button" onClick={handleAddRef} className="tecof-upload-ref-add">
+            Ekle
+          </button>
+        </div>
+      </div>
+    ),
+  };
 
   return (
     <div className="tecof-upload-container">
+      <div className="tecof-media-grid">
+        {value.map((file, idx) => (
+          <MediaTile
+            key={file._id || idx}
+            file={file}
+            readOnly={readOnly}
+            onRemove={readOnly ? undefined : () => handleRemove(idx)}
+          />
+        ))}
 
-      {/* Selected Files List */}
-      {value.length > 0 && (
-        <div className="tecof-upload-file-list">
-          {showUploadedFiles && (
-            <div className="tecof-upload-uploaded-header">
-              <p className="tecof-upload-uploaded-label">Yüklenen Dosyalar</p>
-              <span className="tecof-upload-count-badge">{value.length}</span>
-            </div>
-          )}
-          {value.map((file, idx) => (
-            <FileItemRenderer
-              key={file._id || idx}
-              file={file}
-              cdnUrl={cdnUrl}
-              readOnly={readOnly}
-              onRemove={readOnly ? undefined : () => handleRemove(idx)}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Empty State (when no files and not in upload mode) */}
-      {value.length === 0 && !readOnly && canAddMore && !showPond && (
-        <div className="flex flex-col gap-2">
-          <div
-            className="tecof-upload-empty-state"
+        {!readOnly && canAddMore && (
+          <button
+            type="button"
+            className={`tecof-media-add-tile${value.length === 0 ? ' is-empty' : ''}`}
             onClick={() => setDrawerOpen(true)}
           >
-            <div className="tecof-upload-empty-icon">
-              <ImagePlus size={16} />
-            </div>
-            <p className="tecof-upload-empty-title">Dosya ekleyin</p>
-            <p className="tecof-upload-empty-desc">
-              Medya kütüphanesinden seçin veya yeni yükleyin
-            </p>
-          </div>
-          {!showRefInput && (
-            <div className="tecof-upload-main-actions">
-              <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
-                <Code size={13} /> Referans Gir
-              </button>
-              <button type="button" className="tecof-upload-btn-primary" onClick={() => setShowPond(true)}>
-                <Upload size={13} /> Yeni Yükle
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Action Buttons (when files are selected) */}
-      {!readOnly && canAddMore && !showPond && value.length > 0 && !showRefInput && (
-        <div className="tecof-upload-main-actions">
-          <button type="button" className="tecof-upload-btn-secondary" onClick={() => setShowRefInput(true)}>
-            <Code size={13} /> Referans
+            <ImagePlus size={value.length === 0 ? 22 : 18} />
+            <span>{value.length === 0 ? 'Medya ekle' : 'Ekle'}</span>
           </button>
-          <button type="button" className="tecof-upload-btn-secondary" onClick={() => setDrawerOpen(true)}>
-            <FolderOpen size={13} /> Kütüphane
-          </button>
-          <button type="button" className="tecof-upload-btn-primary" onClick={() => setShowPond(true)}>
-            <Upload size={13} /> Yükle
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Reference Code Input Mode */}
-      {showRefInput && (
-        <div className="tecof-upload-ref-section">
-          <div className="tecof-upload-ref-header">
-            <span className="tecof-upload-ref-title">Dinamik CMS Değişkeni</span>
-            <button type="button" onClick={() => setShowRefInput(false)} className="tecof-upload-ref-close" title="Kapat">
-              <X size={12} />
-            </button>
-          </div>
-          <div className="tecof-upload-ref-row">
-            <input
-              type="text"
-              value={refCode}
-              onChange={(e) => setRefCode(e.target.value)}
-              placeholder="{{ data. }}"
-              className="tecof-upload-ref-input"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddRef();
-                }
-              }}
-            />
-            <button
-              type="button"
-              onClick={handleAddRef}
-              className="tecof-upload-ref-add"
-            >
-              Ekle
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* FilePond Uploader */}
-      {!readOnly && showPond && (
-        <div className="tecof-upload-pond-section">
-          <div className="tecof-upload-pond-header">
-            <p className="tecof-upload-pond-header-title">
-              <Upload size={14} /> Dosya Yükle
-            </p>
-            <button
-              type="button"
-              className="tecof-upload-pond-close-btn"
-              onClick={() => setShowPond(false)}
-            >
-              <X size={14} />
-            </button>
-          </div>
-          <div className="tecof-upload-pond-body">
-            <FilePond
-              files={filesForPond}
-              onupdatefiles={setFilesForPond}
-              onprocessfile={handlePondProcess}
-              allowMultiple={allowMultiple}
-              maxFiles={maxFiles - value.length}
-              maxFileSize={maxFileSize}
-              maxTotalFileSize={maxTotalFileSize}
-              acceptedFileTypes={acceptedTypes}
-              allowReorder={allowReorder}
-              imagePreviewHeight={imagePreviewHeight}
-              imageResizeMode="contain"
-              imageEditEditor={(create as any)(DOKA_LABELS)}
-              server={serverConfig}
-              name="files"
-              credits={false}
-              {...FILEPOND_LABELS}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Media Drawer */}
       <MediaDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
@@ -602,9 +533,9 @@ const UploadFieldImpl = ({
         selectedIds={value.map(v => v._id ?? '')}
         allowMultiple={allowMultiple}
         filterImages={acceptedTypes.length > 0 && acceptedTypes.every(t => t.startsWith('image/'))}
-        title="Medya Kütüphanesi"
+        title="Medya"
+        extraTabs={readOnly ? [] : [uploadTab, referenceTab]}
       />
-
     </div>
   );
 };

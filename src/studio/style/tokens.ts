@@ -57,11 +57,40 @@ export const toArbitrary = (raw: string): string => `[${raw}]`;
 const SPACE = ['0', '1', '2', '3', '4', '5', '6', '8', '10', '12', '16', '20', '24'];
 const spaceOptions = (): StyleControlOption[] => SPACE.map((v) => ({ label: v, value: v }));
 
+/**
+ * Semantic theme colors. The host emits these as `--theme-color-*` CSS variables
+ * via `generateCSSVariables`, so each swatch preview reads the LIVE theme color
+ * and the stored token is an arbitrary value pointing at that same variable
+ * (`bg-[var(--theme-color-primary)]`). Because the set is finite, `getSafelist()`
+ * covers it automatically — no Tailwind `@theme` mapping required.
+ */
+const THEME_COLORS: { label: string; key: string }[] = [
+  { label: 'Tema · Ana renk', key: 'primary' },
+  { label: 'Tema · İkincil', key: 'secondary' },
+  { label: 'Tema · Vurgu', key: 'accent' },
+  { label: 'Tema · Arka plan', key: 'background' },
+  { label: 'Tema · Metin', key: 'foreground' },
+  { label: 'Tema · Soluk', key: 'muted' },
+  { label: 'Tema · Soluk metin', key: 'muted-foreground' },
+  { label: 'Tema · Kenarlık', key: 'border' },
+  { label: 'Tema · Kart', key: 'card' },
+  { label: 'Tema · Kart metin', key: 'card-foreground' },
+  { label: 'Tema · Uyarı', key: 'destructive' },
+];
+
+const THEME_COLOR_OPTIONS: StyleControlOption[] = THEME_COLORS.map(({ label, key }) => ({
+  label,
+  value: `[var(--theme-color-${key})]`,
+  swatch: `var(--theme-color-${key})`,
+}));
+
 const COLOR_OPTIONS: StyleControlOption[] = [
   { label: 'Yok', value: '' },
   { label: 'Şeffaf', value: 'transparent', swatch: 'transparent' },
   { label: 'Beyaz', value: 'white', swatch: '#ffffff' },
   { label: 'Siyah', value: 'black', swatch: '#000000' },
+  // Live theme colors (host --theme-color-* variables)
+  ...THEME_COLOR_OPTIONS,
   // Brand palette (Tailwind v4 @theme: --color-primary-*)
   ...['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'].map((s) => ({
     label: `Primary ${s}`,
@@ -112,6 +141,9 @@ export const STYLE_CONTROLS: StyleControl[] = [
     toClass: (v) => (v ? `items-${v}` : null) },
   { id: 'gap', label: 'Boşluk (gap)', group: 'layout', type: 'space',
     options: spaceOptions(), arbitraryPrefix: 'gap', toClass: withArbitrary('gap', (v) => `gap-${v}`) },
+  { id: 'alignSelf', label: 'Bireysel Hiza (self)', group: 'layout', type: 'select',
+    options: opts(['auto', 'start', 'center', 'end', 'stretch']),
+    toClass: (v) => (v ? `self-${v}` : null) },
 
   // Spacing — padding
   { id: 'p', label: 'Padding', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'p', toClass: withArbitrary('p', (v) => `p-${v}`) },
@@ -121,6 +153,15 @@ export const STYLE_CONTROLS: StyleControl[] = [
   { id: 'm', label: 'Margin', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'm', toClass: withArbitrary('m', (v) => `m-${v}`) },
   { id: 'mx', label: 'Margin X', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'mx', toClass: withArbitrary('mx', (v) => `mx-${v}`) },
   { id: 'my', label: 'Margin Y', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'my', toClass: withArbitrary('my', (v) => `my-${v}`) },
+  { id: 'marginAlign', label: 'Özel Hiza (margin)', group: 'spacing', type: 'select',
+    options: [
+      { label: '—', value: '' },
+      { label: 'Sola Yasla (ml-auto)', value: 'l-auto' },
+      { label: 'Sağa Yasla (mr-auto)', value: 'r-auto' },
+      { label: 'Yatay Merkez (mx-auto)', value: 'x-auto' },
+      { label: 'Merkez (m-auto)', value: 'auto' }
+    ],
+    toClass: (v) => (v ? (v === 'auto' ? 'm-auto' : v === 'l-auto' ? 'ml-auto' : v === 'r-auto' ? 'mr-auto' : 'mx-auto') : null) },
 
   // Sizing
   { id: 'w', label: 'Genişlik', group: 'sizing', type: 'select',
@@ -198,7 +239,15 @@ export const STATE_PREFIX: Record<string, string> = { hover: 'hover:', focus: 'f
  * contains the classes chosen in the editor.
  */
 export function getSafelist(): string[] {
-  const prefixes = ['', ...Object.values(BP_PREFIX).filter(Boolean), ...Object.values(STATE_PREFIX)];
+  // Every breakpoint × state combination the editor can emit, including
+  // responsive-state variants like `md:hover:` (breakpoint prefix first).
+  const bpPrefixes = ['', ...Object.values(BP_PREFIX).filter(Boolean)];
+  const statePrefixes = ['', ...Object.values(STATE_PREFIX)];
+  const prefixes = new Set<string>();
+  for (const bp of bpPrefixes) {
+    for (const state of statePrefixes) prefixes.add(bp + state);
+  }
+
   const set = new Set<string>();
   for (const control of STYLE_CONTROLS) {
     for (const opt of control.options) {

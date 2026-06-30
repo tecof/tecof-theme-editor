@@ -3,7 +3,7 @@ import { useStudio } from '../context';
 import { useEditorStore } from '../../engine/store';
 import { LayersTree } from './LayersTree';
 import { BlockThumb } from './BlockThumb';
-import { Layers, Grid, Search } from 'lucide-react';
+import { Layers, Grid, Search, Eye, EyeOff } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
 
@@ -47,6 +47,7 @@ export const LeftPanel = () => {
 
   const [activeTab, setActiveTab] = useState<'blocks' | 'layers'>('blocks');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showPreviews, setShowPreviews] = useState(false);
 
   // Domain for preview thumbnails (undefined → graceful text-only fallback).
   const domain = useMemo(
@@ -129,6 +130,16 @@ export const LeftPanel = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="tecof-search-input"
               />
+              {domain && apiClient && (
+                <button
+                  type="button"
+                  onClick={() => setShowPreviews(!showPreviews)}
+                  className={`tecof-search-preview-toggle${showPreviews ? ' is-active' : ''}`}
+                  title={showPreviews ? "Resim Önizlemelerini Kapat" : "Resim Önizlemelerini Aç"}
+                >
+                  {showPreviews ? <Eye size={13} /> : <EyeOff size={13} />}
+                </button>
+              )}
             </div>
 
             {/* List Categories */}
@@ -156,6 +167,7 @@ export const LeftPanel = () => {
                           label={label}
                           domain={domain}
                           apiClient={apiClient}
+                          showPreview={showPreviews}
                           onAdd={handleAddBlock}
                           onDragStart={handleBlockDragStart}
                           onDragEnd={endDrag}

@@ -12,6 +12,8 @@ interface UiState {
   mode: EditorMode;
   leftPanelOpen: boolean;
   rightPanelOpen: boolean;
+  /** Whether the Cmd/Ctrl+K command palette is open. */
+  commandPaletteOpen: boolean;
 
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
@@ -19,12 +21,15 @@ interface UiState {
   toggleRightPanel: () => void;
   setLeftPanelOpen: (open: boolean) => void;
   setRightPanelOpen: (open: boolean) => void;
+  setCommandPaletteOpen: (open: boolean) => void;
+  toggleCommandPalette: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
   mode: 'edit',
-  leftPanelOpen: true,
+  leftPanelOpen: false,
   rightPanelOpen: true,
+  commandPaletteOpen: false,
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
@@ -32,4 +37,6 @@ export const useUiStore = create<UiState>((set) => ({
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
   setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
   setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
+  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+  toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
 }));

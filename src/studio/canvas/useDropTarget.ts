@@ -33,7 +33,35 @@ import { createEventAutoScroller, createNode, readDragData } from './dndUtils';
  * so `isValidDrop` is permissive and behaviour is unchanged.
  */
 
-type Position = 'top' | 'bottom';
+type Position = 'before' | 'after';
+type Axis = 'x' | 'y';
+
+/**
+ * Reads the main axis of the layout container that holds the hovered node, so a
+ * positional drop can land left/right in a row (or grid) and top/bottom in a
+ * column. We inspect the *rendered* layout (computed style of the node's parent),
+ * which means any horizontal slot — set via the `orientation` prop, a component's
+ * own flex/grid styling, or the style editor — gets side-by-side reordering for
+ * free, with no extra configuration.
+ */
+const getDropAxis = (wrapperEl: HTMLElement): Axis => {
+  const item = wrapperEl.closest('.tecof-node') as HTMLElement | null;
+  const container = item?.parentElement;
+  const win = container?.ownerDocument?.defaultView;
+  if (!container || !win) return 'y';
+  const cs = win.getComputedStyle(container);
+  const display = cs.display;
+  if (display === 'flex' || display === 'inline-flex') {
+    return cs.flexDirection.startsWith('row') ? 'x' : 'y';
+  }
+  if (display === 'grid' || display === 'inline-grid') {
+    const cols = cs.gridTemplateColumns
+      .split(' ')
+      .filter((t) => t && t !== 'none').length;
+    return cols > 1 ? 'x' : 'y';
+  }
+  return display.startsWith('inline') ? 'x' : 'y';
+};
 
 export interface UseDropTargetOptions {
   /** Zone key this target drops into (`undefined` => root content). */
@@ -53,6 +81,8 @@ export interface UseDropTargetOptions {
 export interface UseDropTargetResult {
   /** Active position for positional targets (`null` when idle/invalid). */
   position: Position | null;
+  /** Layout axis of the hovered target — drives the drop-indicator orientation. */
+  axis: Axis;
   /** True while a valid drag is hovering a non-positional container. */
   isDragOver: boolean;
   onDragOver: (e: React.DragEvent) => void;
@@ -84,6 +114,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
 
   const autoScrollerRef = useRef(createEventAutoScroller());
   const [position, setPosition] = useState<Position | null>(null);
+  const [axis, setAxis] = useState<Axis>('y');
   const [isDragOver, setIsDragOver] = useState(false);
 
   /**
@@ -121,9 +152,17 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
       autoScrollerRef.current.update(e);
 
       if (positional) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const relativeY = e.clientY - rect.top;
-        setPosition(relativeY < rect.height / 2 ? 'top' : 'bottom');
+        const el = e.currentTarget as HTMLElement;
+        const dropAxis = getDropAxis(el);
+        const rect = el.getBoundingClientRect();
+        // "before" = the half nearer the start of the main axis (left for a row,
+        // top for a column); "after" = the far half.
+        const before =
+          dropAxis === 'x'
+            ? e.clientX - rect.left < rect.width / 2
+            : e.clientY - rect.top < rect.height / 2;
+        setAxis(dropAxis);
+        setPosition(before ? 'before' : 'after');
       } else {
         setIsDragOver(true);
       }
@@ -160,7 +199,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
 
       const { nodeId, type } = readDragData(e);
       const targetIndex = positional
-        ? (droppedPosition === 'top' ? index : index + 1)
+        ? (droppedPosition === 'before' ? index : index + 1)
         : (getIndex ? getIndex() : 0);
 
       if (nodeId && nodeId !== selfId) {
@@ -174,5 +213,5 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
     [locked, positional, index, getIndex, zoneKey, config, selfId, position, moveNode, insertNode, endDrag]
   );
 
-  return { position, isDragOver, onDragOver, onDragLeave, onDrop };
+  return { position, axis, isDragOver, onDragOver, onDragLeave, onDrop };
 };

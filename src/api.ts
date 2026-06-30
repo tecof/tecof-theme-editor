@@ -312,6 +312,62 @@ export class TecofApiClient {
     }
   }
 
+  /**
+   * Fetch all global/shared components for the merchant/theme.
+   */
+  async getSharedComponents(): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/shared-components`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to fetch shared components',
+      };
+    }
+  }
+
+  /**
+   * Create a new global/shared component.
+   */
+  async createSharedComponent(name: string, type: string, props: any): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/shared-components`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({ name, type, props }),
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to create shared component',
+      };
+    }
+  }
+
+  /**
+   * Update a global/shared component's props/data.
+   */
+  async updateSharedComponent(id: string, name: string, type: string, props: any): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/shared-components/${id}`, {
+        method: 'PUT',
+        headers: this.headers,
+        body: JSON.stringify({ name, type, props }),
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to update shared component',
+      };
+    }
+  }
+
   /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl(): string {
     return this.customCdnUrl || this.apiUrl;
