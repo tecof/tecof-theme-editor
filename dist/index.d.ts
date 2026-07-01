@@ -84,13 +84,24 @@ interface PageApiData {
  */
 interface FieldConfig {
     /** Built-in field kind. Custom fields may omit this and supply `render`. */
-    type?: 'text' | 'textarea' | 'select' | 'number' | 'radio' | 'array' | 'object' | 'slot' | string;
+    type?: 'text' | 'textarea' | 'select' | 'number' | 'boolean' | 'toggle' | 'range' | 'radio' | 'array' | 'object' | 'slot' | string;
     /** Human-readable label shown in the inspector. */
     label?: string;
     /** Options for `select` / `radio` fields. */
     options?: any;
     /** Default value applied when the field is empty. */
     defaultValue?: any;
+    /** `range`: minimum value (default 0). */
+    min?: number;
+    /** `range`: maximum value (default 100). */
+    max?: number;
+    /** `range`: step increment (default 1). */
+    step?: number;
+    /** `range`: unit suffix shown next to the value (e.g. `'px'`, `'%'`). */
+    unit?: string;
+    /** `boolean`/`toggle`: text shown when on/off (default `'Açık'`/`'Kapalı'`). */
+    onLabel?: string;
+    offLabel?: string;
     /** Sub-fields for `array` items. */
     arrayFields?: Record<string, FieldConfig>;
     /** Sub-fields for `object` fields. */
@@ -106,10 +117,57 @@ interface FieldConfig {
      * a `{{ data.field }}` reference. Defaults to `true`; set `false` to hide it.
      */
     bindable?: boolean;
+    /**
+     * Render this field disabled (static). Dynamic/computed read-only state comes
+     * from a component's `resolveData().readOnly`; the two are OR-ed together.
+     */
+    readOnly?: boolean;
     /** Custom render escape hatch for non-built-in field types. */
     render?: (props: any) => React.ReactNode;
     /** Allow host-specific extra props without breaking typing. */
     [key: string]: any;
+}
+/**
+ * Context passed to `resolveFields`: the base (statically-declared) field set plus
+ * the standard change tracking from {@link ResolveContext}.
+ */
+interface ResolveFieldsContext extends ResolveContext {
+    /** The component's statically-declared fields — the starting point to extend. */
+    fields: Record<string, FieldConfig>;
+}
+/**
+ * Result of a component's `resolveData`. `props` are DERIVED prop values written
+ * back to the node (loop-guarded: only the real diff is committed); `readOnly`
+ * disables individual fields by name in the inspector.
+ */
+interface ResolveDataResult {
+    props?: Record<string, any>;
+    readOnly?: Record<string, boolean>;
+}
+/**
+ * Feature-permission flags for a node. Every permission defaults to `true`
+ * (permissive): hosts opt INTO restrictions by setting a flag to `false`. The
+ * index signature allows host-specific custom permissions.
+ */
+interface Permissions {
+    /** May the node be dragged / moved (canvas + layers)? */
+    drag: boolean;
+    /** May the node be deleted (single, bulk, or via cut)? */
+    delete: boolean;
+    /** May the node be duplicated / copy-pasted as a new node? */
+    duplicate: boolean;
+    /** Are the node's fields editable in the inspector? */
+    edit: boolean;
+    [key: string]: boolean;
+}
+/**
+ * Context passed to dynamic resolvers (`resolvePermissions`, and later
+ * `resolveFields` / `resolveData`). `changed` marks which props changed since the
+ * previous resolve; `lastProps` is the previous prop snapshot (null on first run).
+ */
+interface ResolveContext {
+    changed: Record<string, boolean>;
+    lastProps: Record<string, any> | null;
 }
 /**
  * Configuration for a single component registered in the studio. `render` is
@@ -124,6 +182,8 @@ interface ComponentConfig {
     fields?: Record<string, FieldConfig>;
     /** Default props applied when the component is inserted. */
     defaultProps?: Record<string, any>;
+    /** If true, removes the editor's div wrapper. The component must attach puck.dragRef to its root element. */
+    inline?: boolean;
     /** Renders the component for a given set of props. */
     render: (props: any) => React.ReactNode;
     /** Arbitrary host metadata. */
@@ -134,6 +194,22 @@ interface ComponentConfig {
     maxItems?: number;
     /** Component types that may contain this component as a child. */
     allowedParents?: string[];
+    /** Per-component permission overrides, merged OVER the global `permissions`. */
+    permissions?: Partial<Permissions>;
+    /** Dynamically compute permissions from the node's current props. */
+    resolvePermissions?: (props: any, ctx: ResolveContext) => Partial<Permissions>;
+    /**
+     * Dynamically compute the editable field set from the node's current props —
+     * e.g. show a `url` field only when `type === 'link'`. May be sync or async.
+     * Falls back to the static `fields` on throw.
+     */
+    resolveFields?: (props: any, ctx: ResolveFieldsContext) => Record<string, FieldConfig> | Promise<Record<string, FieldConfig>>;
+    /**
+     * Dynamically derive props and per-field read-only state from current props —
+     * e.g. derive `slug` from `title` and lock it. Derived `props` are written back
+     * loop-guarded (only the diff commits); must be idempotent. May be sync/async.
+     */
+    resolveData?: (props: any, ctx: ResolveContext) => ResolveDataResult | Promise<ResolveDataResult>;
     /** Allow host-specific extra props without breaking typing. */
     [key: string]: any;
 }
@@ -158,6 +234,29 @@ interface SectionTemplate {
     };
 }
 /**
+ * Declarative data migration applied to a saved document before it is edited or
+ * rendered — upgrades old data when component types are renamed or prop schemas
+ * change. Runs in order: rename → transformProps → migrate; then the schema
+ * version is stamped on `root.props._schemaVersion`.
+ */
+interface MigrationConfig {
+    /**
+     * Target schema version. When set, a document already stamped at/above this
+     * version is returned untouched (idempotent for saved data). Omit to always run
+     * the transforms (they must then be idempotent themselves).
+     */
+    version?: number;
+    /** Rename component types: `{ oldType: newType }`. Applied first. */
+    renameComponents?: Record<string, string>;
+    /**
+     * Per-(resulting)-type prop transforms. Looked up by the type AFTER any rename.
+     * The node id is always preserved regardless of what the transform returns.
+     */
+    transformProps?: Record<string, (props: any) => any>;
+    /** Final custom pass over the whole document (runs last). */
+    migrate?: (doc: TecofDocument) => TecofDocument;
+}
+/**
  * Top-level studio configuration. Permissive index signature preserves
  * compatibility with existing host configs.
  */
@@ -172,6 +271,10 @@ interface StudioConfig {
     }>;
     /** Optional pre-built section templates shown in the "Bölüm Ekle" library. */
     templates?: SectionTemplate[];
+    /** Global feature permissions. Component configs may override per type. */
+    permissions?: Partial<Permissions>;
+    /** Optional data migration applied whenever a document is loaded/rendered. */
+    migrations?: MigrationConfig;
     /** Root-level fields and renderer (page wrapper). */
     root?: {
         fields?: Record<string, FieldConfig>;
@@ -212,6 +315,18 @@ interface TecofEditorProps {
     overrides?: Record<string, any>;
     /** Additional editor plugins (reserved for host integrations) */
     plugins?: any[];
+    /**
+     * Enable debounced automatic draft saving after edits settle. Off by default
+     * so existing hosts keep full control over when `savePage` runs.
+     */
+    autoSave?: boolean;
+    /** Idle delay in ms before an autosave fires once `autoSave` is on. Default 2000. */
+    autoSaveDelay?: number;
+    /**
+     * Show the browser's native "unsaved changes" prompt on navigation/close while
+     * there are unpersisted edits. Default true; set false to suppress it.
+     */
+    warnOnUnsavedChanges?: boolean;
     /** Additional class name */
     className?: string;
 }
@@ -271,6 +386,13 @@ interface TecofNode {
     props: {
         id: string;
     } & Record<string, any>;
+}
+interface TecofDocument {
+    root: {
+        props: Record<string, any>;
+    };
+    content: TecofNode[];
+    zones: Record<string, TecofNode[]>;
 }
 
 /**
@@ -380,9 +502,9 @@ interface TecofContextValue {
 declare const TecofProvider: ({ apiUrl, secretKey, cdnUrl, children }: TecofProviderProps) => react_jsx_runtime.JSX.Element;
 declare function useTecof(): TecofContextValue;
 
-declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, hostOrigin, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
+declare const TecofEditor: ({ pageId, config, accessToken, onSave, onChange, hostOrigin, autoSave, autoSaveDelay, warnOnUnsavedChanges, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
-declare const TecofStudio: ({ pageId, config, accessToken, onSave, onChange, hostOrigin, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
+declare const TecofStudio: ({ pageId, config, accessToken, onSave, onChange, hostOrigin, autoSave, autoSaveDelay, warnOnUnsavedChanges, className, }: TecofEditorProps) => react_jsx_runtime.JSX.Element;
 
 /**
  * TecofRender — Puck-compatible native page renderer.
@@ -851,6 +973,49 @@ declare const createIconField: (options?: IconFieldOptions) => {
     render: ({ value, onChange, readOnly, field, name, id }: IconFieldProps) => react_jsx_runtime.JSX.Element;
 };
 
+/**
+ * ExternalField — generic, host-provided data picker.
+ *
+ * Unlike CmsCollectionField (hardwired to the Tecof CMS), this field is fully
+ * decoupled: the host supplies an async `fetchList` and optional mappers. The
+ * user opens a modal, the rows returned by `fetchList` are listed (searchable),
+ * and selecting a row stores `mapProp(row)` (or the raw row) on the prop.
+ *
+ * Rendered by FieldRenderer for `{ type: 'external' }`.
+ */
+interface ExternalFieldConfig {
+    type?: 'external';
+    label?: string;
+    /** Loads rows for the picker. Receives the current search query + filters. */
+    fetchList: (params: {
+        query?: string;
+        filters?: Record<string, any>;
+    }) => Promise<any[]>;
+    /** Maps a chosen row to the value stored on the prop (default: the row itself). */
+    mapProp?: (row: any) => any;
+    /** Maps a row to display columns (default: the row's own enumerable props). */
+    mapRow?: (row: any) => Record<string, any>;
+    /** Summarizes the STORED value into the trigger/selected label. */
+    getItemSummary?: (value: any) => string;
+    /** Show the search box (default true). */
+    showSearch?: boolean;
+    /** Trigger placeholder when nothing is selected. */
+    placeholder?: string;
+}
+interface ExternalFieldProps {
+    field: ExternalFieldConfig;
+    name: string;
+    value: any;
+    onChange: (value: any) => void;
+    readOnly?: boolean;
+}
+declare const ExternalField: ({ field, name, value, onChange, readOnly }: ExternalFieldProps) => react_jsx_runtime.JSX.Element;
+/**
+ * Factory mirroring the other `create*Field` helpers: returns a `{ type:
+ * 'external', ... }` FieldConfig the host spreads into a component's `fields`.
+ */
+declare const createExternalField: (options: Omit<ExternalFieldConfig, "type">) => ExternalFieldConfig;
+
 interface FieldErrorBoundaryProps {
     /** The field name (for error reporting) */
     fieldName?: string;
@@ -881,7 +1046,7 @@ declare class FieldErrorBoundary extends Component<FieldErrorBoundaryProps, Fiel
     static getDerivedStateFromError(error: Error): FieldErrorBoundaryState;
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
     handleRetry: () => void;
-    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | react_jsx_runtime.JSX.Element | null | undefined;
+    render(): string | number | bigint | boolean | react_jsx_runtime.JSX.Element | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined;
 }
 
 /**
@@ -1023,4 +1188,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type NodeStyles, type PageApiData, type PuckContentItem, type PuckPageData, RepeaterField, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

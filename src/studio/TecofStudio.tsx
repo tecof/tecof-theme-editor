@@ -6,6 +6,8 @@ import { findNodeById } from '../engine/zones';
 import { CommandPalette } from './command/CommandPalette';
 import { ThemeVars } from './theme/ThemeVars';
 import { parseDocument, serializeDocument } from '../engine/document';
+import { getNodePermissions } from '../engine/permissions';
+import { migrateDocument } from '../engine/migrate';
 import { StudioContext } from './context';
 import { LanguageProvider } from './language/LanguageContext';
 import { Canvas } from './canvas/Canvas';
@@ -16,6 +18,7 @@ import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
 import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost } from './bridge';
 import type { TecofEditorProps } from '../types';
+import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 export const TecofStudio = ({
   pageId,
@@ -24,14 +27,19 @@ export const TecofStudio = ({
   onSave,
   onChange,
   hostOrigin,
+  autoSave = false,
+  autoSaveDelay = 2000,
+  warnOnUnsavedChanges = true,
   className,
 }: TecofEditorProps) => {
   const { apiClient } = useTecof();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [dirty, setDirty] = useState(false);
 
   const setDocument = useEditorStore((state) => state.setDocument);
+  const setPermissionResolver = useEditorStore((state) => state.setPermissionResolver);
   const documentState = useEditorStore((state) => state.document);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
@@ -46,7 +54,18 @@ export const TecofStudio = ({
   const documentStateRef = useRef(documentState);
   documentStateRef.current = documentState;
 
+  // Dirty tracking: the document the store hands us is a fresh reference after
+  // every committed change (immer structural sharing), so "unsaved" is simply
+  // "current doc !== last persisted/loaded doc". `savedDocRef` holds that
+  // baseline; `dirtyRef` mirrors the boolean for the synchronous unload guard.
+  const savedDocRef = useRef(documentState);
+  const dirtyRef = useRef(false);
+  const savingRef = useRef(false);
+  savingRef.current = saving;
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const isEmbedded = isEmbeddedHost();
+  useKeyboardShortcuts();
 
   // Lock down the host postMessage target origin (defaults to '*' when unset).
   // Other host-messaging files (NodeRenderer.tsx, Frame.tsx) should adopt
@@ -71,8 +90,15 @@ export const TecofStudio = ({
         if (cancelled) return;
 
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
-        const parsedDoc = parseDocument(rawData);
+        // Upgrade old saved data to the current schema before it enters the store
+        // (no-op unless the host declares `config.migrations`).
+        const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
         setDocument(parsedDoc);
+        // A freshly loaded page is the new "clean" baseline; read the store's
+        // (cloned/parsed) document reference so the dirty check starts false.
+        savedDocRef.current = useEditorStore.getState().document;
+        dirtyRef.current = false;
+        setDirty(false);
       } catch (err) {
         // Aborted loads (newer pageId, unmount, or timeout) must NOT mutate
         // state — bail out before touching loading/document below.
@@ -140,6 +166,12 @@ export const TecofStudio = ({
       if (res.success) {
         setSaveStatus('success');
         setTimeout(() => setSaveStatus('idle'), 3000);
+        // Mark the exact document we just persisted as the clean baseline. If the
+        // user kept editing during the request, the live doc differs from this
+        // snapshot and stays dirty (so autosave will fire again).
+        savedDocRef.current = currentDoc;
+        dirtyRef.current = documentStateRef.current !== currentDoc;
+        setDirty(dirtyRef.current);
         onSave?.(serialized);
         if (isEmbedded) {
           postToHost('puck:saved', { data: serialized });
@@ -159,6 +191,49 @@ export const TecofStudio = ({
       setSaving(false);
     }
   }, [pageId, apiClient, accessToken, onSave, isEmbedded]);
+
+  // 3b. Dirty detection + optional autosave.
+  // Runs whenever the document reference changes. Dirty = live doc differs from
+  // the last loaded/persisted baseline. When `autoSave` is on, an idle timer
+  // (reset on every edit) persists automatically once edits settle. We re-check
+  // dirtiness inside the timer because the doc may have changed again — and skip
+  // when a manual save is already in flight to avoid overlapping requests.
+  useEffect(() => {
+    if (loading) return;
+    const isDirty = documentState !== savedDocRef.current;
+    dirtyRef.current = isDirty;
+    setDirty(isDirty);
+
+    if (!isDirty || !autoSave) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      if (documentStateRef.current !== savedDocRef.current && !savingRef.current) {
+        handleSaveDraft();
+      }
+    }, autoSaveDelay);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [documentState, loading, autoSave, autoSaveDelay, handleSaveDraft]);
+
+  // 3c. Warn before unloading the tab/closing the window with unsaved edits.
+  useEffect(() => {
+    if (!warnOnUnsavedChanges) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!dirtyRef.current) return;
+      // The spec requires both for cross-browser support; the message text is
+      // ignored by modern browsers (they show a generic prompt).
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [warnOnUnsavedChanges]);
 
   // 4. Listen to PostMessage signals from the host wrapper
   useEffect(() => {
@@ -336,6 +411,14 @@ export const TecofStudio = ({
     };
   }, [undo, redo, isEmbedded, handleSaveDraft]);
 
+  // Register the permission resolver so the engine can authoritatively gate
+  // delete/duplicate/drag/edit per node (config-driven, permissive by default).
+  // Cleared on unmount so a stale config can't govern the next mount.
+  useEffect(() => {
+    setPermissionResolver((node) => getNodePermissions(config, node));
+    return () => setPermissionResolver(null);
+  }, [config, setPermissionResolver]);
+
   // 5. Context Value
   const studioContextValue = useMemo(() => ({
     config,
@@ -351,7 +434,7 @@ export const TecofStudio = ({
     <StudioContext.Provider value={studioContextValue}>
       <LanguageProvider>
         <div className={`tecof-studio-root ${className || ''}`.trim()}>
-          <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} />
+          <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} dirty={dirty} autoSave={autoSave} />
 
           <div className="tecof-studio-workspace-container">
             {leftPanelOpen ? (

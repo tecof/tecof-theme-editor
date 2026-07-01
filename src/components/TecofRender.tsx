@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import type { TecofRenderProps, TecofNode } from '../types';
 import { compileStyles, mergeClassName } from '../studio/style/compileStyles';
 import { STYLES_PROP } from '../studio/style/types';
+import { migrateDocument } from '../engine/migrate';
 
 const RenderContext = createContext<{
   zones: Record<string, TecofNode[]>;
@@ -97,17 +98,29 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
 export const TecofRender = ({ data, config, className, cmsData }: TecofRenderProps) => {
   if (!data) return null;
 
+  // Upgrade old saved data to the current schema so published pages render
+  // correctly (no-op unless the host declares `config.migrations`).
+  const doc = migrateDocument(
+    {
+      root: data.root ?? { props: {} },
+      // PuckContentItem/TecofNode share a shape; nodes always carry an id at runtime.
+      content: (data.content ?? []) as TecofNode[],
+      zones: data.zones ?? {},
+    },
+    config.migrations
+  );
+
   const contextValue = {
-    zones: data.zones || {},
+    zones: doc.zones || {},
     config,
     cmsData: cmsData || null,
   };
 
-  const renderedContent = data.content.map((item, index) => (
+  const renderedContent = doc.content.map((item, index) => (
     <RenderNode key={item.props.id || index} node={item} index={index} />
   ));
 
-  const rootProps = data.root?.props || {};
+  const rootProps = doc.root?.props || {};
   const rootConfig = config.root;
   const contentWithLayout = rootConfig?.render
     ? rootConfig.render({

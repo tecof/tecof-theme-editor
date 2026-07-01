@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
+import { usePermissions } from '../usePermissions';
 import { findNodeById } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
 import { Trash2, ChevronRight, ChevronDown, Layout } from 'lucide-react';
@@ -40,6 +41,7 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
 
   const componentConfig = config.components[node.type];
   const label = componentConfig?.label || node.type;
+  const perms = usePermissions(node.props.id);
 
   // Find zones belonging to this node
   const childZoneKeys = Object.keys(documentState.zones).filter((key) =>
@@ -125,7 +127,7 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
       return;
     }
 
-    if ((e.key === 'Delete' || e.key === 'Backspace') && isSelected) {
+    if ((e.key === 'Delete' || e.key === 'Backspace') && isSelected && perms.delete !== false) {
       e.preventDefault();
       removeNode(node.props.id);
     }
@@ -135,7 +137,7 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
     <div className="tecof-layer-node">
       {dragOverPos === 'top' && <div className="tecof-drop-line sm" />}
       <div
-        draggable={true}
+        draggable={perms.drag !== false}
         onDragStart={(e) => {
           writeDragData(e, { nodeId: node.props.id });
           e.dataTransfer.effectAllowed = 'move';
@@ -178,18 +180,20 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
           <span className="tecof-layer-label">{label}</span>
         </div>
 
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            removeNode(node.props.id);
-          }}
-          className="tecof-layer-delete"
-          title="Sil"
-          aria-label={`${label} katmanını sil`}
-        >
-          <Trash2 size={12} />
-        </button>
+        {perms.delete !== false && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeNode(node.props.id);
+            }}
+            className="tecof-layer-delete"
+            title="Sil"
+            aria-label={`${label} katmanını sil`}
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </div>
 
       {dragOverPos === 'bottom' && <div className="tecof-drop-line sm" />}

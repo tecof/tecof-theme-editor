@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { findNodeById } from '../../engine/zones';
 import { useStudio } from '../context';
+import { usePermissions } from '../usePermissions';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
+import { useResolvedFields } from '../fields-host/useResolvedFields';
 import { StyleEditor } from '../style/StyleEditor';
 import { ThemeEditor } from '../theme/ThemeEditor';
 import { STYLES_PROP } from '../style/types';
@@ -15,6 +17,9 @@ export const Inspector = () => {
   const selectNode = useEditorStore((state) => state.selectNode);
 
   const { config, readOnly } = useStudio();
+  // A node with `edit: false` shows its fields but disables editing.
+  const perms = usePermissions(selectedId);
+  const fieldsReadOnly = readOnly || perms.edit === false;
   const [tab, setTab] = useState<'content' | 'style'>('content');
   const [rootTab, setRootTab] = useState<'page' | 'theme'>('page');
 
@@ -25,19 +30,27 @@ export const Inspector = () => {
     if (!details) return null;
 
     const componentConfig = config.components[details.node.type];
-    const fields = componentConfig?.fields || {};
-    
-    // Filter out slot type fields (slot fields are on-canvas drag-drop only)
-    const editableFields = Object.entries(fields).filter(
-      ([_, fieldDef]: [string, any]) => fieldDef?.type !== 'slot'
-    );
-
     return {
       node: details.node,
       label: componentConfig?.label || details.node.type,
-      editableFields,
+      componentConfig,
     };
   }, [selectedId, documentState, config]);
+
+  // Resolve dynamic fields + read-only map (resolveFields/resolveData). Called
+  // unconditionally (hook rules); returns static fields for plain components.
+  const resolved = useResolvedFields(
+    activeNodeInfo?.node ?? null,
+    activeNodeInfo?.componentConfig
+  );
+  // Slot fields are on-canvas drag-drop only, never shown in the inspector.
+  const editableFields = useMemo(
+    () =>
+      Object.entries(resolved.fields).filter(
+        ([, fieldDef]: [string, any]) => fieldDef?.type !== 'slot'
+      ),
+    [resolved.fields]
+  );
 
   // 1. Component selected state
   if (selectedId) {
@@ -49,7 +62,7 @@ export const Inspector = () => {
       );
     }
 
-    const { node, label, editableFields } = activeNodeInfo;
+    const { node, label } = activeNodeInfo;
 
     return (
       <div className="tecof-inspector">
@@ -105,7 +118,11 @@ export const Inspector = () => {
                 definition={fieldDef}
                 value={node.props[fieldName]}
                 onChange={(newVal) => updateProps(selectedId, { [fieldName]: newVal })}
-                readOnly={readOnly}
+                readOnly={
+                  fieldsReadOnly ||
+                  resolved.readOnly[fieldName] === true ||
+                  (fieldDef as any)?.readOnly === true
+                }
               />
             ))
           )}

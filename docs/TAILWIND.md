@@ -20,7 +20,10 @@ token modeli** olarak saklar. Model `node.props._tecofStyles` altında yaşar
   md?:    { p: '[10px]' },                  // md:  (arbitrary value)
   lg?:    { ... },                          // lg:
   xl?:    { ... },                          // xl:
-  states?: { hover: { bg: 'primary-700' } } // hover:/focus:/active:
+  states?: {
+    hover: { bg: 'primary-700' },           // hover:  (base breakpoint)
+    'md:hover': { bg: 'primary-800' },       // md:hover:  (breakpoint-scoped state)
+  }
 }
 ```
 
@@ -76,6 +79,22 @@ karşılık gelsin:
 > (chrome). Sayfa içeriğine uygulanan `primary-*` class'ları ise host'un
 > `@theme`'inden beslenir. İkisini karıştırmayın.
 
+### Semantik tema renkleri (`--theme-color-*`)
+
+Stil editörünün renk kontrolleri, marka skalasına ek olarak **canlı tema
+renklerini** de sunar (`Tema · Ana renk`, `Tema · Metin`, …). Bunlar
+`--theme-color-*` CSS değişkenlerine işaret eden sonlu arbitrary değerlerdir;
+`bg`/`text`/`border` için sırasıyla `bg-[var(--theme-color-primary)]` gibi
+class'lara derlenir ve `getSafelist()` bunları otomatik kapsar — yani ekstra
+Tailwind `@theme` kurulumu gerekmez, yalnızca `--theme-color-*` değişkenlerinin
+tanımlı olması yeterlidir.
+
+Bu değişkenler `generateCSSVariables(theme)` çıktısıyla üretilir. Studio'daki
+**canlı tema editörü** (Inspector → seçim yokken "Tema" sekmesi) bu değişkenleri
+hem editöre hem canvas iframe'ine anında enjekte eder; yayında ise host,
+`generateCSSVariables` çıktısını sayfaya dahil etmelidir. Tema, sayfanın
+`root.props._tecofTheme`'inde saklanır.
+
 ---
 
 ## 3. Üretimde class'ların var olması: Safelist
@@ -101,25 +120,41 @@ export default {
 ```
 
 `getSafelist()` her token × her kontrol × her breakpoint/state prefix'ini
-döndürür (ör. `p-4`, `md:p-4`, `hover:bg-primary-700`, …). Böylece editörde
-seçilebilen her preset üretimde kesinlikle bulunur.
+döndürür — **breakpoint × state kombinasyonları dahil** (ör. `p-4`, `md:p-4`,
+`hover:bg-primary-700`, `md:hover:bg-primary-600`, …). Ayrıca **sonlu tema-renk
+arbitrary'lerini** de içerir (ör. `bg-[var(--theme-color-primary)]`,
+`text-[var(--theme-color-foreground)]`), çünkü tema renkleri sabit bir kümedir.
+Böylece editörde seçilebilen her preset ve tema rengi üretimde kesinlikle bulunur.
 
-### 3b. Arbitrary (custom) değerler → JIT taraması
+### 3b. Arbitrary (custom) değerler → `collectDocumentClasses`
 
 Kullanıcı `p-[10px]`, `bg-[#ff0000]` gibi **serbest değerler** girebilir
-(bkz. §4). Bunlar sonsuz olduğu için safelist'e sığmaz. Üretimde görünmeleri
-için Tailwind'in **kaydedilmiş sayfa verisini taraması** gerekir. Önerilen yol:
-derlenmiş class string'ini render'da basmak zaten yeterlidir **eğer** Tailwind
-o çıktıyı bir kaynak olarak görüyorsa. Pratikte iki seçenek:
+(bkz. §4). Bunlar sonsuz olduğu için statik safelist'e sığmaz **ve** kaydedilmiş
+sayfa JSON'unda yaşadığı için Tailwind'in content tarayıcısı da göremez. Çözüm:
+kaydedilmiş sayfalardan **gerçekten kullanılan** class'ları toplayıp safelist'e
+eklemek. Paket bunun için iki yardımcı verir:
 
-1. **Server render + content taraması:** Sayfa verisini build/runtime'da
-   `compileStyles` ile string'e çevirip Tailwind `content`/`@source`'un
-   gördüğü bir dosyaya/aşamaya dahil edin.
-2. **Runtime/CDN Tailwind:** Tam dinamik senaryolarda Tailwind'i runtime'da
-   çalıştırın (örn. bir CSS-in-JS köprüsü veya `@tailwindcss/browser`).
+```js
+import { getSafelist, collectDocumentClasses } from "@tecof/theme-editor";
 
-> Pragmatik öneri: Çoğu kullanım için **preset'ler + safelist** yeterlidir;
-> arbitrary değeri yalnızca gerçekten gereken yerlerde açın ve §3b'yi planlayın.
+// Build aşamasında yayınlanan/taslak sayfaları gezin:
+const dynamic = savedPages.flatMap((p) => collectDocumentClasses(p.draftData));
+
+export default {
+  safelist: [...getSafelist(), ...dynamic],
+  // ...
+};
+```
+
+- `collectStyleClasses(styles)` — tek bir `NodeStyles` nesnesinin derlendiği
+  tüm class'ları (preset + arbitrary) döndürür.
+- `collectDocumentClasses(pageData)` — bir sayfanın kökü + içeriği + tüm
+  zone'larındaki her node'un stil class'larını tekilleştirerek döndürür.
+
+> Tam dinamik (DB'den beslenen) senaryolarda bu listeyi her sayfa kaydında
+> yanında saklayıp build'de safelist'e verebilir veya Tailwind'i runtime'da
+> çalıştırabilirsiniz. Çoğu kullanım için **preset + tema renkleri** (`getSafelist`)
+> tek başına yeterlidir; serbest değer açtığınızda yukarıdaki tarayıcıyı ekleyin.
 
 ---
 
@@ -162,6 +197,16 @@ w, h, maxW`) ve renkler (`bg, text, borderColor`). Segment toggle'ları
 Editörde üst segmentlerden katman seçilir; **override içeren** breakpoint/state
 artık küçük bir nokta (`tecof-style-seg-dot`) ile işaretlenir.
 
+**Breakpoint-bazlı state'ler:** State'ler artık breakpoint'e özeldir. `states`
+anahtarı çıplaksa (`hover`) base breakpoint'e, `${bp}:${state}` formatındaysa
+(`md:hover`) yalnızca o breakpoint'e uygulanır ve sırasıyla `hover:…` /
+`md:hover:…` olarak derlenir. Eski çıplak anahtarlar geriye dönük çalışır.
+`getSafelist()` tüm breakpoint × state kombinasyonlarını kapsar.
+
+Ayrıca üst breakpoint'i (örn. `md`) düzenlerken bir property'de değer yoksa,
+daha az belirgin katmandan **devralınan değer** ilgili kontrolün yanında soluk
+bir ipucu olarak gösterilir (yalnızca editör UI'ı; çıktı etkilenmez).
+
 ---
 
 ## 6. Editör canvas'ında stiller nasıl görünür?
@@ -177,9 +222,10 @@ ile üretimde çıkan birebir aynıdır, **safelist doğru kurulduğu sürece**.
 ## 7. Hızlı kontrol listesi
 
 - [ ] Host `@theme`'de `--color-primary-50…950` tanımlı.
-- [ ] `safelist: getSafelist()` host Tailwind config'ine eklendi.
+- [ ] `safelist: getSafelist()` host Tailwind config'ine eklendi (preset + tema renkleri + bp×state).
+- [ ] Tema renkleri kullanılacaksa `generateCSSVariables(theme)` çıktısı (`--theme-color-*`) sayfaya dahil edildi.
 - [ ] `@tecof/theme-editor/dist/styles.css` layout'a import edildi (editör chrome'u).
-- [ ] Arbitrary değer kullanılacaksa §3b stratejisi planlandı.
+- [ ] Arbitrary değer kullanılacaksa `collectDocumentClasses(pageData)` ile dinamik safelist eklendi (§3b).
 - [ ] `TecofRender` ile üretim render'ı, editörle aynı `compileStyles` akışını kullanıyor (otomatik).
 
 ---

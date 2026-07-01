@@ -257,11 +257,18 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                 if (item.isTemplate && item.template) {
                   const t = item.template;
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      type="button"
                       className="tecof-modal-grid-card"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => onSelectTemplate?.(t)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onSelectTemplate?.(t);
+                        }
+                      }}
                     >
                       <div className="tecof-modal-preview-wrapper">
                         <span className="tecof-modal-card-chip">Şablon</span>
@@ -280,7 +287,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                         </div>
                         <ChevronRight size={15} className="tecof-modal-card-arrow" aria-hidden="true" />
                       </div>
-                    </button>
+                    </div>
                   );
                 }
 
@@ -322,11 +329,18 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                 };
 
                 return (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
                     className="tecof-modal-grid-card"
+                    role="button"
+                    tabIndex={0}
                     onClick={handleCardClick}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleCardClick();
+                      }
+                    }}
                   >
                     <div className="tecof-modal-preview-wrapper">
                       <span className="tecof-modal-card-chip">
@@ -353,7 +367,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                       </div>
                       <ChevronRight size={15} className="tecof-modal-card-arrow" aria-hidden="true" />
                     </div>
-                  </button>
+                  </div>
                 );
               })}
               {displayItems.length === 0 && (

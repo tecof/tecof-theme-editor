@@ -1,10 +1,10 @@
 export { UnderConstruction } from './chunk-XMQYB77V.mjs';
-import { FieldLoading, FieldLabel, FieldErrorBoundary, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-IYNPDX7Q.mjs';
-export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-IYNPDX7Q.mjs';
-import { lucide_react_exports, RotateCcw, useTecof, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, X, Link, Drawer, Search, ChevronRight, Plus, RefreshCw, Database, ChevronDown, Link2, Pipette, Check, Monitor, Tablet, Smartphone, Eye, Undo2, Redo2, Save, Grid3x3, Layers, EyeOff, LayoutTemplate, ChevronUp, ArrowUp, ArrowDown, Copy, Trash2, CopyPlus, Scissors, ClipboardPaste, GripVertical, LayoutGrid, PanelsTopLeft, Braces, ChevronLeft } from './chunk-5MD5GTJT.mjs';
-export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-5MD5GTJT.mjs';
+import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-JUFEDW3Y.mjs';
+export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-JUFEDW3Y.mjs';
+import { lucide_react_exports, Database, X, RotateCcw, useTecof, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, Link, Drawer, Search, ChevronRight, Plus, RefreshCw, ChevronDown, Link2, RefreshCcw, Check, Pipette, Monitor, Tablet, Smartphone, Eye, Undo2, Redo2, Save, Grid3x3, Layers, EyeOff, LayoutTemplate, Info, ChevronUp, ArrowUp, ArrowDown, Copy, Trash2, CopyPlus, Scissors, ClipboardPaste, Paintbrush, GripVertical, LayoutGrid, PanelsTopLeft, Braces, ChevronLeft } from './chunk-OUKYABPK.mjs';
+export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-OUKYABPK.mjs';
 import './chunk-J5LGTIGS.mjs';
-import React, { createContext, lazy, forwardRef, Suspense, useState, useRef, useEffect, useCallback, useMemo, useLayoutEffect, useContext, Component } from 'react';
+import React, { createContext, lazy, forwardRef, Suspense, useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect, useContext, Component } from 'react';
 import { createPortal } from 'react-dom';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 
@@ -1814,6 +1814,13 @@ var commit = (state, mutate, coalesceKey) => {
   state.history.future = [];
   state._lastCommit = coalesceKey != null ? { id: coalesceKey, time: now } : null;
 };
+var nodeAllows = (state, id, key) => {
+  const resolver = state.permissionResolver;
+  if (!resolver) return true;
+  const res = findNodeById(state.document, id);
+  if (!res) return true;
+  return resolver(res.node)[key] !== false;
+};
 var pruneSelection = (state, removed) => {
   const gone = new Set(removed);
   state.selection.selectedIds = state.selection.selectedIds.filter((id) => !gone.has(id));
@@ -1850,6 +1857,7 @@ var useEditorStore = create()(
     drag: null,
     clipboard: null,
     _lastCommit: null,
+    permissionResolver: null,
     // Actions
     setDocument: (doc) => set2((state) => {
       state.document = cloneDocument(parseDocument(doc));
@@ -1892,23 +1900,28 @@ var useEditorStore = create()(
       commit(state, (doc) => insertNode(doc, node, targetZoneKey, index));
     }),
     removeNode: (id) => set2((state) => {
+      if (!nodeAllows(state, id, "delete")) return;
       commit(state, (doc) => removeNode(doc, id));
       pruneSelection(state, [id]);
     }),
     removeNodes: (ids) => set2((state) => {
-      const targets = ids ?? state.selection.selectedIds;
+      const requested = ids ?? state.selection.selectedIds;
+      const targets = requested.filter((id) => nodeAllows(state, id, "delete"));
       if (targets.length === 0) return;
       commit(state, (doc) => removeNodes(doc, targets));
       pruneSelection(state, targets);
     }),
     moveNode: (id, targetZoneKey, index) => set2((state) => {
+      if (!nodeAllows(state, id, "drag")) return;
       commit(state, (doc) => moveNode(doc, id, targetZoneKey, index));
     }),
     duplicateNode: (id) => set2((state) => {
+      if (!nodeAllows(state, id, "duplicate")) return;
       commit(state, (doc) => duplicateNode(doc, id));
     }),
     duplicateNodes: (ids) => set2((state) => {
-      const targets = ids ?? state.selection.selectedIds;
+      const requested = ids ?? state.selection.selectedIds;
+      const targets = requested.filter((id) => nodeAllows(state, id, "duplicate"));
       if (targets.length === 0) return;
       let newIds = [];
       commit(state, (doc) => {
@@ -1940,6 +1953,7 @@ var useEditorStore = create()(
       if (!payload) return;
       state.clipboard = payload;
       writeClipboardStorage(payload);
+      if (!nodeAllows(state, targetId, "delete")) return;
       commit(state, (doc) => removeNode(doc, targetId));
       pruneSelection(state, [targetId]);
     }),
@@ -1993,6 +2007,9 @@ var useEditorStore = create()(
       state.history.past.push(step);
       state._lastCommit = null;
       validateSelection(state);
+    }),
+    setPermissionResolver: (resolver) => set2((state) => {
+      state.permissionResolver = resolver;
     })
   }))
 );
@@ -2003,6 +2020,7 @@ var useUiStore = create((set2) => ({
   leftPanelOpen: false,
   rightPanelOpen: true,
   commandPaletteOpen: false,
+  styleClipboard: null,
   setMode: (mode) => set2({ mode }),
   toggleMode: () => set2((s) => ({ mode: s.mode === "edit" ? "preview" : "edit" })),
   toggleLeftPanel: () => set2((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
@@ -2010,7 +2028,8 @@ var useUiStore = create((set2) => ({
   setLeftPanelOpen: (open) => set2({ leftPanelOpen: open }),
   setRightPanelOpen: (open) => set2({ rightPanelOpen: open }),
   setCommandPaletteOpen: (open) => set2({ commandPaletteOpen: open }),
-  toggleCommandPalette: () => set2((s) => ({ commandPaletteOpen: !s.commandPaletteOpen }))
+  toggleCommandPalette: () => set2((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
+  setStyleClipboard: (styles) => set2({ styleClipboard: styles })
 }));
 var StudioContext = createContext(null);
 var useStudio = () => {
@@ -2019,6 +2038,31 @@ var useStudio = () => {
     throw new Error("useStudio must be used within a StudioProvider");
   }
   return ctx;
+};
+
+// src/engine/permissions.ts
+var DEFAULT_PERMISSIONS = {
+  drag: true,
+  delete: true,
+  duplicate: true,
+  edit: true
+};
+var getNodePermissions = (config, node) => {
+  const global = config?.permissions ?? {};
+  const comp = config?.components?.[node.type] ?? {};
+  let merged = {
+    ...DEFAULT_PERMISSIONS,
+    ...global,
+    ...comp.permissions ?? {}
+  };
+  if (typeof comp.resolvePermissions === "function") {
+    try {
+      const dynamic = comp.resolvePermissions(node.props, { changed: {}, lastProps: null }) ?? {};
+      merged = { ...merged, ...dynamic };
+    } catch {
+    }
+  }
+  return merged;
 };
 
 // src/studio/canvas/dndUtils.ts
@@ -2112,6 +2156,34 @@ function createEventAutoScroller() {
     }
   };
 }
+
+// src/studio/style/types.ts
+var STYLES_PROP = "_tecofStyles";
+
+// src/studio/style/styleClipboard.ts
+var cloneStyles = (styles) => JSON.parse(JSON.stringify(styles));
+var isEmptyStyles = (styles) => !styles || Object.values(styles).every(
+  (layer) => !layer || Object.keys(layer).length === 0
+);
+function copyNodeStyles(id) {
+  const ed = useEditorStore.getState();
+  const targetId = ed.selection.selectedId;
+  if (!targetId) return false;
+  const res = findNodeById(ed.document, targetId);
+  const styles = res?.node.props[STYLES_PROP];
+  if (isEmptyStyles(styles)) return false;
+  useUiStore.getState().setStyleClipboard(cloneStyles(styles));
+  return true;
+}
+function pasteNodeStyles(ids) {
+  const buffer = useUiStore.getState().styleClipboard;
+  if (!buffer) return;
+  const ed = useEditorStore.getState();
+  const targets = (ed.selection.selectedIds).filter(Boolean);
+  for (const id of targets) {
+    ed.updateProps(id, { [STYLES_PROP]: cloneStyles(buffer) });
+  }
+}
 var isMac = typeof navigator !== "undefined" && /Mac|iP(hone|ad)/.test(navigator.platform);
 var MOD = isMac ? "\u2318" : "Ctrl";
 var CommandPalette = ({ onSave }) => {
@@ -2121,6 +2193,7 @@ var CommandPalette = ({ onSave }) => {
   const selectedId = useEditorStore((s) => s.selection.selectedId);
   const canUndo = useEditorStore((s) => s.history.past.length > 0);
   const canRedo = useEditorStore((s) => s.history.future.length > 0);
+  const hasStyleBuffer = useUiStore((s) => !!s.styleClipboard);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef(null);
@@ -2144,14 +2217,18 @@ var CommandPalette = ({ onSave }) => {
     const s = useEditorStore.getState;
     const ui = useUiStore.getState;
     const hasSel = !!selectedId;
+    const selNode = selectedId ? findNodeById(s().document, selectedId)?.node ?? null : null;
+    const perms = selNode ? getNodePermissions(config, selNode) : DEFAULT_PERMISSIONS;
     const actions = [
       { id: "undo", label: "Geri Al", group: "Eylemler", icon: /* @__PURE__ */ jsx(Undo2, { size: 15 }), hint: `${MOD}Z`, disabled: !canUndo, run: () => s().undo() },
       { id: "redo", label: "\u0130leri Al", group: "Eylemler", icon: /* @__PURE__ */ jsx(Redo2, { size: 15 }), hint: `${MOD}\u21E7Z`, disabled: !canRedo, run: () => s().redo() },
-      { id: "duplicate", label: "\xC7o\u011Falt", group: "Eylemler", icon: /* @__PURE__ */ jsx(CopyPlus, { size: 15 }), hint: `${MOD}D`, keywords: "duplicate kopya", disabled: !hasSel, run: () => s().duplicateNodes() },
+      { id: "duplicate", label: "\xC7o\u011Falt", group: "Eylemler", icon: /* @__PURE__ */ jsx(CopyPlus, { size: 15 }), hint: `${MOD}D`, keywords: "duplicate kopya", disabled: !hasSel || perms.duplicate === false, run: () => s().duplicateNodes() },
       { id: "copy", label: "Kopyala", group: "Eylemler", icon: /* @__PURE__ */ jsx(Copy, { size: 15 }), hint: `${MOD}C`, disabled: !hasSel, run: () => s().copyNode() },
-      { id: "cut", label: "Kes", group: "Eylemler", icon: /* @__PURE__ */ jsx(Scissors, { size: 15 }), hint: `${MOD}X`, disabled: !hasSel, run: () => s().cutNode() },
+      { id: "cut", label: "Kes", group: "Eylemler", icon: /* @__PURE__ */ jsx(Scissors, { size: 15 }), hint: `${MOD}X`, disabled: !hasSel || perms.delete === false, run: () => s().cutNode() },
       { id: "paste", label: "Yap\u0131\u015Ft\u0131r", group: "Eylemler", icon: /* @__PURE__ */ jsx(ClipboardPaste, { size: 15 }), hint: `${MOD}V`, run: () => s().pasteClipboard() },
-      { id: "delete", label: "Sil", group: "Eylemler", icon: /* @__PURE__ */ jsx(Trash2, { size: 15 }), hint: "\u232B", keywords: "delete kald\u0131r", disabled: !hasSel, run: () => s().removeNodes() },
+      { id: "delete", label: "Sil", group: "Eylemler", icon: /* @__PURE__ */ jsx(Trash2, { size: 15 }), hint: "\u232B", keywords: "delete kald\u0131r", disabled: !hasSel || perms.delete === false, run: () => s().removeNodes() },
+      { id: "copy-styles", label: "Stili Kopyala", group: "Stil", icon: /* @__PURE__ */ jsx(Paintbrush, { size: 15 }), keywords: "style stil kopyala copy", disabled: !hasSel, run: () => copyNodeStyles() },
+      { id: "paste-styles", label: "Stili Yap\u0131\u015Ft\u0131r", group: "Stil", icon: /* @__PURE__ */ jsx(Paintbrush, { size: 15 }), keywords: "style stil yap\u0131\u015Ft\u0131r paste", disabled: !hasSel || !hasStyleBuffer, run: () => pasteNodeStyles() },
       { id: "mode", label: ui().mode === "preview" ? "D\xFCzenleme moduna ge\xE7" : "\xD6nizleme moduna ge\xE7", group: "G\xF6r\xFCn\xFCm", icon: ui().mode === "preview" ? /* @__PURE__ */ jsx(Pencil, { size: 15 }) : /* @__PURE__ */ jsx(Eye, { size: 15 }), keywords: "preview \xF6nizleme edit d\xFCzenle", run: () => ui().toggleMode() },
       { id: "left", label: ui().leftPanelOpen ? "Sol paneli gizle" : "Sol paneli g\xF6ster", group: "G\xF6r\xFCn\xFCm", icon: /* @__PURE__ */ jsx(PanelLeft, { size: 15 }), keywords: "panel katman", run: () => ui().toggleLeftPanel() },
       { id: "right", label: ui().rightPanelOpen ? "Sa\u011F paneli gizle" : "Sa\u011F paneli g\xF6ster", group: "G\xF6r\xFCn\xFCm", icon: /* @__PURE__ */ jsx(PanelRight, { size: 15 }), keywords: "panel inspector ayar", run: () => ui().toggleRightPanel() }
@@ -2168,7 +2245,7 @@ var CommandPalette = ({ onSave }) => {
       run: () => insertComponent(type)
     }));
     return [...actions, ...inserts];
-  }, [config, selectedId, canUndo, canRedo, onSave]);
+  }, [config, selectedId, canUndo, canRedo, onSave, hasStyleBuffer]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return commands;
@@ -2379,6 +2456,31 @@ function getDefaultTheme() {
     }
   };
 }
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (a == null || b == null) return a === b;
+  if (typeof a !== "object" || typeof b !== "object") return false;
+  const aArr = Array.isArray(a);
+  const bArr = Array.isArray(b);
+  if (aArr !== bArr) return false;
+  if (aArr && bArr) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  const aObj = a;
+  const bObj = b;
+  const aKeys = Object.keys(aObj);
+  const bKeys = Object.keys(bObj);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (!Object.prototype.hasOwnProperty.call(bObj, key)) return false;
+    if (!deepEqual(aObj[key], bObj[key])) return false;
+  }
+  return true;
+}
 function mergeTheme(base, overrides) {
   const result = {
     colors: { ...base.colors, ...overrides.colors ?? {} },
@@ -2420,6 +2522,57 @@ var ThemeVars = () => {
     ensure(iframe?.contentDocument);
   }, [rootProps]);
   return null;
+};
+
+// src/engine/migrate.ts
+var migrateNode = (node, migration) => {
+  const renamed = migration.renameComponents?.[node.type];
+  const type = renamed ?? node.type;
+  const transform = migration.transformProps?.[type];
+  if (!renamed && !transform) return node;
+  let props = node.props;
+  if (transform) {
+    try {
+      props = { ...transform(node.props), id: node.props.id };
+    } catch {
+      props = node.props;
+    }
+  }
+  return { type, props };
+};
+var migrateDocument = (doc, migration) => {
+  if (!migration) return doc;
+  const target = migration.version;
+  const current2 = Number(doc.root?.props?._schemaVersion ?? 0);
+  if (target != null && current2 >= target) return doc;
+  const content = doc.content ?? [];
+  const zones = doc.zones ?? {};
+  let next = {
+    root: doc.root ?? { props: {} },
+    content: migration.renameComponents || migration.transformProps ? content.map((n) => migrateNode(n, migration)) : content,
+    zones: migration.renameComponents || migration.transformProps ? Object.fromEntries(
+      Object.entries(zones).map(([key, items]) => [
+        key,
+        items.map((n) => migrateNode(n, migration))
+      ])
+    ) : zones
+  };
+  if (typeof migration.migrate === "function") {
+    try {
+      next = migration.migrate(next) ?? next;
+    } catch {
+    }
+  }
+  if (target != null) {
+    next = {
+      ...next,
+      root: {
+        ...next.root,
+        props: { ...next.root?.props ?? {}, _schemaVersion: target }
+      }
+    };
+  }
+  return next;
 };
 
 // src/studio/bridge.ts
@@ -2966,9 +3119,6 @@ var NodeErrorBoundary = class extends Component {
   }
 };
 
-// src/studio/style/types.ts
-var STYLES_PROP = "_tecofStyles";
-
 // src/studio/style/tokens.ts
 var isArbitrary = (value) => value.length > 1 && value.startsWith("[") && value.endsWith("]");
 var arbitraryRaw = (value) => isArbitrary(value) ? value.slice(1, -1) : value;
@@ -3305,11 +3455,139 @@ function collectDocumentClasses(doc) {
   }
   return Array.from(set2);
 }
+function useInlineDragRef({
+  node,
+  index,
+  zoneKey,
+  locked,
+  wrapperClassName,
+  label,
+  beginDrag,
+  endDrag,
+  handleMouseEnter,
+  handleMouseLeave,
+  handleClick,
+  onDoubleClick,
+  onDragOver,
+  onDragLeave,
+  onDrop
+}) {
+  const nodeRef = useRef(null);
+  const callbacks = useRef({
+    handleMouseEnter,
+    handleMouseLeave,
+    handleClick,
+    onDoubleClick,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+    beginDrag,
+    endDrag
+  });
+  useEffect(() => {
+    callbacks.current = {
+      handleMouseEnter,
+      handleMouseLeave,
+      handleClick,
+      onDoubleClick,
+      onDragOver,
+      onDragLeave,
+      onDrop,
+      beginDrag,
+      endDrag
+    };
+  });
+  const setRef = useCallback((el) => {
+    if (nodeRef.current) {
+      const old = nodeRef.current;
+      old.removeAttribute("data-tecof-id");
+      old.removeAttribute("data-tecof-type");
+      old.removeAttribute("data-tecof-index");
+      old.removeAttribute("data-tecof-zone");
+      old.removeAttribute("draggable");
+      const classesToRemove = wrapperClassName.split(" ").filter(Boolean);
+      if (classesToRemove.length > 0) {
+        old.classList.remove(...classesToRemove);
+      }
+    }
+    if (el) {
+      el.setAttribute("data-tecof-id", node.props.id);
+      el.setAttribute("data-tecof-type", node.type);
+      el.setAttribute("data-tecof-index", String(index));
+      el.setAttribute("data-tecof-zone", zoneKey || "root");
+      if (!locked) {
+        el.setAttribute("draggable", "true");
+      }
+      const classesToAdd = wrapperClassName.split(" ").filter(Boolean);
+      if (classesToAdd.length > 0) {
+        el.classList.add(...classesToAdd);
+      }
+    }
+    nodeRef.current = el;
+  }, [node.props.id, node.type, index, zoneKey, locked, wrapperClassName]);
+  useEffect(() => {
+    const el = nodeRef.current;
+    if (!el) return;
+    const onMouseEnter = (e) => callbacks.current.handleMouseEnter(e);
+    const onMouseLeave = (e) => callbacks.current.handleMouseLeave(e);
+    const onClick = (e) => callbacks.current.handleClick(e);
+    const onDblClick = (e) => callbacks.current.onDoubleClick(e);
+    const onNativeDragOver = (e) => callbacks.current.onDragOver(e);
+    const onNativeDragLeave = (e) => callbacks.current.onDragLeave(e);
+    const onNativeDrop = (e) => callbacks.current.onDrop(e);
+    const onDragStart = (e) => {
+      if (locked) return;
+      writeDragData(e, { nodeId: node.props.id });
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+      }
+      setDragGhost(e, label);
+      callbacks.current.beginDrag({ id: node.props.id });
+    };
+    const onDragEnd = () => {
+      if (locked) return;
+      callbacks.current.endDrag();
+    };
+    el.addEventListener("mouseenter", onMouseEnter);
+    el.addEventListener("mouseleave", onMouseLeave);
+    el.addEventListener("click", onClick);
+    el.addEventListener("dblclick", onDblClick);
+    el.addEventListener("dragstart", onDragStart);
+    el.addEventListener("dragend", onDragEnd);
+    el.addEventListener("dragover", onNativeDragOver);
+    el.addEventListener("dragleave", onNativeDragLeave);
+    el.addEventListener("drop", onNativeDrop);
+    return () => {
+      el.removeEventListener("mouseenter", onMouseEnter);
+      el.removeEventListener("mouseleave", onMouseLeave);
+      el.removeEventListener("click", onClick);
+      el.removeEventListener("dblclick", onDblClick);
+      el.removeEventListener("dragstart", onDragStart);
+      el.removeEventListener("dragend", onDragEnd);
+      el.removeEventListener("dragover", onNativeDragOver);
+      el.removeEventListener("dragleave", onNativeDragLeave);
+      el.removeEventListener("drop", onNativeDrop);
+    };
+  }, [locked, node.props.id, label, setRef]);
+  return setRef;
+}
+
+// src/studio/usePermissions.ts
+var usePermissions = (id) => {
+  const { config } = useStudio();
+  const node = useEditorStore(
+    (state) => id ? findNodeById(state.document, id)?.node ?? null : null
+  );
+  if (!node) return DEFAULT_PERMISSIONS;
+  return getNodePermissions(config, node);
+};
 var NodeRenderer = ({ node, index, zoneKey }) => {
   const { config, metadata, readOnly: studioReadOnly } = useStudio();
   const mode = useUiStore((s) => s.mode);
   const locked = studioReadOnly || mode === "preview";
   const componentConfig = config.components[node.type];
+  const perms = usePermissions(node.props.id);
+  const dragLocked = locked || perms.drag === false;
   const selectNode = useEditorStore((state) => state.selectNode);
   const toggleSelect = useEditorStore((state) => state.toggleSelect);
   const hoverNode = useEditorStore((state) => state.hoverNode);
@@ -3376,10 +3654,28 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
     isDragging ? "is-dragging" : ""
   ].filter(Boolean).join(" ");
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
+  const dragRef = useInlineDragRef({
+    node,
+    index,
+    zoneKey,
+    locked,
+    wrapperClassName,
+    label,
+    beginDrag,
+    endDrag,
+    handleMouseEnter,
+    handleMouseLeave,
+    handleClick,
+    onDoubleClick,
+    onDragOver,
+    onDragLeave,
+    onDrop
+  });
   const componentProps = {
     ...node.props,
     className: mergeClassName(node.props.className, styleClassName),
     puck: {
+      dragRef: componentConfig.inline ? dragRef : void 0,
       renderDropZone,
       isEditing: !locked,
       metadata: {
@@ -3397,7 +3693,10 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
     });
   }
   const errorResetKey = `${node.props.id}:${JSON.stringify(node.props)}`;
-  return /* @__PURE__ */ jsx(ParentNodeContext.Provider, { value: node.props.id, children: /* @__PURE__ */ jsxs("div", { className: "tecof-node", children: [
+  return /* @__PURE__ */ jsx(ParentNodeContext.Provider, { value: node.props.id, children: componentConfig.inline ? /* @__PURE__ */ jsxs(Fragment, { children: [
+    position && /* @__PURE__ */ jsx("div", { className: `tecof-drop-indicator is-${axis} is-${position}` }),
+    /* @__PURE__ */ jsx(NodeErrorBoundary, { label, type: node.type, resetKey: errorResetKey, children: componentConfig.render(componentProps) })
+  ] }) : /* @__PURE__ */ jsxs("div", { className: "tecof-node", children: [
     position && /* @__PURE__ */ jsx("div", { className: `tecof-drop-indicator is-${axis} is-${position}` }),
     /* @__PURE__ */ jsx(
       "div",
@@ -3407,7 +3706,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
         "data-tecof-type": node.type,
         "data-tecof-index": index,
         "data-tecof-zone": zoneKey || "root",
-        draggable: !locked,
+        draggable: !dragLocked,
         onDragStart: (e) => {
           writeDragData(e, { nodeId: node.props.id });
           e.dataTransfer.effectAllowed = "move";
@@ -3624,11 +3923,18 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }) 
             if (item.isTemplate && item.template) {
               const t = item.template;
               return /* @__PURE__ */ jsxs(
-                "button",
+                "div",
                 {
-                  type: "button",
                   className: "tecof-modal-grid-card",
+                  role: "button",
+                  tabIndex: 0,
                   onClick: () => onSelectTemplate?.(t),
+                  onKeyDown: (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectTemplate?.(t);
+                    }
+                  },
                   children: [
                     /* @__PURE__ */ jsxs("div", { className: "tecof-modal-preview-wrapper", children: [
                       /* @__PURE__ */ jsx("span", { className: "tecof-modal-card-chip", children: "\u015Eablon" }),
@@ -3674,11 +3980,18 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }) 
               }
             };
             return /* @__PURE__ */ jsxs(
-              "button",
+              "div",
               {
-                type: "button",
                 className: "tecof-modal-grid-card",
+                role: "button",
+                tabIndex: 0,
                 onClick: handleCardClick,
+                onKeyDown: (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCardClick();
+                  }
+                },
                 children: [
                   /* @__PURE__ */ jsxs("div", { className: "tecof-modal-preview-wrapper", children: [
                     /* @__PURE__ */ jsx("span", { className: "tecof-modal-card-chip", children: item.isSaved ? "Ortak" : item.type }),
@@ -3941,6 +4254,7 @@ var SpacingBands = ({ coords }) => {
   return /* @__PURE__ */ jsx(Fragment, { children: bands.map((band, i) => /* @__PURE__ */ jsx("div", { className: band.cls, style: band.style }, i)) });
 };
 var SelectionOverlay = () => {
+  const { config } = useStudio();
   const documentState = useEditorStore((state) => state.document);
   const selectedId = useEditorStore((state) => state.selection.selectedId);
   const selectedIds = useEditorStore((state) => state.selection.selectedIds);
@@ -3989,6 +4303,7 @@ var SelectionOverlay = () => {
     moveNode2(selectedId, zoneKey, newIndex);
   };
   const breadcrumbs = selectedId ? getBreadcrumbs(documentState, selectedId) : [];
+  const perms = usePermissions(selectedId);
   if (mode === "preview") return null;
   return /* @__PURE__ */ jsxs(
     "div",
@@ -4023,6 +4338,28 @@ var SelectionOverlay = () => {
             style: getOutlineStyle(selectedCoords),
             children: [
               /* @__PURE__ */ jsxs("div", { className: "tecof-toolbar", children: [
+                nodeDetails && (() => {
+                  const componentConfig = config?.components?.[nodeDetails.node.type];
+                  return /* @__PURE__ */ jsxs("div", { className: "tecof-toolbar-btn tecof-info-popover-trigger", title: "Bile\u015Fen Bilgisi", children: [
+                    /* @__PURE__ */ jsx(Info, { size: 14 }),
+                    /* @__PURE__ */ jsxs("div", { className: "tecof-info-popover", children: [
+                      /* @__PURE__ */ jsx("div", { className: "tecof-info-popover-title", children: componentConfig?.label || nodeDetails.node.type }),
+                      /* @__PURE__ */ jsx("div", { className: "tecof-info-popover-type", children: nodeDetails.node.type }),
+                      componentConfig?.fields && Object.keys(componentConfig.fields).length > 0 && /* @__PURE__ */ jsxs("div", { className: "tecof-info-popover-fields", children: [
+                        /* @__PURE__ */ jsx("div", { className: "tecof-info-popover-section-title", children: "\xD6zellikler:" }),
+                        Object.entries(componentConfig.fields).map(([fieldName, fieldConf]) => /* @__PURE__ */ jsxs("div", { className: "tecof-info-popover-field", children: [
+                          /* @__PURE__ */ jsx("span", { className: "tecof-info-popover-field-name", children: fieldName }),
+                          /* @__PURE__ */ jsxs("span", { className: "tecof-info-popover-field-label", children: [
+                            "(",
+                            fieldConf.label || fieldConf.type,
+                            ")"
+                          ] })
+                        ] }, fieldName))
+                      ] })
+                    ] })
+                  ] });
+                })(),
+                /* @__PURE__ */ jsx("div", { className: "tecof-toolbar-sep" }),
                 parentId && /* @__PURE__ */ jsx(
                   "button",
                   {
@@ -4039,7 +4376,7 @@ var SelectionOverlay = () => {
                   {
                     type: "button",
                     onClick: () => handleMove("up"),
-                    disabled: !canMoveUp,
+                    disabled: !canMoveUp || perms.drag === false,
                     title: "Yukar\u0131 Ta\u015F\u0131",
                     className: "tecof-toolbar-btn",
                     "aria-label": "Yukar\u0131 ta\u015F\u0131",
@@ -4051,7 +4388,7 @@ var SelectionOverlay = () => {
                   {
                     type: "button",
                     onClick: () => handleMove("down"),
-                    disabled: !canMoveDown,
+                    disabled: !canMoveDown || perms.drag === false,
                     title: "A\u015Fa\u011F\u0131 Ta\u015F\u0131",
                     className: "tecof-toolbar-btn",
                     "aria-label": "A\u015Fa\u011F\u0131 ta\u015F\u0131",
@@ -4064,6 +4401,7 @@ var SelectionOverlay = () => {
                   {
                     type: "button",
                     onClick: handleDuplicate,
+                    disabled: perms.duplicate === false,
                     title: isMulti ? "T\xFCm\xFCn\xFC \xC7o\u011Falt" : "Kopyala",
                     className: "tecof-toolbar-btn",
                     "aria-label": isMulti ? "Se\xE7ili \xF6\u011Feleri \xE7o\u011Falt" : "Kopyala",
@@ -4075,6 +4413,7 @@ var SelectionOverlay = () => {
                   {
                     type: "button",
                     onClick: handleDelete,
+                    disabled: perms.delete === false,
                     title: isMulti ? "T\xFCm\xFCn\xFC Sil" : "Sil",
                     className: "tecof-toolbar-btn",
                     "aria-label": isMulti ? "Se\xE7ili \xF6\u011Feleri sil" : "Sil",
@@ -4082,7 +4421,6 @@ var SelectionOverlay = () => {
                   }
                 )
               ] }),
-              nodeDetails && /* @__PURE__ */ jsx("div", { className: "tecof-outline-label", children: nodeDetails.node.type }),
               breadcrumbs.length > 1 && /* @__PURE__ */ jsx("div", { className: "tecof-breadcrumbs", children: breadcrumbs.map((crumb, idx) => /* @__PURE__ */ jsxs(React.Fragment, { children: [
                 idx > 0 && /* @__PURE__ */ jsx("span", { className: "tecof-breadcrumb-sep", children: ">" }),
                 /* @__PURE__ */ jsx(
@@ -4252,6 +4590,176 @@ var CmsBindingButton = ({ onInsert, title = "CMS verisine ba\u011Fla" }) => {
     open && btnRef.current && /* @__PURE__ */ jsx(BindingPopover, { anchor: btnRef.current, onInsert, onClose: close })
   ] });
 };
+var defaultSummary = (value) => {
+  if (value == null) return "";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  const v = value;
+  return String(v.title ?? v.name ?? v.label ?? v.id ?? v._id ?? JSON.stringify(value));
+};
+var rowColumns = (field, row) => {
+  if (field.mapRow) return field.mapRow(row);
+  if (row && typeof row === "object") return row;
+  return { value: row };
+};
+var PickerModal = ({ field, value, onSelect, onClose }) => {
+  const showSearch = field.showSearch !== false;
+  const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const inputRef = useRef(null);
+  const reqIdRef = useRef(0);
+  useEffect(() => {
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+  useEffect(() => {
+    const reqId = ++reqIdRef.current;
+    setLoading(true);
+    setError(null);
+    Promise.resolve(field.fetchList({ query: debounced || void 0 })).then((list) => {
+      if (reqId !== reqIdRef.current) return;
+      setRows(Array.isArray(list) ? list : []);
+      setLoading(false);
+    }).catch((e) => {
+      if (reqId !== reqIdRef.current) return;
+      setError(e?.message || "Veri y\xFCklenemedi");
+      setRows([]);
+      setLoading(false);
+    });
+  }, [field, debounced, reloadKey]);
+  const isSelected = useCallback(
+    (row) => {
+      const mapped = field.mapProp ? field.mapProp(row) : row;
+      return deepEqual(mapped, value);
+    },
+    [field, value]
+  );
+  return createPortal(
+    /* @__PURE__ */ jsx("div", { className: "tecof-cmdk-overlay", onMouseDown: onClose, children: /* @__PURE__ */ jsxs(
+      "div",
+      {
+        className: "tecof-cmdk-panel",
+        role: "dialog",
+        "aria-label": field.label || "Veri se\xE7",
+        onMouseDown: (e) => e.stopPropagation(),
+        children: [
+          /* @__PURE__ */ jsxs("div", { className: "tecof-cmdk-input-row", children: [
+            /* @__PURE__ */ jsx(Search, { size: 16, className: "tecof-cmdk-search-icon" }),
+            showSearch ? /* @__PURE__ */ jsx(
+              "input",
+              {
+                ref: inputRef,
+                type: "text",
+                className: "tecof-cmdk-input",
+                placeholder: "Ara\u2026",
+                value: query,
+                onChange: (e) => setQuery(e.target.value)
+              }
+            ) : /* @__PURE__ */ jsx("span", { className: "tecof-cmdk-input", children: field.label || "Veri se\xE7" }),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                className: "tecof-external-reload",
+                onClick: () => setReloadKey((k) => k + 1),
+                title: "Yenile",
+                disabled: loading,
+                children: /* @__PURE__ */ jsx(RefreshCcw, { size: 14, className: loading ? "tecof-upload-spin" : "" })
+              }
+            ),
+            /* @__PURE__ */ jsx("button", { type: "button", className: "tecof-external-reload", onClick: onClose, title: "Kapat", children: /* @__PURE__ */ jsx(X, { size: 14 }) })
+          ] }),
+          /* @__PURE__ */ jsx("div", { className: "tecof-cmdk-list", children: loading ? /* @__PURE__ */ jsx("div", { className: "tecof-cmdk-empty", children: "Y\xFCkleniyor\u2026" }) : error ? /* @__PURE__ */ jsxs("div", { className: "tecof-external-error", children: [
+            /* @__PURE__ */ jsx("p", { children: error }),
+            /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setReloadKey((k) => k + 1), children: "Tekrar dene" })
+          ] }) : rows.length === 0 ? /* @__PURE__ */ jsx("div", { className: "tecof-cmdk-empty", children: "Sonu\xE7 yok" }) : rows.map((row, idx) => {
+            const cols = rowColumns(field, row);
+            const entries = Object.entries(cols);
+            const [firstKey, firstVal] = entries[0] ?? ["", ""];
+            const primary = field.getItemSummary ? field.getItemSummary(field.mapProp ? field.mapProp(row) : row) : String(firstVal ?? firstKey);
+            const rest = entries.slice(1);
+            const selected = isSelected(row);
+            return /* @__PURE__ */ jsxs(
+              "button",
+              {
+                type: "button",
+                className: `tecof-cmdk-item${selected ? " is-active" : ""}`,
+                onClick: () => onSelect(row),
+                children: [
+                  /* @__PURE__ */ jsx("span", { className: "tecof-cmdk-item-icon", children: selected ? /* @__PURE__ */ jsx(Check, { size: 15 }) : /* @__PURE__ */ jsx(ChevronRight, { size: 15 }) }),
+                  /* @__PURE__ */ jsxs("span", { className: "tecof-external-row-text", children: [
+                    /* @__PURE__ */ jsx("span", { className: "tecof-cmdk-item-label", children: primary }),
+                    rest.length > 0 && /* @__PURE__ */ jsx("span", { className: "tecof-external-row-sub", children: rest.map(([k, v]) => `${k}: ${String(v)}`).join(" \xB7 ") })
+                  ] })
+                ]
+              },
+              idx
+            );
+          }) })
+        ]
+      }
+    ) }),
+    document.body
+  );
+};
+var ExternalField = ({ field, name, value, onChange, readOnly }) => {
+  const [open, setOpen] = useState(false);
+  const summary = useMemo(() => {
+    if (value == null) return "";
+    return field.getItemSummary ? field.getItemSummary(value) : defaultSummary(value);
+  }, [field, value]);
+  const handleSelect = (row) => {
+    onChange(field.mapProp ? field.mapProp(row) : row);
+    setOpen(false);
+  };
+  return /* @__PURE__ */ jsxs(FieldErrorBoundary, { fieldName: field.label || name, children: [
+    /* @__PURE__ */ jsx(FieldLabel, { label: field.label || name, readOnly, children: /* @__PURE__ */ jsxs("div", { className: "tecof-external", children: [
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tecof-external-trigger",
+          disabled: readOnly,
+          onClick: () => setOpen(true),
+          children: [
+            /* @__PURE__ */ jsx(Database, { size: 14, className: "tecof-icon-muted" }),
+            /* @__PURE__ */ jsx("span", { className: `tecof-external-summary${summary ? "" : " is-empty"}`, children: summary || field.placeholder || "Veri se\xE7" })
+          ]
+        }
+      ),
+      value != null && !readOnly && /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          className: "tecof-external-clear",
+          onClick: () => onChange(void 0),
+          title: "Temizle",
+          "aria-label": "Se\xE7imi temizle",
+          children: /* @__PURE__ */ jsx(X, { size: 13 })
+        }
+      )
+    ] }) }),
+    open && /* @__PURE__ */ jsx(
+      PickerModal,
+      {
+        field,
+        value,
+        onSelect: handleSelect,
+        onClose: () => setOpen(false)
+      }
+    )
+  ] });
+};
+var createExternalField = (options) => ({
+  type: "external",
+  ...options
+});
 var FieldRenderer = ({
   name,
   definition,
@@ -4333,6 +4841,52 @@ var FieldRenderer = ({
           className: "tecof-input-number"
         }
       ) });
+    case "boolean":
+    case "toggle": {
+      const checked = value === true || value === "true";
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxs(
+        "button",
+        {
+          id: `field-${name}`,
+          type: "button",
+          role: "switch",
+          "aria-checked": checked,
+          disabled: readOnly,
+          className: `tecof-field-switch${checked ? " is-on" : ""}${readOnly ? " is-readonly" : ""}`,
+          onClick: () => onChange(!checked),
+          children: [
+            /* @__PURE__ */ jsx("span", { className: "tecof-field-switch-track", children: /* @__PURE__ */ jsx("span", { className: "tecof-field-switch-thumb" }) }),
+            /* @__PURE__ */ jsx("span", { className: "tecof-field-switch-text", children: checked ? definition.onLabel || "A\xE7\u0131k" : definition.offLabel || "Kapal\u0131" })
+          ]
+        }
+      ) });
+    }
+    case "range": {
+      const min = typeof definition.min === "number" ? definition.min : 0;
+      const max = typeof definition.max === "number" ? definition.max : 100;
+      const step = typeof definition.step === "number" ? definition.step : 1;
+      const current2 = typeof value === "number" ? value : typeof definition.defaultValue === "number" ? definition.defaultValue : min;
+      return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxs("div", { className: "tecof-field-range", children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            id: `field-${name}`,
+            type: "range",
+            min,
+            max,
+            step,
+            value: current2,
+            disabled: readOnly,
+            onChange: (e) => onChange(Number(e.target.value)),
+            className: "tecof-input-range"
+          }
+        ),
+        /* @__PURE__ */ jsxs("output", { className: "tecof-field-range-value", children: [
+          current2,
+          definition.unit || ""
+        ] })
+      ] }) });
+    }
     case "radio":
       return /* @__PURE__ */ jsx(FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsx("div", { className: "tecof-field-radio-group", children: (definition.options || []).map((opt) => /* @__PURE__ */ jsxs(
         "label",
@@ -4482,7 +5036,7 @@ var FieldRenderer = ({
                   };
                   onChange(updatedItems);
                 },
-                readOnly
+                readOnly: readOnly || subFieldDef?.readOnly === true
               },
               subFieldName
             )) })
@@ -4512,11 +5066,22 @@ var FieldRenderer = ({
           definition: subFieldDef,
           value: objVal[subFieldName],
           onChange: (newSubVal) => onChange({ ...objVal, [subFieldName]: newSubVal }),
-          readOnly
+          readOnly: readOnly || subFieldDef?.readOnly === true
         },
         subFieldName
       )) }) });
     }
+    case "external":
+      return /* @__PURE__ */ jsx(
+        ExternalField,
+        {
+          field: definition,
+          name,
+          value,
+          onChange,
+          readOnly
+        }
+      );
     default:
       return /* @__PURE__ */ jsxs("div", { className: "tecof-field-unsupported", children: [
         'Desteklenmeyen alan t\xFCr\xFC: "',
@@ -4526,6 +5091,87 @@ var FieldRenderer = ({
         ")"
       ] });
   }
+};
+
+// src/studio/fields-host/resolve.ts
+var computeChanged = (prev, next) => {
+  const changed = {};
+  const keys = /* @__PURE__ */ new Set([...Object.keys(prev ?? {}), ...Object.keys(next ?? {})]);
+  for (const key of keys) {
+    changed[key] = !deepEqual(prev?.[key], next?.[key]);
+  }
+  return changed;
+};
+var diffProps = (current2, resolved) => {
+  const diff = {};
+  for (const key of Object.keys(resolved)) {
+    if (!deepEqual(current2?.[key], resolved[key])) {
+      diff[key] = resolved[key];
+    }
+  }
+  return diff;
+};
+
+// src/studio/fields-host/useResolvedFields.ts
+var EMPTY_READONLY = {};
+var useResolvedFields = (node, componentConfig) => {
+  const updateProps2 = useEditorStore((s) => s.updateProps);
+  const staticFields = componentConfig?.fields ?? {};
+  const hasResolveFields = typeof componentConfig?.resolveFields === "function";
+  const hasResolveData = typeof componentConfig?.resolveData === "function";
+  const dynamic = hasResolveFields || hasResolveData;
+  const nodeId = node?.props.id ?? null;
+  const propsKey = node ? JSON.stringify(node.props) : "";
+  const [state, setState] = useState({
+    id: null,
+    fields: staticFields,
+    readOnly: EMPTY_READONLY
+  });
+  const lastPropsRef = useRef(null);
+  const reqIdRef = useRef(0);
+  useEffect(() => {
+    if (!node || !dynamic) {
+      lastPropsRef.current = node?.props ?? null;
+      return;
+    }
+    const reqId = ++reqIdRef.current;
+    let cancelled = false;
+    const prev = lastPropsRef.current;
+    const ctx = { changed: computeChanged(prev, node.props), lastProps: prev };
+    const commit2 = (fields, readOnly) => {
+      if (cancelled || reqId !== reqIdRef.current) return;
+      setState({ id: node.props.id, fields, readOnly });
+    };
+    const runData = (fields) => {
+      if (!hasResolveData) {
+        commit2(fields, EMPTY_READONLY);
+        return;
+      }
+      Promise.resolve(componentConfig.resolveData(node.props, ctx)).then((res) => {
+        if (cancelled || reqId !== reqIdRef.current) return;
+        if (res?.props) {
+          const d = diffProps(node.props, res.props);
+          if (Object.keys(d).length > 0) updateProps2(node.props.id, d);
+        }
+        commit2(fields, res?.readOnly ?? EMPTY_READONLY);
+      }).catch(() => commit2(fields, EMPTY_READONLY));
+    };
+    if (hasResolveFields) {
+      Promise.resolve(
+        componentConfig.resolveFields(node.props, { ...ctx, fields: staticFields })
+      ).then((f) => runData(f ?? staticFields)).catch(() => runData(staticFields));
+    } else {
+      runData(staticFields);
+    }
+    lastPropsRef.current = node.props;
+    return () => {
+      cancelled = true;
+    };
+  }, [nodeId, propsKey, dynamic, hasResolveFields, hasResolveData]);
+  if (!dynamic) {
+    return { fields: staticFields, readOnly: EMPTY_READONLY };
+  }
+  return state.id === nodeId ? { fields: state.fields, readOnly: state.readOnly } : { fields: staticFields, readOnly: EMPTY_READONLY };
 };
 var hasProps = (props) => !!props && Object.values(props).some(Boolean);
 var BREAKPOINTS = [
@@ -4546,6 +5192,8 @@ var StyleEditor = ({ value, onChange }) => {
   const styles = value || {};
   const [bp, setBp] = useState("base");
   const [state, setState] = useState("base");
+  const styleBuffer = useUiStore((s) => s.styleClipboard);
+  const setStyleClipboard = useUiStore((s) => s.setStyleClipboard);
   const stateKey = bp === "base" ? state : `${bp}:${state}`;
   const layer = state === "base" ? styles[bp] || {} : styles.states?.[stateKey] || {};
   const inheritedLayer = state !== "base" ? { ...styles.base || {}, ...bp !== "base" ? styles[bp] || {} : {} } : bp !== "base" ? styles.base || {} : {};
@@ -4564,6 +5212,35 @@ var StyleEditor = ({ value, onChange }) => {
     controls: STYLE_CONTROLS.filter((c) => c.group === group)
   })).filter((g) => g.controls.length > 0);
   return /* @__PURE__ */ jsxs("div", { className: "tecof-style-editor", children: [
+    /* @__PURE__ */ jsxs("div", { className: "tecof-style-editor-head", children: [
+      /* @__PURE__ */ jsx("span", { className: "tecof-style-editor-title", children: "Stil" }),
+      /* @__PURE__ */ jsxs("div", { className: "tecof-style-editor-actions", children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-style-head-btn",
+            title: "Stili kopyala",
+            "aria-label": "Stili kopyala",
+            disabled: isEmptyStyles(styles),
+            onClick: () => setStyleClipboard(cloneStyles(styles)),
+            children: /* @__PURE__ */ jsx(Copy, { size: 13 })
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-style-head-btn",
+            title: "Stili yap\u0131\u015Ft\u0131r",
+            "aria-label": "Stili yap\u0131\u015Ft\u0131r",
+            disabled: !styleBuffer,
+            onClick: () => styleBuffer && onChange(cloneStyles(styleBuffer)),
+            children: /* @__PURE__ */ jsx(ClipboardPaste, { size: 13 })
+          }
+        )
+      ] })
+    ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-style-scopes", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-style-seg", role: "group", "aria-label": "Breakpoint", children: BREAKPOINTS.map((b) => {
         const overridden = hasProps(styles[b.key]);
@@ -5285,6 +5962,8 @@ var Inspector = () => {
   const setRootProps2 = useEditorStore((state) => state.setRootProps);
   const selectNode = useEditorStore((state) => state.selectNode);
   const { config, readOnly } = useStudio();
+  const perms = usePermissions(selectedId);
+  const fieldsReadOnly = readOnly || perms.edit === false;
   const [tab, setTab] = useState("content");
   const [rootTab, setRootTab] = useState("page");
   const activeNodeInfo = useMemo(() => {
@@ -5292,21 +5971,27 @@ var Inspector = () => {
     const details = findNodeById(documentState, selectedId);
     if (!details) return null;
     const componentConfig = config.components[details.node.type];
-    const fields = componentConfig?.fields || {};
-    const editableFields = Object.entries(fields).filter(
-      ([_, fieldDef]) => fieldDef?.type !== "slot"
-    );
     return {
       node: details.node,
       label: componentConfig?.label || details.node.type,
-      editableFields
+      componentConfig
     };
   }, [selectedId, documentState, config]);
+  const resolved = useResolvedFields(
+    activeNodeInfo?.node ?? null,
+    activeNodeInfo?.componentConfig
+  );
+  const editableFields = useMemo(
+    () => Object.entries(resolved.fields).filter(
+      ([, fieldDef]) => fieldDef?.type !== "slot"
+    ),
+    [resolved.fields]
+  );
   if (selectedId) {
     if (!activeNodeInfo) {
       return /* @__PURE__ */ jsx("div", { className: "tecof-inspector", children: /* @__PURE__ */ jsx("div", { className: "tecof-inspector-empty", children: "Bile\u015Fen y\xFCkleniyor veya bulunamad\u0131." }) });
     }
-    const { node, label, editableFields } = activeNodeInfo;
+    const { node, label } = activeNodeInfo;
     return /* @__PURE__ */ jsxs("div", { className: "tecof-inspector", children: [
       /* @__PURE__ */ jsxs("div", { className: "tecof-inspector-header", children: [
         /* @__PURE__ */ jsxs("div", { children: [
@@ -5352,7 +6037,7 @@ var Inspector = () => {
           definition: fieldDef,
           value: node.props[fieldName],
           onChange: (newVal) => updateProps2(selectedId, { [fieldName]: newVal }),
-          readOnly
+          readOnly: fieldsReadOnly || resolved.readOnly[fieldName] === true || fieldDef?.readOnly === true
         },
         fieldName
       )) })
@@ -5443,7 +6128,7 @@ var LanguageSwitcher = () => {
     /* @__PURE__ */ jsx(ChevronDown, { size: 12, className: "tecof-lang-switcher-caret" })
   ] });
 };
-var TopBar = ({ onSave, saving, saveStatus }) => {
+var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }) => {
   const viewport = useEditorStore((state) => state.viewport);
   const setViewport = useEditorStore((state) => state.setViewport);
   const pastCount = useEditorStore((state) => state.history.past.length);
@@ -5474,7 +6159,18 @@ var TopBar = ({ onSave, saving, saveStatus }) => {
         saveStatus === "success" && /* @__PURE__ */ jsxs("span", { className: "tecof-topbar-saved", children: [
           /* @__PURE__ */ jsx(Check, { size: 12 }),
           " Kaydedildi"
-        ] })
+        ] }),
+        dirty && !saving && saveStatus !== "success" && /* @__PURE__ */ jsxs(
+          "span",
+          {
+            className: "tecof-topbar-dirty",
+            title: autoSave ? "De\u011Fi\u015Fiklikler otomatik kaydedilecek" : "Kaydedilmemi\u015F de\u011Fi\u015Fiklikler var",
+            children: [
+              /* @__PURE__ */ jsx("span", { className: "tecof-topbar-dirty-dot" }),
+              autoSave ? "Kaydedilecek\u2026" : "Kaydedilmedi"
+            ]
+          }
+        )
       ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-group", children: [
@@ -5583,6 +6279,7 @@ var TreeNode = ({ node, depth }) => {
   const [dragOverPos, setDragOverPos] = useState(null);
   const componentConfig = config.components[node.type];
   const label = componentConfig?.label || node.type;
+  const perms = usePermissions(node.props.id);
   const childZoneKeys = Object.keys(documentState.zones).filter(
     (key) => key.startsWith(`${node.props.id}:`)
   );
@@ -5645,7 +6342,7 @@ var TreeNode = ({ node, depth }) => {
       selectNode(node.props.id);
       return;
     }
-    if ((e.key === "Delete" || e.key === "Backspace") && isSelected) {
+    if ((e.key === "Delete" || e.key === "Backspace") && isSelected && perms.delete !== false) {
       e.preventDefault();
       removeNode2(node.props.id);
     }
@@ -5655,7 +6352,7 @@ var TreeNode = ({ node, depth }) => {
     /* @__PURE__ */ jsxs(
       "div",
       {
-        draggable: true,
+        draggable: perms.drag !== false,
         onDragStart: (e) => {
           writeDragData(e, { nodeId: node.props.id });
           e.dataTransfer.effectAllowed = "move";
@@ -5695,7 +6392,7 @@ var TreeNode = ({ node, depth }) => {
             /* @__PURE__ */ jsx(PanelsTopLeft, { size: 14, className: "tecof-layer-icon" }),
             /* @__PURE__ */ jsx("span", { className: "tecof-layer-label", children: label })
           ] }),
-          /* @__PURE__ */ jsx(
+          perms.delete !== false && /* @__PURE__ */ jsx(
             "button",
             {
               type: "button",
@@ -5977,6 +6674,44 @@ var LeftPanel = () => {
     ] }) : /* @__PURE__ */ jsx(LayersTree, {}) })
   ] });
 };
+function useKeyboardShortcuts() {
+  const undo = useEditorStore((state) => state.undo);
+  const redo = useEditorStore((state) => state.redo);
+  const removeNodes2 = useEditorStore((state) => state.removeNodes);
+  const duplicateNodes2 = useEditorStore((state) => state.duplicateNodes);
+  const selectedIds = useEditorStore((state) => state.selection.selectedIds);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const target = e.target;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable) {
+        return;
+      }
+      const isMac2 = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const cmdOrCtrl = isMac2 ? e.metaKey : e.ctrlKey;
+      if (cmdOrCtrl && !e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        undo();
+      } else if (cmdOrCtrl && e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        redo();
+      } else if (e.key === "Backspace" || e.key === "Delete") {
+        if (selectedIds.length > 0) {
+          e.preventDefault();
+          removeNodes2();
+        }
+      } else if (cmdOrCtrl && e.key.toLowerCase() === "d") {
+        if (selectedIds.length > 0) {
+          e.preventDefault();
+          duplicateNodes2();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [undo, redo, removeNodes2, duplicateNodes2, selectedIds]);
+}
 var TecofStudio = ({
   pageId,
   config,
@@ -5984,13 +6719,18 @@ var TecofStudio = ({
   onSave,
   onChange,
   hostOrigin,
+  autoSave = false,
+  autoSaveDelay = 2e3,
+  warnOnUnsavedChanges = true,
   className
 }) => {
   const { apiClient } = useTecof();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
+  const [dirty, setDirty] = useState(false);
   const setDocument = useEditorStore((state) => state.setDocument);
+  const setPermissionResolver = useEditorStore((state) => state.setPermissionResolver);
   const documentState = useEditorStore((state) => state.document);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
@@ -6002,7 +6742,13 @@ var TecofStudio = ({
   const mode = useUiStore((state) => state.mode);
   const documentStateRef = useRef(documentState);
   documentStateRef.current = documentState;
+  const savedDocRef = useRef(documentState);
+  const dirtyRef = useRef(false);
+  const savingRef = useRef(false);
+  savingRef.current = saving;
+  const autoSaveTimerRef = useRef(null);
   const isEmbedded2 = isEmbedded();
+  useKeyboardShortcuts();
   useEffect(() => {
     configureBridge(hostOrigin);
   }, [hostOrigin]);
@@ -6016,8 +6762,11 @@ var TecofStudio = ({
         const res = await apiClient.getPage(pageId, controller.signal);
         if (cancelled) return;
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
-        const parsedDoc = parseDocument(rawData);
+        const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
         setDocument(parsedDoc);
+        savedDocRef.current = useEditorStore.getState().document;
+        dirtyRef.current = false;
+        setDirty(false);
       } catch (err) {
         if (cancelled || err instanceof DOMException && err.name === "AbortError") {
           return;
@@ -6069,6 +6818,9 @@ var TecofStudio = ({
       if (res.success) {
         setSaveStatus("success");
         setTimeout(() => setSaveStatus("idle"), 3e3);
+        savedDocRef.current = currentDoc;
+        dirtyRef.current = documentStateRef.current !== currentDoc;
+        setDirty(dirtyRef.current);
         onSave?.(serialized);
         if (isEmbedded2) {
           postToHost("puck:saved", { data: serialized });
@@ -6088,6 +6840,36 @@ var TecofStudio = ({
       setSaving(false);
     }
   }, [pageId, apiClient, accessToken, onSave, isEmbedded2]);
+  useEffect(() => {
+    if (loading) return;
+    const isDirty = documentState !== savedDocRef.current;
+    dirtyRef.current = isDirty;
+    setDirty(isDirty);
+    if (!isDirty || !autoSave) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      if (documentStateRef.current !== savedDocRef.current && !savingRef.current) {
+        handleSaveDraft();
+      }
+    }, autoSaveDelay);
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+    };
+  }, [documentState, loading, autoSave, autoSaveDelay, handleSaveDraft]);
+  useEffect(() => {
+    if (!warnOnUnsavedChanges) return;
+    const handler = (e) => {
+      if (!dirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [warnOnUnsavedChanges]);
   useEffect(() => {
     if (!isEmbedded2) return;
     const onMessage = (e) => {
@@ -6226,6 +7008,10 @@ var TecofStudio = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [undo, redo, isEmbedded2, handleSaveDraft]);
+  useEffect(() => {
+    setPermissionResolver((node) => getNodePermissions(config, node));
+    return () => setPermissionResolver(null);
+  }, [config, setPermissionResolver]);
   const studioContextValue = useMemo(() => ({
     config,
     readOnly: mode === "preview",
@@ -6235,7 +7021,7 @@ var TecofStudio = ({
     return /* @__PURE__ */ jsx(StudioSkeleton, { className });
   }
   return /* @__PURE__ */ jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsx(LanguageProvider, { children: /* @__PURE__ */ jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
-    /* @__PURE__ */ jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus }),
+    /* @__PURE__ */ jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus, dirty, autoSave }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace-container", children: [
       leftPanelOpen ? /* @__PURE__ */ jsx(LeftPanel, {}) : /* @__PURE__ */ jsx(PanelRail, { side: "left", onExpand: toggleLeftPanel }),
       /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace", children: [
@@ -6333,13 +7119,22 @@ var RenderNode = ({ node, index }) => {
 };
 var TecofRender = ({ data, config, className, cmsData }) => {
   if (!data) return null;
+  const doc = migrateDocument(
+    {
+      root: data.root ?? { props: {} },
+      // PuckContentItem/TecofNode share a shape; nodes always carry an id at runtime.
+      content: data.content ?? [],
+      zones: data.zones ?? {}
+    },
+    config.migrations
+  );
   const contextValue = {
-    zones: data.zones || {},
+    zones: doc.zones || {},
     config,
     cmsData: cmsData || null
   };
-  const renderedContent = data.content.map((item, index) => /* @__PURE__ */ jsx(RenderNode, { node: item, index }, item.props.id || index));
-  const rootProps = data.root?.props || {};
+  const renderedContent = doc.content.map((item, index) => /* @__PURE__ */ jsx(RenderNode, { node: item, index }, item.props.id || index));
+  const rootProps = doc.root?.props || {};
   const rootConfig = config.root;
   const contentWithLayout = rootConfig?.render ? rootConfig.render({
     ...rootProps,
@@ -6348,7 +7143,7 @@ var TecofRender = ({ data, config, className, cmsData }) => {
   }) : renderedContent;
   return /* @__PURE__ */ jsx(RenderContext.Provider, { value: contextValue, children: /* @__PURE__ */ jsx("div", { className, children: contentWithLayout }) });
 };
-var EditorFieldImpl = lazy(() => import('./EditorField.impl-N5LV5WSC.mjs'));
+var EditorFieldImpl = lazy(() => import('./EditorField.impl-MSWXZU6Z.mjs'));
 var EditorField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -6372,7 +7167,7 @@ var createEditorField = (options = {}) => {
     ) }) })
   };
 };
-var UploadFieldImpl = lazy(() => import('./UploadField.impl-4HRTZAYQ.mjs'));
+var UploadFieldImpl = lazy(() => import('./UploadField.impl-DN2FTNIF.mjs'));
 var UploadField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(UploadFieldImpl, { ...props }) });
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {
@@ -7385,6 +8180,6 @@ var createIconField = (options = {}) => {
   };
 };
 
-export { CmsCollectionField, CodeEditorField, ColorField, EditorField, IconField, LinkField, RepeaterField, STYLES_PROP, STYLE_CONTROLS, TecofEditor, TecofRender, TecofStudio, UploadField, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createIconField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme };
+export { CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, IconField, LinkField, RepeaterField, STYLES_PROP, STYLE_CONTROLS, TecofEditor, TecofRender, TecofStudio, UploadField, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

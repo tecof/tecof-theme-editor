@@ -25,6 +25,9 @@ export type { CmsCollectionFieldProps, CmsCollectionFieldOptions, CmsCollectionF
 export { IconField, createIconField } from './IconField';
 export type { IconFieldProps, IconFieldOptions } from './IconField';
 
+export { ExternalField, createExternalField } from './ExternalField';
+export type { ExternalFieldProps, ExternalFieldConfig } from './ExternalField';
+
 export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';
 export { FieldLabel } from './FieldLabel';

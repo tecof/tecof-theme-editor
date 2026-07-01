@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Trash2 } from 'luc
 import { useState } from 'react';
 import { FieldLabel } from '../../components/fields/FieldLabel';
 import { CmsBindingButton } from '../../components/fields/CmsBindingButton';
+import { ExternalField } from '../../components/fields/ExternalField';
 
 export interface FieldRendererProps {
   name: string;
@@ -119,6 +120,60 @@ export const FieldRenderer = ({
           />
         </FieldLabel>
       );
+
+    case 'boolean':
+    case 'toggle': {
+      const checked = value === true || value === 'true';
+      return (
+        <FieldLabel label={label} readOnly={readOnly}>
+          <button
+            id={`field-${name}`}
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            disabled={readOnly}
+            className={`tecof-field-switch${checked ? ' is-on' : ''}${readOnly ? ' is-readonly' : ''}`}
+            onClick={() => onChange(!checked)}
+          >
+            <span className="tecof-field-switch-track">
+              <span className="tecof-field-switch-thumb" />
+            </span>
+            <span className="tecof-field-switch-text">
+              {checked ? definition.onLabel || 'Açık' : definition.offLabel || 'Kapalı'}
+            </span>
+          </button>
+        </FieldLabel>
+      );
+    }
+
+    case 'range': {
+      const min = typeof definition.min === 'number' ? definition.min : 0;
+      const max = typeof definition.max === 'number' ? definition.max : 100;
+      const step = typeof definition.step === 'number' ? definition.step : 1;
+      const current = typeof value === 'number'
+        ? value
+        : (typeof definition.defaultValue === 'number' ? definition.defaultValue : min);
+      return (
+        <FieldLabel label={label} readOnly={readOnly}>
+          <div className="tecof-field-range">
+            <input
+              id={`field-${name}`}
+              type="range"
+              min={min}
+              max={max}
+              step={step}
+              value={current}
+              disabled={readOnly}
+              onChange={(e) => onChange(Number(e.target.value))}
+              className="tecof-input-range"
+            />
+            <output className="tecof-field-range-value">
+              {current}{definition.unit || ''}
+            </output>
+          </div>
+        </FieldLabel>
+      );
+    }
 
     case 'radio':
       return (
@@ -279,7 +334,7 @@ export const FieldRenderer = ({
                             };
                             onChange(updatedItems);
                           }}
-                          readOnly={readOnly}
+                          readOnly={readOnly || (subFieldDef as any)?.readOnly === true}
                         />
                       ))}
                     </div>
@@ -318,13 +373,24 @@ export const FieldRenderer = ({
                 definition={subFieldDef}
                 value={objVal[subFieldName]}
                 onChange={(newSubVal) => onChange({ ...objVal, [subFieldName]: newSubVal })}
-                readOnly={readOnly}
+                readOnly={readOnly || (subFieldDef as any)?.readOnly === true}
               />
             ))}
           </div>
         </FieldLabel>
       );
     }
+
+    case 'external':
+      return (
+        <ExternalField
+          field={definition}
+          name={name}
+          value={value}
+          onChange={onChange}
+          readOnly={readOnly}
+        />
+      );
 
     default:
       return (

@@ -33590,6 +33590,6 @@ lucide-react/dist/esm/lucide-react.js:
    *)
 */
 
-export { ArrowDown, ArrowUp, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardPaste, Code, Copy, CopyPlus, Database, Drawer, ExternalLink, Eye, EyeOff, File, FileText, Globe, Grid3x3, GripVertical, Image, ImagePlus, Languages, Layers, LayoutGrid, LayoutTemplate, Link, Link2, LoaderCircle, Monitor, PanelLeft, PanelRight, PanelsTopLeft, Pencil, Pipette, Plus, Redo2, RefreshCcw, RefreshCw, RotateCcw, Save, Scissors, Search, Smartphone, Tablet, TecofApiClient, TecofPicture, TecofProvider, Trash2, Undo2, Upload, X, lucide_react_exports, useTecof };
-//# sourceMappingURL=chunk-5MD5GTJT.mjs.map
-//# sourceMappingURL=chunk-5MD5GTJT.mjs.map
+export { ArrowDown, ArrowUp, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ClipboardPaste, Code, Copy, CopyPlus, Database, Drawer, ExternalLink, Eye, EyeOff, File, FileText, Globe, Grid3x3, GripVertical, Image, ImagePlus, Info, Languages, Layers, LayoutGrid, LayoutTemplate, Link, Link2, LoaderCircle, Monitor, Paintbrush, PanelLeft, PanelRight, PanelsTopLeft, Pencil, Pipette, Plus, Redo2, RefreshCcw, RefreshCw, RotateCcw, Save, Scissors, Search, Smartphone, Tablet, TecofApiClient, TecofPicture, TecofProvider, Trash2, Undo2, Upload, X, lucide_react_exports, useTecof };
+//# sourceMappingURL=chunk-OUKYABPK.mjs.map
+//# sourceMappingURL=chunk-OUKYABPK.mjs.map

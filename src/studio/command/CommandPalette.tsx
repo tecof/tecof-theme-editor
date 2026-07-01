@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Undo2, Redo2, Copy, Scissors, ClipboardPaste, CopyPlus, Trash2,
-  Eye, Pencil, PanelLeft, PanelRight, Save, Plus, Search,
+  Eye, Pencil, PanelLeft, PanelRight, Save, Plus, Search, Paintbrush,
 } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
 import { findNodeById } from '../../engine/zones';
+import { getNodePermissions, DEFAULT_PERMISSIONS } from '../../engine/permissions';
 import { createNode } from '../canvas/dndUtils';
+import { copyNodeStyles, pasteNodeStyles } from '../style/styleClipboard';
 
 interface Command {
   id: string;
@@ -40,6 +42,7 @@ export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
   const selectedId = useEditorStore((s) => s.selection.selectedId);
   const canUndo = useEditorStore((s) => s.history.past.length > 0);
   const canRedo = useEditorStore((s) => s.history.future.length > 0);
+  const hasStyleBuffer = useUiStore((s) => !!s.styleClipboard);
 
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -70,14 +73,23 @@ export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
     const ui = useUiStore.getState;
     const hasSel = !!selectedId;
 
+    // Permissions of the primary selection gate the destructive commands. (Bulk
+    // ops are additionally filtered by the engine.)
+    const selNode = selectedId
+      ? findNodeById(s().document, selectedId)?.node ?? null
+      : null;
+    const perms = selNode ? getNodePermissions(config, selNode) : DEFAULT_PERMISSIONS;
+
     const actions: Command[] = [
       { id: 'undo', label: 'Geri Al', group: 'Eylemler', icon: <Undo2 size={15} />, hint: `${MOD}Z`, disabled: !canUndo, run: () => s().undo() },
       { id: 'redo', label: 'İleri Al', group: 'Eylemler', icon: <Redo2 size={15} />, hint: `${MOD}⇧Z`, disabled: !canRedo, run: () => s().redo() },
-      { id: 'duplicate', label: 'Çoğalt', group: 'Eylemler', icon: <CopyPlus size={15} />, hint: `${MOD}D`, keywords: 'duplicate kopya', disabled: !hasSel, run: () => s().duplicateNodes() },
+      { id: 'duplicate', label: 'Çoğalt', group: 'Eylemler', icon: <CopyPlus size={15} />, hint: `${MOD}D`, keywords: 'duplicate kopya', disabled: !hasSel || perms.duplicate === false, run: () => s().duplicateNodes() },
       { id: 'copy', label: 'Kopyala', group: 'Eylemler', icon: <Copy size={15} />, hint: `${MOD}C`, disabled: !hasSel, run: () => s().copyNode() },
-      { id: 'cut', label: 'Kes', group: 'Eylemler', icon: <Scissors size={15} />, hint: `${MOD}X`, disabled: !hasSel, run: () => s().cutNode() },
+      { id: 'cut', label: 'Kes', group: 'Eylemler', icon: <Scissors size={15} />, hint: `${MOD}X`, disabled: !hasSel || perms.delete === false, run: () => s().cutNode() },
       { id: 'paste', label: 'Yapıştır', group: 'Eylemler', icon: <ClipboardPaste size={15} />, hint: `${MOD}V`, run: () => s().pasteClipboard() },
-      { id: 'delete', label: 'Sil', group: 'Eylemler', icon: <Trash2 size={15} />, hint: '⌫', keywords: 'delete kaldır', disabled: !hasSel, run: () => s().removeNodes() },
+      { id: 'delete', label: 'Sil', group: 'Eylemler', icon: <Trash2 size={15} />, hint: '⌫', keywords: 'delete kaldır', disabled: !hasSel || perms.delete === false, run: () => s().removeNodes() },
+      { id: 'copy-styles', label: 'Stili Kopyala', group: 'Stil', icon: <Paintbrush size={15} />, keywords: 'style stil kopyala copy', disabled: !hasSel, run: () => copyNodeStyles() },
+      { id: 'paste-styles', label: 'Stili Yapıştır', group: 'Stil', icon: <Paintbrush size={15} />, keywords: 'style stil yapıştır paste', disabled: !hasSel || !hasStyleBuffer, run: () => pasteNodeStyles() },
       { id: 'mode', label: ui().mode === 'preview' ? 'Düzenleme moduna geç' : 'Önizleme moduna geç', group: 'Görünüm', icon: ui().mode === 'preview' ? <Pencil size={15} /> : <Eye size={15} />, keywords: 'preview önizleme edit düzenle', run: () => ui().toggleMode() },
       { id: 'left', label: ui().leftPanelOpen ? 'Sol paneli gizle' : 'Sol paneli göster', group: 'Görünüm', icon: <PanelLeft size={15} />, keywords: 'panel katman', run: () => ui().toggleLeftPanel() },
       { id: 'right', label: ui().rightPanelOpen ? 'Sağ paneli gizle' : 'Sağ paneli göster', group: 'Görünüm', icon: <PanelRight size={15} />, keywords: 'panel inspector ayar', run: () => ui().toggleRightPanel() },
@@ -98,7 +110,7 @@ export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
 
     return [...actions, ...inserts];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, selectedId, canUndo, canRedo, onSave]);
+  }, [config, selectedId, canUndo, canRedo, onSave, hasStyleBuffer]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

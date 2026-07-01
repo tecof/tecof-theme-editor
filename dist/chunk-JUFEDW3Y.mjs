@@ -1,4 +1,4 @@
-import { useTecof, Copy, LoaderCircle, Languages } from './chunk-5MD5GTJT.mjs';
+import { useTecof, Copy, LoaderCircle, Languages } from './chunk-OUKYABPK.mjs';
 import { createContext, useState, useMemo, useEffect, useContext, Component, useRef, useCallback } from 'react';
 import { jsx, jsxs } from 'react/jsx-runtime';
 
@@ -408,5 +408,5 @@ var createLanguageField = (options = {}) => {
 };
 
 export { FieldErrorBoundary, FieldLabel, FieldLoading, LanguageField, LanguageProvider, LanguageTabBar, createLanguageField, useActiveLanguage, useLanguages };
-//# sourceMappingURL=chunk-IYNPDX7Q.mjs.map
-//# sourceMappingURL=chunk-IYNPDX7Q.mjs.map
+//# sourceMappingURL=chunk-JUFEDW3Y.mjs.map
+//# sourceMappingURL=chunk-JUFEDW3Y.mjs.map

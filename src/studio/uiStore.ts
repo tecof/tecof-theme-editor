@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { NodeStyles } from './style/types';
 
 export type EditorMode = 'edit' | 'preview';
 
@@ -14,6 +15,12 @@ interface UiState {
   rightPanelOpen: boolean;
   /** Whether the Cmd/Ctrl+K command palette is open. */
   commandPaletteOpen: boolean;
+  /**
+   * Session style clipboard: the most recently copied node's structured styles
+   * (`_tecofStyles`). Lives here (UI state, not the document) so "paste styles"
+   * buttons can reactively enable/disable. In-memory only (not persisted).
+   */
+  styleClipboard: NodeStyles | null;
 
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
@@ -23,6 +30,7 @@ interface UiState {
   setRightPanelOpen: (open: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   toggleCommandPalette: () => void;
+  setStyleClipboard: (styles: NodeStyles | null) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -30,6 +38,7 @@ export const useUiStore = create<UiState>((set) => ({
   leftPanelOpen: false,
   rightPanelOpen: true,
   commandPaletteOpen: false,
+  styleClipboard: null,
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
@@ -39,4 +48,5 @@ export const useUiStore = create<UiState>((set) => ({
   setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
+  setStyleClipboard: (styles) => set({ styleClipboard: styles }),
 }));

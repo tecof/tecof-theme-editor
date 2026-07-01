@@ -157,6 +157,43 @@ export function getDefaultTheme(): ThemeConfig {
   };
 }
 
+/* ─── Deep Equality ─── */
+
+/**
+ * Structural equality for plain JSON-ish values (primitives, arrays, plain
+ * objects). Used to compare prop values so dynamic resolvers only write back real
+ * changes (loop guard) and only report genuinely-changed props. Not intended for
+ * classes, Maps/Sets, or cyclic structures — prop values are plain data.
+ */
+export function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a == null || b == null) return a === b;
+  if (typeof a !== 'object' || typeof b !== 'object') return false;
+
+  const aArr = Array.isArray(a);
+  const bArr = Array.isArray(b);
+  if (aArr !== bArr) return false;
+
+  if (aArr && bArr) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  const aObj = a as Record<string, unknown>;
+  const bObj = b as Record<string, unknown>;
+  const aKeys = Object.keys(aObj);
+  const bKeys = Object.keys(bObj);
+  if (aKeys.length !== bKeys.length) return false;
+  for (const key of aKeys) {
+    if (!Object.prototype.hasOwnProperty.call(bObj, key)) return false;
+    if (!deepEqual(aObj[key], bObj[key])) return false;
+  }
+  return true;
+}
+
 /* ─── Deep Merge ─── */
 
 function isObject(item: unknown): item is Record<string, unknown> {

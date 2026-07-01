@@ -1,6 +1,6 @@
 'use strict';
 
-var chunkEC7VNWDF_js = require('./chunk-EC7VNWDF.js');
+var chunk24FK4NEO_js = require('./chunk-24FK4NEO.js');
 var react = require('react');
 var jsxRuntime = require('react/jsx-runtime');
 
@@ -17,7 +17,7 @@ var MediaDrawer = ({
   title = "Medya K\xFCt\xFCphanesi",
   extraTabs = []
 }) => {
-  const { apiClient } = chunkEC7VNWDF_js.useTecof();
+  const { apiClient } = chunk24FK4NEO_js.useTecof();
   const [galleryFiles, setGalleryFiles] = react.useState([]);
   const [loading, setLoading] = react.useState(false);
   const [refreshKey, setRefreshKey] = react.useState(0);
@@ -52,17 +52,17 @@ var MediaDrawer = ({
     }
     return files;
   }, [galleryFiles, filterImages, gallerySearch]);
-  return /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Drawer.Root, { open, onOpenChange: (o) => {
+  return /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Drawer.Root, { open, onOpenChange: (o) => {
     onOpenChange(o);
     if (!o) {
       setGallerySearch("");
       setActiveTab("library");
     }
-  }, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkEC7VNWDF_js.Drawer.Portal, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
-    /* @__PURE__ */ jsxRuntime.jsxs(chunkEC7VNWDF_js.Drawer.Content, { className: "tecof-upload-drawer-content", children: [
-      /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Drawer.Title, { className: "tecof-sr-only", children: title }),
-      /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
+  }, children: /* @__PURE__ */ jsxRuntime.jsxs(chunk24FK4NEO_js.Drawer.Portal, { children: [
+    /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
+    /* @__PURE__ */ jsxRuntime.jsxs(chunk24FK4NEO_js.Drawer.Content, { className: "tecof-upload-drawer-content", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Drawer.Title, { className: "tecof-sr-only", children: title }),
+      /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
       /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-drawer-handle" }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-inner", children: [
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header", children: [
@@ -75,7 +75,7 @@ var MediaDrawer = ({
                 onClick: () => setRefreshKey((k) => k + 1),
                 disabled: loading,
                 title: "Yenile",
-                children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.RefreshCcw, { size: 15, className: loading ? "tecof-upload-spin" : "" })
+                children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.RefreshCcw, { size: 15, className: loading ? "tecof-upload-spin" : "" })
               }
             ),
             /* @__PURE__ */ jsxRuntime.jsx(
@@ -84,7 +84,7 @@ var MediaDrawer = ({
                 className: "tecof-upload-drawer-action-btn",
                 onClick: () => onOpenChange(false),
                 title: "Kapat",
-                children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.X, { size: 15 })
+                children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.X, { size: 15 })
               }
             )
           ] })
@@ -99,7 +99,7 @@ var MediaDrawer = ({
               className: `tecof-media-tab${activeTab === "library" ? " is-active" : ""}`,
               onClick: () => setActiveTab("library"),
               children: [
-                /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Image, { size: 14 }),
+                /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Image, { size: 14 }),
                 " K\xFCt\xFCphane"
               ]
             }
@@ -122,7 +122,7 @@ var MediaDrawer = ({
         ] }),
         activeTab !== "library" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-tab-panel", children: extraTabs.find((t) => t.id === activeTab)?.render() }) : /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
           /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-search-box", children: [
-            /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Search, { size: 15, className: "tecof-icon-muted" }),
+            /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Search, { size: 15, className: "tecof-icon-muted" }),
             /* @__PURE__ */ jsxRuntime.jsx(
               "input",
               {
@@ -139,7 +139,7 @@ var MediaDrawer = ({
                 type: "button",
                 className: "tecof-upload-action-btn tecof-upload-clear-search-btn",
                 onClick: () => setGallerySearch(""),
-                children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.X, { size: 13 })
+                children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.X, { size: 13 })
               }
             )
           ] }),
@@ -147,7 +147,7 @@ var MediaDrawer = ({
             /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-skeleton-block tecof-media-skeleton-thumb" }),
             /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-skeleton tecof-skeleton-text w-80" })
           ] }, index)) }) : filteredGallery.length === 0 ? /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-gallery-empty", children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Image, { size: 24, className: "tecof-icon-muted" }) }),
+            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Image, { size: 24, className: "tecof-icon-muted" }) }),
             /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-heading", children: gallerySearch ? "Sonu\xE7 bulunamad\u0131" : "Hen\xFCz dosya yok" }),
             /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-empty-subheading", children: gallerySearch ? "Farkl\u0131 bir arama terimi deneyin" : "Dosyalar\u0131n\u0131z burada g\xF6r\xFCnecek" })
           ] }) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-grid", children: filteredGallery.map((file) => {
@@ -158,16 +158,16 @@ var MediaDrawer = ({
                 className: `tecof-upload-gallery-item ${selected ? "selected" : ""}`,
                 onClick: () => handleSelect(file),
                 children: [
-                  selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Check, { size: 12, strokeWidth: 3 }) }),
+                  selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Check, { size: 12, strokeWidth: 3 }) }),
                   isImageType(file.type) ? /* @__PURE__ */ jsxRuntime.jsx(
-                    chunkEC7VNWDF_js.TecofPicture,
+                    chunk24FK4NEO_js.TecofPicture,
                     {
                       data: file,
                       alt: file.name,
                       size: "thumbnail",
                       className: "tecof-upload-gallery-thumb"
                     }
-                  ) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.File, { size: 24, className: "tecof-icon-muted" }) }),
+                  ) : /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.File, { size: 24, className: "tecof-icon-muted" }) }),
                   /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-upload-gallery-file-name", children: file.meta?.originalName || file.name })
                 ]
               },
@@ -181,5 +181,5 @@ var MediaDrawer = ({
 };
 
 exports.MediaDrawer = MediaDrawer;
-//# sourceMappingURL=chunk-UXHVAOSV.js.map
-//# sourceMappingURL=chunk-UXHVAOSV.js.map
+//# sourceMappingURL=chunk-H5O7C4PW.js.map
+//# sourceMappingURL=chunk-H5O7C4PW.js.map

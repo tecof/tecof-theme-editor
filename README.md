@@ -3,6 +3,8 @@
 Tecof platform için **sayfa editörü**, **render motoru** ve **gelişmiş alan bileşenleri** kütüphanesi.
 
 > API Client, Context Provider, Tecof Studio editörü, çok dilli alan yöneticileri, medya yöneticisi, link seçici, resim görüntüleyici ve tema araçları içerir.
+>
+> **Studio öne çıkanlar:** komut paleti (⌘K), görsel stil editörü + **canlı tema editörü**, CMS veri bağlama, bölüm şablonları, yan yana slot düzeni, boşluk (box-model) overlay'i ve tam klavye kısayolları.
 
 ---
 
@@ -181,7 +183,7 @@ fields: {
 
 ### UploadField — Gelişmiş Medya Yöneticisi
 
-FilePond tabanlı dosya yükleme + Vaul Drawer medya kütüphanesi + Doka görseldüzenleyici.
+Görsel önizleme tile'ları + tek giriş noktalı sekmeli medya drawer'ı (Kütüphane / Yükle / Referans) + FilePond yükleme + Doka görsel düzenleyici.
 
 ```tsx
 fields: {
@@ -190,7 +192,6 @@ fields: {
     allowMultiple: true,
     maxFiles: 10,
     maxFileSize: "50MB",
-    showUploadedFiles: true,
   }),
   document: createUploadField({
     label: "Doküman",
@@ -201,13 +202,13 @@ fields: {
 ```
 
 **Özellikler:**
-- 📁 **Medya Seç** — Vaul drawer ile sunucudaki mevcut dosyaları seçin
-- 📤 **Yeni Yükle** — FilePond ile sürükle-bırak dosya yükleme
-- 🖼️ **Doka Görsel Düzenleyici** — Kırp, döndür, parlaklık, kontrast, markup, çıkartma
-- 🗜️ **Resim Sıkıştırma** — Otomatik WebP dönüşümü (browser-image-compression)
-- 📄 24+ dosya türü desteği (görseller, PDF, Office, CSV, video)
-- 👁️ Dosya önizleme, indirme ve kaldırma butonları
-- 🇹🇷 Tamamen Türkçe etiketler (FilePond + Doka)
+- 🖼️ **Görsel önizleme tile grid'i** — Seçili medya küçük liste satırı yerine kare önizleme tile'ları olarak gösterilir; hover'da kaldır butonu.
+- ➕ **Tek giriş noktası** — Bir "ekle" tile'ı drawer'ı açar; tüm kaynaklar **sekme** halinde: **Kütüphane** (sunucudaki dosyalar), **Yükle** (FilePond), **Referans** (CMS değişkeni).
+- 🔗 **CMS Referansı** — `{{ data.alan }}` ile dinamik görsel bağlama (CMS şablon sayfaları için).
+- 🖌️ **Doka Görsel Düzenleyici** — Kırp, döndür, parlaklık, kontrast, markup, çıkartma.
+- 🗜️ **Resim Sıkıştırma** — Otomatik WebP dönüşümü (browser-image-compression).
+- 📄 24+ dosya türü desteği (görseller, PDF, Office, CSV, video).
+- 🇹🇷 Tamamen Türkçe etiketler (FilePond + Doka).
 
 | Option | Tip | Default | Açıklama |
 |--------|-----|---------|----------|
@@ -216,9 +217,11 @@ fields: {
 | `maxFileSize` | `string` | `100MB` | Tek dosya limiti |
 | `maxTotalFileSize` | `string` | `200MB` | Toplam limit |
 | `acceptedTypes` | `string[]` | `[all]` | İzin verilen MIME türleri |
-| `showUploadedFiles` | `boolean` | `false` | Başlık göster |
+| `folder` | `string` | `/` | Yüklemelerin hedef klasörü |
 | `imageCompressionEnabled` | `boolean` | `true` | Sıkıştırma aktif |
-| `allowReorder` | `boolean` | `true` | Sürükle-bırak sıralama |
+| `imageCompressionOptions` | `object` | `{maxSizeMB:1,…}` | Sıkıştırma ayarları (maxSizeMB, maxWidthOrHeight, fileType) |
+| `allowReorder` | `boolean` | `true` | FilePond'da sürükle-bırak sıralama |
+| `showUploadedFiles` | `boolean` | `false` | _(kullanımdan kalktı — yeni tile arayüzünde etkisiz)_ |
 
 ---
 
@@ -281,7 +284,7 @@ fields: {
 
 ### ColorField — Renk Seçici
 
-Yerel renk seçici, HEX giriş, hazır palet ve opsiyonel opaklık kaydırıcısı.
+Popover tabanlı gelişmiş renk seçici: doygunluk/parlaklık karesi, hue + alpha kaydırıcıları, swatch paleti, ekrandan renk seçme (EyeDropper) ve inline HEX girişi.
 
 ```tsx
 import { createColorField } from "@tecof/theme-editor";
@@ -295,26 +298,91 @@ fields: {
   }),
   accentColor: createColorField({
     label: "Vurgu Rengi",
-    showPresets: false,
+    swatches: ["#18181b", "#74b500", "#ffffff", "#ef4444"],
   }),
 }
 ```
 
 **Özellikler:**
-- 🎨 **Yerel Renk Seçici** — Sistem renk picker'ı ile kolay seçim
-- 🔤 **HEX Giriş** — Monospace font ile doğrudan HEX kodu yazma
-- 🎯 **Hazır Palet** — 9×n grid ile hızlı renk seçimi (tamamen özelleştirilebilir)
-- 🔲 **Opaklık** — Opsiyonel alpha/opaklık kaydırıcısı (8-digit hex)
-- ↩️ **Sıfırla** — Varsayılan renge geri dönme butonu
+- 🎨 **SV Karesi + Hue/Alpha** — Doygunluk/parlaklık karesi ve hue + (opsiyonel) alpha kaydırıcıları; pointer ile sürüklenir.
+- 🔤 **Inline HEX** — Monospace alanda doğrudan HEX kodu yazma (3/6/8 haneli).
+- 🎯 **Swatch Paleti** — Hızlı seçim için özelleştirilebilir renk noktaları.
+- 💧 **EyeDropper** — Destekleyen tarayıcılarda ekranın herhangi bir yerinden renk seçme.
+- 🕘 **Son Kullanılanlar** — `localStorage` üzerinden son renkler.
+- 🔲 **Opaklık** — Opsiyonel alpha kaydırıcısı (8 haneli hex + checkerboard önizleme).
+- ↩️ **Sıfırla** — Varsayılan renge geri dönme butonu.
 
 | Option | Tip | Default | Açıklama |
 |--------|-----|---------|----------|
-| `showOpacity` | `boolean` | `false` | Opaklık kaydırıcısı |
-| `showPresets` | `boolean` | `true` | Hazır renk paleti göster |
-| `presetColors` | `string[]` | `[built-in]` | Özel hazır renk listesi |
+| `showOpacity` | `boolean` | `false` | Alpha/opaklık kaydırıcısı |
+| `swatches` | `string[]` | `[built-in]` | Popover'daki hızlı renk noktaları (hex listesi) |
 | `defaultColor` | `string` | `''` | Varsayılan/sıfırlama rengi |
 | `placeholder` | `string` | `#000000` | HEX giriş placeholder |
 | `showReset` | `boolean` | `true` | Sıfırlama butonu göster |
+
+> ⚠️ Eski `showPresets` / `presetColors` seçenekleri kaldırıldı; yerine `swatches` kullanın.
+
+---
+
+### CmsCollectionField — Koleksiyon Bağlama
+
+Bir bileşeni CMS koleksiyonuna bağlar; koleksiyon seçer, limit/sıralama ayarlar ve bileşenin "slot"larını koleksiyon alanlarına eşler (liste/tekrar eden içerik için).
+
+```tsx
+import { createCmsCollectionField } from "@tecof/theme-editor";
+
+fields: {
+  source: createCmsCollectionField({
+    label: "Veri Kaynağı",
+    defaultLimit: 6,
+    slots: {
+      title: { label: "Başlık", fieldTypes: ["text"] },
+      image: { label: "Görsel", fieldTypes: ["image"] },
+      link:  { label: "Bağlantı" },
+    },
+  }),
+}
+```
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `defaultLimit` | `number` | `10` | Çekilecek öğe sayısı varsayılanı |
+| `showLimit` | `boolean` | `true` | Limit kontrolü göster |
+| `showSort` | `boolean` | `true` | Sıralama kontrolü göster (özel / yeni→eski / eski→yeni) |
+| `slots` | `Record<string, { label; fieldTypes? }>` | — | Bileşenin ihtiyaç duyduğu veri slotları; her biri bir CMS alanına eşlenir |
+
+**Değer Tipi (`CmsCollectionFieldValue`):**
+```ts
+{
+  collectionSlug: string;
+  collectionName?: string;
+  limit?: number;
+  sort?: "newest" | "oldest" | "custom";
+  fieldMap?: Record<string, string>; // slotKey → CMS field shortcode
+}
+```
+
+---
+
+### CMS Veri Bağlama (Metin / Textarea)
+
+Yerleşik `text` ve `textarea` alanlarının yanında bir **`{ }` bağlama butonu** görünür. Tıklayınca koleksiyon → alan seçilir ve alana bir `{{ data.shortcode }}` referans token'ı eklenir — elle yazmaya gerek kalmaz. Koleksiyonlar popover açılınca `getCmsCollections()` ile yüklenir.
+
+```tsx
+fields: {
+  // Bağlama butonu görünür (varsayılan)
+  title: { type: "text", label: "Başlık" },
+
+  // Bağlamayı kapat
+  staticLabel: { type: "text", label: "Sabit Etiket", bindable: false },
+}
+```
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `bindable` | `boolean` | `true` | `text`/`textarea` alanında CMS bağlama butonunu göster/gizle |
+
+> Token formatı `{{ data.<shortcode> }}`'dır ve render sırasında `cmsData`'ya göre çözülür (CMS şablon sayfaları). `TecofRender`'a ham kayıt `cmsData` prop'u ile verilir.
 
 ---
 
@@ -347,6 +415,91 @@ fields: {
   }),
 }
 ```
+
+---
+
+## Slot Düzeni & Bölüm Şablonları
+
+### Slot (DropZone) Yönü — `orientation`
+
+`slot` tipi alanlar varsayılan olarak çocukları **alt alta** dizer. `orientation: 'horizontal'` ile **yan yana** (flex-row + wrap) dizilir. Editör, drop eksenini render edilen düzene göre otomatik algılar (yatayda sol/sağ, dikeyde üst/alt göstergesi) ve sürükle-bırak sıralaması buna göre çalışır.
+
+```tsx
+fields: {
+  columns: { type: "slot", orientation: "horizontal" }, // yan yana
+  blocks:  { type: "slot" },                             // varsayılan: dikey
+}
+```
+
+Bileşen kendi `renderDropZone` çağrısında da geçebilir:
+
+```tsx
+render: ({ puck }) => puck.renderDropZone({ zone: "cols", orientation: "horizontal" }),
+```
+
+| Değer | Açıklama |
+|-------|----------|
+| `'vertical'` _(default)_ | Çocuklar alt alta |
+| `'horizontal'` | Çocuklar yan yana (satır + sarma) |
+
+> Hem editörde hem `TecofRender` ile yayınlanan sayfada aynı düzen uygulanır.
+
+### Bölüm Şablonları — `config.templates`
+
+"Bölüm Ekle" penceresindeki **Şablonlar** sekmesinde gösterilen, tek tıkla eklenen hazır bölümler. Şablon bir **alt ağaç**tır (kök node + zones) ve eklenirken tüm id'ler **taze üretilir**, yani aynı şablonu defalarca ekleyebilirsiniz.
+
+```tsx
+const config = {
+  components: { /* ... */ },
+  templates: [
+    {
+      id: "hero-cta",
+      label: "Hero + İki Buton",
+      thumbnail: "/templates/hero.png", // opsiyonel önizleme görseli
+      payload: {
+        node: { type: "Hero", props: { id: "t-hero", title: "Başlık" } },
+        zones: {
+          "t-hero:actions": [
+            { type: "Button", props: { id: "t-b1", text: "Başla" } },
+            { type: "Button", props: { id: "t-b2", text: "Daha Fazla" } },
+          ],
+        },
+      },
+    },
+  ],
+};
+```
+
+**`SectionTemplate` tipi:**
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `id` | `string` | Benzersiz kimlik (React key olarak da kullanılır) |
+| `label` | `string` | Şablon kütüphanesinde görünen ad |
+| `category` | `string?` | Opsiyonel kategori |
+| `thumbnail` | `string?` | Opsiyonel önizleme görseli URL'i (yoksa jenerik ikon) |
+| `payload.node` | `TecofNode` | Eklenecek kök node |
+| `payload.zones` | `Record<string, TecofNode[]>?` | Kök node'un alt zone'ları (anahtar: `nodeId:slotAdı`) |
+
+### Inline Bileşenler — `inline`
+
+Varsayılan olarak editör her bileşeni bir `.tecof-node-wrapper` div'i ile sarar (seçim/hover/drag bu wrapper üzerinden çalışır). Bileşenin **kendi kök elemanının** sürükleme tutamacı olması gerekiyorsa (ör. sarmalayıcı div'in düzeni bozduğu durumlar), `ComponentConfig`'te `inline: true` verin ve bileşen `puck.dragRef`'i kök elemanına bağlasın.
+
+```tsx
+components: {
+  InlineButton: {
+    label: "Inline Buton",
+    inline: true,
+    render: ({ puck, text }) => (
+      <button ref={puck?.dragRef}>{text}</button>
+    ),
+  },
+}
+```
+
+| Option (`ComponentConfig`) | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `inline` | `boolean` | `false` | Editör wrapper div'ini kaldırır; bileşen `puck.dragRef`'i kök elemanına eklemelidir |
 
 ---
 
@@ -448,13 +601,20 @@ window.addEventListener("message", (e) => {
 
 | Kısayol | İşlem |
 |---|---|
+| `⌘/Ctrl + K` | **Komut paleti** aç/kapat (eylemler + bileşen ekleme) |
 | `⌘/Ctrl + Z` | Geri al |
 | `⌘/Ctrl + Shift + Z` · `⌘/Ctrl + Y` | Yinele |
 | `⌘/Ctrl + C` / `X` / `V` | Kopyala / Kes / Yapıştır (seçili node'lar) |
 | `⌘/Ctrl + D` | Çoğalt (çoklu seçimde toplu) |
+| `⌘/Ctrl + S` | Taslak kaydet |
 | `Delete` / `Backspace` | Sil (çoklu seçimde toplu) |
+| `↑` / `↓` / `←` / `→` | Kardeş node'lar arası seçim gezinme (↑/← önceki, ↓/→ sonraki) |
 | `⌘/Ctrl + Tık` · `Shift + Tık` | Çoklu seçime ekle/çıkar |
-| `Esc` | Seçimi kaldır |
+| `Esc` | Komut paletini kapat, yoksa seçimi kaldır |
+
+### Komut Paleti (⌘K)
+
+Tek bir aramadan **eylemleri** (geri/ileri al, kopyala/kes/yapıştır, çoğalt, sil, önizleme, panelleri aç/kapat, kaydet — her birinin kısayolu yanında listelenir) ve **bileşen eklemeyi** (config'deki tüm bileşenler) çalıştırır. Ok tuşları ile gezilir, `Enter` ile uygulanır, `Esc` ile kapanır.
 
 > Kopyalanan node'lar `localStorage` (`tecof:clipboard:v1`) üzerinden sekmeler/sayfalar
 > arası yapıştırılabilir; yapıştırmada id'ler taze üretilir.
@@ -490,7 +650,12 @@ Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, ins
 - **Düzenleme / Önizleme modu** — Üst bardaki toggle ile. Düzenleme'de tıklayınca bileşen seçilir, link/butonlar pasiftir; Önizleme'de link ve butonlar canlı çalışır, editör çerçevesi gizlenir.
 - **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; düzenlenen öğe accent kenarlıkla işaretlenir (öğenin kendi arka plan/yazı rengi korunur), Enter kaydeder, Esc iptal eder. Bileşenler düzenlenebilir metni `data-tecof-prop="propAdı"` (ve çok dilli için `data-tecof-lang`) ile işaretleyebilir; aksi halde string-eşleştirme fallback'i devreye girer.
 - **Çoklu seçim + kopyala/yapıştır** — `⌘/Ctrl/Shift + tık` ile çoklu seçim; kopyala/kes/yapıştır (sekmeler arası `localStorage`), toplu sil/çoğalt. Bkz. [Klavye Kısayolları](#klavye-kısayolları-studio).
-- **Görsel stil editörü (Tailwind)** — Inspector'daki "Stil" sekmesi; breakpoint + state bazlı, preset token'lar ve serbest (arbitrary) değerler. Bkz. [docs/TAILWIND.md](docs/TAILWIND.md).
+- **Görsel stil editörü (Tailwind)** — Inspector'daki "Stil" sekmesi; breakpoint + state bazlı (`md:hover:` dahil), preset token'lar, serbest (arbitrary) değerler ve **canlı tema renkleri** (`--theme-color-*`). Daha az belirgin katmandan **devralınan değerler** soluk ipucu olarak gösterilir. Bkz. [docs/TAILWIND.md](docs/TAILWIND.md).
+- **Komut paleti (⌘K)** — Tek aramadan tüm eylemler + bileşen ekleme; kısayollar listelenir, ok tuşlarıyla gezilir.
+- **Canlı tema editörü** — Seçim yokken Inspector'daki "Tema" sekmesi; renk/tipografi/spacing düzenlenir ve değişiklik hem editöre hem canvas'a `--theme-*` CSS değişkenleri olarak **anında** uygulanır. Tema `root.props._tecofTheme`'de saklanır (kayda dahil, undo/redo'lu).
+- **Boşluk (box-model) overlay'i** — Bir öğenin üzerine gelince **padding (yeşil)** içeride, **margin (amber)** dışarıda devtools tarzı renkli gösterilir.
+- **Yan yana slot düzeni** — `slot` alanlarına `orientation: 'horizontal'` verilerek çocuklar yan yana dizilir; sürükle-bırak drop yönü (sol/sağ ↔ üst/alt) otomatik algılanır.
+- **Ok tuşuyla gezinme** — Seçili node'dan kardeşlerine ↑/↓/←/→ ile geçiş.
 - **Görsel blok paleti** — Sol panelde bileşenler, varsa render önizleme görselleriyle (lazy yüklenir).
 - **Çökme dayanıklılığı** — Bir bileşenin render hatası tüm canvas'ı düşürmez; node bazında error boundary ile izole edilir, prop düzeltilince kendiliğinden toparlanır.
 - **Global dil** — Çoklu dilli içerikte dil, üst bardaki tek seçiciden (merchant-info) değiştirilir. Alanlar yalnızca aktif dili düzenler; alan-içi dil sekmeleri Studio'da gizlenir (provider yoksa eski sekmeli mod geçerlidir — geriye uyum). Bkz. `studio/language/LanguageContext`.
@@ -504,11 +669,24 @@ olarak stil uygular ve bunu Tailwind class string'ine derler. Üretimde class'la
 purge edilmemesi için host Tailwind config'ine safelist eklenmelidir:
 
 ```js
-import { getSafelist } from "@tecof/theme-editor";
-export default { safelist: getSafelist(), /* ... */ };
+import { getSafelist, collectDocumentClasses } from "@tecof/theme-editor";
+
+export default {
+  // Preset token'ların tamamı (sonlu) + sonlu tema-renk arbitrary'leri:
+  safelist: [
+    ...getSafelist(),
+    // Serbest (arbitrary) değerler için kaydedilmiş sayfalardan toplayın:
+    ...savedPages.flatMap((p) => collectDocumentClasses(p.draftData)),
+  ],
+};
 ```
 
-Tam entegrasyon (Tailwind v4 `@theme`, arbitrary değerler, breakpoint/state) için:
+- `getSafelist()` — editörün üretebileceği tüm **preset** class'larını (token × breakpoint × state, `md:hover:` dahil) + sonlu **tema-renk** arbitrary'lerini (`bg-[var(--theme-color-primary)]`) döndürür.
+- `collectStyleClasses(styles)` / `collectDocumentClasses(pageData)` — kaydedilmiş bir sayfadaki tüm stil class'larını (kullanıcının girdiği `p-[10px]`, `bg-[#ff0000]` gibi **serbest** değerler dahil) toplar; build aşamasında safelist'e ekleyin.
+
+> `TecofRender` (yayın renderer'ı) artık `_tecofStyles`'ı editörle birebir aynı `compileStyles` akışıyla `className`'e derler — yani görsel stil editörünün çıktısı yayınlanan sayfada da uygulanır.
+
+Tam entegrasyon (Tailwind v4 `@theme`, arbitrary değerler, breakpoint/state, tema renkleri) için:
 **[docs/TAILWIND.md](docs/TAILWIND.md)**.
 
 Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:

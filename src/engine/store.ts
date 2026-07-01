@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { applyPatches, enableMapSet, enablePatches, produceWithPatches, type Patch } from 'immer';
-import type { TecofDocument, TecofNode } from '../types';
+import type { Permissions, TecofDocument, TecofNode } from '../types';
 import { cloneDocument, createEmptyDocument, parseDocument } from './document';
 import { findNodeById } from './zones';
 import * as ops from './operations';
@@ -106,6 +106,14 @@ interface EditorState {
   clipboard: ClipboardPayload | null;
   /** Internal: last coalescible commit marker (node id + timestamp). */
   _lastCommit: { id: string; time: number } | null;
+  /**
+   * Resolves a node's effective permissions. Registered by the studio shell from
+   * the host config; `null` means "unrestricted" (every action allowed). This is
+   * the AUTHORITATIVE gate — every mutating action consults it, so keyboard
+   * shortcuts, the command palette, layers, and the overlay all inherit
+   * enforcement for free (no per-call-site checks required).
+   */
+  permissionResolver: ((node: TecofNode) => Permissions) | null;
 }
 
 interface EditorActions {
@@ -151,6 +159,10 @@ interface EditorActions {
   // History
   undo: () => void;
   redo: () => void;
+
+  // Permissions
+  /** Registers (or clears with `null`) the resolver used to gate mutations. */
+  setPermissionResolver: (resolver: ((node: TecofNode) => Permissions) | null) => void;
 }
 
 export type EditorStore = EditorState & EditorActions;
@@ -210,6 +222,23 @@ const commit = (
   state._lastCommit = coalesceKey != null ? { id: coalesceKey, time: now } : null;
 };
 
+/**
+ * Returns whether `id`'s node currently permits the action `key`. Permissive
+ * when no resolver is registered or the node can't be found. Used by every
+ * mutating action so a single resolver governs all entry points.
+ */
+const nodeAllows = (
+  state: EditorStore,
+  id: string,
+  key: 'drag' | 'delete' | 'duplicate' | 'edit'
+): boolean => {
+  const resolver = state.permissionResolver;
+  if (!resolver) return true;
+  const res = findNodeById(state.document, id);
+  if (!res) return true;
+  return resolver(res.node)[key] !== false;
+};
+
 // Drops the given ids from the current selection (primary + set) after they were
 // removed. Keeps `selectedId` pointing at the last surviving selected id.
 const pruneSelection = (state: EditorStore, removed: string[]) => {
@@ -253,6 +282,7 @@ export const useEditorStore = create<EditorStore>()(
     drag: null,
     clipboard: null,
     _lastCommit: null,
+    permissionResolver: null,
 
     // Actions
     setDocument: (doc) =>
@@ -318,13 +348,16 @@ export const useEditorStore = create<EditorStore>()(
 
     removeNode: (id) =>
       set((state) => {
+        if (!nodeAllows(state, id, 'delete')) return;
         commit(state, (doc) => ops.removeNode(doc, id));
         pruneSelection(state, [id]);
       }),
 
     removeNodes: (ids) =>
       set((state) => {
-        const targets = ids ?? state.selection.selectedIds;
+        const requested = ids ?? state.selection.selectedIds;
+        // Skip any locked (delete:false) nodes; only the deletable ones proceed.
+        const targets = requested.filter((id) => nodeAllows(state, id, 'delete'));
         if (targets.length === 0) return;
         // One commit -> one undo step for the whole bulk delete.
         commit(state, (doc) => ops.removeNodes(doc, targets));
@@ -333,17 +366,20 @@ export const useEditorStore = create<EditorStore>()(
 
     moveNode: (id, targetZoneKey, index) =>
       set((state) => {
+        if (!nodeAllows(state, id, 'drag')) return;
         commit(state, (doc) => ops.moveNode(doc, id, targetZoneKey, index));
       }),
 
     duplicateNode: (id) =>
       set((state) => {
+        if (!nodeAllows(state, id, 'duplicate')) return;
         commit(state, (doc) => ops.duplicateNode(doc, id));
       }),
 
     duplicateNodes: (ids) =>
       set((state) => {
-        const targets = ids ?? state.selection.selectedIds;
+        const requested = ids ?? state.selection.selectedIds;
+        const targets = requested.filter((id) => nodeAllows(state, id, 'duplicate'));
         if (targets.length === 0) return;
         // Capture the new ids so we can select the copies after the bulk op.
         let newIds: string[] = [];
@@ -391,6 +427,9 @@ export const useEditorStore = create<EditorStore>()(
         // document mutation; the clipboard write is non-history state).
         state.clipboard = payload;
         writeClipboardStorage(payload);
+        // Respect the delete permission: an undeletable node's cut degrades to a
+        // plain copy — the clipboard is set but the node stays put.
+        if (!nodeAllows(state, targetId, 'delete')) return;
         commit(state, (doc) => ops.removeNode(doc, targetId));
         pruneSelection(state, [targetId]);
       }),
@@ -460,6 +499,12 @@ export const useEditorStore = create<EditorStore>()(
         state.history.past.push(step);
         state._lastCommit = null;
         validateSelection(state);
+      }),
+
+    setPermissionResolver: (resolver) =>
+      set((state) => {
+        // Stored as an opaque function value (immer leaves it untouched).
+        state.permissionResolver = resolver as EditorState['permissionResolver'];
       }),
   }))
 );

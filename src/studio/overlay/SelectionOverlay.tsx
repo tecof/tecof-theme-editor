@@ -2,7 +2,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { getBreadcrumbs, getParentId, findNodeById } from '../../engine/zones';
-import { ArrowUp, ArrowDown, Copy, Trash2, ChevronUp } from 'lucide-react';
+import { ArrowUp, ArrowDown, Copy, Trash2, ChevronUp, Info } from 'lucide-react';
+import { useStudio } from '../context';
+import { usePermissions } from '../usePermissions';
 
 /** Resolved padding/margin (px) for the spacing overlay. */
 interface BoxModel {
@@ -172,6 +174,7 @@ const SpacingBands = ({ coords }: { coords: Coords }) => {
 };
 
 export const SelectionOverlay = () => {
+  const { config } = useStudio();
   const documentState = useEditorStore((state) => state.document);
   const selectedId = useEditorStore((state) => state.selection.selectedId);
   const selectedIds = useEditorStore((state) => state.selection.selectedIds);
@@ -234,6 +237,11 @@ export const SelectionOverlay = () => {
 
   const breadcrumbs = selectedId ? getBreadcrumbs(documentState, selectedId) : [];
 
+  // Toolbar affordances follow the primary node's permissions. Bulk actions are
+  // additionally filtered by the engine, so a locked node in a multi-selection is
+  // always skipped even if the button stays enabled for the others.
+  const perms = usePermissions(selectedId);
+
   // Preview mode hides all editor chrome so links/buttons are fully interactive.
   if (mode === 'preview') return null;
 
@@ -275,6 +283,39 @@ export const SelectionOverlay = () => {
         >
           {/* Floating Toolbar */}
           <div className="tecof-toolbar">
+            {/* Info Popover inside toolbar */}
+            {nodeDetails && (() => {
+              const componentConfig = config?.components?.[nodeDetails.node.type] as any;
+              return (
+                <div className="tecof-toolbar-btn tecof-info-popover-trigger" title="Bileşen Bilgisi">
+                  <Info size={14} />
+                  <div className="tecof-info-popover">
+                    <div className="tecof-info-popover-title">
+                      {componentConfig?.label || nodeDetails.node.type}
+                    </div>
+                    <div className="tecof-info-popover-type">
+                      {nodeDetails.node.type}
+                    </div>
+                    {componentConfig?.fields && Object.keys(componentConfig.fields).length > 0 && (
+                      <div className="tecof-info-popover-fields">
+                        <div className="tecof-info-popover-section-title">Özellikler:</div>
+                        {Object.entries(componentConfig.fields).map(([fieldName, fieldConf]: [string, any]) => (
+                          <div key={fieldName} className="tecof-info-popover-field">
+                            <span className="tecof-info-popover-field-name">{fieldName}</span>
+                            <span className="tecof-info-popover-field-label">
+                              ({fieldConf.label || fieldConf.type})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="tecof-toolbar-sep" />
+
             {parentId && (
               <button
                 type="button"
@@ -290,7 +331,7 @@ export const SelectionOverlay = () => {
             <button
               type="button"
               onClick={() => handleMove('up')}
-              disabled={!canMoveUp}
+              disabled={!canMoveUp || perms.drag === false}
               title="Yukarı Taşı"
               className="tecof-toolbar-btn"
               aria-label="Yukarı taşı"
@@ -301,7 +342,7 @@ export const SelectionOverlay = () => {
             <button
               type="button"
               onClick={() => handleMove('down')}
-              disabled={!canMoveDown}
+              disabled={!canMoveDown || perms.drag === false}
               title="Aşağı Taşı"
               className="tecof-toolbar-btn"
               aria-label="Aşağı taşı"
@@ -314,6 +355,7 @@ export const SelectionOverlay = () => {
             <button
               type="button"
               onClick={handleDuplicate}
+              disabled={perms.duplicate === false}
               title={isMulti ? 'Tümünü Çoğalt' : 'Kopyala'}
               className="tecof-toolbar-btn"
               aria-label={isMulti ? 'Seçili öğeleri çoğalt' : 'Kopyala'}
@@ -324,6 +366,7 @@ export const SelectionOverlay = () => {
             <button
               type="button"
               onClick={handleDelete}
+              disabled={perms.delete === false}
               title={isMulti ? 'Tümünü Sil' : 'Sil'}
               className="tecof-toolbar-btn"
               aria-label={isMulti ? 'Seçili öğeleri sil' : 'Sil'}
@@ -331,13 +374,6 @@ export const SelectionOverlay = () => {
               <Trash2 size={14} />
             </button>
           </div>
-
-          {/* Component Tag Label */}
-          {nodeDetails && (
-            <div className="tecof-outline-label">
-              {nodeDetails.node.type}
-            </div>
-          )}
 
           {/* Selected Node Breadcrumbs (Bottom overlay) */}
           {breadcrumbs.length > 1 && (

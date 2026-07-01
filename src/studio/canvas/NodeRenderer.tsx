@@ -12,6 +12,8 @@ import { NodeErrorBoundary } from './NodeErrorBoundary';
 import { postToHost, isEmbedded } from '../bridge';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
 import { STYLES_PROP } from '../style/types';
+import { useInlineDragRef } from './useInlineDragRef';
+import { usePermissions } from '../usePermissions';
 
 export interface NodeRendererProps {
   node: TecofNode;
@@ -26,6 +28,10 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // components receive editMode=false so their links & buttons are clickable.
   const locked = studioReadOnly || mode === 'preview';
   const componentConfig = config.components[node.type];
+  // Drag affordance also respects the node's `drag` permission (engine still
+  // enforces moveNode regardless; this just stops the drag from starting).
+  const perms = usePermissions(node.props.id);
+  const dragLocked = locked || perms.drag === false;
 
   const selectNode = useEditorStore((state) => state.selectNode);
   const toggleSelect = useEditorStore((state) => state.toggleSelect);
@@ -116,10 +122,29 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // so the component applies them to its root (same prop flows in production).
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
 
+  const dragRef = useInlineDragRef({
+    node,
+    index,
+    zoneKey,
+    locked,
+    wrapperClassName,
+    label,
+    beginDrag,
+    endDrag,
+    handleMouseEnter,
+    handleMouseLeave,
+    handleClick,
+    onDoubleClick,
+    onDragOver,
+    onDragLeave,
+    onDrop,
+  });
+
   const componentProps = {
     ...node.props,
     className: mergeClassName(node.props.className, styleClassName),
     puck: {
+      dragRef: componentConfig.inline ? dragRef : undefined,
       renderDropZone,
       isEditing: !locked,
       metadata: {
@@ -142,45 +167,55 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // component can recover after the user edits the offending prop.
   const errorResetKey = `${node.props.id}:${JSON.stringify(node.props)}`;
 
-  // We wrap in ParentNodeContext so any inner DropZone knows its parent id
   return (
     <ParentNodeContext.Provider value={node.props.id}>
-      <div className="tecof-node">
-        {/* Single absolutely-positioned indicator; `axis` decides whether it's a
-            horizontal bar (column layout) or a vertical bar (row/grid layout),
-            and `position` which edge it hugs. */}
-        {position && (
-          <div className={`tecof-drop-indicator is-${axis} is-${position}`} />
-        )}
-        <div
-          className={wrapperClassName}
-          data-tecof-id={node.props.id}
-          data-tecof-type={node.type}
-          data-tecof-index={index}
-          data-tecof-zone={zoneKey || 'root'}
-          draggable={!locked}
-          onDragStart={(e) => {
-            writeDragData(e, { nodeId: node.props.id });
-            e.dataTransfer.effectAllowed = 'move';
-            setDragGhost(e, label);
-            beginDrag({ id: node.props.id });
-          }}
-          onDragEnd={() => {
-            endDrag();
-          }}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onClick={handleClick}
-          onDoubleClick={onDoubleClick}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onDrop={onDrop}
-        >
+      {componentConfig.inline ? (
+        <>
+          {position && (
+            <div className={`tecof-drop-indicator is-${axis} is-${position}`} />
+          )}
           <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
             {componentConfig.render(componentProps)}
           </NodeErrorBoundary>
+        </>
+      ) : (
+        <div className="tecof-node">
+          {/* Single absolutely-positioned indicator; `axis` decides whether it's a
+              horizontal bar (column layout) or a vertical bar (row/grid layout),
+              and `position` which edge it hugs. */}
+          {position && (
+            <div className={`tecof-drop-indicator is-${axis} is-${position}`} />
+          )}
+          <div
+            className={wrapperClassName}
+            data-tecof-id={node.props.id}
+            data-tecof-type={node.type}
+            data-tecof-index={index}
+            data-tecof-zone={zoneKey || 'root'}
+            draggable={!dragLocked}
+            onDragStart={(e) => {
+              writeDragData(e, { nodeId: node.props.id });
+              e.dataTransfer.effectAllowed = 'move';
+              setDragGhost(e, label);
+              beginDrag({ id: node.props.id });
+            }}
+            onDragEnd={() => {
+              endDrag();
+            }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+            onDoubleClick={onDoubleClick}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+          >
+            <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
+              {componentConfig.render(componentProps)}
+            </NodeErrorBoundary>
+          </div>
         </div>
-      </div>
+      )}
     </ParentNodeContext.Provider>
   );
 };

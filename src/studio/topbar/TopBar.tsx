@@ -11,6 +11,10 @@ interface TopBarProps {
   onSave: () => Promise<void>;
   saving: boolean;
   saveStatus: 'idle' | 'success' | 'error';
+  /** True when there are edits not yet persisted (drives the unsaved indicator). */
+  dirty?: boolean;
+  /** Whether autosave is enabled (changes the unsaved hint copy). */
+  autoSave?: boolean;
 }
 
 const LanguageSwitcher = () => {
@@ -38,7 +42,7 @@ const LanguageSwitcher = () => {
   );
 };
 
-export const TopBar = ({ onSave, saving, saveStatus }: TopBarProps) => {
+export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }: TopBarProps) => {
   const viewport = useEditorStore((state) => state.viewport);
   const setViewport = useEditorStore((state) => state.setViewport);
 
@@ -72,6 +76,15 @@ export const TopBar = ({ onSave, saving, saveStatus }: TopBarProps) => {
           {saveStatus === 'success' && (
             <span className="tecof-topbar-saved">
               <Check size={12} /> Kaydedildi
+            </span>
+          )}
+          {dirty && !saving && saveStatus !== 'success' && (
+            <span
+              className="tecof-topbar-dirty"
+              title={autoSave ? 'Değişiklikler otomatik kaydedilecek' : 'Kaydedilmemiş değişiklikler var'}
+            >
+              <span className="tecof-topbar-dirty-dot" />
+              {autoSave ? 'Kaydedilecek…' : 'Kaydedilmedi'}
             </span>
           )}
         </div>

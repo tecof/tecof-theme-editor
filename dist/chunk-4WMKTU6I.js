@@ -1,13 +1,13 @@
 'use strict';
 
-var chunkEC7VNWDF_js = require('./chunk-EC7VNWDF.js');
+var chunk24FK4NEO_js = require('./chunk-24FK4NEO.js');
 var react = require('react');
 var jsxRuntime = require('react/jsx-runtime');
 
 var merchantInfoCache = /* @__PURE__ */ new Map();
 var CACHE_TTL = 5 * 60 * 1e3;
 function useLanguages() {
-  const { apiClient, secretKey, apiUrl } = chunkEC7VNWDF_js.useTecof();
+  const { apiClient, secretKey, apiUrl } = chunk24FK4NEO_js.useTecof();
   const [merchantInfo, setMerchantInfo] = react.useState(null);
   const [loading, setLoading] = react.useState(true);
   const [error, setError] = react.useState(null);
@@ -241,7 +241,7 @@ var LanguageField = ({
   const globalLang = useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
-  const { apiClient } = chunkEC7VNWDF_js.useTecof();
+  const { apiClient } = chunk24FK4NEO_js.useTecof();
   const [translating, setTranslating] = react.useState(false);
   const [statusMsg, setStatusMsg] = react.useState(null);
   const values = react.useMemo(() => {
@@ -363,7 +363,7 @@ var LanguageField = ({
           disabled: !hasText,
           title: "Aktif sekmedeki metni t\xFCm dillere kopyala",
           children: [
-            /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Copy, { size: 12 }),
+            /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Copy, { size: 12 }),
             " H\u0131zl\u0131 Doldur"
           ]
         }
@@ -377,7 +377,7 @@ var LanguageField = ({
           disabled: !hasText || translating,
           title: "Aktif sekmedeki metni di\u011Fer dillere \xE7evir",
           children: [
-            translating ? /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.LoaderCircle, { size: 12, className: "tecof-spin" }) : /* @__PURE__ */ jsxRuntime.jsx(chunkEC7VNWDF_js.Languages, { size: 12 }),
+            translating ? /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.LoaderCircle, { size: 12, className: "tecof-spin" }) : /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Languages, { size: 12 }),
             translating ? "\xC7evriliyor..." : "\xC7evir"
           ]
         }
@@ -418,5 +418,5 @@ exports.LanguageTabBar = LanguageTabBar;
 exports.createLanguageField = createLanguageField;
 exports.useActiveLanguage = useActiveLanguage;
 exports.useLanguages = useLanguages;
-//# sourceMappingURL=chunk-DMA6VUGL.js.map
-//# sourceMappingURL=chunk-DMA6VUGL.js.map
+//# sourceMappingURL=chunk-4WMKTU6I.js.map
+//# sourceMappingURL=chunk-4WMKTU6I.js.map

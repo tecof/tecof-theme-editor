@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Copy, ClipboardPaste } from 'lucide-react';
 import {
   STYLE_CONTROLS,
   GROUP_LABELS,
@@ -9,6 +10,8 @@ import {
   type StyleGroup,
 } from './tokens';
 import type { NodeStyles, StyleProps, Breakpoint, StateVariant } from './types';
+import { useUiStore } from '../uiStore';
+import { cloneStyles, isEmptyStyles } from './styleClipboard';
 
 /** True when a style layer carries at least one set property. */
 const hasProps = (props?: StyleProps): boolean =>
@@ -40,6 +43,11 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
   const styles: NodeStyles = value || {};
   const [bp, setBp] = useState<Breakpoint>('base');
   const [state, setState] = useState<'base' | StateVariant>('base');
+
+  // Style clipboard: copy this node's whole style object into the session buffer,
+  // or replace this node's styles with the buffered ones. (See styleClipboard.ts.)
+  const styleBuffer = useUiStore((s) => s.styleClipboard);
+  const setStyleClipboard = useUiStore((s) => s.setStyleClipboard);
 
   // State buckets are breakpoint-scoped: a bare `hover` key = base breakpoint,
   // `md:hover` = the `md` breakpoint. The normal (non-state) layers stay keyed
@@ -80,6 +88,33 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
 
   return (
     <div className="tecof-style-editor">
+      {/* Copy / paste this node's entire style set (all breakpoints + states). */}
+      <div className="tecof-style-editor-head">
+        <span className="tecof-style-editor-title">Stil</span>
+        <div className="tecof-style-editor-actions">
+          <button
+            type="button"
+            className="tecof-style-head-btn"
+            title="Stili kopyala"
+            aria-label="Stili kopyala"
+            disabled={isEmptyStyles(styles)}
+            onClick={() => setStyleClipboard(cloneStyles(styles))}
+          >
+            <Copy size={13} />
+          </button>
+          <button
+            type="button"
+            className="tecof-style-head-btn"
+            title="Stili yapıştır"
+            aria-label="Stili yapıştır"
+            disabled={!styleBuffer}
+            onClick={() => styleBuffer && onChange(cloneStyles(styleBuffer))}
+          >
+            <ClipboardPaste size={13} />
+          </button>
+        </div>
+      </div>
+
       {/* Breakpoint + state selectors */}
       <div className="tecof-style-scopes">
         <div className="tecof-style-seg" role="group" aria-label="Breakpoint">

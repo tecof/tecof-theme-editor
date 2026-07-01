@@ -16,6 +16,7 @@ export { ColorField, createColorField } from './components/fields';
 export { RepeaterField, createRepeaterField } from './components/fields';
 export { CmsCollectionField, createCmsCollectionField } from './components/fields';
 export { IconField, createIconField } from './components/fields';
+export { ExternalField, createExternalField } from './components/fields';
 export { FieldErrorBoundary } from './components/fields';
 
 /* ─── API Client ─── */
@@ -62,5 +63,10 @@ export type {
   LanguageFieldValue,
   UploadedFile,
   LinkFieldValue,
+  Permissions,
+  ResolveContext,
+  ResolveFieldsContext,
+  ResolveDataResult,
+  MigrationConfig,
 } from './types';
 export type { TecofPictureProps } from './components/TecofPicture';
