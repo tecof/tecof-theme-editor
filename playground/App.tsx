@@ -1,548 +1,1994 @@
-import React, { useState, useMemo } from 'react';
-import '../src/styles.css';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Blocks,
+  BookOpen,
+  Box,
+  Braces,
+  Check,
+  ChevronRight,
+  CircleHelp,
+  Command,
+  Component,
+  Copy,
+  Database,
+  ExternalLink,
+  FileCode2,
+  FileJson,
+  FileText,
+  GitBranch,
+  Globe2,
+  Keyboard,
+  Layers3,
+  Menu,
+  MonitorSmartphone,
+  Moon,
+  PackageCheck,
+  Palette,
+  PanelLeftClose,
+  Play,
+  Plug,
+  Search,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  SwatchBook,
+  X,
+  Zap,
+} from 'lucide-react';
+import './docs.css';
 
-/* ─── Provider + Fields ─── */
-import { TecofProvider } from '../src/components/TecofProvider';
-import { LanguageField } from '../src/components/fields/LanguageField';
-import { CodeEditorField } from '../src/components/fields/CodeEditorField';
-import { ColorField } from '../src/components/fields/ColorField';
-import { LinkField } from '../src/components/fields/LinkField';
-import { EditorField } from '../src/components/fields/EditorField';
-import { TecofStudio } from '../src/studio/TecofStudio';
-import { getSafelist } from '../src/studio/style/tokens';
+type TocItem = { id: string; label: string };
+type DocPage = {
+  slug: string;
+  group: string;
+  title: string;
+  navTitle: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string; size?: number }>;
+  toc: TocItem[];
+  keywords: string[];
+  content: React.ReactNode;
+};
 
-/* All classes the Style editor can emit — rendered hidden so Tailwind's browser
-   JIT generates them; Frame then copies the compiled CSS into the canvas iframe. */
-const SAFELIST = getSafelist().join(' ');
+const codeSamples = {
+  install: `npm install @tecof/theme-editor react react-dom`,
+  provider: `import { TecofProvider } from "@tecof/theme-editor";
+import "@tecof/theme-editor/styles.css";
 
-/* ────────────────────────────────────────────── */
-/*  Mock API Server (MSW-free, fetch intercept)  */
-/* ────────────────────────────────────────────── */
+export function AppProviders({ children }) {
+  return (
+    <TecofProvider
+      apiUrl={process.env.NEXT_PUBLIC_TECOF_API_URL!}
+      secretKey={process.env.NEXT_PUBLIC_TECOF_SECRET_KEY!}
+      cdnUrl={process.env.NEXT_PUBLIC_TECOF_CDN_URL}
+    >
+      {children}
+    </TecofProvider>
+  );
+}`,
+  editor: `"use client";
 
-const MOCK_API_URL = 'https://playground.tecof.local';
-const MOCK_SECRET = 'playground-test-key';
+import { TecofEditor } from "@tecof/theme-editor";
+import { editorConfig } from "@/lib/tecof-config";
 
-// Mock Config and Document for Studio Testing
-const mockConfig = {
+export default function EditorPage({ params }) {
+  return (
+    <TecofEditor
+      pageId={params.id}
+      config={editorConfig}
+      autoSave
+      autoSaveDelay={2000}
+      warnOnUnsavedChanges
+      onSave={(data) => console.log("Kaydedildi", data)}
+    />
+  );
+}`,
+  basicConfig: `import type { StudioConfig } from "@tecof/theme-editor";
+
+export const editorConfig: StudioConfig = {
+  categories: {
+    layout: { title: "Düzen", components: ["Container", "Grid"] },
+    content: { title: "İçerik", components: ["Hero", "Text", "Button"] },
+  },
   components: {
     Hero: {
-      label: 'Hero Section',
+      label: "Hero",
+      category: "content",
       fields: {
-        title: { type: 'text' },
+        title: { type: "text", label: "Başlık" },
+        description: { type: "textarea", label: "Açıklama" },
       },
-      render: ({ title, puck }: any) => (
-        <div style={{
-          padding: '80px 20px',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-          color: '#ffffff',
-          textAlign: 'center',
-          borderRadius: '12px',
-          fontFamily: 'sans-serif',
-          margin: '16px 0'
-        }}>
-          <h1 style={{ margin: '0 0 16px', fontSize: '32px' }}>{title || 'Hero Başlığı'}</h1>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
-            {puck.renderDropZone({ zone: 'actions', orientation: 'horizontal' })}
-          </div>
-        </div>
-      ),
-    },
-    Button: {
-      label: 'Button Component',
-      fields: {
-        text: { type: 'text' },
+      defaultProps: {
+        title: "Yeni nesil mağazanızı oluşturun",
+        description: "İçeriğinizi görsel olarak yönetin.",
       },
-      render: ({ text }: any) => (
-        <button style={{
-          padding: '10px 20px',
-          background: '#ffffff',
-          color: '#1d4ed8',
-          border: 'none',
-          borderRadius: '8px',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
-        }}>
-          {text || 'Tıkla'}
-        </button>
-      ),
-    },
-    Box: {
-      label: 'Kutu (Stil Testi)',
-      fields: {
-        text: { type: 'text' },
-      },
-      defaultProps: { text: 'Beni sağdaki "Stil" sekmesinden tasarla' },
-      render: ({ text, className }: any) => (
-        <div className={className || ''}>
-          {text || 'Stil sekmesinden tasarla'}
-        </div>
+      render: ({ title, description }) => (
+        <section className="py-24 text-center">
+          <h1 className="text-5xl font-bold">{title}</h1>
+          <p className="mt-5 text-lg text-zinc-600">{description}</p>
+        </section>
       ),
     },
   },
-  // Pre-built section templates — inserted as a whole subtree (fresh ids) from
-  // the "Bölüm Ekle" → "Şablonlar" tab.
-  templates: [
-    {
-      id: 'hero-cta',
-      label: 'Hero + İki Buton',
-      payload: {
-        node: { type: 'Hero', props: { id: 'tpl-hero', title: 'Şablon Hero Başlığı' } },
-        zones: {
-          'tpl-hero:actions': [
-            { type: 'Button', props: { id: 'tpl-btn-1', text: 'Başla' } },
-            { type: 'Button', props: { id: 'tpl-btn-2', text: 'Daha Fazla' } },
-          ],
-        },
-      },
-    },
-    {
-      id: 'styled-box',
-      label: 'Stilli Kutu',
-      payload: {
-        node: {
-          type: 'Box',
-          props: {
-            id: 'tpl-box',
-            text: 'Şablondan gelen stilli kutu',
-            _tecofStyles: { base: { p: '8', bg: 'primary-100', radius: 'xl', text: 'primary-900', align: 'center', fontSize: 'xl', fontWeight: 'bold' } },
-          },
-        },
-      },
-    },
-  ],
-};
+};`,
+  render: `import { TecofApiClient, TecofRender } from "@tecof/theme-editor";
+import { editorConfig } from "@/lib/tecof-config";
 
-const mockPageData = {
-  content: [
-    { type: 'Hero', props: { id: 'hero-1', title: 'Tecof Studio Canlı Önizleme!' } },
-    {
-      type: 'Box',
-      props: {
-        id: 'box-1',
-        text: 'Beni sağdaki "Stil" sekmesinden tasarla',
-        _tecofStyles: { base: { p: '8', bg: 'primary-100', radius: 'xl', text: 'primary-900', align: 'center', fontSize: '2xl', fontWeight: 'bold' } },
-      },
-    },
-  ],
-  root: { props: { title: 'Ana Sayfa' } },
-  zones: {
-    'hero-1:actions': [
-      { type: 'Button', props: { id: 'btn-1', text: 'Hemen Keşfet' } },
-      { type: 'Button', props: { id: 'btn-2', text: 'Daha Fazla' } }
-    ]
-  }
-};
+const client = new TecofApiClient(
+  process.env.TECOF_API_URL!,
+  process.env.TECOF_SECRET_KEY!
+);
 
-let savedPageData = { ...mockPageData };
-
-// Intercept fetch calls to our mock API
-const originalFetch = window.fetch;
-window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const url = typeof input === 'string' ? input : input.toString();
-
-  if (!url.startsWith(MOCK_API_URL)) {
-    return originalFetch(input, init);
-  }
-
-  // Mock: editor page data load & save
-  if (url.includes('/api/store/editor/')) {
-    if (init?.method === 'PUT') {
-      const body = JSON.parse(init.body as string);
-      savedPageData = body;
-      return new Response(JSON.stringify({
-        success: true,
-        data: { _id: 'test-page', slug: 'home', draftData: savedPageData },
-      }), { headers: { 'Content-Type': 'application/json' } });
-    }
-    return new Response(JSON.stringify({
-      success: true,
-      data: { _id: 'test-page', slug: 'home', draftData: savedPageData },
-    }), { headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // Mock: merchant-info
-  if (url.includes('/api/store/merchant-info')) {
-    return new Response(JSON.stringify({
-      success: true,
-      data: { languages: ['tr', 'en', 'de'], defaultLanguage: 'tr' },
-    }), { headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // Mock: pages
-  if (url.includes('/api/store/pages')) {
-    return new Response(JSON.stringify({
-      success: true,
-      data: [
-        { _id: '1', slug: 'hakkimizda', title: 'Hakkımızda', status: 'published' },
-        { _id: '2', slug: 'hizmetler', title: 'Hizmetler', status: 'published' },
-        { _id: '3', slug: 'iletisim', title: 'İletişim', status: 'published' },
-        { _id: '4', slug: 'blog', title: 'Blog', status: 'draft' },
-        { _id: '5', slug: 'kariyer', title: 'Kariyer', status: 'draft' },
-      ],
-    }), { headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // Mock: uploads
-  if (url.includes('/api/store/uploads')) {
-    return new Response(JSON.stringify({
-      success: true,
-      data: [],
-    }), { headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // Mock: translate
-  if (url.includes('/api/store/translate')) {
-    const body = init?.body ? JSON.parse(init.body as string) : {};
-    const result = (body.locales || []).map((code: string) => ({
-      code,
-      value: `[${code.toUpperCase()}] ${body.text}`,
-    }));
-    return new Response(JSON.stringify({
-      success: true,
-      data: result,
-    }), { headers: { 'Content-Type': 'application/json' } });
-  }
-
-  // Fallback
-  return new Response(JSON.stringify({ success: false, message: 'Not found' }), {
-    status: 404,
-    headers: { 'Content-Type': 'application/json' },
-  });
-};
-
-/* ────────────────────────────────────────────── */
-/*  UI Components                                 */
-/* ────────────────────────────────────────────── */
-
-const FieldCard = ({ title, status, children }: {
-  title: string;
-  status: 'ok' | 'error' | 'pending';
-  children: React.ReactNode;
-}) => {
-  const statusColors = {
-    ok: { bg: '#dcfce7', text: '#16a34a', label: '✓ Çalışıyor' },
-    error: { bg: '#fef2f2', text: '#dc2626', label: '✗ Hata' },
-    pending: { bg: '#fef9c3', text: '#ca8a04', label: '◌ Bekliyor' },
-  };
-  const s = statusColors[status];
+export default async function StorePage({ params }) {
+  const response = await client.getPublishedPage(params.slug, "tr");
+  if (!response.success || !response.data) return null;
 
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #e4e4e7',
-      borderRadius: '16px',
-      overflow: 'hidden',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-    }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '14px 20px',
-        borderBottom: '1px solid #f4f4f5',
-        background: '#fafafa',
-      }}>
-        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#18181b' }}>{title}</h3>
-        <span style={{
-          fontSize: '11px',
-          fontWeight: 600,
-          padding: '3px 10px',
-          borderRadius: '20px',
-          background: s.bg,
-          color: s.text,
-        }}>{s.label}</span>
+    <TecofRender
+      data={response.data.draftData}
+      config={editorConfig}
+    />
+  );
+}`,
+  slot: `const Grid = {
+  label: "Kolonlar",
+  acceptsChildren: true,
+  fields: {
+    columns: {
+      type: "slot",
+      label: "Kolon içeriği",
+      orientation: "horizontal",
+    },
+  },
+  render: ({ puck }) => (
+    <div className="grid gap-6 md:grid-cols-3">
+      {puck.renderDropZone({
+        zone: "columns",
+        orientation: "horizontal",
+      })}
+    </div>
+  ),
+};`,
+  fields: `import {
+  createLanguageField,
+  createEditorField,
+  createUploadField,
+  createLinkField,
+  createColorField,
+  createCodeEditorField,
+} from "@tecof/theme-editor";
+
+fields: {
+  title: createLanguageField({ label: "Başlık" }),
+  content: createEditorField({ label: "İçerik" }),
+  gallery: createUploadField({
+    label: "Galeri",
+    allowMultiple: true,
+    maxFiles: 8,
+  }),
+  link: createLinkField({ label: "Bağlantı", showTarget: true }),
+  color: createColorField({ label: "Vurgu", showOpacity: true }),
+  code: createCodeEditorField({
+    label: "Özel kod",
+    defaultLanguage: "html",
+  }),
+}`,
+  cms: `// Metin alanında CMS bağlama butonu varsayılan olarak açıktır.
+fields: {
+  title: { type: "text", label: "Başlık", bindable: true },
+  staticText: { type: "text", label: "Sabit metin", bindable: false },
+}
+
+// Kaydedilen token:
+"{{ data.product_name }}"
+
+// CMS şablonunu render ederken:
+<TecofRender data={pageData} config={config} cmsData={product} />`,
+  template: `templates: [
+  {
+    id: "hero-cta",
+    label: "Hero + İki Aksiyon",
+    category: "Dönüşüm",
+    thumbnail: "/templates/hero-cta.webp",
+    payload: {
+      node: {
+        type: "Hero",
+        props: { id: "tpl-hero", title: "Başlık" },
+      },
+      zones: {
+        "tpl-hero:actions": [
+          { type: "Button", props: { id: "tpl-a", text: "Başla" } },
+          { type: "Button", props: { id: "tpl-b", text: "İncele" } },
+        ],
+      },
+    },
+  },
+]`,
+  tailwind: `/* app.css — Tailwind CSS v4 */
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50:  #faffe4;
+  --color-primary-100: #f2ffc5;
+  --color-primary-200: #e3ff92;
+  --color-primary-300: #ceff53;
+  --color-primary-400: #b6fb20;
+  --color-primary-500: #9ae600;
+  --color-primary-600: #74b500;
+  --color-primary-700: #588902;
+  --color-primary-800: #476c08;
+  --color-primary-900: #3c5b0c;
+  --color-primary-950: #1d3300;
+}`,
+  safelist: `import {
+  getSafelist,
+  collectDocumentClasses,
+} from "@tecof/theme-editor";
+
+export default {
+  safelist: [
+    ...getSafelist(),
+    ...savedPages.flatMap((page) =>
+      collectDocumentClasses(page.draftData)
+    ),
+  ],
+};`,
+  theme: `import {
+  generateCSSVariables,
+  getDefaultTheme,
+  mergeTheme,
+} from "@tecof/theme-editor";
+
+const theme = mergeTheme(getDefaultTheme(), {
+  colors: {
+    primary: "#74b500",
+    background: "#ffffff",
+    foreground: "#18181b",
+  },
+});
+
+const cssVariables = generateCSSVariables(theme);`,
+  api: `import { TecofApiClient } from "@tecof/theme-editor";
+
+const client = new TecofApiClient(
+  "https://api.example.com",
+  "merchant-secret-key",
+  "https://cdn.example.com"
+);
+
+const page = await client.getPage("page-id");
+const uploads = await client.getUploads(1, 50);
+const published = await client.getPublishedPage("anasayfa", "tr");`,
+  iframe: `// Parent → Editor
+iframe.contentWindow?.postMessage(
+  { type: "puck:save" },
+  "https://editor.example.com"
+);
+
+// Editor → Parent
+window.addEventListener("message", (event) => {
+  if (event.origin !== "https://editor.example.com") return;
+
+  if (event.data.type === "puck:saved") {
+    console.log("Güncel draft:", event.data.data);
+  }
+});`,
+  migration: `const editorConfig = {
+  components,
+  migrations: {
+    version: 3,
+    renameComponents: {
+      OldHero: "Hero",
+    },
+    transformProps: {
+      Hero: (props) => ({
+        ...props,
+        eyebrow: props.eyebrow ?? "",
+      }),
+    },
+  },
+};`,
+  permissions: `const config = {
+  permissions: {
+    drag: true,
+    delete: true,
+    duplicate: true,
+    edit: true,
+  },
+  components: {
+    Header: {
+      permissions: { delete: false, drag: false },
+      resolvePermissions: (props) => ({
+        edit: !props.locked,
+      }),
+      // ...
+    },
+  },
+};`,
+};
+
+const logoUrl = new URL('./logo.svg', import.meta.url).href;
+const whiteLogoUrl = new URL('./tecof-logo-white.svg', import.meta.url).href;
+
+function CodeBlock({
+  code,
+  language = 'tsx',
+  title,
+}: {
+  code: string;
+  language?: string;
+  title?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  return (
+    <div className="my-6 overflow-hidden rounded-2xl border border-zinc-800 bg-[#101411] shadow-[0_16px_50px_-28px_rgba(0,0,0,.8)]">
+      <div className="flex h-11 items-center justify-between border-b border-white/8 px-4">
+        <div className="flex items-center gap-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-[#ff6b6b]" />
+          <div className="h-2.5 w-2.5 rounded-full bg-[#ffd43b]" />
+          <div className="h-2.5 w-2.5 rounded-full bg-primary-500" />
+          <span className="ml-2 font-mono text-[11px] text-zinc-500">{title || language}</span>
+        </div>
+        <button
+          onClick={copy}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-zinc-400 transition hover:bg-white/8 hover:text-white"
+        >
+          {copied ? <Check size={13} className="text-primary-400" /> : <Copy size={13} />}
+          {copied ? 'Kopyalandı' : 'Kopyala'}
+        </button>
       </div>
-      <div style={{ padding: '20px' }}>
-        {children}
+      <pre className="overflow-x-auto p-5 text-[13px] leading-6 text-zinc-300">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+function Callout({
+  type = 'info',
+  title,
+  children,
+}: {
+  type?: 'info' | 'success' | 'warning';
+  title: string;
+  children: React.ReactNode;
+}) {
+  const styles = {
+    info: 'border-sky-200 bg-sky-50/70 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100',
+    success:
+      'border-primary-200 bg-primary-50/80 text-primary-950 dark:border-primary-900 dark:bg-primary-950/50 dark:text-primary-100',
+    warning:
+      'border-amber-200 bg-amber-50/80 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
+  };
+  const Icon = type === 'warning' ? CircleHelp : type === 'success' ? Check : Sparkles;
+
+  return (
+    <div className={`my-6 flex gap-3 rounded-xl border p-4 text-sm leading-6 ${styles[type]}`}>
+      <Icon size={18} className="mt-0.5 shrink-0" />
+      <div>
+        <div className="font-semibold">{title}</div>
+        <div className="mt-0.5 opacity-80">{children}</div>
       </div>
     </div>
   );
-};
+}
 
-const ValuePreview = ({ value, label }: { value: any; label?: string }) => (
-  <pre style={{
-    marginTop: '12px',
-    padding: '10px',
-    background: '#f4f4f5',
-    borderRadius: '8px',
-    fontSize: '11px',
-    color: '#52525b',
-    overflow: 'auto',
-    maxHeight: '100px',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-all',
-  }}>
-    {label && <strong>{label}: </strong>}
-    {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-  </pre>
-);
+function PropsTable({
+  rows,
+}: {
+  rows: Array<[string, string, string, string?]>;
+}) {
+  return (
+    <div className="my-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <table className="w-full min-w-[640px] text-left text-sm">
+        <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900/80 dark:text-zinc-400">
+          <tr>
+            <th className="px-4 py-3 font-semibold">Alan</th>
+            <th className="px-4 py-3 font-semibold">Tip</th>
+            <th className="px-4 py-3 font-semibold">Açıklama</th>
+            <th className="px-4 py-3 font-semibold">Varsayılan</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+          {rows.map(([name, type, description, defaultValue]) => (
+            <tr key={name} className="bg-white dark:bg-[#101310]">
+              <td className="px-4 py-3 font-mono text-xs font-semibold text-primary-700 dark:text-primary-400">
+                {name}
+              </td>
+              <td className="px-4 py-3 font-mono text-xs text-zinc-500 dark:text-zinc-400">{type}</td>
+              <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">{description}</td>
+              <td className="px-4 py-3 font-mono text-xs text-zinc-500">{defaultValue || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-/* ────────────────────────────────────────────── */
-/*  App                                           */
-/* ────────────────────────────────────────────── */
+function FeatureGrid({
+  items,
+}: {
+  items: Array<{
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    title: string;
+    text: string;
+  }>;
+}) {
+  return (
+    <div className="my-7 grid gap-3 sm:grid-cols-2">
+      {items.map(({ icon: Icon, title, text }) => (
+        <div
+          key={title}
+          className="rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-primary-300 hover:shadow-sm dark:border-zinc-800 dark:bg-[#101310] dark:hover:border-primary-800"
+        >
+          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-800 dark:bg-primary-950 dark:text-primary-400">
+            <Icon size={16} />
+          </div>
+          <h3 className="m-0 text-sm font-semibold text-zinc-900 dark:text-white">{title}</h3>
+          <p className="mt-1.5 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{text}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-const App = () => {
-  /* ── State ── */
-  const [view, setView] = useState<'fields' | 'studio'>('fields');
+const pages: DocPage[] = [
+  {
+    slug: 'giris',
+    group: 'Başlangıç',
+    title: 'Tecof Theme Editor',
+    navTitle: 'Genel bakış',
+    description:
+      'React tabanlı görsel sayfa editörü, yayın renderer’ı ve içerik alanları için Türkçe geliştirici rehberi.',
+    icon: BookOpen,
+    keywords: ['giriş', 'nedir', 'studio', 'özellikler', 'başlangıç'],
+    toc: [
+      { id: 'nedir', label: 'Nedir?' },
+      { id: 'neler-sunar', label: 'Neler sunar?' },
+      { id: 'mimari', label: 'Mimari yaklaşım' },
+      { id: 'sonraki-adim', label: 'Sonraki adım' },
+    ],
+    content: (
+      <>
+        <section id="nedir">
+          <h2>Tecof Theme Editor nedir?</h2>
+          <p>
+            <strong>@tecof/theme-editor</strong>, mağaza ve içerik sayfalarını kod yazmadan
+            düzenlemek için geliştirilmiş bir React kütüphanesidir. Paket; görsel Studio
+            editörünü, kaydedilmiş sayfaları yayınlayan render motorunu, API istemcisini ve
+            gelişmiş form alanlarını tek bir sözleşme altında toplar.
+          </p>
+          <Callout type="success" title="Güncel paket">
+            Bu rehber repodaki <strong>0.0.45</strong> sürümünün gerçek API ve özellikleri
+            esas alınarak hazırlanmıştır.
+          </Callout>
+        </section>
+        <section id="neler-sunar">
+          <h2>Neler sunar?</h2>
+          <FeatureGrid
+            items={[
+              {
+                icon: Blocks,
+                title: 'Görsel Studio',
+                text: 'Iframe canvas, sürükle-bırak, katmanlar, inspector ve canlı önizleme.',
+              },
+              {
+                icon: Palette,
+                title: 'Stil ve tema',
+                text: 'Tailwind token’ları, responsive varyantlar ve canlı CSS değişkenleri.',
+              },
+              {
+                icon: Globe2,
+                title: 'Çoklu dil',
+                text: 'Merchant dilleri, toplu doldurma ve API destekli otomatik çeviri.',
+              },
+              {
+                icon: Database,
+                title: 'CMS bağlama',
+                text: 'Metin token’ları, koleksiyon eşleme ve kayıt bazlı şablon render’ı.',
+              },
+              {
+                icon: ShieldCheck,
+                title: 'Kontrollü düzenleme',
+                text: 'Global, bileşen ve dinamik node izinleriyle güvenli editör deneyimi.',
+              },
+              {
+                icon: Zap,
+                title: 'Üretim odaklı',
+                text: 'Lazy chunk’lar, node error boundary, migration ve autosave desteği.',
+              },
+            ]}
+          />
+        </section>
+        <section id="mimari">
+          <h2>Mimari yaklaşım</h2>
+          <p>
+            Studio ile yayın renderer’ı aynı <code>StudioConfig</code> ve aynı sayfa veri
+            modelini kullanır. Editörde gördüğünüz bileşenler üretimde yeniden yorumlanmaz;
+            aynı component registry üzerinden render edilir. Böylece editör ile canlı sayfa
+            arasındaki görsel sapma azalır.
+          </p>
+          <div className="my-6 grid gap-2 text-sm sm:grid-cols-3">
+            {[
+              ['1', 'StudioConfig', 'Bileşenler ve alanlar'],
+              ['2', 'PuckPageData', 'İçerik ve zone ağacı'],
+              ['3', 'TecofRender', 'Yayın çıktısı'],
+            ].map(([number, title, text]) => (
+              <div
+                key={number}
+                className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/60"
+              >
+                <span className="text-xs font-bold text-primary-700 dark:text-primary-400">
+                  0{number}
+                </span>
+                <div className="mt-2 font-semibold text-zinc-900 dark:text-white">{title}</div>
+                <div className="mt-1 text-zinc-500">{text}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section id="sonraki-adim">
+          <h2>Sonraki adım</h2>
+          <p>
+            İlk entegrasyon için kurulum sayfasından başlayın. Yaklaşık üç dosyalık bir
+            düzenleme ile provider, editör ve public renderer akışını çalıştırabilirsiniz.
+          </p>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'kurulum',
+    group: 'Başlangıç',
+    title: 'Kurulum',
+    navTitle: 'Kurulum',
+    description: 'Paketi yükleyin, stil dosyasını ekleyin ve uygulamanızı TecofProvider ile sarın.',
+    icon: PackageCheck,
+    keywords: ['npm', 'install', 'provider', 'css', 'gereksinim'],
+    toc: [
+      { id: 'gereksinimler', label: 'Gereksinimler' },
+      { id: 'paketi-yukle', label: 'Paketi yükle' },
+      { id: 'provider', label: 'Provider kurulumu' },
+      { id: 'ortam-degiskenleri', label: 'Ortam değişkenleri' },
+    ],
+    content: (
+      <>
+        <section id="gereksinimler">
+          <h2>Gereksinimler</h2>
+          <p>
+            Paket React 18 veya 19 ile çalışır. Zengin metin alanı için TipTap paketleri peer
+            dependency olarak beklenir. Next.js kullanıyorsanız editörün bulunduğu bileşeni
+            client component olarak işaretleyin.
+          </p>
+          <PropsTable
+            rows={[
+              ['react', '^18 veya ^19', 'UI çalışma zamanı', '—'],
+              ['react-dom', '^18 veya ^19', 'DOM renderer', '—'],
+              ['@tiptap/*', '^3', 'EditorField için zengin metin altyapısı', '—'],
+              ['Tailwind CSS', 'v4 önerilir', 'Görsel stil editörünün ürettiği class’lar', '—'],
+            ]}
+          />
+        </section>
+        <section id="paketi-yukle">
+          <h2>Paketi yükleyin</h2>
+          <CodeBlock code={codeSamples.install} language="bash" title="Terminal" />
+          <p>
+            Studio ve tüm custom field stilleri tek CSS dosyasında dağıtılır. Uygulamanızın
+            ana layout dosyasında bir kez import etmeniz yeterlidir.
+          </p>
+          <CodeBlock
+            code={`import "@tecof/theme-editor/styles.css";`}
+            language="tsx"
+            title="app/layout.tsx"
+          />
+        </section>
+        <section id="provider">
+          <h2>Provider kurulumu</h2>
+          <p>
+            <code>TecofProvider</code> API istemcisini ve medya CDN adresini alt bileşenlere
+            taşır. Editör veya API kullanan tüm sayfalar provider altında olmalıdır.
+          </p>
+          <CodeBlock code={codeSamples.provider} title="providers.tsx" />
+        </section>
+        <section id="ortam-degiskenleri">
+          <h2>Ortam değişkenleri</h2>
+          <CodeBlock
+            code={`NEXT_PUBLIC_TECOF_API_URL=https://api.example.com
+NEXT_PUBLIC_TECOF_SECRET_KEY=merchant-secret
+NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
+            language="dotenv"
+            title=".env.local"
+          />
+          <Callout type="warning" title="Anahtar güvenliği">
+            Mevcut client entegrasyonu <code>x-secret-key</code> kullanır. Üretimde anahtarın
+            tarayıcıya açılma modelini backend yetkilendirme politikanızla birlikte
+            değerlendirin; mümkünse editör rotasını kimlik doğrulama arkasında tutun.
+          </Callout>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'hizli-baslangic',
+    group: 'Başlangıç',
+    title: 'Hızlı başlangıç',
+    navTitle: 'Hızlı başlangıç',
+    description: 'İlk component registry’nizi oluşturun, editörü açın ve public sayfayı render edin.',
+    icon: Play,
+    keywords: ['quick start', 'config', 'editor', 'render', 'ilk sayfa'],
+    toc: [
+      { id: 'config-olustur', label: 'Config oluştur' },
+      { id: 'editoru-ac', label: 'Editörü aç' },
+      { id: 'sayfayi-yayinla', label: 'Sayfayı render et' },
+      { id: 'veri-akisi', label: 'Veri akışı' },
+    ],
+    content: (
+      <>
+        <section id="config-olustur">
+          <h2>1. Component config oluşturun</h2>
+          <p>
+            Config, Studio’nun hangi blokları göstereceğini, bu blokların hangi alanlarla
+            düzenleneceğini ve nasıl render edileceğini tanımlar.
+          </p>
+          <CodeBlock code={codeSamples.basicConfig} title="lib/tecof-config.tsx" />
+        </section>
+        <section id="editoru-ac">
+          <h2>2. Editörü açın</h2>
+          <p>
+            <code>pageId</code> backend’deki draft kaydını işaret eder. Studio sayfayı otomatik
+            getirir, değişiklikleri history’ye yazar ve kaydetme sırasında aynı endpoint’e PUT
+            isteği gönderir.
+          </p>
+          <CodeBlock code={codeSamples.editor} title="app/editor/[id]/page.tsx" />
+        </section>
+        <section id="sayfayi-yayinla">
+          <h2>3. Public sayfayı render edin</h2>
+          <CodeBlock code={codeSamples.render} title="app/[slug]/page.tsx" />
+        </section>
+        <section id="veri-akisi">
+          <h2>Veri akışı</h2>
+          <div className="my-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+            {['API draft', 'TecofStudio', 'Kaydet', 'TecofRender'].map((item, index) => (
+              <React.Fragment key={item}>
+                <div className="flex-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-center text-sm font-semibold dark:border-zinc-800 dark:bg-zinc-900">
+                  {item}
+                </div>
+                {index < 3 && (
+                  <ArrowRight className="mx-auto rotate-90 text-zinc-300 sm:rotate-0" size={16} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+          <Callout type="info" title="Tek config ilkesi">
+            Editör ve public renderer için aynı config’i kullanın. Farklı registry’ler, kaydedilmiş
+            bir component type’ın yayın tarafında bulunamamasına neden olur.
+          </Callout>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'studio',
+    group: 'Editör',
+    title: 'Studio arayüzü',
+    navTitle: 'Studio arayüzü',
+    description: 'Canvas, paneller, seçili node akışı, önizleme modu ve autosave davranışını yönetin.',
+    icon: MonitorSmartphone,
+    keywords: ['canvas', 'inspector', 'panel', 'autosave', 'önizleme', 'drag drop'],
+    toc: [
+      { id: 'arayuz', label: 'Arayüz anatomisi' },
+      { id: 'duzenleme', label: 'Düzenleme akışı' },
+      { id: 'editor-proplari', label: 'Editor prop’ları' },
+      { id: 'dayaniklilik', label: 'Dayanıklılık' },
+    ],
+    content: (
+      <>
+        <section id="arayuz">
+          <h2>Arayüz anatomisi</h2>
+          <FeatureGrid
+            items={[
+              {
+                icon: PanelLeftClose,
+                title: 'Sol panel',
+                text: 'Blok kütüphanesi ve sayfanın hiyerarşik katman ağacı.',
+              },
+              {
+                icon: MonitorSmartphone,
+                title: 'Iframe canvas',
+                text: 'Host CSS’inden izole, desktop/tablet/mobile genişliklerinde canlı sayfa.',
+              },
+              {
+                icon: Settings2,
+                title: 'Inspector',
+                text: 'İçerik alanları, görsel stil kontrolleri ve global tema düzenleyici.',
+              },
+              {
+                icon: Command,
+                title: 'Komut paleti',
+                text: '⌘K ile eylem arama, component ekleme ve klavye navigasyonu.',
+              },
+            ]}
+          />
+        </section>
+        <section id="duzenleme">
+          <h2>Düzenleme akışı</h2>
+          <p>
+            Düzenleme modunda node’lar seçilebilir; link ve buton etkileşimleri editör tarafından
+            tutulur. Önizleme modunda editör çerçeveleri gizlenir ve sayfa gerçek ziyaretçi gibi
+            kullanılabilir. Canvas içindeki <code>data-tecof-prop</code> işaretli metinlere çift
+            tıklayarak inline düzenleme yapılabilir.
+          </p>
+          <ul>
+            <li>Blokları sol panelden canvas veya zone içine sürükleyin.</li>
+            <li>Katman ağacından seçin, yeniden sıralayın veya iç içe taşıyın.</li>
+            <li>⌘/Ctrl ya da Shift + tık ile çoklu seçim yapın.</li>
+            <li>Viewport kontrolünden desktop, tablet ve mobil sonucu sınayın.</li>
+          </ul>
+        </section>
+        <section id="editor-proplari">
+          <h2>TecofEditor prop’ları</h2>
+          <PropsTable
+            rows={[
+              ['pageId', 'string', 'Düzenlenecek backend sayfa kimliği'],
+              ['config', 'StudioConfig', 'Bileşen ve editör sözleşmesi'],
+              ['accessToken', 'string?', 'Save isteğine Authorization header ekler'],
+              ['hostOrigin', 'string?', 'postMessage hedef ve kaynak origin kısıtı'],
+              ['autoSave', 'boolean?', 'Debounce sonrası otomatik draft kaydı', 'false'],
+              ['autoSaveDelay', 'number?', 'Autosave bekleme süresi (ms)', '2000'],
+              ['warnOnUnsavedChanges', 'boolean?', 'Kaydedilmemiş değişiklik uyarısı', 'true'],
+              ['onChange', '(data) => void', 'Yaklaşık 300 ms debounce’lu değişiklik callback’i'],
+              ['onSave', '(data) => void', 'Başarılı kayıt sonrası callback'],
+              ['className', 'string?', 'Kök Studio elemanına ek class'],
+            ]}
+          />
+        </section>
+        <section id="dayaniklilik">
+          <h2>Dayanıklılık ve performans</h2>
+          <p>
+            Bir component render sırasında hata verirse tüm canvas kapanmaz; node bazlı error
+            boundary sadece ilgili bloğu izole eder. Monaco, TipTap ve FilePond gibi ağır alanlar
+            ayrı bundle chunk’larında ihtiyaç anında yüklenir.
+          </p>
+          <Callout type="warning" title="Dokunmatik DnD">
+            Editörün sürükle-bırak katmanı native HTML5 DnD kullanır. Dokunmatik cihazlarda tam
+            edit düzenleme desteği mevcut yol haritasında olup, public renderer responsive
+            çalışmaya devam eder.
+          </Callout>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'bilesen-config',
+    group: 'Editör',
+    title: 'Bileşen yapılandırması',
+    navTitle: 'Bileşen config’i',
+    description: 'Component registry, kategoriler, varsayılan prop’lar ve dinamik alanları tanımlayın.',
+    icon: Component,
+    keywords: ['component config', 'fields', 'resolveFields', 'resolveData', 'category', 'inline'],
+    toc: [
+      { id: 'component-config', label: 'ComponentConfig' },
+      { id: 'dinamik-alanlar', label: 'Dinamik alanlar' },
+      { id: 'drop-kurallari', label: 'Drop kuralları' },
+      { id: 'inline', label: 'Inline bileşenler' },
+    ],
+    content: (
+      <>
+        <section id="component-config">
+          <h2>ComponentConfig</h2>
+          <p>
+            Registry anahtarı sayfa JSON’unda <code>type</code> olarak saklanır. Bu anahtarları
+            değiştirmek veri migration’ı gerektirir. Render fonksiyonu dışındaki alanların çoğu
+            opsiyoneldir.
+          </p>
+          <CodeBlock code={codeSamples.basicConfig} title="tecof-config.tsx" />
+          <PropsTable
+            rows={[
+              ['label', 'string?', 'Blok kütüphanesindeki görünen ad'],
+              ['category', 'string?', 'Bileşenin kategori anahtarı'],
+              ['fields', 'Record<string, FieldConfig>', 'Inspector alanları'],
+              ['defaultProps', 'object?', 'Yeni node oluşturulurken başlangıç değerleri'],
+              ['render', '(props) => ReactNode', 'Editör ve yayında kullanılan render'],
+              ['inline', 'boolean?', 'Editör wrapper’ını kaldırır', 'false'],
+              ['resolveFields', 'function?', 'Prop’lara göre dinamik alan seti'],
+              ['resolveData', 'function?', 'Türetilmiş prop ve read-only durumu'],
+            ]}
+          />
+        </section>
+        <section id="dinamik-alanlar">
+          <h2>Dinamik alanlar ve türetilmiş veriler</h2>
+          <p>
+            <code>resolveFields</code>, örneğin link türü seçildiğinde yalnızca URL alanını
+            göstermek için kullanılır. <code>resolveData</code> ise başlıktan slug üretmek ve
+            slug alanını salt okunur yapmak gibi senaryolar içindir. Her ikisi sync veya async
+            dönebilir; eski async sonuçlar otomatik olarak elenir.
+          </p>
+          <CodeBlock
+            code={`ProductCard: {
+  fields: {
+    source: { type: "select", options: ["manual", "cms"] },
+    title: { type: "text" },
+  },
+  resolveFields: (props, { fields }) => ({
+    ...fields,
+    ...(props.source === "cms"
+      ? { productId: { type: "external", label: "Ürün" } }
+      : {}),
+  }),
+  resolveData: (props) => ({
+    props: { slug: slugify(props.title ?? "") },
+    readOnly: { slug: true },
+  }),
+  render: (props) => <article>{props.title}</article>,
+}`}
+            title="Dinamik config"
+          />
+        </section>
+        <section id="drop-kurallari">
+          <h2>Drop kuralları</h2>
+          <p>
+            Motor seviyesindeki kurallar canvas ve katman panelinde birlikte uygulanır.
+            <code>acceptsChildren</code> component’in child alıp almadığını,
+            <code>maxItems</code> doğrudan child limitini, <code>allowedParents</code> ise hangi
+            parent type’lar altına bırakılabileceğini belirler.
+          </p>
+        </section>
+        <section id="inline">
+          <h2>Inline bileşenler</h2>
+          <p>
+            Wrapper div layout’u bozuyorsa <code>inline: true</code> kullanın ve editörün verdiği
+            <code>puck.dragRef</code> referansını component’in kök DOM elemanına bağlayın.
+          </p>
+          <CodeBlock
+            code={`InlineButton: {
+  inline: true,
+  fields: { text: { type: "text" } },
+  render: ({ puck, text }) => (
+    <button ref={puck?.dragRef}>{text}</button>
+  ),
+}`}
+          />
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'alanlar',
+    group: 'Editör',
+    title: 'Alan bileşenleri',
+    navTitle: 'Alan bileşenleri',
+    description: 'Metin, medya, bağlantı, renk, kod, ikon, repeater ve external veri alanlarını kullanın.',
+    icon: Braces,
+    keywords: ['field', 'language', 'upload', 'link', 'color', 'editor', 'monaco', 'external'],
+    toc: [
+      { id: 'yerlesik', label: 'Yerleşik alanlar' },
+      { id: 'gelismis', label: 'Gelişmiş alanlar' },
+      { id: 'medya', label: 'Medya alanı' },
+      { id: 'cms', label: 'CMS veri bağlama' },
+    ],
+    content: (
+      <>
+        <section id="yerlesik">
+          <h2>Yerleşik alanlar</h2>
+          <p>
+            Config içinde doğrudan <code>text</code>, <code>textarea</code>, <code>select</code>,
+            <code>number</code>, <code>boolean</code>, <code>toggle</code>, <code>range</code>,
+            <code>radio</code>, <code>array</code>, <code>object</code> ve <code>slot</code>
+            tiplerini kullanabilirsiniz.
+          </p>
+        </section>
+        <section id="gelismis">
+          <h2>Gelişmiş Tecof alanları</h2>
+          <CodeBlock code={codeSamples.fields} title="component-fields.ts" />
+          <PropsTable
+            rows={[
+              ['LanguageField', 'localized text', 'Merchant dilleri ve otomatik çeviri'],
+              ['EditorField', 'rich text', 'TipTap tabanlı WYSIWYG editör'],
+              ['UploadField', 'UploadedFile[]', 'Kütüphane, upload, referans ve görsel düzenleme'],
+              ['LinkField', 'LinkFieldValue', 'Sayfa seçici veya manuel URL'],
+              ['ColorField', 'hex', 'Hue, alpha, swatch, eyedropper ve geçmiş'],
+              ['CodeEditorField', 'string', 'Monaco tabanlı kod editörü'],
+              ['RepeaterField', 'array', 'Tekrarlanan veri satırları'],
+              ['IconField', 'string/object', 'İkon seçimi'],
+              ['ExternalField', 'any', 'Üçüncü taraf listeden aranabilir kayıt seçimi'],
+              ['CmsCollectionField', 'binding object', 'Koleksiyon, limit, sort ve alan eşleme'],
+            ]}
+          />
+        </section>
+        <section id="medya">
+          <h2>Medya alanı</h2>
+          <p>
+            UploadField tek veya çoklu dosya seçebilir. FilePond yüklemeyi, browser-image-compression
+            istemci tarafı sıkıştırmayı, Doka ise kırpma/düzenlemeyi yönetir. Drawer; medya
+            kütüphanesi, yeni yükleme ve dış referans sekmelerini birleştirir.
+          </p>
+          <CodeBlock
+            code={`gallery: createUploadField({
+  label: "Ürün galerisi",
+  allowMultiple: true,
+  maxFiles: 10,
+  maxFileSize: "50MB",
+  acceptedFileTypes: ["image/*"],
+  folder: "/products",
+  imageCompressionEnabled: true,
+  allowReorder: true,
+})`}
+          />
+        </section>
+        <section id="cms">
+          <h2>CMS veri bağlama</h2>
+          <p>
+            Text ve textarea alanlarında varsayılan olarak görünen bağlama butonu, CMS alanını
+            <code>{'{{ data.shortcode }}'}</code> formatında kaydeder. Public render sırasında
+            token, <code>cmsData</code> içindeki ham kayıtla çözülür.
+          </p>
+          <CodeBlock code={codeSamples.cms} title="CMS template" />
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'slotlar-sablonlar',
+    group: 'Editör',
+    title: 'Slotlar ve şablonlar',
+    navTitle: 'Slotlar & şablonlar',
+    description: 'İç içe içerik bölgeleri oluşturun ve tekrar kullanılabilir bölüm şablonları sunun.',
+    icon: Layers3,
+    keywords: ['slot', 'zone', 'template', 'section', 'orientation', 'nested'],
+    toc: [
+      { id: 'zone-modeli', label: 'Zone modeli' },
+      { id: 'orientation', label: 'Dikey ve yatay slot' },
+      { id: 'sablonlar', label: 'Bölüm şablonları' },
+      { id: 'id-guvenligi', label: 'ID güvenliği' },
+    ],
+    content: (
+      <>
+        <section id="zone-modeli">
+          <h2>Zone modeli</h2>
+          <p>
+            Root node’lar <code>content</code> dizisinde, iç içe node’lar ise
+            <code>zones</code> nesnesinde tutulur. Zone anahtarı
+            <code>parentId:zoneName</code> formatındadır. Parent silindiğinde tüm alt zone ağacı
+            recursive olarak temizlenir.
+          </p>
+        </section>
+        <section id="orientation">
+          <h2>Dikey ve yatay slotlar</h2>
+          <p>
+            Slotlar varsayılan olarak dikeydir. <code>{'orientation: "horizontal"'}</code> verildiğinde
+            editör drop eksenini sol/sağ olarak hesaplar ve public render aynı düzeni korur.
+          </p>
+          <CodeBlock code={codeSamples.slot} title="Grid.tsx" />
+        </section>
+        <section id="sablonlar">
+          <h2>Bölüm şablonları</h2>
+          <p>
+            Şablonlar “Bölüm Ekle” penceresinde ayrı bir sekmede gösterilir. Tek node yerine
+            çocuk zone’larıyla birlikte tam bir alt ağaç ekleyebilirler.
+          </p>
+          <CodeBlock code={codeSamples.template} title="tecof-config.tsx" />
+        </section>
+        <section id="id-guvenligi">
+          <h2>ID güvenliği</h2>
+          <p>
+            Şablondaki id’ler yalnızca ilişki kurmak için örnek kimliklerdir. Studio, her eklemede
+            kök ve tüm alt node’lar için yeni id üretir, zone anahtarlarını da buna göre yeniden
+            yazar. Aynı şablonu güvenle birden fazla kez ekleyebilirsiniz.
+          </p>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'tailwind-stil',
+    group: 'Tasarım sistemi',
+    title: 'Tailwind stil editörü',
+    navTitle: 'Tailwind stil editörü',
+    description: 'Token tabanlı responsive stilleri üretime güvenli şekilde derleyin ve safelist’i yönetin.',
+    icon: SwatchBook,
+    keywords: ['tailwind', 'style', 'safelist', 'breakpoint', 'hover', 'arbitrary'],
+    toc: [
+      { id: 'palet', label: 'Marka paleti' },
+      { id: 'token-modeli', label: 'Token modeli' },
+      { id: 'responsive', label: 'Responsive & state' },
+      { id: 'safelist', label: 'Production safelist' },
+    ],
+    content: (
+      <>
+        <section id="palet">
+          <h2>Tecof marka paleti</h2>
+          <p>
+            Host uygulamanın Tailwind v4 temasına Tecof primary skalasını ekleyin. Ana aksiyon
+            rengi <code>primary-600</code>, hover rengi <code>primary-700</code> olarak
+            kullanılmalıdır.
+          </p>
+          <CodeBlock code={codeSamples.tailwind} language="css" title="app.css" />
+        </section>
+        <section id="token-modeli">
+          <h2>Yapısal token modeli</h2>
+          <p>
+            Inspector’daki Stil sekmesi ham class string’i saklamaz. Değerler node’un
+            <code>_tecofStyles</code> prop’unda breakpoint ve state katmanlarıyla tutulur,
+            ardından <code>compileStyles</code> ile Tailwind class’larına çevrilir.
+          </p>
+          <CodeBlock
+            code={`{
+  base: { p: "4", bg: "primary-600", radius: "xl" },
+  md: { p: "[40px]" },
+  states: {
+    hover: { bg: "primary-700" },
+    "md:hover": { bg: "primary-800" },
+  },
+}
 
-  const [langValue, setLangValue] = useState([
-    { code: 'tr', value: 'Merhaba Dünya' },
-    { code: 'en', value: 'Hello World' },
-    { code: 'de', value: 'Hallo Welt' },
-  ]);
-  const [langChanged, setLangChanged] = useState(false);
+// p-4 bg-primary-600 rounded-xl
+// md:p-[40px] hover:bg-primary-700 md:hover:bg-primary-800`}
+            language="json"
+          />
+        </section>
+        <section id="responsive">
+          <h2>Responsive ve state varyantları</h2>
+          <p>
+            Base, sm, md, lg ve xl katmanlarına ek olarak hover, focus ve active durumları
+            düzenlenebilir. Üst breakpoint’te değer yoksa inspector daha küçük katmandan gelen
+            değeri soluk bir ipucu olarak gösterir. Serbest değerler
+            <code>p-[10px]</code> veya <code>bg-[#ff0000]</code> biçiminde derlenir.
+          </p>
+        </section>
+        <section id="safelist">
+          <h2>Production safelist</h2>
+          <p>
+            Kaydedilmiş class’lar kaynak kodda görünmediğinden Tailwind tarayıcısı bunları
+            otomatik bulamaz. Preset’ler için <code>getSafelist()</code>, kullanıcı tarafından
+            girilen arbitrary değerler için <code>collectDocumentClasses()</code> kullanın.
+          </p>
+          <CodeBlock code={codeSamples.safelist} language="js" title="tailwind.config.js" />
+          <Callout type="warning" title="Build zamanı verisi">
+            Arbitrary değerleri eksiksiz toplamak için build sırasında yayınlanan veya taslak
+            sayfa JSON’larına erişmeniz gerekir. Bu akış yoksa serbest değerleri kapatıp preset
+            token’larla sınırlı kalın.
+          </Callout>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'tema',
+    group: 'Tasarım sistemi',
+    title: 'Canlı tema',
+    navTitle: 'Canlı tema',
+    description: 'Renk, tipografi ve spacing token’larını Studio ile düzenleyin ve yayına taşıyın.',
+    icon: Palette,
+    keywords: ['theme', 'css variables', 'color', 'typography', 'spacing'],
+    toc: [
+      { id: 'tema-modeli', label: 'Tema modeli' },
+      { id: 'studio-tema', label: 'Studio’da tema' },
+      { id: 'yayin', label: 'Yayına uygulama' },
+      { id: 'utility', label: 'Tema yardımcıları' },
+    ],
+    content: (
+      <>
+        <section id="tema-modeli">
+          <h2>Tema modeli</h2>
+          <p>
+            <code>ThemeConfig</code>; semantik renkler, tipografi ve spacing değerlerinden oluşur.
+            Tema sayfa verisinin <code>root.props._tecofTheme</code> alanında saklanır; bu nedenle
+            kayıt, undo ve redo akışına dahildir.
+          </p>
+          <PropsTable
+            rows={[
+              ['colors', 'ThemeColors', 'Primary, background, foreground, card, border ve diğer semantik renkler'],
+              ['typography', 'ThemeTypography', 'Font aileleri, ölçek, line-height ve ağırlıklar'],
+              ['spacing', 'ThemeSpacing', 'Container, section padding, gap ve radius değerleri'],
+              ['customTokens', 'Record<string,string>', 'Host’a özel ek CSS token’ları'],
+            ]}
+          />
+        </section>
+        <section id="studio-tema">
+          <h2>Studio’da tema düzenleme</h2>
+          <p>
+            Seçili node yokken Inspector içindeki Tema sekmesi açılır. Değişiklikler
+            <code>ThemeVars</code> tarafından hem Studio chrome’una hem canvas iframe’ine anında
+            CSS değişkeni olarak uygulanır.
+          </p>
+        </section>
+        <section id="yayin">
+          <h2>Yayına uygulama</h2>
+          <p>
+            Public sayfanın aynı görünmesi için tema değişkenlerini root container veya
+            <code>:root</code> üzerine ekleyin. Görsel stil editörünün “Tema · Ana renk” gibi
+            seçenekleri bu değişkenleri referans eder.
+          </p>
+          <CodeBlock code={codeSamples.theme} title="theme.ts" />
+        </section>
+        <section id="utility">
+          <h2>Tema yardımcıları</h2>
+          <p>
+            Paket ayrıca <code>hexToHsl</code>, <code>hslToHex</code>, <code>lighten</code> ve
+            <code>darken</code> fonksiyonlarını export eder. Tema değerlerini programatik
+            oluştururken bu yardımcıları kullanabilirsiniz.
+          </p>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'render',
+    group: 'Yayınlama',
+    title: 'Public render',
+    navTitle: 'Public render',
+    description: 'Kaydedilmiş sayfaları, stilleri ve CMS verilerini üretim ortamında render edin.',
+    icon: Globe2,
+    keywords: ['render', 'public', 'published page', 'ssr', 'cmsData'],
+    toc: [
+      { id: 'temel-render', label: 'Temel kullanım' },
+      { id: 'render-proplari', label: 'Render prop’ları' },
+      { id: 'cms-render', label: 'CMS template' },
+      { id: 'akilli-medya', label: 'TecofPicture' },
+      { id: 'uyumluluk', label: 'Editör uyumluluğu' },
+    ],
+    content: (
+      <>
+        <section id="temel-render">
+          <h2>Temel kullanım</h2>
+          <p>
+            <code>TecofRender</code> veri getirmez; önceden yüklenmiş
+            <code>PuckPageData</code> alır. SSR veya server component içinde API client ile
+            veriyi çekip renderer’a iletin.
+          </p>
+          <CodeBlock code={codeSamples.render} title="app/[slug]/page.tsx" />
+        </section>
+        <section id="render-proplari">
+          <h2>Render prop’ları</h2>
+          <PropsTable
+            rows={[
+              ['data', 'PuckPageData', 'Yayınlanacak content, root ve zones verisi'],
+              ['config', 'StudioConfig', 'Editörle aynı component registry'],
+              ['cmsData', 'Record<string, any>?', 'CMS şablon token’larının ham kaydı'],
+              ['className', 'string?', 'Renderer root elementine ek class'],
+            ]}
+          />
+        </section>
+        <section id="cms-render">
+          <h2>CMS template render</h2>
+          <p>
+            Bir sayfa ürün veya blog kaydı için şablonsa, kayıt nesnesini
+            <code>cmsData</code> olarak geçin. Renderer metinlerdeki
+            <code>{'{{ data.field }}'}</code> token’larını kayıt değerleriyle çözer.
+          </p>
+          <CodeBlock code={codeSamples.cms} title="CMS render" />
+        </section>
+        <section id="akilli-medya">
+          <h2>Akıllı medya: TecofPicture</h2>
+          <p>
+            <code>TecofPicture</code>, <code>UploadedFile</code> kaydından doğru medya URL’ini
+            seçer; görsel ve videoyu otomatik ayırt eder. Thumbnail, medium, large veya full
+            varyantı kullanılabilir. Next.js Image gibi özel bir renderer
+            <code>ImageComponent</code> üzerinden verilebilir.
+          </p>
+          <CodeBlock
+            code={`import Image from "next/image";
+import { TecofPicture } from "@tecof/theme-editor";
 
-  const [codeValue, setCodeValue] = useState('console.log("Hello Tecof!");\n\n// Kodu değiştirin → onChange tetiklenecek');
-  const [codeChanged, setCodeChanged] = useState(false);
+<TecofPicture
+  data={uploadedFile}
+  alt="Ürün görseli"
+  size="large"
+  ImageComponent={Image}
+  imageProps={{ quality: 85, priority: true }}
+  fancybox
+  fancyboxName="product-gallery"
+/>`}
+            title="ProductImage.tsx"
+          />
+          <Callout type="info" title="Bakım modu">
+            Mağaza yayınını geçici olarak kapatmak için paket, ayrı entrypoint üzerinden
+            <code>UnderConstruction</code> bileşenini de sunar.
+          </Callout>
+        </section>
+        <section id="uyumluluk">
+          <h2>Editör ile görsel uyumluluk</h2>
+          <p>
+            Renderer, Studio ile aynı <code>compileStyles</code> yolunu kullanır. Ancak Tailwind
+            safelist ve tema CSS değişkenlerinin host uygulamada bulunması sizin
+            sorumluluğunuzdadır. Config, safelist ve tema üçlüsünü ortak modüllerden export etmek
+            sapmaları azaltır.
+          </p>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'api-client',
+    group: 'Entegrasyon',
+    title: 'API Client',
+    navTitle: 'API Client',
+    description: 'Sayfa, medya, merchant bilgisi ve çeviri endpoint’leriyle haberleşin.',
+    icon: Plug,
+    keywords: ['api', 'endpoint', 'savePage', 'getPage', 'upload', 'translate'],
+    toc: [
+      { id: 'client', label: 'Client oluşturma' },
+      { id: 'metotlar', label: 'Metotlar' },
+      { id: 'endpointler', label: 'Endpoint’ler' },
+      { id: 'hata-yonetimi', label: 'Hata yönetimi' },
+    ],
+    content: (
+      <>
+        <section id="client">
+          <h2>Client oluşturma</h2>
+          <CodeBlock code={codeSamples.api} title="tecof-api.ts" />
+          <p>
+            Üçüncü constructor parametresi medya URL’leri için özel CDN adresidir. Verilmezse API
+            base URL kullanılır.
+          </p>
+        </section>
+        <section id="metotlar">
+          <h2>Metotlar</h2>
+          <PropsTable
+            rows={[
+              ['getPage(id)', 'Promise<ApiResponse>', 'Editör draft sayfasını getirir'],
+              ['savePage(id, data)', 'Promise<ApiResponse>', 'Draft verisini kaydeder'],
+              ['getPublishedPage(slug, locale?)', 'Promise<ApiResponse>', 'Yayınlanmış sayfayı getirir'],
+              ['getMerchantInfo()', 'Promise<ApiResponse>', 'Diller ve mağaza ayarları'],
+              ['uploadFile(file, folder?)', 'Promise<ApiResponse>', 'Multipart medya yükleme'],
+              ['getUploads(page, limit)', 'Promise<ApiResponse>', 'Medya kütüphanesini listeler'],
+              ['getPages()', 'Promise<ApiResponse>', 'LinkField için sayfa listesini getirir'],
+              ['translate(...)', 'Promise<ApiResponse>', 'Metni hedef dillere çevirir'],
+              ['getComponentPreview(...)', 'Promise<string|null>', 'Component önizleme blob URL’i'],
+            ]}
+          />
+        </section>
+        <section id="endpointler">
+          <h2>Backend endpoint’leri</h2>
+          <PropsTable
+            rows={[
+              ['GET', '/api/store/editor/:id', 'Draft getir'],
+              ['PUT', '/api/store/editor/:id', 'Draft kaydet'],
+              ['POST', '/api/store/render', 'Yayınlanmış sayfayı slug ile getir'],
+              ['GET', '/api/store/merchant-info', 'Merchant dil ayarları'],
+              ['POST', '/api/store/upload', 'Dosya yükle'],
+              ['GET', '/api/store/uploads', 'Medya kütüphanesi'],
+              ['GET', '/api/store/pages', 'Merchant sayfaları'],
+              ['POST', '/api/store/translate', 'Çoklu dil çevirisi'],
+            ]}
+          />
+        </section>
+        <section id="hata-yonetimi">
+          <h2>Hata yönetimi</h2>
+          <p>
+            Metotların çoğu ağ hatasını throw etmek yerine
+            <code>{'{ success: false, message }'}</code> şekline dönüştürür. Sayfa yükleme
+            sırasında kullanılan <code>AbortSignal</code> ise iptal edilen eski istekleri ayırt
+            etmek için AbortError’ı yeniden fırlatır.
+          </p>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'iframe',
+    group: 'Entegrasyon',
+    title: 'iframe entegrasyonu',
+    navTitle: 'iframe & postMessage',
+    description: 'Studio’yu başka bir panel içine gömün ve güvenli postMessage protokolünü kullanın.',
+    icon: FileCode2,
+    keywords: ['iframe', 'postmessage', 'hostOrigin', 'puck save', 'embed'],
+    toc: [
+      { id: 'protokol', label: 'Mesaj protokolü' },
+      { id: 'parent-editor', label: 'Parent → Editor' },
+      { id: 'editor-parent', label: 'Editor → Parent' },
+      { id: 'guvenlik', label: 'Origin güvenliği' },
+    ],
+    content: (
+      <>
+        <section id="protokol">
+          <h2>Mesaj protokolü</h2>
+          <p>
+            Geriye dönük uyumluluk nedeniyle mesaj tipleri <code>puck:</code> prefix’ini korur.
+            Bu isimlendirme internal editör motorunun Puck olduğu anlamına gelmez; host
+            uygulamalarının mevcut entegrasyonunu bozmayan stabil bir protokoldür.
+          </p>
+          <CodeBlock code={codeSamples.iframe} title="host.ts" />
+        </section>
+        <section id="parent-editor">
+          <h2>Parent → Editor</h2>
+          <PropsTable
+            rows={[
+              ['puck:save', 'message', 'Mevcut draft’ı kaydet'],
+              ['puck:publish', 'message', 'Kayıt akışını tetikle'],
+              ['puck:undo', 'message', 'Son işlemi geri al'],
+              ['puck:redo', 'message', 'Geri alınan işlemi yinele'],
+              ['puck:viewport', '{ width }', 'Canvas viewport genişliğini değiştir'],
+            ]}
+          />
+        </section>
+        <section id="editor-parent">
+          <h2>Editor → Parent</h2>
+          <PropsTable
+            rows={[
+              ['puck:changed', 'message', 'Debounce’lu değişiklik bildirimi'],
+              ['puck:saved', '{ data }', 'Başarılı save ve güncel draft'],
+              ['puck:saveError', '{ message }', 'Kayıt hatası'],
+              ['puck:itemSelected', '{ item }', 'Seçili type ve id'],
+              ['puck:itemDeselected', 'message', 'Seçimin kaldırılması'],
+            ]}
+          />
+        </section>
+        <section id="guvenlik">
+          <h2>Origin güvenliği</h2>
+          <p>
+            Embed senaryosunda <code>hostOrigin</code> prop’unu mutlaka verin. Studio gelen
+            mesajların <code>event.origin</code> değerini kontrol eder ve giden mesajları yalnızca
+            bu origin’e yollar. Prop verilmezse geriye uyumluluk için wildcard kullanılır.
+          </p>
+          <CodeBlock
+            code={`<TecofEditor
+  pageId={pageId}
+  config={config}
+  hostOrigin="https://panel.example.com"
+/>`}
+          />
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'izinler-migration',
+    group: 'Gelişmiş',
+    title: 'İzinler ve migration',
+    navTitle: 'İzinler & migration',
+    description: 'Node yeteneklerini sınırlandırın ve eski sayfa verisini güvenle yeni şemaya taşıyın.',
+    icon: ShieldCheck,
+    keywords: ['permission', 'migration', 'schema', 'readonly', 'locked'],
+    toc: [
+      { id: 'izin-modeli', label: 'İzin modeli' },
+      { id: 'dinamik-izin', label: 'Dinamik izinler' },
+      { id: 'migration', label: 'Veri migration’ı' },
+      { id: 'sira', label: 'Çalışma sırası' },
+    ],
+    content: (
+      <>
+        <section id="izin-modeli">
+          <h2>İzin modeli</h2>
+          <p>
+            İzinler varsayılan olarak açıktır. Global config, component config ve
+            <code>resolvePermissions</code> sırasıyla birleştirilir. Kısıtlar motor seviyesinde
+            uygulandığı için yalnızca buton gizlemekle kalmaz; klavye kısayolu ve clipboard
+            işlemleri de aynı kurala uyar.
+          </p>
+          <CodeBlock code={codeSamples.permissions} title="permissions.ts" />
+          <PropsTable
+            rows={[
+              ['drag', 'boolean', 'Canvas ve katmanlarda taşıma'],
+              ['delete', 'boolean', 'Tekli/toplu silme ve kesme'],
+              ['duplicate', 'boolean', 'Çoğaltma ve yeni id ile yapıştırma'],
+              ['edit', 'boolean', 'Inspector alanlarının düzenlenmesi'],
+            ]}
+          />
+        </section>
+        <section id="dinamik-izin">
+          <h2>Dinamik izinler</h2>
+          <p>
+            <code>resolvePermissions(props, context)</code>, node prop’larına göre anlık karar
+            üretir. Context içindeki <code>changed</code> ve <code>lastProps</code> değerleri
+            yalnızca değişen alanlara göre hesap yapmanıza yardımcı olur.
+          </p>
+        </section>
+        <section id="migration">
+          <h2>Veri migration’ı</h2>
+          <p>
+            Registry anahtarı veya prop şeması değiştiğinde eski kayıtları render öncesi yükseltin.
+            <code>version</code> damgası <code>root.props._schemaVersion</code> içine yazılır ve
+            aynı migration’ın tekrar uygulanmasını engeller.
+          </p>
+          <CodeBlock code={codeSamples.migration} title="migration.ts" />
+        </section>
+        <section id="sira">
+          <h2>Çalışma sırası</h2>
+          <ol>
+            <li><code>renameComponents</code> ile type adları değiştirilir.</li>
+            <li>Yeni type adına göre <code>transformProps</code> çalışır.</li>
+            <li>Varsa tüm belgeyi alan özel <code>migrate</code> fonksiyonu uygulanır.</li>
+            <li>Hedef schema version root’a yazılır.</li>
+          </ol>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'kisayollar',
+    group: 'Referans',
+    title: 'Klavye kısayolları',
+    navTitle: 'Klavye kısayolları',
+    description: 'Studio’yu klavyeyle hızlı yönetin, node’lar arasında gezinin ve komut paletini kullanın.',
+    icon: Keyboard,
+    keywords: ['keyboard', 'shortcut', 'command k', 'undo', 'copy paste'],
+    toc: [
+      { id: 'temel', label: 'Temel kısayollar' },
+      { id: 'secim', label: 'Seçim ve gezinme' },
+      { id: 'komut-paleti', label: 'Komut paleti' },
+      { id: 'clipboard', label: 'Clipboard' },
+    ],
+    content: (
+      <>
+        <section id="temel">
+          <h2>Temel kısayollar</h2>
+          <div className="my-6 divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+            {[
+              ['⌘ / Ctrl  K', 'Komut paletini aç veya kapat'],
+              ['⌘ / Ctrl  S', 'Taslağı kaydet'],
+              ['⌘ / Ctrl  Z', 'Geri al'],
+              ['⌘ / Ctrl  ⇧  Z', 'Yinele'],
+              ['⌘ / Ctrl  C / X / V', 'Kopyala, kes, yapıştır'],
+              ['⌘ / Ctrl  D', 'Seçimi çoğalt'],
+              ['Delete / Backspace', 'Seçili node’ları sil'],
+              ['Esc', 'Paleti kapat veya seçimi kaldır'],
+            ].map(([keys, action]) => (
+              <div
+                key={keys}
+                className="flex items-center justify-between gap-5 bg-white px-4 py-3 text-sm dark:bg-[#101310]"
+              >
+                <span className="text-zinc-600 dark:text-zinc-300">{action}</span>
+                <kbd>{keys}</kbd>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section id="secim">
+          <h2>Seçim ve gezinme</h2>
+          <p>
+            ⌘/Ctrl + tık veya Shift + tık ile node’u çoklu seçime ekleyip çıkarabilirsiniz.
+            Ok tuşları seçili node’un kardeşleri arasında hareket eder: yukarı/sol önceki,
+            aşağı/sağ sonraki node’u seçer.
+          </p>
+        </section>
+        <section id="komut-paleti">
+          <h2>Komut paleti</h2>
+          <p>
+            Palet; undo/redo, panel açma-kapama, önizleme, kayıt ve component ekleme eylemlerini
+            aynı aramada birleştirir. Ok tuşlarıyla gezinilir, Enter ile çalıştırılır.
+          </p>
+        </section>
+        <section id="clipboard">
+          <h2>Clipboard davranışı</h2>
+          <p>
+            Node clipboard verisi <code>tecof:clipboard:v1</code> anahtarıyla localStorage’da
+            tutulur. Bu sayede farklı sekme veya sayfalar arasında yapıştırma yapılabilir.
+            Yapıştırılan node ve alt zone’lar için yeni id’ler üretilir.
+          </p>
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'sorun-giderme',
+    group: 'Referans',
+    title: 'Sorun giderme',
+    navTitle: 'Sorun giderme',
+    description: 'En sık entegrasyon, stil, render ve medya problemlerini sistematik olarak çözün.',
+    icon: CircleHelp,
+    keywords: ['error', 'sorun', 'css yok', 'component bulunamadı', 'cors', 'upload'],
+    toc: [
+      { id: 'stiller-yok', label: 'Stiller görünmüyor' },
+      { id: 'component-yok', label: 'Component bulunamıyor' },
+      { id: 'api-hatasi', label: 'API ve CORS' },
+      { id: 'kontrol-listesi', label: 'Kontrol listesi' },
+    ],
+    content: (
+      <>
+        <section id="stiller-yok">
+          <h2>Yayında stiller görünmüyor</h2>
+          <p>
+            Önce <code>@tecof/theme-editor/styles.css</code> import’unu kontrol edin. Sorun
+            yalnızca kullanıcı tarafından Studio’da verilen stillerdeyse Tailwind safelist’in
+            build’e dahil olduğunu doğrulayın. Tema renkleri eksikse
+            <code>--theme-color-*</code> değişkenlerini public root’a ekleyin.
+          </p>
+        </section>
+        <section id="component-yok">
+          <h2>Component editörde var, yayında yok</h2>
+          <p>
+            Editor ve renderer aynı <code>StudioConfig</code> nesnesini kullanmalıdır. Kaydedilmiş
+            JSON’daki <code>type</code> registry’de yoksa render edilemez. Type adı
+            değiştirdiyseniz migration ekleyin.
+          </p>
+        </section>
+        <section id="api-hatasi">
+          <h2>API, CORS veya yükleme hatası</h2>
+          <ul>
+            <li>API base URL sonunda fazladan slash olmasının client tarafından temizlendiğini bilin.</li>
+            <li>Backend’in <code>x-secret-key</code> header’ına izin verdiğini kontrol edin.</li>
+            <li>Upload isteğinde Content-Type’ı elle vermeyin; multipart boundary’yi tarayıcı ekler.</li>
+            <li>Embed kullanıyorsanız parent ve <code>hostOrigin</code> değerlerini birebir eşleştirin.</li>
+          </ul>
+        </section>
+        <section id="kontrol-listesi">
+          <h2>Production kontrol listesi</h2>
+          <div className="my-6 space-y-2">
+            {[
+              'Paket CSS’i ana layout’ta import edildi.',
+              'Editör ve renderer ortak config kullanıyor.',
+              'Tailwind primary paleti ve safelist build’de mevcut.',
+              'Tema CSS değişkenleri public sayfaya uygulanıyor.',
+              'API endpoint’leri ve CORS header’ları doğrulandı.',
+              'iframe entegrasyonunda hostOrigin sınırlandırıldı.',
+              'Arbitrary Tailwind değerleri sayfa JSON’larından toplandı.',
+              'Eski component şemaları için migration tanımlandı.',
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex items-start gap-3 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                <Check size={16} className="mt-0.5 shrink-0 text-primary-600" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </section>
+      </>
+    ),
+  },
+];
 
-  const [colorValue, setColorValue] = useState('#3b82f6');
-  const [colorChanged, setColorChanged] = useState(false);
+const groups = Array.from(new Set(pages.map((page) => page.group)));
 
-  const [linkValue, setLinkValue] = useState<any[]>([
-    { code: 'tr', value: { url: '/iletisim', label: 'İletişim', target: '_self', type: 'page' } },
-    { code: 'en', value: { url: '/contact', label: 'Contact', target: '_self', type: 'page' } },
-  ]);
-  const [linkChanged, setLinkChanged] = useState(false);
+function Logo({ compact = false }: { compact?: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      <img
+        src={logoUrl}
+        alt="Tecof"
+        className={`tecof-docs-logo tecof-docs-logo-light ${compact ? 'is-compact' : ''}`}
+      />
+      <img
+        src={whiteLogoUrl}
+        alt="Tecof"
+        className={`tecof-docs-logo tecof-docs-logo-dark ${compact ? 'is-compact' : ''}`}
+      />
+      {!compact && (
+        <div className="tecof-docs-product-label contents">
+          <div className="h-5 w-px bg-zinc-200 dark:bg-zinc-800" />
+          <span className="text-sm font-semibold tracking-tight text-zinc-700 dark:text-zinc-200">
+            Docs
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
 
-  const [editorValue, setEditorValue] = useState([
-    { code: 'tr', value: '<p>Bu bir <strong>zengin metin</strong> editörüdür.</p>' },
-    { code: 'en', value: '<p>This is a <strong>rich text</strong> editor.</p>' },
-  ]);
-  const [editorChanged, setEditorChanged] = useState(false);
+function App() {
+  const initialSlug = window.location.hash.replace(/^#\/?/, '').split('/')[0] || 'giris';
+  const [activeSlug, setActiveSlug] = useState(
+    pages.some((page) => page.slug === initialSlug) ? initialSlug : 'giris',
+  );
+  const [mobileNav, setMobileNav] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [dark, setDark] = useState(() => localStorage.getItem('tecof-docs-theme') === 'dark');
+  const [activeHeading, setActiveHeading] = useState('');
+  const searchInput = useRef<HTMLInputElement>(null);
 
-  const fields = [langChanged, codeChanged, colorChanged, linkChanged, editorChanged];
-  const okCount = fields.filter(Boolean).length;
+  const activePage = pages.find((page) => page.slug === activeSlug) || pages[0];
+  const currentIndex = pages.findIndex((page) => page.slug === activePage.slug);
+
+  const results = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('tr');
+    if (!normalized) return pages.slice(0, 7);
+    return pages.filter((page) =>
+      [page.title, page.description, ...page.keywords]
+        .join(' ')
+        .toLocaleLowerCase('tr')
+        .includes(normalized),
+    );
+  }, [query]);
+
+  const navigate = (slug: string) => {
+    window.location.hash = `/${slug}`;
+    setActiveSlug(slug);
+    setMobileNav(false);
+    setSearchOpen(false);
+    setQuery('');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  const scrollToHeading = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const slug = window.location.hash.replace(/^#\/?/, '').split('/')[0] || 'giris';
+      if (pages.some((page) => page.slug === slug)) {
+        setActiveSlug(slug);
+        window.scrollTo({ top: 0 });
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+    localStorage.setItem('tecof-docs-theme', dark ? 'dark' : 'light');
+  }, [dark]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+      if (event.key === 'Escape') {
+        setSearchOpen(false);
+        setMobileNav(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (searchOpen) window.setTimeout(() => searchInput.current?.focus(), 50);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    setActiveHeading(activePage.toc[0]?.id || '');
+    const sections = activePage.toc
+      .map((item) => document.getElementById(item.id))
+      .filter(Boolean) as HTMLElement[];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((entry) => entry.isIntersecting);
+        if (visible) setActiveHeading(visible.target.id);
+      },
+      { rootMargin: '-88px 0px -70% 0px' },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [activePage]);
 
   return (
-    <TecofProvider apiUrl={MOCK_API_URL} secretKey={MOCK_SECRET}>
-      {/* Hidden: forces Tailwind's browser JIT to emit every Style-editor class
-          so Frame can copy the compiled CSS into the canvas iframe. */}
-      <div aria-hidden className={SAFELIST} style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0, pointerEvents: 'none' }} />
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        fontFamily: "'Inter', system-ui, sans-serif",
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        {/* Header */}
-        <div style={{
-          background: '#18181b',
-          color: '#fff',
-          padding: '16px 32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          boxSizing: 'border-box'
-        }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-              🧪 Tecof Theme Editor — Playground
-            </h1>
-            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#a1a1aa' }}>
-              {view === 'fields'
-                ? 'Tüm field bileşenlerini mock veriyle test edin. Değer değişimleri anlık izlenir.'
-                : 'Yeni görsel canvas editörünü test edin.'}
-            </p>
-          </div>
-
-          {/* View Switcher */}
-          <div style={{ display: 'flex', gap: '8px', background: '#27272a', padding: '4px', borderRadius: '8px' }}>
+    <div className="min-h-screen bg-white text-zinc-900 antialiased dark:bg-[#0b0d0b] dark:text-zinc-100">
+      <header className="fixed inset-x-0 top-0 z-50 h-16 border-b border-zinc-200/80 bg-white/90 backdrop-blur-xl dark:border-zinc-800 dark:bg-[#0b0d0b]/90">
+        <div className="mx-auto flex h-full max-w-[1540px] items-center gap-4 px-4 sm:px-6">
+          <button
+            onClick={() => setMobileNav(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 lg:hidden dark:text-zinc-300 dark:hover:bg-zinc-900"
+            aria-label="Menüyü aç"
+          >
+            <Menu size={20} />
+          </button>
+          <button onClick={() => navigate('giris')} className="shrink-0">
+            <Logo />
+          </button>
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="mx-auto flex h-10 w-10 shrink-0 items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-0 text-left text-sm text-zinc-400 transition hover:border-zinc-300 hover:bg-white hover:shadow-sm sm:w-full sm:max-w-xl sm:justify-start sm:px-3.5 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            <Search size={16} />
+            <span className="hidden flex-1 sm:block">Dokümanlarda ara...</span>
+            <kbd className="tecof-docs-search-shortcut hidden sm:inline-flex">⌘ K</kbd>
+          </button>
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => setView('fields')}
-              style={{
-                background: view === 'fields' ? '#3f3f46' : 'transparent',
-                color: '#fff',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
+              onClick={() => setDark((value) => !value)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-900 dark:hover:text-white"
+              aria-label="Temayı değiştir"
             >
-              Field Listesi
+              {dark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <button
-              onClick={() => setView('studio')}
-              style={{
-                background: view === 'studio' ? '#3f3f46' : 'transparent',
-                color: '#fff',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
+            <a
+              href="https://github.com/tecof/tecof-theme-editor"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden h-9 items-center gap-2 rounded-lg px-2.5 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 md:flex dark:text-zinc-300 dark:hover:bg-zinc-900"
             >
-              Tecof Studio
-            </button>
+              <GitBranch size={18} />
+              GitHub
+            </a>
           </div>
-
-          {view === 'fields' ? (
-            <div style={{
-              background: okCount === fields.length ? '#22c55e' : '#f59e0b',
-              color: '#fff',
-              padding: '6px 16px',
-              borderRadius: '20px',
-              fontSize: '13px',
-              fontWeight: 600,
-            }}>
-              {okCount}/{fields.length} Alan Aktif
-            </div>
-          ) : (
-            <div style={{ fontSize: '13px', color: '#a1a1aa' }}>
-              Mod: Tasarım Modu
-            </div>
-          )}
         </div>
+      </header>
 
-        {view === 'fields' ? (
-          /* Content */
-          <div style={{
-            maxWidth: '520px',
-            margin: '32px auto',
-            padding: '0 20px 60px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-            width: '100%',
-            boxSizing: 'border-box'
-          }}>
-
-            {/* LanguageField */}
-            <FieldCard title="LanguageField" status={langChanged ? 'ok' : 'pending'}>
-              <p style={{ fontSize: '12px', color: '#71717a', marginBottom: '12px' }}>
-                Çok dilli metin. Sekmeleri değiştirip yazın, çeviri butonunu deneyin.
-              </p>
-              <LanguageField
-                field={{}}
-                name="test-lang"
-                id="test-lang"
-                value={langValue}
-                onChange={(v: any) => { setLangValue(v); setLangChanged(true); }}
-              />
-              <ValuePreview value={langValue} />
-            </FieldCard>
-
-            {/* CodeEditorField */}
-            <FieldCard title="CodeEditorField (Monaco)" status={codeChanged ? 'ok' : 'pending'}>
-              <p style={{ fontSize: '12px', color: '#71717a', marginBottom: '12px' }}>
-                Monaco kod editörü. Yazarak onChange tetiklendiğini doğrulayın.
-              </p>
-              <CodeEditorField
-                field={{}}
-                name="test-code"
-                id="test-code"
-                value={codeValue}
-                onChange={(v: string) => { setCodeValue(v); setCodeChanged(true); }}
-                height="200px"
-              />
-              <ValuePreview value={codeChanged ? '✓ onChange tetiklendi' : '◌ Henüz tetiklenmedi'} label="Durum" />
-            </FieldCard>
-
-            {/* ColorField */}
-            <FieldCard title="ColorField" status={colorChanged ? 'ok' : 'pending'}>
-              <p style={{ fontSize: '12px', color: '#71717a', marginBottom: '12px' }}>
-                Renk seçici. Rengi değiştirin.
-              </p>
-              <ColorField
-                field={{}}
-                name="test-color"
-                id="test-color"
-                value={colorValue}
-                onChange={(v: string) => { setColorValue(v); setColorChanged(true); }}
-              />
-              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '32px', height: '32px', borderRadius: '8px',
-                  background: colorValue, border: '2px solid #e4e4e7',
-                }} />
-                <code style={{ fontSize: '13px', color: '#52525b' }}>{colorValue}</code>
+      <div className="mx-auto max-w-[1540px] lg:grid lg:grid-cols-[272px_minmax(0,1fr)] xl:grid-cols-[272px_minmax(0,820px)_240px]">
+        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-[272px] self-start overflow-y-auto border-r border-zinc-200 bg-white px-5 py-7 lg:block dark:border-zinc-800 dark:bg-[#0b0d0b]">
+          <div className="mb-7 rounded-xl border border-primary-200 bg-primary-50 p-3 dark:border-primary-900 dark:bg-primary-950/40">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-primary-700 dark:text-primary-400">
+                  Theme Editor
+                </div>
+                <div className="mt-0.5 text-sm font-semibold text-primary-950 dark:text-primary-100">
+                  v0.0.45
+                </div>
               </div>
-            </FieldCard>
-
-            {/* LinkField */}
-            <FieldCard title="LinkField" status={linkChanged ? 'ok' : 'pending'}>
-              <p style={{ fontSize: '12px', color: '#71717a', marginBottom: '12px' }}>
-                Çok dilli bağlantı alanı. Sayfa seçici veya manuel link ekleyin.
-              </p>
-              <LinkField
-                field={{}}
-                name="test-link"
-                id="test-link"
-                value={linkValue}
-                onChange={(v: any) => { setLinkValue(v); setLinkChanged(true); }}
-                showTarget={true}
-              />
-              <ValuePreview value={linkValue} />
-            </FieldCard>
-
-            {/* EditorField */}
-            <FieldCard title="EditorField (TipTap)" status={editorChanged ? 'ok' : 'pending'}>
-              <p style={{ fontSize: '12px', color: '#71717a', marginBottom: '12px' }}>
-                Zengin metin editörü. İçerik düzenleyin.
-              </p>
-              <EditorField
-                field={{}}
-                name="test-editor"
-                id="test-editor"
-                value={editorValue}
-                onChange={(v: any) => { setEditorValue(v); setEditorChanged(true); }}
-              />
-              <ValuePreview value={editorValue} />
-            </FieldCard>
-
-            {/* UploadField Info */}
-            <FieldCard title="UploadField" status="pending">
-              <p style={{ fontSize: '12px', color: '#71717a' }}>
-                ⚠️ UploadField gerçek dosya yükleme gerektirir. Mock ortamda dosya transfer edilemez.
-                <br />Tam test için <strong>tecof-theme-core</strong> editöründen deneyin.
-              </p>
-            </FieldCard>
-
-            {/* Full State JSON */}
-            <div style={{
-              background: '#18181b',
-              borderRadius: '16px',
-              padding: '20px',
-              color: '#e4e4e7',
-            }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 600, color: '#fff' }}>
-                📦 Tüm State Özeti
-              </h3>
-              <pre style={{
-                fontSize: '11px',
-                lineHeight: '1.6',
-                overflow: 'auto',
-                maxHeight: '300px',
-                color: '#a1a1aa',
-              }}>
-                {JSON.stringify({
-                  languageField: langValue,
-                  codeEditorField: codeValue.substring(0, 60) + '...',
-                  colorField: colorValue,
-                  linkField: linkValue,
-                  editorField: editorValue,
-                }, null, 2)}
-              </pre>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-200/70 text-primary-800 dark:bg-primary-900 dark:text-primary-300">
+                <Box size={16} />
+              </div>
             </div>
           </div>
-        ) : (
-          <div style={{ flex: 1, height: 'calc(100vh - 56px)', position: 'relative' }}>
-            <TecofStudio
-              pageId="test-page-id"
-              config={mockConfig}
-              onSave={(data) => console.log('Studio Page Saved:', data)}
-              onChange={(data) => console.log('Studio Page Changed:', data)}
-            />
+          <nav className="space-y-6">
+            {groups.map((group) => (
+              <div key={group}>
+                <div className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-400">
+                  {group}
+                </div>
+                <div className="space-y-0.5">
+                  {pages
+                    .filter((page) => page.group === group)
+                    .map((page) => {
+                      const Icon = page.icon;
+                      const active = page.slug === activePage.slug;
+                      return (
+                        <button
+                          key={page.slug}
+                          onClick={() => navigate(page.slug)}
+                          className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium transition ${
+                            active
+                              ? 'bg-primary-100 text-primary-900 dark:bg-primary-950 dark:text-primary-300'
+                              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100'
+                          }`}
+                        >
+                          <Icon size={15} />
+                          <span className="flex-1">{page.navTitle}</span>
+                          {active && <ChevronRight size={13} />}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            ))}
+          </nav>
+          <div className="mt-8 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+            <a
+              href="https://github.com/tecof/tecof-theme-editor/issues"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 px-2 text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              <CircleHelp size={14} />
+              Bir sorun bildirin
+              <ExternalLink size={11} className="ml-auto" />
+            </a>
           </div>
-        )}
+        </aside>
+
+        <main className="min-w-0 px-5 pb-20 pt-28 sm:px-8 lg:col-start-2 lg:px-10 xl:px-12">
+          <div className="mb-8 flex items-center gap-2 text-xs font-medium text-zinc-400">
+            <span>Dokümantasyon</span>
+            <ChevronRight size={12} />
+            <span>{activePage.group}</span>
+          </div>
+
+          <article className="docs-article">
+            <div className="mb-12 border-b border-zinc-200 pb-10 dark:border-zinc-800">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-800 dark:border-primary-900 dark:bg-primary-950/60 dark:text-primary-300">
+                <Sparkles size={13} />
+                Tecof geliştirici rehberi
+              </div>
+              <h1>{activePage.title}</h1>
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-500 dark:text-zinc-400">
+                {activePage.description}
+              </p>
+            </div>
+
+            {activePage.content}
+
+            <div className="mt-16 border-t border-zinc-200 pt-8 dark:border-zinc-800">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {currentIndex > 0 ? (
+                  <button
+                    onClick={() => navigate(pages[currentIndex - 1].slug)}
+                    className="group rounded-xl border border-zinc-200 p-4 text-left transition hover:border-primary-300 hover:bg-primary-50/40 dark:border-zinc-800 dark:hover:border-primary-800 dark:hover:bg-primary-950/20"
+                  >
+                    <div className="flex items-center gap-2 text-xs text-zinc-400">
+                      <ArrowLeft size={13} />
+                      Önceki
+                    </div>
+                    <div className="mt-2 font-semibold group-hover:text-primary-800 dark:group-hover:text-primary-300">
+                      {pages[currentIndex - 1].title}
+                    </div>
+                  </button>
+                ) : (
+                  <div />
+                )}
+                {currentIndex < pages.length - 1 && (
+                  <button
+                    onClick={() => navigate(pages[currentIndex + 1].slug)}
+                    className="group rounded-xl border border-zinc-200 p-4 text-right transition hover:border-primary-300 hover:bg-primary-50/40 dark:border-zinc-800 dark:hover:border-primary-800 dark:hover:bg-primary-950/20"
+                  >
+                    <div className="flex items-center justify-end gap-2 text-xs text-zinc-400">
+                      Sonraki
+                      <ArrowRight size={13} />
+                    </div>
+                    <div className="mt-2 font-semibold group-hover:text-primary-800 dark:group-hover:text-primary-300">
+                      {pages[currentIndex + 1].title}
+                    </div>
+                  </button>
+                )}
+              </div>
+              <div className="mt-8 flex items-center justify-between text-xs text-zinc-400">
+                <span>Son güncelleme: 1 Temmuz 2026</span>
+                <a
+                  href="https://github.com/tecof/tecof-theme-editor"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 font-medium hover:text-primary-700"
+                >
+                  <FileText size={13} />
+                  Bu sayfayı düzenle
+                </a>
+              </div>
+            </div>
+          </article>
+        </main>
+
+        <aside className="sticky top-16 col-start-3 row-start-1 hidden h-[calc(100vh-4rem)] self-start overflow-y-auto px-7 py-12 xl:block">
+          <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Bu sayfada</div>
+          <nav className="mt-4 space-y-1 border-l border-zinc-200 dark:border-zinc-800">
+            {activePage.toc.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToHeading(item.id)}
+                className={`-ml-px block w-full border-l px-4 py-1.5 text-left text-xs leading-5 transition ${
+                  activeHeading === item.id
+                    ? 'border-primary-600 font-semibold text-primary-700 dark:text-primary-400'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <div className="mt-9 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+            <div className="flex items-center gap-2 text-xs font-semibold">
+              <GitBranch size={14} />
+              Açık kaynak
+            </div>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">
+              Bir hata mı buldunuz? Issue açarak geliştirmeye katkı sağlayın.
+            </p>
+            <a
+              href="https://github.com/tecof/tecof-theme-editor/issues"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary-700 dark:text-primary-400"
+            >
+              Issue oluştur <ArrowRight size={12} />
+            </a>
+          </div>
+        </aside>
       </div>
-    </TecofProvider>
+
+      {mobileNav && (
+        <div className="fixed inset-0 z-[70] lg:hidden">
+          <button
+            className="absolute inset-0 bg-black/35 backdrop-blur-sm"
+            onClick={() => setMobileNav(false)}
+            aria-label="Menüyü kapat"
+          />
+          <aside className="absolute bottom-0 left-0 top-0 w-[min(88vw,340px)] overflow-y-auto bg-white p-5 shadow-2xl dark:bg-[#0b0d0b]">
+            <div className="flex items-center justify-between pb-5">
+              <Logo />
+              <button
+                onClick={() => setMobileNav(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              >
+                <X size={19} />
+              </button>
+            </div>
+            <nav className="space-y-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+              {groups.map((group) => (
+                <div key={group}>
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                    {group}
+                  </div>
+                  {pages
+                    .filter((page) => page.group === group)
+                    .map((page) => {
+                      const Icon = page.icon;
+                      return (
+                        <button
+                          key={page.slug}
+                          onClick={() => navigate(page.slug)}
+                          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium ${
+                            page.slug === activePage.slug
+                              ? 'bg-primary-100 text-primary-900 dark:bg-primary-950 dark:text-primary-300'
+                              : 'text-zinc-600 dark:text-zinc-300'
+                          }`}
+                        >
+                          <Icon size={16} />
+                          {page.navTitle}
+                        </button>
+                      );
+                    })}
+                </div>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {searchOpen && (
+        <div className="fixed inset-0 z-[80] flex items-start justify-center bg-black/40 px-4 pt-[10vh] backdrop-blur-sm">
+          <button
+            className="absolute inset-0"
+            onClick={() => setSearchOpen(false)}
+            aria-label="Aramayı kapat"
+          />
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-[#101310]">
+            <div className="flex h-14 items-center gap-3 border-b border-zinc-200 px-4 dark:border-zinc-800">
+              <Search size={19} className="text-zinc-400" />
+              <input
+                ref={searchInput}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Kurulum, Tailwind, API..."
+                className="h-full flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400"
+              />
+              <kbd>ESC</kbd>
+            </div>
+            <div className="max-h-[55vh] overflow-y-auto p-2">
+              <div className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                {query ? `${results.length} sonuç` : 'Önerilen sayfalar'}
+              </div>
+              {results.length ? (
+                results.map((page) => {
+                  const Icon = page.icon;
+                  return (
+                    <button
+                      key={page.slug}
+                      onClick={() => navigate(page.slug)}
+                      className="group flex w-full items-start gap-3 rounded-xl p-3 text-left transition hover:bg-primary-50 dark:hover:bg-primary-950/40"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 group-hover:border-primary-200 group-hover:text-primary-700 dark:border-zinc-700 dark:bg-zinc-900 dark:group-hover:border-primary-900 dark:group-hover:text-primary-400">
+                        <Icon size={17} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-zinc-900 dark:text-white">
+                          {page.title}
+                        </div>
+                        <div className="mt-1 line-clamp-1 text-xs text-zinc-500">
+                          {page.description}
+                        </div>
+                      </div>
+                      <ArrowRight
+                        size={15}
+                        className="ml-auto mt-2 text-zinc-300 group-hover:text-primary-600"
+                      />
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-12 text-center">
+                  <FileJson size={28} className="mx-auto text-zinc-300" />
+                  <div className="mt-3 text-sm font-semibold">Sonuç bulunamadı</div>
+                  <p className="mt-1 text-xs text-zinc-500">Farklı bir anahtar kelime deneyin.</p>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4 border-t border-zinc-200 bg-zinc-50 px-4 py-2.5 text-[11px] text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/60">
+              <span className="flex items-center gap-1.5"><kbd>↵</kbd> Aç</span>
+              <span className="flex items-center gap-1.5"><kbd>ESC</kbd> Kapat</span>
+              <span className="ml-auto">Tecof Docs Search</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
-};
+}
 
 export default App;

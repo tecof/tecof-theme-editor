@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tecof Theme Editor — Playground</title>
+  <meta name="theme-color" content="#faffe4" />
+  <meta name="description" content="Tecof Theme Editor Türkçe geliştirici dokümantasyonu" />
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Documentation Index" />
+  <link rel="alternate" type="text/plain" href="/llms-full.txt" title="Full LLM Context" />
+  <link rel="icon" href="/favicon.ico" />
+  <title>Tecof Theme Editor — Dokümantasyon</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -16,6 +21,8 @@
   ─────────────────────────────────────────────────────────────── -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <style type="text/tailwindcss">
+    @custom-variant dark (&:where(.dark, .dark *));
+
     @theme {
       --color-primary-50: #faffe4;
       --color-primary-100: #f2ffc5;
@@ -31,7 +38,7 @@
     }
   </style>
 </head>
-<body>
+<body class="bg-white dark:bg-[#0b0d0b]">
   <div id="root"></div>
   <script type="module" src="./main.tsx"></script>
 </body>

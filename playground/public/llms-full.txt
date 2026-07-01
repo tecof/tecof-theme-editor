@@ -1,0 +1,1352 @@
+# Tecof Theme Editor — Tam AI Bağlamı
+
+> Bu dosya @tecof/theme-editor için AI odaklı rehberi ve repository teknik belgelerini tek bir Markdown bağlamında birleştirir.
+
+- Sürüm: 0.0.45
+- Dil: Türkçe
+- Kaynak önceliği: AI_GUIDE.md → README.md → docs/TAILWIND.md → ARCHITECTURE.md
+- Çelişki halinde kod ve exported TypeScript tipleri son doğruluk kaynağıdır.
+
+
+---
+
+<!-- Source: docs/AI_GUIDE.md -->
+
+# Tecof Theme Editor — AI Entegrasyon Rehberi
+
+Bu dosya, bir yapay zekâ asistanının `@tecof/theme-editor` hakkında doğru ve
+tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
+
+## Paket kimliği
+
+- Paket: `@tecof/theme-editor`
+- Belgelenen sürüm: `0.0.45`
+- Çalışma zamanı: React 18 veya React 19
+- Amaç: Tecof mağaza ve içerik sayfaları için görsel Studio editörü, yayın
+  renderer'ı, API istemcisi ve gelişmiş alan bileşenleri
+- Ana export'lar: `TecofProvider`, `TecofEditor`, `TecofStudio`, `TecofRender`,
+  `TecofPicture`, `TecofApiClient`
+- `TecofEditor`, güncel Studio editörünün public adıdır.
+
+## Cevap üretme kuralları
+
+1. Editör ve public renderer için aynı `StudioConfig` kullanılmalıdır.
+2. `TecofRender` veri getirmez. Önceden yüklenmiş `PuckPageData` alır.
+3. Paket UI stilleri için uygulama girişinde
+   `@tecof/theme-editor/styles.css` import edilmelidir.
+4. Studio'nun ürettiği dinamik Tailwind class'ları production build tarafından
+   kendiliğinden bulunmaz. Preset'ler için `getSafelist()`, arbitrary değerler
+   için kaydedilmiş sayfalarda `collectDocumentClasses()` kullanılmalıdır.
+5. Tema, `root.props._tecofTheme` içinde saklanır. Public sayfada
+   `generateCSSVariables()` çıktısı uygulanmalıdır.
+6. Embed senaryosunda `hostOrigin` verilmelidir. Verilmezse geriye uyumluluk
+   nedeniyle `postMessage` hedefi `*` olur.
+7. Registry'deki component type adı değişirse eski kayıtlar için
+   `config.migrations` tanımlanmalıdır.
+8. Native HTML5 drag-and-drop dokunmatik cihazlarda tam edit deneyimi sunmaz.
+   Public renderer responsive çalışmaya devam eder.
+9. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
+   ilgili kaynak okunmalıdır.
+
+## Minimum kurulum
+
+```bash
+npm install @tecof/theme-editor react react-dom
+```
+
+```tsx
+import {
+  TecofEditor,
+  TecofProvider,
+  TecofRender,
+} from "@tecof/theme-editor";
+import "@tecof/theme-editor/styles.css";
+
+<TecofProvider
+  apiUrl="https://api.example.com"
+  secretKey="merchant-secret"
+  cdnUrl="https://cdn.example.com"
+>
+  <TecofEditor pageId="page-id" config={config} />
+</TecofProvider>
+```
+
+## Veri modeli
+
+```ts
+interface PuckPageData {
+  content: Array<{
+    type: string;
+    props: Record<string, unknown>;
+  }>;
+  root: {
+    props: Record<string, unknown>;
+  };
+  zones: Record<string, Array<{
+    type: string;
+    props: Record<string, unknown>;
+  }>>;
+}
+```
+
+Root node'lar `content` dizisinde bulunur. İç içe node'lar `zones` nesnesinde
+`parentId:zoneName` anahtarıyla saklanır.
+
+## StudioConfig özeti
+
+```ts
+const config = {
+  components: {
+    Hero: {
+      label: "Hero",
+      category: "content",
+      fields: {
+        title: { type: "text", label: "Başlık" },
+      },
+      defaultProps: {
+        title: "Yeni başlık",
+      },
+      render: ({ title }) => <h1>{title}</h1>,
+    },
+  },
+  categories: {
+    content: {
+      title: "İçerik",
+      components: ["Hero"],
+    },
+  },
+  templates: [],
+  permissions: {
+    drag: true,
+    delete: true,
+    duplicate: true,
+    edit: true,
+  },
+  migrations: {
+    version: 1,
+  },
+};
+```
+
+Component config; `fields`, `defaultProps`, `render`, `inline`,
+`acceptsChildren`, `maxItems`, `allowedParents`, `permissions`,
+`resolvePermissions`, `resolveFields` ve `resolveData` seçeneklerini
+destekler.
+
+## Alanlar
+
+Yerleşik alan tipleri:
+
+- `text`
+- `textarea`
+- `select`
+- `number`
+- `boolean`
+- `toggle`
+- `range`
+- `radio`
+- `array`
+- `object`
+- `slot`
+
+Gelişmiş alan factory'leri:
+
+- `createLanguageField`: Merchant dilleri ve çeviri
+- `createEditorField`: TipTap zengin metin editörü
+- `createUploadField`: Medya kütüphanesi, FilePond, sıkıştırma ve Doka
+- `createLinkField`: Merchant sayfası veya manuel URL seçimi
+- `createColorField`: HEX, alpha, swatch ve EyeDropper
+- `createCodeEditorField`: Monaco kod editörü
+- `createRepeaterField`: Tekrarlanan satırlar
+- `createCmsCollectionField`: CMS koleksiyon ve alan eşleme
+- `createIconField`: İkon seçimi
+- `createExternalField`: Üçüncü taraf listeden kayıt seçimi
+
+`text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
+Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render
+sırasında ham kayıt `cmsData` prop'u ile verilmelidir.
+
+## TecofEditor önemli prop'ları
+
+| Prop | Anlamı | Varsayılan |
+|---|---|---|
+| `pageId` | Backend sayfa kimliği | zorunlu |
+| `config` | Ortak component registry | zorunlu |
+| `accessToken` | Save isteği Authorization değeri | yok |
+| `hostOrigin` | Güvenli postMessage origin'i | `*` |
+| `autoSave` | Debounce'lu otomatik draft kaydı | `false` |
+| `autoSaveDelay` | Autosave gecikmesi | `2000` ms |
+| `warnOnUnsavedChanges` | Sekme kapanış uyarısı | `true` |
+| `onChange` | Yaklaşık 300 ms debounce'lu değişiklik callback'i | yok |
+| `onSave` | Başarılı kayıt callback'i | yok |
+
+## API Client
+
+`TecofApiClient` aşağıdaki public metotları sunar:
+
+- `getPage(id, signal?)`
+- `savePage(id, draftData, title?, accessToken?)`
+- `getPublishedPage(slug, locale?)`
+- `getMerchantInfo()`
+- `uploadFile(file, folder?)`
+- `getUploads(page, limit)`
+- `getPages()`
+- `translate(text, sourceLang, locales, isHtml?)`
+- `getComponentPreview(domain, componentName)`
+
+İstekler `x-secret-key` header'ını kullanır. Upload isteğinde multipart
+`Content-Type` header'ı tarayıcı tarafından oluşturulmalıdır.
+
+## Tailwind ve tema
+
+Studio stilleri node'un `_tecofStyles` prop'unda yapısal token olarak saklar.
+`compileStyles()` bu modeli class string'ine dönüştürür.
+
+```ts
+{
+  base: { p: "4", bg: "primary-600" },
+  md: { p: "[40px]" },
+  states: {
+    hover: { bg: "primary-700" },
+    "md:hover": { bg: "primary-800" },
+  },
+}
+```
+
+Desteklenen breakpoint'ler `base`, `sm`, `md`, `lg`, `xl`; state'ler
+`hover`, `focus`, `active` değerleridir. Arbitrary değerler köşeli parantezle
+saklanır.
+
+Tecof primary renk kuralı:
+
+- Ana vurgu: `#74b500` (`primary-600`)
+- Hover: `#588902` (`primary-700`)
+- Vurgu zemini üstü metin: `#1d3300` (`primary-950`)
+
+## postMessage protokolü
+
+Parent'tan editöre:
+
+- `puck:save`
+- `puck:publish`
+- `puck:undo`
+- `puck:redo`
+- `puck:viewport`
+
+Editörden parent'a:
+
+- `puck:changed`
+- `puck:saved`
+- `puck:saveError`
+- `puck:itemSelected`
+- `puck:itemDeselected`
+
+`puck:` prefix'i geriye dönük host uyumluluğu için korunur.
+
+## Hızlı teşhis
+
+### Yayında Studio stilleri görünmiyor
+
+1. Paket CSS import'unu kontrol et.
+2. `getSafelist()` çıktısını Tailwind build'e ekle.
+3. Arbitrary değerler varsa `collectDocumentClasses()` çalıştır.
+4. Tema renkleri eksikse public root'ta tema CSS değişkenlerini üret.
+
+### Editörde görünen component yayında görünmüyor
+
+1. Editör ve renderer'ın aynı config'i kullandığını kontrol et.
+2. Kaydedilmiş `type` değerinin registry'de bulunduğunu kontrol et.
+3. Type değiştiyse migration ekle.
+
+### iframe mesajları çalışmıyor
+
+1. `hostOrigin` ile parent origin'inin birebir aynı olduğunu kontrol et.
+2. Mesajı `iframe.contentWindow` hedefine gönder.
+3. `event.origin` doğrulamasını ve `puck:` mesaj tipini kontrol et.
+
+---
+
+<!-- Source: README.md -->
+
+# @tecof/theme-editor
+
+Tecof platform için **sayfa editörü**, **render motoru** ve **gelişmiş alan bileşenleri** kütüphanesi.
+
+> API Client, Context Provider, Tecof Studio editörü, çok dilli alan yöneticileri, medya yöneticisi, link seçici, resim görüntüleyici ve tema araçları içerir.
+>
+> **Studio öne çıkanlar:** komut paleti (⌘K), görsel stil editörü + **canlı tema editörü**, CMS veri bağlama, bölüm şablonları, yan yana slot düzeni, boşluk (box-model) overlay'i ve tam klavye kısayolları.
+
+---
+
+## Kurulum
+
+```bash
+npm install @tecof/theme-editor react react-dom
+```
+
+## Hızlı Başlangıç
+
+### 1. TecofProvider ile Sarma
+
+```tsx
+import { TecofProvider } from "@tecof/theme-editor";
+
+<TecofProvider
+  apiUrl="https://api.example.com"
+  secretKey="your-merchant-secret-key"
+>
+  {children}
+</TecofProvider>
+```
+
+### 2. Editör Sayfası
+
+```tsx
+"use client";
+import { TecofEditor } from "@tecof/theme-editor";
+import { tecofConfig } from "@/tecof-config";
+
+export default function EditorPage({ params }) {
+  return <TecofEditor pageId={params.id} config={tecofConfig} />;
+}
+```
+
+### 3. Public Sayfa (Render)
+
+```tsx
+import { TecofRender } from "@tecof/theme-editor";
+
+<TecofRender data={pageData} config={tecofConfig} />
+```
+
+---
+
+## Bileşenler
+
+### `<TecofProvider />`
+
+Tüm Tecof bileşenlerini sarar ve API client context'i sağlar.
+
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `apiUrl` | `string` | Backend API base URL |
+| `secretKey` | `string` | Merchant secret key |
+| `children` | `ReactNode` | Alt bileşenler |
+
+### `<TecofEditor />`
+
+Tecof Studio sayfa editörü. Otomatik fetch/save, iframe postMessage desteği, canvas DnD, katman paneli ve inspector içerir.
+
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `pageId` | `string` | Düzenlenecek sayfa ID'si |
+| `config` | `Config` | Tecof/Puck-compatible component configuration |
+| `accessToken` | `string` | Kayıt isteklerinde Authorization header |
+| `onSave` | `(data) => void` | Kayıt sonrası callback |
+| `onChange` | `(data) => void` | Her değişiklikte callback (≈300ms debounce'lu) |
+| `hostOrigin` | `string` | Embed senaryosunda izin verilen parent origin. Verilirse hem gönderilen hem **gelen** postMessage'lar bu origin'e kısıtlanır (güvenlik). Verilmezse `'*'` (geriye uyumlu). |
+| `className` | `string` | Ek CSS sınıfı |
+
+> `TecofEditor`, `TecofStudio`'nun takma adıdır (`TecofEditor = TecofStudio`) — ikisi de aynı editörü açar.
+
+### `<TecofRender />`
+
+Önceden yüklenmiş sayfa verisini render eder. Fetch akışı için `TecofApiClient.getPublishedPage(slug, locale?)` kullanılıp dönen `draftData`/sayfa verisi bu bileşene verilir.
+
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `data` | `PuckPageData` | Sayfa verisi |
+| `config` | `Config` | Tecof/Puck-compatible component configuration |
+| `cmsData` | `object` | CMS template sayfaları için ham kayıt verisi |
+| `className` | `string` | Ek CSS sınıfı |
+
+### `<TecofPicture />`
+
+Akıllı medya bileşeni — görsel/video otomatik algılama, responsive boyutlar, fancybox desteği.
+
+```tsx
+import { TecofPicture } from "@tecof/theme-editor";
+import Image from "next/image";
+
+// Basit kullanım
+<TecofPicture data={file} alt="Hero" />
+
+// Fill modu
+<TecofPicture data={file} fill />
+
+// Next.js Image ile
+<TecofPicture
+  data={file}
+  ImageComponent={Image}
+  imageProps={{ quality: 85, priority: true }}
+/>
+
+// Fancybox lightbox
+<TecofPicture data={file} fancybox fancyboxName="gallery" />
+```
+
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `data` | `UploadedFile` | Yüklenen dosya verisi |
+| `alt` | `string` | Alt metin |
+| `size` | `thumbnail \| medium \| large \| full` | Responsive boyut |
+| `fill` | `boolean` | Parent'ı kaplar |
+| `ImageComponent` | `ComponentType` | Özel image bileşeni (örn: Next.js Image) |
+| `imageProps` | `Record<string,any>` | ImageComponent'e ek prop'lar |
+| `fancybox` | `boolean` | Fancybox lightbox desteği |
+
+---
+
+## Custom Fields (Editör Alanları)
+
+Tüm alanlar `createXField()` factory fonksiyonları ile Tecof/Puck-compatible config'e entegre edilir.
+
+### LanguageField — Çok Dilli Metin
+
+Sekmeli çok dilli metin girişi. Merchant ayarlarından dilleri otomatik çeker.
+
+```tsx
+import { createLanguageField } from "@tecof/theme-editor";
+
+fields: {
+  title: createLanguageField({ label: "Başlık" }),
+  description: createLanguageField({
+    label: "Açıklama",
+    isTextarea: true,
+    textareaRows: 4,
+  }),
+  htmlContent: createLanguageField({
+    label: "HTML İçerik",
+    isHtml: true,
+  }),
+}
+```
+
+**Özellikler:**
+- 🌐 Otomatik dil algılama (merchant ayarlarından)
+- 📋 **Hızlı Doldur** — Aktif sekmedeki metni tüm dillere kopyalar
+- 🔄 **Çevir** — Aktif metni API üzerinden diğer dillere otomatik çevirir (DeepL / Google / OpenAI / Ollama)
+- `isHtml` desteği — HTML taglarını koruyarak çeviri yapar
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `isTextarea` | `boolean` | `false` | Textarea modu |
+| `textareaRows` | `number` | `3` | Textarea satır sayısı |
+| `placeholder` | `string` | `''` | Placeholder metni |
+| `isHtml` | `boolean` | `false` | HTML içerik çevirisi |
+
+---
+
+### EditorField — Zengin Metin Editörü
+
+TipTap tabanlı, çok dilli WYSIWYG editörü.
+
+```tsx
+fields: {
+  content: createEditorField({ label: "İçerik" }),
+}
+```
+
+**Özellikler:** Bold, italic, link, liste, heading ve daha fazlası.
+
+---
+
+### UploadField — Gelişmiş Medya Yöneticisi
+
+Görsel önizleme tile'ları + tek giriş noktalı sekmeli medya drawer'ı (Kütüphane / Yükle / Referans) + FilePond yükleme + Doka görsel düzenleyici.
+
+```tsx
+fields: {
+  images: createUploadField({
+    label: "Görseller",
+    allowMultiple: true,
+    maxFiles: 10,
+    maxFileSize: "50MB",
+  }),
+  document: createUploadField({
+    label: "Doküman",
+    allowMultiple: false,
+    acceptedTypes: ["application/pdf"],
+  }),
+}
+```
+
+**Özellikler:**
+- 🖼️ **Görsel önizleme tile grid'i** — Seçili medya küçük liste satırı yerine kare önizleme tile'ları olarak gösterilir; hover'da kaldır butonu.
+- ➕ **Tek giriş noktası** — Bir "ekle" tile'ı drawer'ı açar; tüm kaynaklar **sekme** halinde: **Kütüphane** (sunucudaki dosyalar), **Yükle** (FilePond), **Referans** (CMS değişkeni).
+- 🔗 **CMS Referansı** — `{{ data.alan }}` ile dinamik görsel bağlama (CMS şablon sayfaları için).
+- 🖌️ **Doka Görsel Düzenleyici** — Kırp, döndür, parlaklık, kontrast, markup, çıkartma.
+- 🗜️ **Resim Sıkıştırma** — Otomatik WebP dönüşümü (browser-image-compression).
+- 📄 24+ dosya türü desteği (görseller, PDF, Office, CSV, video).
+- 🇹🇷 Tamamen Türkçe etiketler (FilePond + Doka).
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `allowMultiple` | `boolean` | `true` | Çoklu dosya |
+| `maxFiles` | `number` | `100` | Maksimum dosya sayısı |
+| `maxFileSize` | `string` | `100MB` | Tek dosya limiti |
+| `maxTotalFileSize` | `string` | `200MB` | Toplam limit |
+| `acceptedTypes` | `string[]` | `[all]` | İzin verilen MIME türleri |
+| `folder` | `string` | `/` | Yüklemelerin hedef klasörü |
+| `imageCompressionEnabled` | `boolean` | `true` | Sıkıştırma aktif |
+| `imageCompressionOptions` | `object` | `{maxSizeMB:1,…}` | Sıkıştırma ayarları (maxSizeMB, maxWidthOrHeight, fileType) |
+| `allowReorder` | `boolean` | `true` | FilePond'da sürükle-bırak sıralama |
+| `showUploadedFiles` | `boolean` | `false` | _(kullanımdan kalktı — yeni tile arayüzünde etkisiz)_ |
+
+---
+
+### LinkField — Sayfa / URL Seçici
+
+Mevcut sayfalardan seçim veya manuel URL girişi.
+
+```tsx
+fields: {
+  link: createLinkField({ label: "Bağlantı" }),
+  ctaLink: createLinkField({
+    label: "CTA Link",
+    showTarget: true,
+    placeholder: "https://example.com",
+  }),
+}
+```
+
+**Özellikler:**
+- 📄 **Sayfa Seç** — Vaul drawer ile merchant sayfalarını listeler, aranabilir
+- 🔗 **Manuel Link** — URL + etiket + hedef (aynı/yeni sekme) girişi
+- 🟢 Durum göstergesi (yayınlanmış / değiştirilmiş / taslak)
+- 🏷️ Tip badge'i (Sayfa / Link)
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `showTarget` | `boolean` | `true` | Hedef sekme seçici |
+| `placeholder` | `string` | `https://...` | URL placeholder |
+
+**Değer Tipi (`LinkFieldValue`):**
+```ts
+{
+  url: string;       // "/about" veya "https://..."
+  label?: string;    // "Hakkımızda"
+  target?: "_self" | "_blank";
+  type?: "page" | "custom";
+}
+```
+
+---
+
+### CodeEditorField — Kod Editörü
+
+Monaco Editor tabanlı syntax-highlighted kod editörü.
+
+```tsx
+fields: {
+  customHtml: createCodeEditorField({
+    label: "Özel Kod",
+    defaultLanguage: "html",
+  }),
+  jsonConfig: createCodeEditorField({
+    label: "Config",
+    defaultLanguage: "json",
+  }),
+}
+```
+
+---
+
+### ColorField — Renk Seçici
+
+Popover tabanlı gelişmiş renk seçici: doygunluk/parlaklık karesi, hue + alpha kaydırıcıları, swatch paleti, ekrandan renk seçme (EyeDropper) ve inline HEX girişi.
+
+```tsx
+import { createColorField } from "@tecof/theme-editor";
+
+fields: {
+  bgColor: createColorField({ label: "Arka Plan Rengi" }),
+  textColor: createColorField({
+    label: "Metin Rengi",
+    showOpacity: true,
+    defaultColor: "#18181b",
+  }),
+  accentColor: createColorField({
+    label: "Vurgu Rengi",
+    swatches: ["#18181b", "#74b500", "#ffffff", "#ef4444"],
+  }),
+}
+```
+
+**Özellikler:**
+- 🎨 **SV Karesi + Hue/Alpha** — Doygunluk/parlaklık karesi ve hue + (opsiyonel) alpha kaydırıcıları; pointer ile sürüklenir.
+- 🔤 **Inline HEX** — Monospace alanda doğrudan HEX kodu yazma (3/6/8 haneli).
+- 🎯 **Swatch Paleti** — Hızlı seçim için özelleştirilebilir renk noktaları.
+- 💧 **EyeDropper** — Destekleyen tarayıcılarda ekranın herhangi bir yerinden renk seçme.
+- 🕘 **Son Kullanılanlar** — `localStorage` üzerinden son renkler.
+- 🔲 **Opaklık** — Opsiyonel alpha kaydırıcısı (8 haneli hex + checkerboard önizleme).
+- ↩️ **Sıfırla** — Varsayılan renge geri dönme butonu.
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `showOpacity` | `boolean` | `false` | Alpha/opaklık kaydırıcısı |
+| `swatches` | `string[]` | `[built-in]` | Popover'daki hızlı renk noktaları (hex listesi) |
+| `defaultColor` | `string` | `''` | Varsayılan/sıfırlama rengi |
+| `placeholder` | `string` | `#000000` | HEX giriş placeholder |
+| `showReset` | `boolean` | `true` | Sıfırlama butonu göster |
+
+> ⚠️ Eski `showPresets` / `presetColors` seçenekleri kaldırıldı; yerine `swatches` kullanın.
+
+---
+
+### CmsCollectionField — Koleksiyon Bağlama
+
+Bir bileşeni CMS koleksiyonuna bağlar; koleksiyon seçer, limit/sıralama ayarlar ve bileşenin "slot"larını koleksiyon alanlarına eşler (liste/tekrar eden içerik için).
+
+```tsx
+import { createCmsCollectionField } from "@tecof/theme-editor";
+
+fields: {
+  source: createCmsCollectionField({
+    label: "Veri Kaynağı",
+    defaultLimit: 6,
+    slots: {
+      title: { label: "Başlık", fieldTypes: ["text"] },
+      image: { label: "Görsel", fieldTypes: ["image"] },
+      link:  { label: "Bağlantı" },
+    },
+  }),
+}
+```
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `defaultLimit` | `number` | `10` | Çekilecek öğe sayısı varsayılanı |
+| `showLimit` | `boolean` | `true` | Limit kontrolü göster |
+| `showSort` | `boolean` | `true` | Sıralama kontrolü göster (özel / yeni→eski / eski→yeni) |
+| `slots` | `Record<string, { label; fieldTypes? }>` | — | Bileşenin ihtiyaç duyduğu veri slotları; her biri bir CMS alanına eşlenir |
+
+**Değer Tipi (`CmsCollectionFieldValue`):**
+```ts
+{
+  collectionSlug: string;
+  collectionName?: string;
+  limit?: number;
+  sort?: "newest" | "oldest" | "custom";
+  fieldMap?: Record<string, string>; // slotKey → CMS field shortcode
+}
+```
+
+---
+
+### CMS Veri Bağlama (Metin / Textarea)
+
+Yerleşik `text` ve `textarea` alanlarının yanında bir **`{ }` bağlama butonu** görünür. Tıklayınca koleksiyon → alan seçilir ve alana bir `{{ data.shortcode }}` referans token'ı eklenir — elle yazmaya gerek kalmaz. Koleksiyonlar popover açılınca `getCmsCollections()` ile yüklenir.
+
+```tsx
+fields: {
+  // Bağlama butonu görünür (varsayılan)
+  title: { type: "text", label: "Başlık" },
+
+  // Bağlamayı kapat
+  staticLabel: { type: "text", label: "Sabit Etiket", bindable: false },
+}
+```
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `bindable` | `boolean` | `true` | `text`/`textarea` alanında CMS bağlama butonunu göster/gizle |
+
+> Token formatı `{{ data.<shortcode> }}`'dır ve render sırasında `cmsData`'ya göre çözülür (CMS şablon sayfaları). `TecofRender`'a ham kayıt `cmsData` prop'u ile verilir.
+
+---
+
+### Ortak Alan Seçenekleri (BaseField)
+
+Tüm `create*Field()` factory fonksiyonları aşağıdaki ortak seçenekleri destekler:
+
+| Option | Tip | Açıklama |
+|--------|-----|----------|
+| `label` | `string` | Inspector'da görünen alan etiketi |
+| `labelIcon` | `ReactElement` | Etiketin yanında gösterilen ikon (ör: Lucide) |
+| `visible` | `boolean` | Alanın sidebar'da görünür olup olmadığı |
+
+```tsx
+import { Globe, Image, Palette } from "lucide-react";
+
+fields: {
+  title: createLanguageField({
+    label: "Başlık",
+    labelIcon: <Globe size={16} />,
+  }),
+  bgColor: createColorField({
+    label: "Arka Plan",
+    labelIcon: <Palette size={16} />,
+  }),
+  logo: createUploadField({
+    label: "Logo",
+    labelIcon: <Image size={16} />,
+    visible: true,
+  }),
+}
+```
+
+---
+
+## Slot Düzeni & Bölüm Şablonları
+
+### Slot (DropZone) Yönü — `orientation`
+
+`slot` tipi alanlar varsayılan olarak çocukları **alt alta** dizer. `orientation: 'horizontal'` ile **yan yana** (flex-row + wrap) dizilir. Editör, drop eksenini render edilen düzene göre otomatik algılar (yatayda sol/sağ, dikeyde üst/alt göstergesi) ve sürükle-bırak sıralaması buna göre çalışır.
+
+```tsx
+fields: {
+  columns: { type: "slot", orientation: "horizontal" }, // yan yana
+  blocks:  { type: "slot" },                             // varsayılan: dikey
+}
+```
+
+Bileşen kendi `renderDropZone` çağrısında da geçebilir:
+
+```tsx
+render: ({ puck }) => puck.renderDropZone({ zone: "cols", orientation: "horizontal" }),
+```
+
+| Değer | Açıklama |
+|-------|----------|
+| `'vertical'` _(default)_ | Çocuklar alt alta |
+| `'horizontal'` | Çocuklar yan yana (satır + sarma) |
+
+> Hem editörde hem `TecofRender` ile yayınlanan sayfada aynı düzen uygulanır.
+
+### Bölüm Şablonları — `config.templates`
+
+"Bölüm Ekle" penceresindeki **Şablonlar** sekmesinde gösterilen, tek tıkla eklenen hazır bölümler. Şablon bir **alt ağaç**tır (kök node + zones) ve eklenirken tüm id'ler **taze üretilir**, yani aynı şablonu defalarca ekleyebilirsiniz.
+
+```tsx
+const config = {
+  components: { /* ... */ },
+  templates: [
+    {
+      id: "hero-cta",
+      label: "Hero + İki Buton",
+      thumbnail: "/templates/hero.png", // opsiyonel önizleme görseli
+      payload: {
+        node: { type: "Hero", props: { id: "t-hero", title: "Başlık" } },
+        zones: {
+          "t-hero:actions": [
+            { type: "Button", props: { id: "t-b1", text: "Başla" } },
+            { type: "Button", props: { id: "t-b2", text: "Daha Fazla" } },
+          ],
+        },
+      },
+    },
+  ],
+};
+```
+
+**`SectionTemplate` tipi:**
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `id` | `string` | Benzersiz kimlik (React key olarak da kullanılır) |
+| `label` | `string` | Şablon kütüphanesinde görünen ad |
+| `category` | `string?` | Opsiyonel kategori |
+| `thumbnail` | `string?` | Opsiyonel önizleme görseli URL'i (yoksa jenerik ikon) |
+| `payload.node` | `TecofNode` | Eklenecek kök node |
+| `payload.zones` | `Record<string, TecofNode[]>?` | Kök node'un alt zone'ları (anahtar: `nodeId:slotAdı`) |
+
+### Inline Bileşenler — `inline`
+
+Varsayılan olarak editör her bileşeni bir `.tecof-node-wrapper` div'i ile sarar (seçim/hover/drag bu wrapper üzerinden çalışır). Bileşenin **kendi kök elemanının** sürükleme tutamacı olması gerekiyorsa (ör. sarmalayıcı div'in düzeni bozduğu durumlar), `ComponentConfig`'te `inline: true` verin ve bileşen `puck.dragRef`'i kök elemanına bağlasın.
+
+```tsx
+components: {
+  InlineButton: {
+    label: "Inline Buton",
+    inline: true,
+    render: ({ puck, text }) => (
+      <button ref={puck?.dragRef}>{text}</button>
+    ),
+  },
+}
+```
+
+| Option (`ComponentConfig`) | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `inline` | `boolean` | `false` | Editör wrapper div'ini kaldırır; bileşen `puck.dragRef`'i kök elemanına eklemelidir |
+
+---
+
+## API Client
+
+```tsx
+import { TecofApiClient } from "@tecof/theme-editor";
+
+const client = new TecofApiClient("https://api.example.com", "secret-key");
+```
+
+| Metot | Açıklama |
+|-------|----------|
+| `getPage(id)` | Sayfa draft'ını getir |
+| `savePage(id, data)` | Sayfa kaydet |
+| `getPublishedPage(slug, locale?)` | Yayınlanmış sayfayı getir |
+| `getMerchantInfo()` | Dil ayarlarını getir |
+| `uploadFile(file, folder?)` | Dosya yükle |
+| `getUploads(page, limit)` | Yüklenen dosyaları listele |
+| `getPages()` | Merchant sayfalarını listele |
+| `translate(text, sourceLang, locales, isHtml?)` | Metni birden çok dile çevir |
+| `cdnUrl` | CDN base URL |
+
+---
+
+## Backend API Endpoints
+
+Kütüphane aşağıdaki endpoint'leri kullanır (`x-secret-key` header ile):
+
+| Method | Endpoint | Açıklama |
+|--------|----------|----------|
+| `GET` | `/api/store/editor/:id` | Sayfa draft'ını getir |
+| `PUT` | `/api/store/editor/:id` | Sayfa kaydet |
+| `POST` | `/api/store/render` | Yayınlanmış sayfayı getir (slug + locale) |
+| `GET` | `/api/store/merchant-info` | Merchant dil ayarları |
+| `POST` | `/api/store/upload` | Dosya yükle |
+| `GET` | `/api/store/uploads` | Yüklenen dosyaları listele |
+| `GET` | `/api/store/pages` | Merchant sayfalarını listele |
+| `POST` | `/api/store/translate` | Metni çok dile çevir |
+
+---
+
+## Utility Fonksiyonları
+
+```tsx
+import {
+  getDefaultTheme,
+  generateCSSVariables,
+  mergeTheme,
+  hexToHsl,
+  hslToHex,
+  lighten,
+  darken,
+} from "@tecof/theme-editor";
+```
+
+| Fonksiyon | Açıklama |
+|-----------|----------|
+| `getDefaultTheme()` | Varsayılan tema config'i |
+| `generateCSSVariables(theme)` | ThemeConfig → CSS custom properties |
+| `mergeTheme(base, overrides)` | Tema config deep-merge |
+| `hexToHsl(hex)` | Hex → HSL dönüşümü |
+| `hslToHex(h, s, l)` | HSL → Hex dönüşümü |
+| `lighten(hex, amount)` | Rengi açar |
+| `darken(hex, amount)` | Rengi koyulaştırır |
+
+---
+
+## iframe postMessage API
+
+`TecofEditor` iframe içinde çalıştığında parent ile iletişim kurar:
+
+```ts
+// Parent → Editor
+iframe.postMessage({ type: "puck:save" }, "*");
+iframe.postMessage({ type: "puck:publish" }, "*");
+iframe.postMessage({ type: "puck:undo" }, "*");
+iframe.postMessage({ type: "puck:redo" }, "*");
+iframe.postMessage({ type: "puck:viewport", width: "375px" }, "*");
+
+// Editor → Parent
+window.addEventListener("message", (e) => {
+  if (e.data.type === "puck:changed") { /* değişiklik var (debounce'lu) */ }
+  if (e.data.type === "puck:saved") { /* başarıyla kaydedildi, e.data.data güncel draft */ }
+  if (e.data.type === "puck:saveError") { /* kayıt hatası */ }
+  if (e.data.type === "puck:itemSelected") { /* e.data.item = { type, id } */ }
+  if (e.data.type === "puck:itemDeselected") { /* seçim kalktı */ }
+});
+```
+
+> **Güvenlik:** `hostOrigin` prop'u verildiğinde gelen mesajlar `e.origin`'e göre
+> doğrulanır ve giden mesajlar yalnızca o origin'e gönderilir. Embed senaryosunda
+> `hostOrigin` vermeniz önerilir; aksi halde `'*'` kullanılır (geriye uyumluluk).
+> Tüm köprü `src/studio/bridge.ts` içinde soyutlanmıştır.
+
+---
+
+## Klavye Kısayolları (Studio)
+
+| Kısayol | İşlem |
+|---|---|
+| `⌘/Ctrl + K` | **Komut paleti** aç/kapat (eylemler + bileşen ekleme) |
+| `⌘/Ctrl + Z` | Geri al |
+| `⌘/Ctrl + Shift + Z` · `⌘/Ctrl + Y` | Yinele |
+| `⌘/Ctrl + C` / `X` / `V` | Kopyala / Kes / Yapıştır (seçili node'lar) |
+| `⌘/Ctrl + D` | Çoğalt (çoklu seçimde toplu) |
+| `⌘/Ctrl + S` | Taslak kaydet |
+| `Delete` / `Backspace` | Sil (çoklu seçimde toplu) |
+| `↑` / `↓` / `←` / `→` | Kardeş node'lar arası seçim gezinme (↑/← önceki, ↓/→ sonraki) |
+| `⌘/Ctrl + Tık` · `Shift + Tık` | Çoklu seçime ekle/çıkar |
+| `Esc` | Komut paletini kapat, yoksa seçimi kaldır |
+
+### Komut Paleti (⌘K)
+
+Tek bir aramadan **eylemleri** (geri/ileri al, kopyala/kes/yapıştır, çoğalt, sil, önizleme, panelleri aç/kapat, kaydet — her birinin kısayolu yanında listelenir) ve **bileşen eklemeyi** (config'deki tüm bileşenler) çalıştırır. Ok tuşları ile gezilir, `Enter` ile uygulanır, `Esc` ile kapanır.
+
+> Kopyalanan node'lar `localStorage` (`tecof:clipboard:v1`) üzerinden sekmeler/sayfalar
+> arası yapıştırılabilir; yapıştırmada id'ler taze üretilir.
+
+---
+
+## CSS ve Tema Yapısı
+
+Kütüphane %100 oranında izole bir CSS altyapısı sunar. Önceden kullanılan inline "CSS-in-JS" tarzı sabit tasarımlar kaldırılmış, field modüllerine ait tüm UI stilleri (EditorField, LinkField, UploadField vs.) merkezi `dist/styles.css` içerisine taşınmıştır.
+
+Tasarım çakışmalarını önlemek için kütüphanenin sunduğu tüm CSS sınıfları sadece `.tecof-[component]-[element]` (örnek: `.tecof-upload-file-list`) ön ekini kullanır. Tüm editör arayüzü `src/styles.css` içindeki `:root` token'larından beslenir.
+
+### Renk Paleti (lime-green)
+
+`:root` altında tam bir `--tecof-primary-50…950` lime-green paleti tanımlıdır. **Kural: `600` ana renk, `700` hover.** Bileşenler doğrudan `-500/-600` skalasını değil, **semantik accent token'larını** kullanır:
+
+| Token | Değer | Kullanım |
+|---|---|---|
+| `--tecof-accent` | `primary-600` (`#74b500`) | Ana vurgu (buton, aktif sınır) |
+| `--tecof-accent-hover` | `primary-700` (`#588902`) | Hover |
+| `--tecof-accent-active` | `primary-800` | Active/basılı |
+| `--tecof-accent-fg` | `primary-950` (`#1d3300`) | Accent zemini üstü **koyu yazı** (AA) |
+| `--tecof-accent-subtle` | `primary-50` | Tint arka plan |
+| `--tecof-accent-text` | `primary-700` | Açık zeminde okunur accent metin |
+| `--tecof-accent-ring` | `rgba(116,181,0,.30)` | Focus halkası |
+
+> Lime zemin üzerine beyaz yazı kontrast bırakmadığı için accent dolgular **koyu yazı** (`--tecof-accent-fg`) kullanır. Bu token'lar yalnızca editör arayüzünü boyar; kullanıcı sitesinin teması (`--theme-*`, `generateCSSVariables`) etkilenmez.
+
+Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, inspector ve field loader'ları bu accent token'larını ve `.tecof-skeleton*` primitive'lerini kullanır. **Tüm yükleme durumları skeleton loader'dır** (spinner yalnızca buton-içi mikro yüklemede). Inline style yalnızca gerçek runtime değerleri için bırakılır (örn. seçili node overlay koordinatı, layer indent CSS değişkeni, kullanıcı renk swatch'ı veya dışarıdan gelen render style prop'u).
+
+### Studio Editör Özellikleri
+
+- **Düzenleme / Önizleme modu** — Üst bardaki toggle ile. Düzenleme'de tıklayınca bileşen seçilir, link/butonlar pasiftir; Önizleme'de link ve butonlar canlı çalışır, editör çerçevesi gizlenir.
+- **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; düzenlenen öğe accent kenarlıkla işaretlenir (öğenin kendi arka plan/yazı rengi korunur), Enter kaydeder, Esc iptal eder. Bileşenler düzenlenebilir metni `data-tecof-prop="propAdı"` (ve çok dilli için `data-tecof-lang`) ile işaretleyebilir; aksi halde string-eşleştirme fallback'i devreye girer.
+- **Çoklu seçim + kopyala/yapıştır** — `⌘/Ctrl/Shift + tık` ile çoklu seçim; kopyala/kes/yapıştır (sekmeler arası `localStorage`), toplu sil/çoğalt. Bkz. [Klavye Kısayolları](#klavye-kısayolları-studio).
+- **Görsel stil editörü (Tailwind)** — Inspector'daki "Stil" sekmesi; breakpoint + state bazlı (`md:hover:` dahil), preset token'lar, serbest (arbitrary) değerler ve **canlı tema renkleri** (`--theme-color-*`). Daha az belirgin katmandan **devralınan değerler** soluk ipucu olarak gösterilir. Bkz. [docs/TAILWIND.md](docs/TAILWIND.md).
+- **Komut paleti (⌘K)** — Tek aramadan tüm eylemler + bileşen ekleme; kısayollar listelenir, ok tuşlarıyla gezilir.
+- **Canlı tema editörü** — Seçim yokken Inspector'daki "Tema" sekmesi; renk/tipografi/spacing düzenlenir ve değişiklik hem editöre hem canvas'a `--theme-*` CSS değişkenleri olarak **anında** uygulanır. Tema `root.props._tecofTheme`'de saklanır (kayda dahil, undo/redo'lu).
+- **Boşluk (box-model) overlay'i** — Bir öğenin üzerine gelince **padding (yeşil)** içeride, **margin (amber)** dışarıda devtools tarzı renkli gösterilir.
+- **Yan yana slot düzeni** — `slot` alanlarına `orientation: 'horizontal'` verilerek çocuklar yan yana dizilir; sürükle-bırak drop yönü (sol/sağ ↔ üst/alt) otomatik algılanır.
+- **Ok tuşuyla gezinme** — Seçili node'dan kardeşlerine ↑/↓/←/→ ile geçiş.
+- **Görsel blok paleti** — Sol panelde bileşenler, varsa render önizleme görselleriyle (lazy yüklenir).
+- **Çökme dayanıklılığı** — Bir bileşenin render hatası tüm canvas'ı düşürmez; node bazında error boundary ile izole edilir, prop düzeltilince kendiliğinden toparlanır.
+- **Global dil** — Çoklu dilli içerikte dil, üst bardaki tek seçiciden (merchant-info) değiştirilir. Alanlar yalnızca aktif dili düzenler; alan-içi dil sekmeleri Studio'da gizlenir (provider yoksa eski sekmeli mod geçerlidir — geriye uyum). Bkz. `studio/language/LanguageContext`.
+- **Daraltılabilir paneller** — Sol (blok/katman) ve sağ (inspector) paneller üst bar butonlarıyla daraltılıp ince ikon rayına iner; canvas genişler.
+- **Performans** — Ağır editör alanları (Monaco / TipTap / FilePond) ayrı chunk'lara bölünüp talep üzerine yüklenir; ana paket ~1.37 MB → ~210 KB.
+
+### Stil Editörü & Tailwind
+
+Inspector "Stil" sekmesi, node'lara yapısal token modeli (`node.props._tecofStyles`)
+olarak stil uygular ve bunu Tailwind class string'ine derler. Üretimde class'ların
+purge edilmemesi için host Tailwind config'ine safelist eklenmelidir:
+
+```js
+import { getSafelist, collectDocumentClasses } from "@tecof/theme-editor";
+
+export default {
+  // Preset token'ların tamamı (sonlu) + sonlu tema-renk arbitrary'leri:
+  safelist: [
+    ...getSafelist(),
+    // Serbest (arbitrary) değerler için kaydedilmiş sayfalardan toplayın:
+    ...savedPages.flatMap((p) => collectDocumentClasses(p.draftData)),
+  ],
+};
+```
+
+- `getSafelist()` — editörün üretebileceği tüm **preset** class'larını (token × breakpoint × state, `md:hover:` dahil) + sonlu **tema-renk** arbitrary'lerini (`bg-[var(--theme-color-primary)]`) döndürür.
+- `collectStyleClasses(styles)` / `collectDocumentClasses(pageData)` — kaydedilmiş bir sayfadaki tüm stil class'larını (kullanıcının girdiği `p-[10px]`, `bg-[#ff0000]` gibi **serbest** değerler dahil) toplar; build aşamasında safelist'e ekleyin.
+
+> `TecofRender` (yayın renderer'ı) artık `_tecofStyles`'ı editörle birebir aynı `compileStyles` akışıyla `className`'e derler — yani görsel stil editörünün çıktısı yayınlanan sayfada da uygulanır.
+
+Tam entegrasyon (Tailwind v4 `@theme`, arbitrary değerler, breakpoint/state, tema renkleri) için:
+**[docs/TAILWIND.md](docs/TAILWIND.md)**.
+
+Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
+
+```tsx
+// Ana Layout / Editor bileşenine yakın
+import "@tecof/theme-editor/dist/styles.css";
+```
+
+---
+
+## Geliştirme
+
+```bash
+npm run dev        # Watch mode (tsup)
+npm run build      # Production build + CSS bundle
+npm run lint       # ESLint
+npm run test       # Vitest
+npm run storybook  # Storybook
+```
+
+## Lisans
+
+MIT © Tecof
+
+---
+
+<!-- Source: docs/TAILWIND.md -->
+
+# Tecof Studio — Tailwind Entegrasyonu
+
+Bu belge, Studio'nun **görsel stil editörünün** (Inspector → "Stil" sekmesi)
+Tailwind ile nasıl çalıştığını ve host uygulamanın bunu üretimde (production)
+nasıl doğru kuracağını anlatır.
+
+---
+
+## 1. Mimari: "stil niyeti" → Tailwind class
+
+Studio, bir node'a uygulanan stilleri **ham class string'i olarak değil, yapısal
+token modeli** olarak saklar. Model `node.props._tecofStyles` altında yaşar
+(`STYLES_PROP` sabiti):
+
+```ts
+// NodeStyles
+{
+  base?:  { p: '4', bg: 'primary-600' },   // prefixsiz (mobile-first)
+  sm?:    { ... },                          // sm:
+  md?:    { p: '[10px]' },                  // md:  (arbitrary value)
+  lg?:    { ... },                          // lg:
+  xl?:    { ... },                          // xl:
+  states?: {
+    hover: { bg: 'primary-700' },           // hover:  (base breakpoint)
+    'md:hover': { bg: 'primary-800' },       // md:hover:  (breakpoint-scoped state)
+  }
+}
+```
+
+Bu model `compileStyles()` ile tek bir Tailwind class string'ine derlenir:
+
+```ts
+compileStyles({
+  base: { p: '4', bg: 'primary-600' },
+  md:   { p: '[10px]' },
+  states: { hover: { bg: 'primary-700' } },
+})
+// → "p-4 bg-primary-600 md:p-[10px] hover:bg-primary-700"
+```
+
+Derlenen string, render sırasında bileşenin `className`'ine eklenir
+(`NodeRenderer` editörde, `TecofRender` üretimde aynı akışı izler).
+
+**Neden token modeli?**
+- UI sürülebilir kalır (her kontrol mevcut değeri gösterebilir).
+- Responsive + state varyantları birinci sınıf vatandaştır.
+- Her property sonlu bir token kümesine bağlandığı için **tam bir safelist
+  üretilebilir** (bkz. §3).
+- `node.props._tecofStyles` içinde kayıpsız round-trip yapar.
+
+Tek doğruluk kaynağı: [`src/studio/style/tokens.ts`](../src/studio/style/tokens.ts)
+(`STYLE_CONTROLS`). Bu dizi aynı anda üç şeyi sürer: editör UI'ı, class
+derlemesi (`toClass`) ve safelist.
+
+---
+
+## 2. Tailwind v4 + `@theme` token'ları
+
+Stil editörü **Tailwind v4** hedefler. Marka paleti CSS değişkenleridir; host
+uygulamanın `@theme` bloğunda `--color-primary-*` tanımlaması gerekir ki
+editördeki `bg-primary-600`, `text-primary-700` gibi class'lar gerçek renge
+karşılık gelsin:
+
+```css
+/* app.css (host) */
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50:  #f3f9e6;
+  --color-primary-100: #e4f1c2;
+  /* … */
+  --color-primary-600: #74b500;  /* ana marka rengi */
+  --color-primary-700: #588902;
+  --color-primary-950: #1d3300;
+}
+```
+
+> Not: `--tecof-primary-*` değişkenleri yalnızca **editör arayüzünü** boyar
+> (chrome). Sayfa içeriğine uygulanan `primary-*` class'ları ise host'un
+> `@theme`'inden beslenir. İkisini karıştırmayın.
+
+### Semantik tema renkleri (`--theme-color-*`)
+
+Stil editörünün renk kontrolleri, marka skalasına ek olarak **canlı tema
+renklerini** de sunar (`Tema · Ana renk`, `Tema · Metin`, …). Bunlar
+`--theme-color-*` CSS değişkenlerine işaret eden sonlu arbitrary değerlerdir;
+`bg`/`text`/`border` için sırasıyla `bg-[var(--theme-color-primary)]` gibi
+class'lara derlenir ve `getSafelist()` bunları otomatik kapsar — yani ekstra
+Tailwind `@theme` kurulumu gerekmez, yalnızca `--theme-color-*` değişkenlerinin
+tanımlı olması yeterlidir.
+
+Bu değişkenler `generateCSSVariables(theme)` çıktısıyla üretilir. Studio'daki
+**canlı tema editörü** (Inspector → seçim yokken "Tema" sekmesi) bu değişkenleri
+hem editöre hem canvas iframe'ine anında enjekte eder; yayında ise host,
+`generateCSSVariables` çıktısını sayfaya dahil etmelidir. Tema, sayfanın
+`root.props._tecofTheme`'inde saklanır.
+
+---
+
+## 3. Üretimde class'ların var olması: Safelist
+
+Tailwind kullanılmayan class'ları purge eder. Editörde seçilen bir class,
+kaynak kodda string olarak geçmediği için (veritabanındaki sayfa JSON'unda
+yaşar) Tailwind onu **göremez** ve üretim CSS'ine dahil etmez. İki strateji
+vardır:
+
+### 3a. Preset class'lar → `getSafelist()`
+
+Editörün üretebileceği **tüm preset** class'lar sonludur. Paket bunları hazır
+verir:
+
+```js
+// tailwind.config.js  (veya v4'te CSS @source / safelist mekanizması)
+import { getSafelist } from "@tecof/theme-editor";
+
+export default {
+  safelist: getSafelist(),
+  // ...
+};
+```
+
+`getSafelist()` her token × her kontrol × her breakpoint/state prefix'ini
+döndürür — **breakpoint × state kombinasyonları dahil** (ör. `p-4`, `md:p-4`,
+`hover:bg-primary-700`, `md:hover:bg-primary-600`, …). Ayrıca **sonlu tema-renk
+arbitrary'lerini** de içerir (ör. `bg-[var(--theme-color-primary)]`,
+`text-[var(--theme-color-foreground)]`), çünkü tema renkleri sabit bir kümedir.
+Böylece editörde seçilebilen her preset ve tema rengi üretimde kesinlikle bulunur.
+
+### 3b. Arbitrary (custom) değerler → `collectDocumentClasses`
+
+Kullanıcı `p-[10px]`, `bg-[#ff0000]` gibi **serbest değerler** girebilir
+(bkz. §4). Bunlar sonsuz olduğu için statik safelist'e sığmaz **ve** kaydedilmiş
+sayfa JSON'unda yaşadığı için Tailwind'in content tarayıcısı da göremez. Çözüm:
+kaydedilmiş sayfalardan **gerçekten kullanılan** class'ları toplayıp safelist'e
+eklemek. Paket bunun için iki yardımcı verir:
+
+```js
+import { getSafelist, collectDocumentClasses } from "@tecof/theme-editor";
+
+// Build aşamasında yayınlanan/taslak sayfaları gezin:
+const dynamic = savedPages.flatMap((p) => collectDocumentClasses(p.draftData));
+
+export default {
+  safelist: [...getSafelist(), ...dynamic],
+  // ...
+};
+```
+
+- `collectStyleClasses(styles)` — tek bir `NodeStyles` nesnesinin derlendiği
+  tüm class'ları (preset + arbitrary) döndürür.
+- `collectDocumentClasses(pageData)` — bir sayfanın kökü + içeriği + tüm
+  zone'larındaki her node'un stil class'larını tekilleştirerek döndürür.
+
+> Tam dinamik (DB'den beslenen) senaryolarda bu listeyi her sayfa kaydında
+> yanında saklayıp build'de safelist'e verebilir veya Tailwind'i runtime'da
+> çalıştırabilirsiniz. Çoğu kullanım için **preset + tema renkleri** (`getSafelist`)
+> tek başına yeterlidir; serbest değer açtığınızda yukarıdaki tarayıcıyı ekleyin.
+
+---
+
+## 4. Arbitrary (serbest) değerler
+
+Arbitrary değerler `NodeStyles` içinde **köşeli parantezle** saklanır:
+`'[10px]'`, `'[#ff0000]'`. Preset'ler çıplaktır (`'4'`, `'primary-600'`). Bir
+kontrolün `arbitraryPrefix`'i varsa, kullanıcının girdiği ham `V` değeri
+`prefix-[V]`'ye derlenir:
+
+| Kontrol | Arbitrary girdi | Derlenen class |
+|---|---|---|
+| `p` (padding) | `10px` | `p-[10px]` |
+| `bg` (arka plan) | `#ff0000` | `bg-[#ff0000]` |
+| `gap` | `2.5rem` | `gap-[2.5rem]` |
+
+Editörde her arbitrary-destekli kontrolün yanında `+` toggle'ı vardır; açınca
+serbest değer input'u çıkar. Arbitrary değer girildiğinde preset seçimi boşalır.
+`isArbitrary` / `toArbitrary` / `arbitraryRaw` yardımcıları kodlamayı yönetir.
+
+Hangi kontroller arbitrary destekler: boşluk/boyut (`p, px, py, m, mx, my, gap,
+w, h, maxW`) ve renkler (`bg, text, borderColor`). Segment toggle'ları
+(display, flex yönü vb.) bilinçli olarak desteklemez.
+
+---
+
+## 5. Breakpoint & state varyantları
+
+| Katman | Prefix | Örnek |
+|---|---|---|
+| `base` | _(yok)_ | `p-4` |
+| `sm` | `sm:` | `sm:p-6` |
+| `md` | `md:` | `md:p-8` |
+| `lg` | `lg:` | `lg:flex-row` |
+| `xl` | `xl:` | `xl:max-w-6xl` |
+| `hover` | `hover:` | `hover:bg-primary-700` |
+| `focus` | `focus:` | `focus:border-primary-600` |
+| `active` | `active:` | `active:opacity-90` |
+
+Editörde üst segmentlerden katman seçilir; **override içeren** breakpoint/state
+artık küçük bir nokta (`tecof-style-seg-dot`) ile işaretlenir.
+
+**Breakpoint-bazlı state'ler:** State'ler artık breakpoint'e özeldir. `states`
+anahtarı çıplaksa (`hover`) base breakpoint'e, `${bp}:${state}` formatındaysa
+(`md:hover`) yalnızca o breakpoint'e uygulanır ve sırasıyla `hover:…` /
+`md:hover:…` olarak derlenir. Eski çıplak anahtarlar geriye dönük çalışır.
+`getSafelist()` tüm breakpoint × state kombinasyonlarını kapsar.
+
+Ayrıca üst breakpoint'i (örn. `md`) düzenlerken bir property'de değer yoksa,
+daha az belirgin katmandan **devralınan değer** ilgili kontrolün yanında soluk
+bir ipucu olarak gösterilir (yalnızca editör UI'ı; çıktı etkilenmez).
+
+---
+
+## 6. Editör canvas'ında stiller nasıl görünür?
+
+Canvas bir `<iframe>` içinde render edilir. `Frame` bileşeni host sayfasının
+stylesheet'lerini iframe `<head>`'ine **artımlı olarak** kopyalar (link diff +
+inline değişiklik-gated, rAF debounce). Dolayısıyla host'ta yüklü olan Tailwind
+CSS (safelist dahil) editör canvas'ında da geçerlidir — yani editörde gördüğünüz
+ile üretimde çıkan birebir aynıdır, **safelist doğru kurulduğu sürece**.
+
+---
+
+## 7. Hızlı kontrol listesi
+
+- [ ] Host `@theme`'de `--color-primary-50…950` tanımlı.
+- [ ] `safelist: getSafelist()` host Tailwind config'ine eklendi (preset + tema renkleri + bp×state).
+- [ ] Tema renkleri kullanılacaksa `generateCSSVariables(theme)` çıktısı (`--theme-color-*`) sayfaya dahil edildi.
+- [ ] `@tecof/theme-editor/dist/styles.css` layout'a import edildi (editör chrome'u).
+- [ ] Arbitrary değer kullanılacaksa `collectDocumentClasses(pageData)` ile dinamik safelist eklendi (§3b).
+- [ ] `TecofRender` ile üretim render'ı, editörle aynı `compileStyles` akışını kullanıyor (otomatik).
+
+---
+
+İlgili kaynaklar: [`tokens.ts`](../src/studio/style/tokens.ts) ·
+[`compileStyles.ts`](../src/studio/style/compileStyles.ts) ·
+[`types.ts`](../src/studio/style/types.ts) · [ARCHITECTURE.md](../ARCHITECTURE.md)
+
+---
+
+<!-- Source: ARCHITECTURE.md -->
+
+# Tecof Studio - Mimari ve Tasarım Belgesi (ARCHITECTURE.md)
+
+Bu belge, `tecof-theme-editor` paketinde Puck editörünün yerine geçecek olan **Tecof Studio** (headless editör motoru + UI) için teknik mimari kararları, state yönetimini, entegrasyon noktalarını ve Puck'ın nasıl çıkartılacağını detaylandırmaktadır.
+
+## 1. State Yönetimi ve Motor (EditorEngine)
+
+Editör, tamamen headless (UI'dan bağımsız) ve test edilebilir bir mimariyle tasarlanacaktır. React UI sadece bu motorun yayınladığı veriyi tüketip olaylarını tetikleyecektir.
+
+- **Kütüphane:** `zustand` + `immer` middleware.
+  - *Neden?* `zustand` hafif, React dışında da erişilebilir ve re-render optimizasyonlarına açık bir yapı sunar. `immer` ile mutation gibi görünen kodlar yazılarak karmaşık ağaç güncellemeleri kolayca halledilir.
+- **State Ağacı:**
+  ```ts
+  interface EditorState {
+    document: TecofDocument;       // O anki aktif veri modeli
+    history: {
+      past: TecofDocument[];
+      future: TecofDocument[];
+    };
+    selection: {
+      selectedId: string | null;   // Seçili node
+      hoveredId: string | null;    // Hover olan node
+    };
+    viewport: "desktop" | "tablet" | "mobile";
+    // Metodlar (Immer aracılığıyla state güncelleyen)
+    insertNode: (node: TecofNode, targetZone: string, index?: number) => void;
+    removeNode: (id: string) => void;
+    moveNode: (id: string, targetZone: string, index: number) => void;
+    updateProps: (id: string, patch: any) => void;
+    undo: () => void;
+    redo: () => void;
+    // ...
+  }
+  ```
+- **Zone Modeli:** Puck ile tam uyumluluk için, `zones` nesnesi `[parentId]:[zoneName]` formatını koruyacaktır. Root içerikler ise doğrudan `content` dizisinde yaşayacaktır. Bir node silinirse, o node'a ait zone'lar ve altındaki tüm içerikler recursive olarak temizlenecektir (memory leak olmaması ve data integrity için).
+
+## 2. Drag & Drop Stratejisi
+
+> **Güncelleme (uygulanan):** Tasarım başlangıçta `@dnd-kit` öngörüyordu; ancak
+> iframe sınırları arası sürüklemede en güvenilir ve bağımlılıksız çözüm olarak
+> **native HTML5 Drag & Drop** (`dataTransfer`, `dragover`/`drop`) tercih edildi.
+> Ortak sürükleme mantığı `studio/canvas/useDropTarget.ts` hook'unda toplanmıştır
+> (NodeRenderer, DropZone, Canvas onu kullanır; LayersTree tree-row semantiği için
+> kendi varyantını kullanır). Drop kuralları `engine/rules.ts` (`isValidDrop`) ile
+> doğrulanır; geçersiz bırakmalar `dropEffect='none'` ile reddedilir.
+>
+> **Açık iş:** Native DnD dokunmatik cihazlarda çalışmaz → tablet/mobil editleme
+> için pointer-event tabanlı bir DnD katmanı henüz eklenmedi (yol haritasında).
+
+- **Uygulama (özet):**
+  - Sol paneldeki bloklar ve canvas/layers node'ları `draggable` olarak işaretlenir;
+    yük `dataTransfer`'a yazılır (`TECOF_BLOCK_TYPE` = yeni blok, `TECOF_NODE_ID` = taşınan node).
+  - Drop hedefleri `useDropTarget` ile dragover pozisyonu (top/bottom), autoscroll
+    ve kural kontrolünü tek noktadan yönetir.
+
+## 3. Canvas (iframe) Stratejisi
+
+Canvas, stillerin izolasyonu ve responsive viewport testlerinin (Desktop/Tablet/Mobile) doğru yapılabilmesi için bir iframe içerisinde render edilmelidir.
+
+- **Kütüphane:** Custom iframe wrapper + `ReactDOM.createPortal`.
+- **Uygulama:** 
+  - Host'taki bir div'in içine `<iframe>` yerleştirilecek.
+  - iframe'in `contentDocument.body`'sine bir `createPortal` ile render işlemi yapılacak.
+  - Host css'leri (özellikle tailwind tarzı global sıfırlayıcılar veya fontlar) iframe'in head kısmına bir `<style>` tagı ile basılacaktır (veya host uygulamanın styles.css dosyası link edilecektir).
+  - Web component (Shadow DOM) kullanmamamızın nedeni, third-party kütüphanelerin popover/portal yapıları ile uyumsuzluk yaşamamak. iframe bu konuda daha güvenilir bir "kum havuzu" (sandbox) sunar.
+
+## 4. Field Bağlantıları (Host Entegrasyonu)
+
+Puck'ın `FieldLabel` bileşenine bağımlı olan Custom Field'lar (LanguageField, EditorField vb.), Puck silindiğinde kırılacaktır.
+
+- **Plan:** `src/studio/fields-host/` altında `FieldLabel` ve `FieldRenderer` yazılacak. 
+- Puck arayüzü ile uyumlu prop tiplerini (örn: `{ field, name, id, value, onChange, readOnly }`) birebir karşılayacak. Bu sayede host tarafındaki `create*Field` fonksiyonları hiçbir değişiklik gerektirmeden çalışmaya devam edecek. (Geriye Dönük Uyumluluk)
+
+## 5. Puck'ın Çıkarılma Planı (Fazlandırma)
+
+Geçiş güvenli olmak zorundadır.
+
+1. **Paralel Geliştirme (Faz 1-9):** Yeni editör (`TecofStudio`) Puck'ın yerine değil, yanına `src/index.ts`'te ikinci bir export olarak eklenecek. Arayüz ve parite testleri `playground` üzerinde `TecofStudio` kullanılarak yapılacak.
+2. **PostMessage Uyumluluğu:** TecofStudio, tıpkı `TecofEditor` gibi iframe eventlerini dinleyecek ve host'a `puck:save` vb. eventleri ateşleyecek (ismini aynı tutacağız, böylece host değişmeyecek).
+3. **Puck'ın Silinmesi (Faz 10):** TecofStudio eksiksiz çalıştığı onaylandığında:
+   - `TecofEditor`'ün içi tamamen silinip `TecofStudio` referansına yönlendirilecek.
+   - `@puckeditor/core` dependency'si package.json'dan kaldırılacak.
+   - Tüm field'lar yeni in-house `FieldLabel` üzerinden render edilmeye ayarlanacak.
+
+## 6. Riskler ve Açık Sorular
+
+- **Risk: Dnd-kit Iframe Çapraz Sürükleme:** Sol panel (host DOM) üzerinden sürüklenen bir bloğun, iframe içerisindeki (child DOM) dropzone'a bırakılması teknik zorluklar yaratabilir.
+  - *Çözüm:* İhtiyaç halinde sürükleme başladığında iframe'in üzerine transparent bir overlay koyup koordinatları host üzerinden hesaplayıp state güncelleyebiliriz (Puck'ın yaptığı overlay taktiği).
+- **Risk: Inline Editing (TipTap):** TipTap, focus ve blur işlemlerini iframe içinde ve dışında ayrı context'lerde yürütür. 
+- **Açık Soru:** PostMessage protokolünde "Puck" prefix'ini ilelebet korumalı mıyız? (Evet, host değişmemesi için şimdilik tutulacak, içerde `Bridge` modülünde soyutlanmıştır → `studio/bridge.ts`.)
+
+---
+
+## 7. Uygulanan Modüller (Güncel Durum)
+
+| Alan | Modül | Not |
+|---|---|---|
+| Engine / state | `engine/store.ts` | zustand+immer; **patch-bazlı history** (50 adım, 500ms coalesce), çoklu seçim, clipboard |
+| Ağaç işlemleri | `engine/operations.ts`, `engine/zones.ts` | `findNodeById` **O(1) WeakMap cache**; bulk remove/duplicate |
+| Drop kuralları | `engine/rules.ts` | `isValidDrop` / `canDropInto` / `canAcceptMoreItems` (opt-in: `acceptsChildren`, `maxItems`, `allowedParents`) |
+| İzinler / feature toggle | `engine/permissions.ts`, `store.permissionResolver` | `getNodePermissions` (global < component < `resolvePermissions`); **motor seviyesinde** delete/duplicate/drag gating (her call-site otomatik), `edit` → Inspector readOnly; UI için `usePermissions` |
+| Canvas | `studio/canvas/*` | iframe `Frame` (artımlı stil sync), `NodeRenderer`, `useDropTarget` (**eksen-duyarlı drop**: dikey/yatay), `useInlineEdit`, `NodeErrorBoundary` |
+| Slot düzeni | `studio/canvas/DropZone.tsx` | `orientation: 'vertical' \| 'horizontal'` — yatay slot + otomatik drop ekseni; `data-tecof-orientation` |
+| Stil editörü | `studio/style/*` | Tailwind token modeli + arbitrary değerler + **breakpoint-bazlı state** (`md:hover`) + **canlı tema renkleri** (`--theme-color-*`) + miras placeholder; safelist (`getSafelist`, `collectDocumentClasses`) — bkz. `docs/TAILWIND.md` |
+| Tema editörü | `studio/theme/*` | `ThemeEditor` (Inspector "Tema" sekmesi) + `ThemeVars` (canlı CSS değişkeni enjeksiyonu); tema `root.props._tecofTheme`'de |
+| Komut paleti | `studio/command/CommandPalette.tsx` | ⌘K; eylemler + bileşen ekleme, fuzzy arama, klavye gezinme |
+| Overlay | `studio/overlay/SelectionOverlay.tsx` | Seçim/hover outline + toolbar + breadcrumb + **boşluk (padding/margin) overlay'i** (hover) |
+| Köprü | `studio/bridge.ts` | `postToHost` / `isEmbedded` / origin doğrulama (`hostOrigin`) |
+| Field host | `studio/fields-host/FieldRenderer.tsx` | Puck-uyumlu: text/textarea (**CMS veri bağlama** `bindable`), select, number, radio, array, object, slot, custom(`render`); `readOnly` (statik + nested) |
+| Dinamik alanlar | `studio/fields-host/useResolvedFields.ts`, `resolve.ts` | `resolveFields` (koşullu alan) + `resolveData` (türetilmiş prop + `readOnly`); async + stale-drop; **diff-guard'lı** geri yazma (`diffProps`, idempotent → tek yazımda durur) |
+| External data field | `components/fields/ExternalField.tsx` | Jenerik host `fetchList` (Tecof CMS'ten bağımsız) → aranabilir modal seçici; `mapProp`/`mapRow`/`getItemSummary`; `type: 'external'` (FieldRenderer) |
+| Veri migrasyonu | `engine/migrate.ts` | `migrateDocument`: `renameComponents` → `transformProps` (rename sonrası tipe göre, id korunur) → custom `migrate`; `version` damgası (`root.props._schemaVersion`) ile idempotent; TecofStudio (yükleme) + TecofRender (yayın) yolunda |
+| Şablonlar | `studio/panels/AddSectionModal.tsx` | `config.templates` (`SectionTemplate`) → tek tıkla alt ağaç ekleme (`store.insertPayload`, taze id) |
+| Build | `tsup.config.ts` | `splitting: true` → ağır field'lar (Monaco/TipTap/FilePond) ayrı chunk |
+
+### Bilinen Boşluklar / Yol Haritası
+
+- Dokunmatik (pointer-event) DnD — mobil/tablet editleme.
+- **Overlay Portals** (`registerOverlayPortal` muadili) — editör içinde belirli
+  elemanları etkileşimli bırakma + edit-mode'da link/buton tıklamasını engelleme.
+- Editör arayüzü i18n (şu an sabit Türkçe).
+- Autosave + `beforeunload` koruması.
+
+---
+*Hazırlayan: Tecof Core Team (AI Architect)*

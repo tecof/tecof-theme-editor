@@ -1,0 +1,221 @@
+:root {
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.tecof-docs-logo {
+  display: block;
+  width: auto;
+  height: 28px;
+}
+
+.tecof-docs-logo.is-compact {
+  height: 24px;
+}
+
+.tecof-docs-logo-dark {
+  display: none;
+}
+
+.dark .tecof-docs-logo-light {
+  display: none;
+}
+
+.dark .tecof-docs-logo-dark {
+  display: block;
+}
+
+::selection {
+  color: #1d3300;
+  background: #ceff53;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: #d4d4d8;
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  background-clip: padding-box;
+}
+
+kbd {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e4e4e7;
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #fff;
+  padding: 1px 6px;
+  color: #71717a;
+  font-family: Inter, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dark kbd {
+  border-color: #3f3f46;
+  background: #18181b;
+  color: #a1a1aa;
+}
+
+.docs-article > section {
+  scroll-margin-top: 92px;
+  margin-top: 3.75rem;
+}
+
+.docs-article > section:first-of-type {
+  margin-top: 0;
+}
+
+.docs-article h1 {
+  margin: 0;
+  color: #18181b;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.docs-article h2 {
+  margin: 0 0 1rem;
+  color: #18181b;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.docs-article h3 {
+  color: #27272a;
+}
+
+.docs-article p {
+  margin: 1rem 0;
+  color: #52525b;
+  font-size: 0.975rem;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+
+.docs-article ul,
+.docs-article ol {
+  margin: 1.25rem 0;
+  padding-left: 1.35rem;
+  color: #52525b;
+  font-size: 0.95rem;
+  line-height: 1.85;
+}
+
+.docs-article li {
+  padding-left: 0.35rem;
+}
+
+.docs-article li::marker {
+  color: #74b500;
+  font-weight: 700;
+}
+
+.docs-article :not(pre) > code {
+  border: 1px solid #e4e4e7;
+  border-radius: 5px;
+  background: #f4f4f5;
+  padding: 0.1em 0.35em;
+  color: #3c5b0c;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.84em;
+}
+
+.docs-article strong {
+  color: #27272a;
+  font-weight: 650;
+}
+
+.dark .docs-article h1,
+.dark .docs-article h2,
+.dark .docs-article h3,
+.dark .docs-article strong {
+  color: #fafafa;
+}
+
+.dark .docs-article p,
+.dark .docs-article ul,
+.dark .docs-article ol {
+  color: #a1a1aa;
+}
+
+.dark .docs-article :not(pre) > code {
+  border-color: #3f3f46;
+  background: #18181b;
+  color: #b6fb20;
+}
+
+@media (max-width: 640px) {
+  .tecof-docs-product-label,
+  .tecof-docs-search-shortcut {
+    display: none !important;
+  }
+
+  .docs-article > section {
+    margin-top: 3rem;
+  }
+
+  .docs-article h2 {
+    font-size: 1.3rem;
+  }
+}

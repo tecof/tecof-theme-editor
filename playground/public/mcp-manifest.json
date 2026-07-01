@@ -1,0 +1,30 @@
+{
+  "name": "tecof-theme-editor-docs",
+  "version": "0.0.45",
+  "documents": [
+    {
+      "slug": "ai-guide",
+      "title": "AI Entegrasyon Rehberi",
+      "file": "docs/AI_GUIDE.md",
+      "description": "AI asistanları için normatif özet, kurallar ve hızlı teşhis."
+    },
+    {
+      "slug": "package-reference",
+      "title": "Tam Paket Referansı",
+      "file": "README.md",
+      "description": "Kurulum, bileşenler, alanlar, API ve Studio özelliklerinin tam referansı."
+    },
+    {
+      "slug": "tailwind",
+      "title": "Tailwind Entegrasyonu",
+      "file": "docs/TAILWIND.md",
+      "description": "Token derleme, safelist, arbitrary değer ve breakpoint ayrıntıları."
+    },
+    {
+      "slug": "architecture",
+      "title": "Teknik Mimari",
+      "file": "ARCHITECTURE.md",
+      "description": "Engine, state, drag-and-drop, canvas ve uygulanan modüller."
+    }
+  ]
+}

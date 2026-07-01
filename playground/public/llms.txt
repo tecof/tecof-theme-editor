@@ -1,0 +1,46 @@
+# Tecof Theme Editor
+
+> React tabanlı Tecof görsel sayfa editörü, yayın renderer'ı, API istemcisi ve gelişmiş içerik alanları için Türkçe geliştirici dokümantasyonu.
+
+Belgelenen paket: `@tecof/theme-editor@0.0.45`.
+Editör ve public renderer aynı `StudioConfig` nesnesini kullanmalıdır.
+Bilinmeyen API'ler varsayılmamalı; tam bağlam için önce AI rehberi veya ilgili referans okunmalıdır.
+
+## Başlangıç ve temel kullanım
+
+- [Genel bakış](/#/giris): Paketin amacı, temel kavramlar ve mimari yaklaşım.
+- [Kurulum](/#/kurulum): Gereksinimler, paket kurulumu, CSS ve provider yapılandırması.
+- [Hızlı başlangıç](/#/hizli-baslangic): Config, editör ve public renderer ile ilk entegrasyon.
+
+## Editör ve tasarım sistemi
+
+- [Studio arayüzü](/#/studio): Canvas, paneller, autosave, önizleme ve editör prop’ları.
+- [Bileşen config’i](/#/bilesen-config): Component registry, dinamik alanlar ve drop kuralları.
+- [Alan bileşenleri](/#/alanlar): Yerleşik ve gelişmiş field factory referansı.
+- [Slotlar ve şablonlar](/#/slotlar-sablonlar): Zone modeli, yatay slot ve bölüm şablonları.
+- [Tailwind stil editörü](/#/tailwind-stil): Token modeli, responsive varyantlar ve safelist.
+- [Canlı tema](/#/tema): Renk, tipografi, spacing ve CSS değişkenleri.
+
+## Yayınlama ve entegrasyon
+
+- [Public render](/#/render): TecofRender, CMS data ve TecofPicture kullanımı.
+- [API Client](/#/api-client): Sayfa, medya, merchant ve çeviri API metotları.
+- [iframe entegrasyonu](/#/iframe): Güvenli postMessage protokolü ve hostOrigin.
+- [İzinler ve migration](/#/izinler-migration): Node izinleri ve şema yükseltme akışı.
+
+## Referans
+
+- [Klavye kısayolları](/#/kisayollar): Studio komutları, seçim ve clipboard.
+- [Sorun giderme](/#/sorun-giderme): Production entegrasyon kontrol listesi.
+- [Tam AI bağlamı](/llms-full.txt): Tüm normatif rehber ve teknik referansların birleştirilmiş Markdown sürümü.
+
+## Makine tarafından okunabilir kaynaklar
+
+- [AI Entegrasyon Rehberi](/ai/ai-guide.md): AI asistanları için normatif özet, kurallar ve hızlı teşhis.
+- [Tam Paket Referansı](/ai/package-reference.md): Kurulum, bileşenler, alanlar, API ve Studio özelliklerinin tam referansı.
+- [Tailwind Entegrasyonu](/ai/tailwind.md): Token derleme, safelist, arbitrary değer ve breakpoint ayrıntıları.
+- [Teknik Mimari](/ai/architecture.md): Engine, state, drag-and-drop, canvas ve uygulanan modüller.
+
+## Optional
+
+- [GitHub deposu](https://github.com/tecof/tecof-theme-editor): Kaynak kod, issue ve sürüm geçmişi.

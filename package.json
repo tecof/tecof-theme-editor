@@ -46,7 +46,9 @@
     ],
     "scripts": {
         "dev": "tsup --watch",
-        "dev:preview": "vite --config playground/vite.config.ts",
+        "dev:preview": "npm run docs:ai && vite --config playground/vite.config.ts",
+        "docs:ai": "node scripts/generate-ai-docs.mjs",
+        "mcp:docs": "npm run docs:ai --silent && node mcp/server.mjs",
         "build": "tsup && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
         "lint": "eslint .",
         "test": "vitest",
@@ -64,6 +66,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@modelcontextprotocol/sdk": "^1.29.0",
         "@monaco-editor/react": "^4.7.0",
         "@storybook/react-vite": "^8.0.0",
         "@tiptap/core": "^3.27.1",
@@ -117,6 +120,7 @@
         "vaul": "^1.1.2",
         "vite": "^6.4.3",
         "vitest": "^3.0.0",
+        "zod": "^4.4.3",
         "zustand": "^5.0.14"
     }
 }
