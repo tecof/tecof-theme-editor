@@ -51,6 +51,12 @@ const sourceDocs = [
     file: 'ARCHITECTURE.md',
     description: 'Engine, state, drag-and-drop, canvas ve uygulanan modüller.',
   },
+  {
+    slug: 'permissions',
+    title: 'İzinler ve Migration',
+    file: 'docs/PERMISSIONS.md',
+    description: 'Permissions izin katmanları, resolvePermissions ve MigrationConfig şema yükseltme akışı.',
+  },
 ];
 
 const link = (target) => (baseUrl ? `${baseUrl}${target}` : target);

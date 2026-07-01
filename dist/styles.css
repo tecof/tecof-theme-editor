@@ -3748,6 +3748,12 @@
   box-shadow: 0 4px 6px -1px var(--tecof-accent-ring);
 }
 
+/* Not enough room above the selection: drop the toolbar below the box instead. */
+.tecof-toolbar.is-flipped {
+  top: calc(100% + 4px);
+  bottom: auto;
+}
+
 .tecof-toolbar-btn {
   background: transparent;
   border: none;
@@ -5173,7 +5179,7 @@
 }
 
 .tecof-modal-preview-wrapper {
-  height: 172px;
+  height: 176px;
   overflow: hidden;
   position: relative;
   border-bottom: 1px solid var(--tecof-border);
@@ -5183,6 +5189,19 @@
     #fbfcfd;
   background-size: 22px 22px;
   width: 100%;
+}
+
+/* Fade the bottom edge of cropped section previews so the crop reads as intentional. */
+.tecof-modal-preview-wrapper.is-section::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.55));
+  z-index: 1;
 }
 
 .tecof-modal-card-chip {
@@ -5205,20 +5224,29 @@
   white-space: nowrap;
 }
 
-.tecof-modal-preview-scale {
-  width: 300%;
-  height: 300%;
-  transform: scale(0.3333);
-  transform-origin: top left;
-  pointer-events: none;
+.tecof-modal-preview-box {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 }
 
-.tecof-modal-preview-scale > button {
+.tecof-modal-preview-stage {
+  pointer-events: none;
+}
+
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+
+.tecof-modal-preview-box.mode-element .tecof-modal-preview-stage {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) scale(3);
+  transform-origin: center center;
+  white-space: nowrap;
 }
 
 .tecof-modal-preview-fallback {

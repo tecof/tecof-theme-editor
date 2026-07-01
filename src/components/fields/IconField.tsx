@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as Icons from 'lucide-react';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
+import { useFloating } from '../../utils/useFloating';
 
 export interface IconFieldProps {
   field: any;
@@ -30,6 +32,12 @@ const ALL_ICON_NAMES = Object.keys(Icons).filter(key => {
 export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor: triggerRef.current,
+    open: isOpen,
+    placement: 'bottom-start',
+  });
 
   // Filter icons based on search query
   const filteredIcons = useMemo(() => {
@@ -38,13 +46,34 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
     return ALL_ICON_NAMES.filter(name => name.toLowerCase().includes(query)).slice(0, 120);
   }, [search]);
 
+  // Close on outside click / Escape (the dropdown is portaled, so it isn't inside
+  // the field's own DOM subtree).
+  useEffect(() => {
+    if (!isOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (
+        !floatingRef.current?.contains(e.target as Node) &&
+        !triggerRef.current?.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    window.addEventListener('mousedown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousedown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [isOpen, floatingRef]);
+
   // Selected Icon Component
   const SelectedIcon = value && (Icons as any)[value] ? (Icons as any)[value] : null;
 
   return (
     <div className="tecof-icon-field-container">
       {/* Trigger Button */}
-      <div className="tecof-icon-trigger-wrap">
+      <div className="tecof-icon-trigger-wrap" ref={triggerRef}>
         <button
           type="button"
           className={`tecof-icon-trigger-btn ${isOpen ? 'open' : ''}`}
@@ -72,9 +101,20 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
         )}
       </div>
 
-      {/* Popover Dropdown */}
-      {isOpen && (
-        <div className="tecof-icon-dropdown">
+      {/* Popover Dropdown — portaled to <body> and positioned with flip/shift so
+          it never clips inside the scrolling inspector. */}
+      {isOpen && createPortal(
+        <div
+          ref={floatingRef}
+          className="tecof-icon-dropdown"
+          style={{
+            ...floatingStyle,
+            width: triggerRef.current?.offsetWidth,
+            right: 'auto',
+            marginTop: 0,
+            zIndex: 10001,
+          }}
+        >
           <div className="tecof-icon-search-wrapper">
             <input
               type="text"
@@ -108,7 +148,8 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
               <div className="tecof-icon-empty">İkon bulunamadı.</div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

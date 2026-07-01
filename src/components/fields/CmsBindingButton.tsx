@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFloating } from '../../utils/useFloating';
 import { Braces, ChevronLeft, Database, Search } from 'lucide-react';
 import { useTecof } from '../TecofProvider';
 
@@ -39,8 +40,11 @@ const BindingPopover = ({
   onClose: () => void;
 }) => {
   const { apiClient } = useTecof();
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ top: -9999, left: -9999 });
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor,
+    open: true,
+    placement: 'bottom-end',
+  });
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,30 +68,20 @@ const BindingPopover = ({
     return () => { cancelled = true; };
   }, [apiClient]);
 
-  useLayoutEffect(() => {
-    const PW = 248, PH = ref.current?.offsetHeight || 280;
-    const r = anchor.getBoundingClientRect();
-    let top = r.bottom + 6;
-    if (top + PH > window.innerHeight) top = Math.max(8, r.top - PH - 6);
-    let left = r.right - PW;
-    if (left < 8) left = 8;
-    setPos({ top, left });
-  }, [anchor, loading, activeSlug]);
-
+  // Close on outside interaction / Escape. Positioning (flip/shift + reposition
+  // on scroll/resize) is handled by useFloating.
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose();
+      if (!floatingRef.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose();
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
-    window.addEventListener('scroll', onClose, true);
     return () => {
       window.removeEventListener('mousedown', onDown);
       window.removeEventListener('keydown', onKey);
-      window.removeEventListener('scroll', onClose, true);
     };
-  }, [anchor, onClose]);
+  }, [anchor, onClose, floatingRef]);
 
   const active = collections.find((c) => c.slug === activeSlug) || null;
 
@@ -100,7 +94,7 @@ const BindingPopover = ({
   );
 
   return createPortal(
-    <div ref={ref} className="tecof-bind-popover" style={{ top: pos.top, left: pos.left }} role="dialog" aria-label="CMS verisine bağla">
+    <div ref={floatingRef} className="tecof-bind-popover" style={floatingStyle} role="dialog" aria-label="CMS verisine bağla">
       <div className="tecof-bind-header">
         {active ? (
           <button type="button" className="tecof-bind-back" onClick={() => { setActiveSlug(null); setQuery(''); }}>

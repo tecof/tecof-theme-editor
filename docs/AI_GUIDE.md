@@ -28,7 +28,10 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
 6. Embed senaryosunda `hostOrigin` verilmelidir. Verilmezse geriye uyumluluk
    nedeniyle `postMessage` hedefi `*` olur.
 7. Registry'deki component type adı değişirse eski kayıtlar için
-   `config.migrations` tanımlanmalıdır.
+   `config.migrations` tanımlanmalıdır. İzinler varsayılan olarak açıktır;
+   kısıtlar `config.permissions` → `component.permissions` →
+   `component.resolvePermissions` sırasıyla birleştirilir (bkz.
+   `docs/PERMISSIONS.md`).
 8. Native HTML5 drag-and-drop dokunmatik cihazlarda tam edit deneyimi sunmaz.
    Public renderer responsive çalışmaya devam eder.
 9. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya

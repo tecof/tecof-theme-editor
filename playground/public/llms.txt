@@ -40,6 +40,7 @@ Bilinmeyen API'ler varsayılmamalı; tam bağlam için önce AI rehberi veya ilg
 - [Tam Paket Referansı](/ai/package-reference.md): Kurulum, bileşenler, alanlar, API ve Studio özelliklerinin tam referansı.
 - [Tailwind Entegrasyonu](/ai/tailwind.md): Token derleme, safelist, arbitrary değer ve breakpoint ayrıntıları.
 - [Teknik Mimari](/ai/architecture.md): Engine, state, drag-and-drop, canvas ve uygulanan modüller.
+- [İzinler ve Migration](/ai/permissions.md): Permissions izin katmanları, resolvePermissions ve MigrationConfig şema yükseltme akışı.
 
 ## Optional
 

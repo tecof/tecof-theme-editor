@@ -4,7 +4,7 @@ export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-
 import { lucide_react_exports, Database, X, RotateCcw, useTecof, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, Link, Drawer, Search, ChevronRight, Plus, RefreshCw, ChevronDown, Link2, RefreshCcw, Check, Pipette, Monitor, Tablet, Smartphone, Eye, Undo2, Redo2, Save, Grid3x3, Layers, EyeOff, LayoutTemplate, Info, ChevronUp, ArrowUp, ArrowDown, Copy, Trash2, CopyPlus, Scissors, ClipboardPaste, Paintbrush, GripVertical, LayoutGrid, PanelsTopLeft, Braces, ChevronLeft } from './chunk-OUKYABPK.mjs';
 export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-OUKYABPK.mjs';
 import './chunk-J5LGTIGS.mjs';
-import React, { createContext, lazy, forwardRef, Suspense, useState, useMemo, useRef, useEffect, useCallback, useLayoutEffect, useContext, Component } from 'react';
+import React, { createContext, lazy, forwardRef, Suspense, useState, useMemo, useRef, useEffect, useCallback, useContext, useLayoutEffect, Component } from 'react';
 import { createPortal } from 'react-dom';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 
@@ -3748,6 +3748,7 @@ var AddSectionButton = ({ index, onClick, disabled }) => {
     /* @__PURE__ */ jsx("div", { className: "tecof-add-section-line" })
   ] });
 };
+var PREVIEW_REFERENCE_WIDTH = 1280;
 var PreviewErrorBoundary = class extends React.Component {
   constructor(props) {
     super(props);
@@ -3768,6 +3769,48 @@ var PreviewErrorBoundary = class extends React.Component {
 };
 var PreviewComponent = ({ renderFn, props }) => {
   return /* @__PURE__ */ jsx(PreviewErrorBoundary, { children: renderFn(props) });
+};
+var AutoScalePreview = ({ mode, children }) => {
+  const boxRef = useRef(null);
+  const stageRef = useRef(null);
+  const [scale, setScale] = useState(mode === "section" ? 0.2 : 1);
+  useEffect(() => {
+    const box = boxRef.current;
+    const stage = stageRef.current;
+    if (!box || !stage) return;
+    const update = () => {
+      const boxWidth = box.clientWidth;
+      const boxHeight = box.clientHeight;
+      if (boxWidth <= 0 || boxHeight <= 0) return;
+      if (mode === "section") {
+        setScale(boxWidth / PREVIEW_REFERENCE_WIDTH);
+        return;
+      }
+      const naturalWidth = stage.scrollWidth || 1;
+      const naturalHeight = stage.scrollHeight || 1;
+      const pad = 28;
+      const next = Math.min(
+        1,
+        (boxWidth - pad) / naturalWidth,
+        (boxHeight - pad) / naturalHeight
+      );
+      setScale(next > 0 ? next : 1);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(box);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [mode]);
+  return /* @__PURE__ */ jsx("div", { ref: boxRef, className: `tecof-modal-preview-box mode-${mode}`, children: /* @__PURE__ */ jsx(
+    "div",
+    {
+      ref: stageRef,
+      className: "tecof-modal-preview-stage",
+      style: mode === "section" ? { width: PREVIEW_REFERENCE_WIDTH, transform: `scale(${scale})` } : { transform: `translate(-50%, -50%) scale(${scale})` },
+      children
+    }
+  ) });
 };
 var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }) => {
   const { apiClient } = useStudio();
@@ -3869,6 +3912,13 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }) 
     return groupedComponents[key]?.length || 0;
   };
   const activeCategoryTitle = categoryList.find((cat) => cat.key === activeCategory)?.title || "T\xFCm\xFC";
+  const categoryTitleForType = (type) => {
+    for (const [key, val] of Object.entries(categories)) {
+      if (val?.components?.includes(type)) return String(val.title || key);
+    }
+    return String(components[type]?.category || "");
+  };
+  const isElementType = (type) => /element/i.test(categoryTitleForType(type));
   return /* @__PURE__ */ jsx("div", { className: "tecof-modal-overlay", onClick: onClose, children: /* @__PURE__ */ jsxs("div", { className: "tecof-add-section-modal", onClick: (e) => e.stopPropagation(), children: [
     /* @__PURE__ */ jsxs("div", { className: "tecof-modal-header", children: [
       /* @__PURE__ */ jsxs("div", { className: "tecof-modal-title-wrap", children: [
@@ -3979,6 +4029,7 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }) 
                 onSelect(item.type);
               }
             };
+            const previewMode = !item.isSaved && isElementType(item.type) ? "element" : "section";
             return /* @__PURE__ */ jsxs(
               "div",
               {
@@ -3993,9 +4044,9 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }) 
                   }
                 },
                 children: [
-                  /* @__PURE__ */ jsxs("div", { className: "tecof-modal-preview-wrapper", children: [
+                  /* @__PURE__ */ jsxs("div", { className: `tecof-modal-preview-wrapper is-${previewMode}`, children: [
                     /* @__PURE__ */ jsx("span", { className: "tecof-modal-card-chip", children: item.isSaved ? "Ortak" : item.type }),
-                    /* @__PURE__ */ jsx("div", { className: "tecof-modal-preview-scale", children: compConfig.render ? /* @__PURE__ */ jsx(PreviewComponent, { renderFn: compConfig.render, props: renderProps }) : /* @__PURE__ */ jsx("div", { className: "tecof-modal-preview-fallback", children: "\xD6nizleme Yok" }) })
+                    compConfig.render ? /* @__PURE__ */ jsx(AutoScalePreview, { mode: previewMode, children: /* @__PURE__ */ jsx(PreviewComponent, { renderFn: compConfig.render, props: renderProps }) }) : /* @__PURE__ */ jsx("div", { className: "tecof-modal-preview-fallback", children: "\xD6nizleme Yok" })
                   ] }),
                   /* @__PURE__ */ jsxs("div", { className: "tecof-modal-card-footer", children: [
                     /* @__PURE__ */ jsxs("div", { className: "tecof-modal-card-text", children: [
@@ -4337,7 +4388,7 @@ var SelectionOverlay = () => {
             className: "tecof-outline is-selected",
             style: getOutlineStyle(selectedCoords),
             children: [
-              /* @__PURE__ */ jsxs("div", { className: "tecof-toolbar", children: [
+              /* @__PURE__ */ jsxs("div", { className: `tecof-toolbar${selectedCoords.top < 44 ? " is-flipped" : ""}`, children: [
                 nodeDetails && (() => {
                   const componentConfig = config?.components?.[nodeDetails.node.type];
                   return /* @__PURE__ */ jsxs("div", { className: "tecof-toolbar-btn tecof-info-popover-trigger", title: "Bile\u015Fen Bilgisi", children: [
@@ -4441,6 +4492,100 @@ var SelectionOverlay = () => {
     }
   );
 };
+var OPPOSITE = {
+  top: "bottom",
+  bottom: "top",
+  left: "right",
+  right: "left"
+};
+var parsePlacement = (placement) => {
+  const [side, align] = placement.split("-");
+  return { side, align: align ?? "center" };
+};
+function useFloating({
+  anchor,
+  open,
+  placement = "bottom-start",
+  offset = 6,
+  padding = 8
+}) {
+  const floatingRef = useRef(null);
+  const [pos, setPos] = useState({
+    top: -9999,
+    left: -9999,
+    side: parsePlacement(placement).side
+  });
+  const update = useCallback(() => {
+    const floating = floatingRef.current;
+    if (!anchor || !floating) return;
+    const a = anchor.getBoundingClientRect();
+    const fw = floating.offsetWidth;
+    const fh = floating.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const { side: preferred, align } = parsePlacement(placement);
+    const space = {
+      top: a.top - padding,
+      bottom: vh - a.bottom - padding,
+      left: a.left - padding,
+      right: vw - a.right - padding
+    };
+    const needed = (s) => (s === "top" || s === "bottom" ? fh : fw) + offset;
+    let side = preferred;
+    if (space[preferred] < needed(preferred) && space[OPPOSITE[preferred]] > space[preferred]) {
+      side = OPPOSITE[preferred];
+    }
+    let top = 0;
+    let left = 0;
+    if (side === "bottom") top = a.bottom + offset;
+    else if (side === "top") top = a.top - fh - offset;
+    else if (side === "right") left = a.right + offset;
+    else left = a.left - fw - offset;
+    if (side === "top" || side === "bottom") {
+      if (align === "start") left = a.left;
+      else if (align === "end") left = a.right - fw;
+      else left = a.left + (a.width - fw) / 2;
+    } else {
+      if (align === "start") top = a.top;
+      else if (align === "end") top = a.bottom - fh;
+      else top = a.top + (a.height - fh) / 2;
+    }
+    const clamp2 = (value, size, viewport) => Math.max(padding, Math.min(value, viewport - size - padding));
+    setPos({
+      top: clamp2(top, fh, vh),
+      left: clamp2(left, fw, vw),
+      side
+    });
+  }, [anchor, placement, offset, padding]);
+  useLayoutEffect(() => {
+    if (open) update();
+  }, [open, update]);
+  useEffect(() => {
+    if (!open || !anchor) return;
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule);
+    const observer = new ResizeObserver(schedule);
+    if (floatingRef.current) observer.observe(floatingRef.current);
+    observer.observe(anchor);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      observer.disconnect();
+    };
+  }, [open, anchor, update]);
+  return {
+    floatingRef,
+    style: { position: "fixed", top: pos.top, left: pos.left },
+    side: pos.side,
+    update
+  };
+}
 var tokenFor = (shortcode) => `{{ data.${shortcode} }}`;
 var BindingPopover = ({
   anchor,
@@ -4448,8 +4593,11 @@ var BindingPopover = ({
   onClose
 }) => {
   const { apiClient } = useTecof();
-  const ref = useRef(null);
-  const [pos, setPos] = useState({ top: -9999, left: -9999 });
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor,
+    open: true,
+    placement: "bottom-end"
+  });
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -4473,31 +4621,20 @@ var BindingPopover = ({
       cancelled = true;
     };
   }, [apiClient]);
-  useLayoutEffect(() => {
-    const PW = 248, PH = ref.current?.offsetHeight || 280;
-    const r = anchor.getBoundingClientRect();
-    let top = r.bottom + 6;
-    if (top + PH > window.innerHeight) top = Math.max(8, r.top - PH - 6);
-    let left = r.right - PW;
-    if (left < 8) left = 8;
-    setPos({ top, left });
-  }, [anchor, loading, activeSlug]);
   useEffect(() => {
     const onDown = (e) => {
-      if (!ref.current?.contains(e.target) && !anchor.contains(e.target)) onClose();
+      if (!floatingRef.current?.contains(e.target) && !anchor.contains(e.target)) onClose();
     };
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("mousedown", onDown);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onClose, true);
     return () => {
       window.removeEventListener("mousedown", onDown);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onClose, true);
     };
-  }, [anchor, onClose]);
+  }, [anchor, onClose, floatingRef]);
   const active = collections.find((c) => c.slug === activeSlug) || null;
   const filteredCollections = collections.filter(
     (c) => !query.trim() || `${c.name} ${c.slug}`.toLowerCase().includes(query.toLowerCase())
@@ -4507,7 +4644,7 @@ var BindingPopover = ({
     (f) => !query.trim() || `${f.name} ${f.shortcode}`.toLowerCase().includes(query.toLowerCase())
   );
   return createPortal(
-    /* @__PURE__ */ jsxs("div", { ref, className: "tecof-bind-popover", style: { top: pos.top, left: pos.left }, role: "dialog", "aria-label": "CMS verisine ba\u011Fla", children: [
+    /* @__PURE__ */ jsxs("div", { ref: floatingRef, className: "tecof-bind-popover", style: floatingStyle, role: "dialog", "aria-label": "CMS verisine ba\u011Fla", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-bind-header", children: active ? /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-bind-back", onClick: () => {
         setActiveSlug(null);
         setQuery("");
@@ -5515,9 +5652,12 @@ var ColorPopover = ({
   onPickHex,
   onClose
 }) => {
-  const ref = useRef(null);
-  const [pos, setPos] = useState({ top: -9999, left: -9999 });
   const recent = useRef(readRecent()).current;
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor,
+    open: true,
+    placement: "bottom-start"
+  });
   const [hsv, setHsv] = useState(initialHsv);
   const [alpha, setAlpha] = useState(initialAlpha);
   const update = useCallback(
@@ -5530,34 +5670,20 @@ var ColorPopover = ({
   );
   const rgb = hsvToRgb(hsv);
   const hueColor = rgbToHex(hsvToRgb({ h: hsv.h, s: 1, v: 1 }));
-  useLayoutEffect(() => {
-    const PW = 244, PH = ref.current?.offsetHeight || 300;
-    const r = anchor.getBoundingClientRect();
-    let top = r.bottom + 6;
-    if (top + PH > window.innerHeight) top = Math.max(8, r.top - PH - 6);
-    let left = r.left;
-    if (left + PW > window.innerWidth) left = window.innerWidth - PW - 8;
-    setPos({ top, left: Math.max(8, left) });
-  }, [anchor]);
   useEffect(() => {
     const onDown = (e) => {
-      if (!ref.current?.contains(e.target) && !anchor.contains(e.target)) onClose();
+      if (!floatingRef.current?.contains(e.target) && !anchor.contains(e.target)) onClose();
     };
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
     };
-    const onScroll = () => onClose();
     window.addEventListener("mousedown", onDown);
     window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, true);
-    window.addEventListener("resize", onClose);
     return () => {
       window.removeEventListener("mousedown", onDown);
       window.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll, true);
-      window.removeEventListener("resize", onClose);
     };
-  }, [anchor, onClose]);
+  }, [anchor, onClose, floatingRef]);
   const pickHex = useCallback(
     (hex) => {
       const parsed = hexToRgb(hex);
@@ -5581,9 +5707,9 @@ var ColorPopover = ({
     /* @__PURE__ */ jsxs(
       "div",
       {
-        ref,
+        ref: floatingRef,
         className: "tecof-color-popover",
-        style: { top: pos.top, left: pos.left },
+        style: floatingStyle,
         role: "dialog",
         "aria-label": "Renk se\xE7ici",
         children: [
@@ -8088,14 +8214,37 @@ var ALL_ICON_NAMES = Object.keys(lucide_react_exports).filter((key) => {
 var IconField = ({ value, onChange, readOnly }) => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor: triggerRef.current,
+    open: isOpen,
+    placement: "bottom-start"
+  });
   const filteredIcons = useMemo(() => {
     const query = search.toLowerCase();
     if (!query) return ALL_ICON_NAMES.slice(0, 120);
     return ALL_ICON_NAMES.filter((name) => name.toLowerCase().includes(query)).slice(0, 120);
   }, [search]);
+  useEffect(() => {
+    if (!isOpen) return;
+    const onDown = (e) => {
+      if (!floatingRef.current?.contains(e.target) && !triggerRef.current?.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isOpen, floatingRef]);
   const SelectedIcon = value && lucide_react_exports[value] ? lucide_react_exports[value] : null;
   return /* @__PURE__ */ jsxs("div", { className: "tecof-icon-field-container", children: [
-    /* @__PURE__ */ jsxs("div", { className: "tecof-icon-trigger-wrap", children: [
+    /* @__PURE__ */ jsxs("div", { className: "tecof-icon-trigger-wrap", ref: triggerRef, children: [
       /* @__PURE__ */ jsx(
         "button",
         {
@@ -8120,42 +8269,59 @@ var IconField = ({ value, onChange, readOnly }) => {
         }
       )
     ] }),
-    isOpen && /* @__PURE__ */ jsxs("div", { className: "tecof-icon-dropdown", children: [
-      /* @__PURE__ */ jsx("div", { className: "tecof-icon-search-wrapper", children: /* @__PURE__ */ jsx(
-        "input",
+    isOpen && createPortal(
+      /* @__PURE__ */ jsxs(
+        "div",
         {
-          type: "text",
-          className: "tecof-icon-search-input",
-          placeholder: "\u0130kon ara...",
-          value: search,
-          onChange: (e) => setSearch(e.target.value),
-          autoFocus: true
+          ref: floatingRef,
+          className: "tecof-icon-dropdown",
+          style: {
+            ...floatingStyle,
+            width: triggerRef.current?.offsetWidth,
+            right: "auto",
+            marginTop: 0,
+            zIndex: 10001
+          },
+          children: [
+            /* @__PURE__ */ jsx("div", { className: "tecof-icon-search-wrapper", children: /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "text",
+                className: "tecof-icon-search-input",
+                placeholder: "\u0130kon ara...",
+                value: search,
+                onChange: (e) => setSearch(e.target.value),
+                autoFocus: true
+              }
+            ) }),
+            /* @__PURE__ */ jsxs("div", { className: "tecof-icon-grid", children: [
+              filteredIcons.map((name) => {
+                const IconComp = lucide_react_exports[name];
+                return /* @__PURE__ */ jsxs(
+                  "button",
+                  {
+                    type: "button",
+                    className: `tecof-icon-item-btn ${value === name ? "selected" : ""}`,
+                    title: name,
+                    onClick: () => {
+                      onChange(name);
+                      setIsOpen(false);
+                    },
+                    children: [
+                      /* @__PURE__ */ jsx(IconComp, { size: 16 }),
+                      /* @__PURE__ */ jsx("span", { className: "tecof-icon-name", children: name })
+                    ]
+                  },
+                  name
+                );
+              }),
+              filteredIcons.length === 0 && /* @__PURE__ */ jsx("div", { className: "tecof-icon-empty", children: "\u0130kon bulunamad\u0131." })
+            ] })
+          ]
         }
-      ) }),
-      /* @__PURE__ */ jsxs("div", { className: "tecof-icon-grid", children: [
-        filteredIcons.map((name) => {
-          const IconComp = lucide_react_exports[name];
-          return /* @__PURE__ */ jsxs(
-            "button",
-            {
-              type: "button",
-              className: `tecof-icon-item-btn ${value === name ? "selected" : ""}`,
-              title: name,
-              onClick: () => {
-                onChange(name);
-                setIsOpen(false);
-              },
-              children: [
-                /* @__PURE__ */ jsx(IconComp, { size: 16 }),
-                /* @__PURE__ */ jsx("span", { className: "tecof-icon-name", children: name })
-              ]
-            },
-            name
-          );
-        }),
-        filteredIcons.length === 0 && /* @__PURE__ */ jsx("div", { className: "tecof-icon-empty", children: "\u0130kon bulunamad\u0131." })
-      ] })
-    ] })
+      ),
+      document.body
+    )
   ] });
 };
 var createIconField = (options = {}) => {

@@ -324,6 +324,104 @@ fields: {
 
 ---
 
+### RepeaterField — Tekrarlanan Satırlar
+
+Alt alan setini (`subFields`) tekrarlanan satırlar halinde düzenler (SSS, özellik listesi, adım listesi vb.).
+
+```tsx
+import { createRepeaterField, createLanguageField, createLinkField } from "@tecof/theme-editor";
+
+fields: {
+  items: createRepeaterField({
+    label: "Öğeler",
+    subFields: {
+      title: createLanguageField({ label: "Başlık" }),
+      link: createLinkField({ label: "Bağlantı" }),
+    },
+    minItems: 1,
+    maxItems: 6,
+    defaultRow: { title: "", link: null },
+  }),
+}
+```
+
+**Özellikler:**
+- ➕➖ Satır ekle / sil / çoğalt
+- ↕️ Sürükle-bırak ile sıralama (yukarı/aşağı taşıma da destekler)
+- 🔽 Satırları genişlet/daralt
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `subFields` | `Record<string, FieldConfig>` | — (zorunlu) | Her satırda render edilecek alt alanlar (diğer `create*Field()` sonuçları dahil) |
+| `minItems` | `number` | yok | Minimum satır sayısı |
+| `maxItems` | `number` | yok | Maksimum satır sayısı |
+| `defaultRow` | `Record<string, any>` | yok | Yeni satır eklenince kullanılacak varsayılan değerler |
+
+Değer tipi: `subFields` anahtarlarıyla eşleşen nesnelerden oluşan bir dizi (`Record<string, any>[]`).
+
+---
+
+### IconField — İkon Seçici
+
+`lucide-react` setinden aranabilir ikon seçici. Seçilen değer, ikonun adını (`"ShoppingCart"` gibi) içeren bir string olarak saklanır.
+
+```tsx
+import { createIconField } from "@tecof/theme-editor";
+
+fields: {
+  icon: createIconField({ label: "İkon" }),
+}
+```
+
+**Özellikler:**
+- 🔍 Aranabilir ızgara (arama yapılmazsa ilk 120 ikon gösterilir)
+- 👁️ Seçili ikon önizlemesi + temizle butonu
+
+Alan-özel bir seçeneği yoktur; yalnızca [Ortak Alan Seçenekleri](#ortak-alan-seçenekleri-basefield) (`label`, `labelIcon`, `visible`) geçerlidir.
+
+> Değer sadece ikon **adını** saklar; bileşeninizin `render` fonksiyonunda `lucide-react`'ten karşılık gelen bileşeni kendiniz çözmelisiniz (ör. `const Icon = (LucideIcons as any)[props.icon]`).
+
+---
+
+### ExternalField — Harici Veri Seçici
+
+CMS'e bağlı olmayan, host'un kendi async `fetchList` fonksiyonuyla beslediği aranabilir kayıt seçici. Kendi ürün/kategori/müşteri API'niz gibi üçüncü taraf veri kaynaklarını bağlamak için kullanılır.
+
+```tsx
+import { createExternalField } from "@tecof/theme-editor";
+
+fields: {
+  product: createExternalField({
+    label: "Ürün",
+    fetchList: async ({ query }) => {
+      const res = await fetch(`/api/products?q=${query ?? ""}`);
+      return res.json(); // [{ id, name, sku, ... }, ...]
+    },
+    mapProp: (row) => ({ id: row.id, name: row.name }),
+    mapRow: (row) => ({ Ad: row.name, SKU: row.sku }),
+    getItemSummary: (value) => value?.name ?? "",
+    placeholder: "Ürün seçin",
+  }),
+}
+```
+
+**Özellikler:**
+- 🔎 Aranabilir modal — arama sorgusu her tuş vuruşunda `fetchList`'e geçilir
+- 🔄 Yeniden yükleme butonu
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `fetchList` | `(params: { query?, filters? }) => Promise<any[]>` | — (zorunlu) | Modal açıldığında/arama yapıldığında satırları getirir |
+| `mapProp` | `(row) => any` | satırın kendisi | Seçilen satırdan prop'a yazılacak değeri üretir |
+| `mapRow` | `(row) => Record<string, any>` | satırın kendi alanları | Modal tablosunda gösterilecek sütunları üretir |
+| `getItemSummary` | `(value) => string` | yok | Kaydedilmiş değeri trigger etiketine çevirir |
+| `showSearch` | `boolean` | `true` | Arama kutusunu göster |
+| `placeholder` | `string` | yok | Hiçbir şey seçili değilken trigger metni |
+
+Değer tipi: `mapProp` tarafından üretilen herhangi bir değer (varsayılan: ham satırın kendisi).
+
+---
+
 ### CmsCollectionField — Koleksiyon Bağlama
 
 Bir bileşeni CMS koleksiyonuna bağlar; koleksiyon seçer, limit/sıralama ayarlar ve bileşenin "slot"larını koleksiyon alanlarına eşler (liste/tekrar eden içerik için).

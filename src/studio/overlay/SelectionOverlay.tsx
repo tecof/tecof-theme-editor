@@ -281,8 +281,9 @@ export const SelectionOverlay = () => {
           className="tecof-outline is-selected"
           style={getOutlineStyle(selectedCoords)}
         >
-          {/* Floating Toolbar */}
-          <div className="tecof-toolbar">
+          {/* Floating Toolbar — flips below the selection when there isn't room
+              above it (element near the top of the canvas). */}
+          <div className={`tecof-toolbar${selectedCoords.top < 44 ? ' is-flipped' : ''}`}>
             {/* Info Popover inside toolbar */}
             {nodeDetails && (() => {
               const componentConfig = config?.components?.[nodeDetails.node.type] as any;

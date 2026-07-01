@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFloating } from '../../utils/useFloating';
 import { FieldLabel } from './FieldLabel';
 import { Pipette, RotateCcw } from 'lucide-react';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
@@ -203,9 +204,12 @@ const ColorPopover = ({
   onPickHex,
   onClose,
 }: PopoverProps) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number }>({ top: -9999, left: -9999 });
   const recent = useRef<string[]>(readRecent()).current;
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor,
+    open: true,
+    placement: 'bottom-start',
+  });
 
   // The popover owns the live HSV/alpha while open. Deriving them from the hex on
   // every render would lose the hue whenever saturation or value hit zero (grey/
@@ -225,35 +229,20 @@ const ColorPopover = ({
   const rgb = hsvToRgb(hsv);
   const hueColor = rgbToHex(hsvToRgb({ h: hsv.h, s: 1, v: 1 }));
 
-  // Position against the anchor; flip up / clamp horizontally to stay on-screen.
-  useLayoutEffect(() => {
-    const PW = 244, PH = ref.current?.offsetHeight || 300;
-    const r = anchor.getBoundingClientRect();
-    let top = r.bottom + 6;
-    if (top + PH > window.innerHeight) top = Math.max(8, r.top - PH - 6);
-    let left = r.left;
-    if (left + PW > window.innerWidth) left = window.innerWidth - PW - 8;
-    setPos({ top, left: Math.max(8, left) });
-  }, [anchor]);
-
-  // Close on outside interaction.
+  // Close on outside interaction. Positioning (flip/shift + reposition on
+  // scroll/resize) is handled by useFloating.
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose();
+      if (!floatingRef.current?.contains(e.target as Node) && !anchor.contains(e.target as Node)) onClose();
     };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    const onScroll = () => onClose();
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onClose);
     return () => {
       window.removeEventListener('mousedown', onDown);
       window.removeEventListener('keydown', onKey);
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onClose);
     };
-  }, [anchor, onClose]);
+  }, [anchor, onClose, floatingRef]);
 
   // Picking a discrete color (swatch / eyedropper) seeds the live HSV too so the
   // SV square and sliders jump to the chosen color.
@@ -281,9 +270,9 @@ const ColorPopover = ({
 
   return createPortal(
     <div
-      ref={ref}
+      ref={floatingRef}
       className="tecof-color-popover"
-      style={{ top: pos.top, left: pos.left }}
+      style={floatingStyle}
       role="dialog"
       aria-label="Renk seçici"
     >

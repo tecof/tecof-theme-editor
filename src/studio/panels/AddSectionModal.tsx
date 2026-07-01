@@ -1,7 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronRight, LayoutGrid, LayoutTemplate, Search, X } from 'lucide-react';
 import type { SectionTemplate, StudioConfig } from '../../types';
 import { useStudio } from '../context';
+
+/**
+ * Reference desktop width the preview is rendered at before being scaled down to
+ * fit the card. Full-width website sections are designed for a desktop viewport,
+ * so rendering at a real desktop width (then scaling) keeps their layout intact
+ * instead of squishing them into the card's narrow physical width.
+ */
+const PREVIEW_REFERENCE_WIDTH = 1280;
 
 class PreviewErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: any) {
@@ -39,6 +47,80 @@ const PreviewComponent = ({ renderFn, props }: PreviewComponentProps) => {
     <PreviewErrorBoundary>
       {renderFn(props) as any}
     </PreviewErrorBoundary>
+  );
+};
+
+type PreviewMode = 'section' | 'element';
+
+interface AutoScalePreviewProps {
+  mode: PreviewMode;
+  children: React.ReactNode;
+}
+
+/**
+ * Renders a live component preview and scales it to fit the card, measuring the
+ * available box with a ResizeObserver instead of relying on a hard-coded CSS
+ * scale factor.
+ *
+ * - `section`: the content is rendered at {@link PREVIEW_REFERENCE_WIDTH} (a real
+ *   desktop width) and uniformly scaled down to the card width, top-aligned — so
+ *   full-bleed sections keep their intended desktop layout.
+ * - `element`: small/inline components are measured at their natural size and
+ *   scaled to *fit* (never upscaled past 1×), centered in the box.
+ */
+const AutoScalePreview = ({ mode, children }: AutoScalePreviewProps) => {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(mode === 'section' ? 0.2 : 1);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    const stage = stageRef.current;
+    if (!box || !stage) return;
+
+    const update = () => {
+      const boxWidth = box.clientWidth;
+      const boxHeight = box.clientHeight;
+      if (boxWidth <= 0 || boxHeight <= 0) return;
+
+      if (mode === 'section') {
+        setScale(boxWidth / PREVIEW_REFERENCE_WIDTH);
+        return;
+      }
+
+      // element: fit the content's natural size into the box (with a little padding)
+      const naturalWidth = stage.scrollWidth || 1;
+      const naturalHeight = stage.scrollHeight || 1;
+      const pad = 28;
+      const next = Math.min(
+        1,
+        (boxWidth - pad) / naturalWidth,
+        (boxHeight - pad) / naturalHeight,
+      );
+      setScale(next > 0 ? next : 1);
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(box);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [mode]);
+
+  return (
+    <div ref={boxRef} className={`tecof-modal-preview-box mode-${mode}`}>
+      <div
+        ref={stageRef}
+        className="tecof-modal-preview-stage"
+        style={
+          mode === 'section'
+            ? { width: PREVIEW_REFERENCE_WIDTH, transform: `scale(${scale})` }
+            : { transform: `translate(-50%, -50%) scale(${scale})` }
+        }
+      >
+        {children}
+      </div>
+    </div>
   );
 };
 
@@ -193,6 +275,17 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
   const activeCategoryTitle =
     categoryList.find((cat) => cat.key === activeCategory)?.title || 'Tümü';
 
+  // Resolve the category label a component belongs to, so we can pick the right
+  // preview mode. Small "element" components get a centered, fit-to-size preview;
+  // everything else is treated as a full-width section.
+  const categoryTitleForType = (type: string): string => {
+    for (const [key, val] of Object.entries(categories) as [string, any][]) {
+      if (val?.components?.includes(type)) return String(val.title || key);
+    }
+    return String(components[type]?.category || '');
+  };
+  const isElementType = (type: string) => /element/i.test(categoryTitleForType(type));
+
   return (
     <div className="tecof-modal-overlay" onClick={onClose}>
       <div className="tecof-add-section-modal" onClick={e => e.stopPropagation()}>
@@ -328,6 +421,10 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                   }
                 };
 
+                // Saved/shared components are full sections; otherwise decide by category.
+                const previewMode: PreviewMode =
+                  !item.isSaved && isElementType(item.type) ? 'element' : 'section';
+
                 return (
                   <div
                     key={item.id}
@@ -342,19 +439,19 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                       }
                     }}
                   >
-                    <div className="tecof-modal-preview-wrapper">
+                    <div className={`tecof-modal-preview-wrapper is-${previewMode}`}>
                       <span className="tecof-modal-card-chip">
                         {item.isSaved ? 'Ortak' : item.type}
                       </span>
-                      <div className="tecof-modal-preview-scale">
-                        {compConfig.render ? (
+                      {compConfig.render ? (
+                        <AutoScalePreview mode={previewMode}>
                           <PreviewComponent renderFn={compConfig.render} props={renderProps} />
-                        ) : (
-                          <div className="tecof-modal-preview-fallback">
-                            Önizleme Yok
-                          </div>
-                        )}
-                      </div>
+                        </AutoScalePreview>
+                      ) : (
+                        <div className="tecof-modal-preview-fallback">
+                          Önizleme Yok
+                        </div>
+                      )}
                     </div>
                     <div className="tecof-modal-card-footer">
                       <div className="tecof-modal-card-text">
