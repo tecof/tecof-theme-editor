@@ -1,7 +1,7 @@
-import { MediaDrawer } from './chunk-UPP5KOIP.mjs';
-import { useTecof, ImagePlus, Upload, Code, TecofPicture, File as File$1, X } from './chunk-OUKYABPK.mjs';
-import './chunk-J5LGTIGS.mjs';
+import { MediaDrawer } from './chunk-7DE7RWPS.mjs';
+import { useTecof, TecofPicture } from './chunk-6SZFDZOT.mjs';
 import React, { createElement as createElement$2, useState, useRef, useCallback } from 'react';
+import { ImagePlus, Upload, Code, FileIcon, X } from 'lucide-react';
 import { jsxs, jsx } from 'react/jsx-runtime';
 
 // node_modules/filepond/dist/filepond.esm.js
@@ -17539,7 +17539,7 @@ var MediaTile = ({
           className: "tecof-media-tile-img"
         }
       ) : /* @__PURE__ */ jsxs("div", { className: "tecof-media-tile-file", children: [
-        /* @__PURE__ */ jsx(File$1, { size: 20 }),
+        /* @__PURE__ */ jsx(FileIcon, { size: 20 }),
         ext && /* @__PURE__ */ jsx("span", { className: "tecof-media-tile-ext", children: ext })
       ] }),
       !readOnly && onRemove && /* @__PURE__ */ jsx(
@@ -17972,5 +17972,5 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
 */
 
 export { UploadField_impl_default as default };
-//# sourceMappingURL=UploadField.impl-DN2FTNIF.mjs.map
-//# sourceMappingURL=UploadField.impl-DN2FTNIF.mjs.map
+//# sourceMappingURL=UploadField.impl-PPKSM2UJ.mjs.map
+//# sourceMappingURL=UploadField.impl-PPKSM2UJ.mjs.map

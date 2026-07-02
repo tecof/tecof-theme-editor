@@ -35,8 +35,10 @@ export const Canvas = () => {
     getIndex: () => content.length,
   });
 
-  const handleSelectComponent = (type: string) => {
-    const newNode = createNode(config, type);
+  const handleSelectComponent = (type: string, customProps?: Record<string, unknown>) => {
+    // `customProps` carries a saved/shared component's props snapshot; without
+    // it the node starts from the component's defaultProps.
+    const newNode = createNode(config, type, customProps);
     insertNode(newNode, undefined, insertIndex);
     setModalOpen(false);
   };

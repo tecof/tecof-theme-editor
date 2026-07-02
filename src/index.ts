@@ -32,7 +32,7 @@ export { TecofApiClient } from './api';
 export { getSafelist, STYLE_CONTROLS } from './studio/style/tokens';
 export { TAILWIND_PALETTE, TAILWIND_SHADES } from './studio/style/palette';
 export type { PaletteHue, TailwindShade } from './studio/style/palette';
-export { compileStyles, collectStyleClasses, collectDocumentClasses } from './studio/style/compileStyles';
+export { compileStyles, collectStyleClasses, collectDocumentClasses, cn } from './studio/style/compileStyles';
 export { STYLES_PROP } from './studio/style/types';
 export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';
 

@@ -1,12 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import dynamicIconImports from 'lucide-react/dynamicIconImports';
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type LazyExoticComponent,
+} from 'react';
 import { createPortal } from 'react-dom';
-import * as Icons from 'lucide-react';
-import { FieldLabel } from './FieldLabel';
-import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useFloating } from '../../utils/useFloating';
+import { FieldErrorBoundary } from './FieldErrorBoundary';
+import { FieldLabel } from './FieldLabel';
 
 export interface IconFieldProps {
-  field: any;
+  field: unknown;
   name: string;
   id: string;
   value: string;
@@ -23,11 +33,43 @@ export interface IconFieldOptions {
   visible?: boolean;
 }
 
-// Extract valid icon names from lucide-react
-const ALL_ICON_NAMES = Object.keys(Icons).filter(key => {
-  // Filters out helper functions and only matches icon components (start with uppercase)
-  return /^[A-Z]/.test(key) && typeof (Icons as any)[key] === 'function' && key !== 'createLucideIcon';
-});
+// Extract valid lowercase icon names from lucide-react/dynamicIconImports
+const ALL_ICON_NAMES = Object.keys(dynamicIconImports).sort();
+
+/** Cap the rendered grid so typing stays responsive (~1500 icons in total). */
+const MAX_VISIBLE_ICONS = 120;
+
+type LucideIconComponent = ComponentType<{ size?: number; className?: string }>;
+
+/**
+ * `lazy()` must not be called during render: it returns a brand-new component
+ * every time, which remounts the icon and re-triggers Suspense on each
+ * keystroke. Cache one lazy component per icon name for the module lifetime.
+ */
+const lazyIconCache = new Map<string, LazyExoticComponent<LucideIconComponent>>();
+
+const getLazyIcon = (name: string): LazyExoticComponent<LucideIconComponent> | null => {
+  const importFn = dynamicIconImports[name as keyof typeof dynamicIconImports];
+  if (!importFn) return null;
+  let icon = lazyIconCache.get(name);
+  if (!icon) {
+    icon = lazy(importFn);
+    lazyIconCache.set(name, icon);
+  }
+  return icon;
+};
+
+const DynamicIcon = ({ name, size = 16, className }: { name: string; size?: number; className?: string }) => {
+  const LucideIcon = getLazyIcon(name);
+  const placeholder = <div style={{ width: size, height: size }} className={className} />;
+  if (!LucideIcon) return placeholder;
+
+  return (
+    <Suspense fallback={placeholder}>
+      <LucideIcon size={size} className={className} />
+    </Suspense>
+  );
+};
 
 export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
   const [search, setSearch] = useState('');
@@ -39,15 +81,19 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
     placement: 'bottom-start',
   });
 
-  // Filter icons based on search query
+  const close = useCallback(() => {
+    setIsOpen(false);
+    setSearch('');
+  }, []);
+
+  // Filter icons based on search query (names are already lowercase)
   const filteredIcons = useMemo(() => {
-    const query = search.toLowerCase();
-    if (!query) return ALL_ICON_NAMES.slice(0, 120); // Limit to top 120 for responsiveness
-    return ALL_ICON_NAMES.filter(name => name.toLowerCase().includes(query)).slice(0, 120);
+    const query = search.trim().toLowerCase();
+    const names = query ? ALL_ICON_NAMES.filter((name) => name.includes(query)) : ALL_ICON_NAMES;
+    return names.slice(0, MAX_VISIBLE_ICONS);
   }, [search]);
 
-  // Close on outside click / Escape (the dropdown is portaled, so it isn't inside
-  // the field's own DOM subtree).
+  // Close on outside click / Escape
   useEffect(() => {
     if (!isOpen) return;
     const onDown = (e: MouseEvent) => {
@@ -55,20 +101,27 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
         !floatingRef.current?.contains(e.target as Node) &&
         !triggerRef.current?.contains(e.target as Node)
       ) {
-        setIsOpen(false);
+        close();
       }
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
     window.addEventListener('mousedown', onDown);
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('mousedown', onDown);
       window.removeEventListener('keydown', onKey);
     };
-  }, [isOpen, floatingRef]);
+  }, [isOpen, floatingRef, close]);
 
-  // Selected Icon Component
-  const SelectedIcon = value && (Icons as any)[value] ? (Icons as any)[value] : null;
+  const selectIcon = (name: string) => {
+    onChange(name);
+    close();
+  };
+
+  // Check if selected icon is valid
+  const hasSelectedIcon = Boolean(value && value in dynamicIconImports);
 
   return (
     <div className="tecof-icon-field-container">
@@ -78,11 +131,11 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
           type="button"
           className={`tecof-icon-trigger-btn ${isOpen ? 'open' : ''}`}
           disabled={readOnly}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => (isOpen ? close() : setIsOpen(true))}
         >
           <div className="tecof-icon-trigger-left">
-            {SelectedIcon ? (
-              <SelectedIcon className="tecof-icon-trigger-preview-icon" size={16} />
+            {hasSelectedIcon ? (
+              <DynamicIcon name={value} className="tecof-icon-trigger-preview-icon" size={16} />
             ) : (
               <div className="tecof-icon-trigger-placeholder" />
             )}
@@ -101,8 +154,7 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
         )}
       </div>
 
-      {/* Popover Dropdown — portaled to <body> and positioned with flip/shift so
-          it never clips inside the scrolling inspector. */}
+      {/* Popover Dropdown */}
       {isOpen && createPortal(
         <div
           ref={floatingRef}
@@ -126,24 +178,18 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
             />
           </div>
           <div className="tecof-icon-grid">
-            {filteredIcons.map((name) => {
-              const IconComp = (Icons as any)[name];
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  className={`tecof-icon-item-btn ${value === name ? 'selected' : ''}`}
-                  title={name}
-                  onClick={() => {
-                    onChange(name);
-                    setIsOpen(false);
-                  }}
-                >
-                  <IconComp size={16} />
-                  <span className="tecof-icon-name">{name}</span>
-                </button>
-              );
-            })}
+            {filteredIcons.map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={`tecof-icon-item-btn ${value === name ? 'selected' : ''}`}
+                title={name}
+                onClick={() => selectIcon(name)}
+              >
+                <DynamicIcon name={name} size={16} />
+                <span className="tecof-icon-name">{name}</span>
+              </button>
+            ))}
             {filteredIcons.length === 0 && (
               <div className="tecof-icon-empty">İkon bulunamadı.</div>
             )}

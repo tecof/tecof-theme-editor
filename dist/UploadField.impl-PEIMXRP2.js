@@ -1,9 +1,9 @@
 'use strict';
 
-var chunkH5O7C4PW_js = require('./chunk-H5O7C4PW.js');
-var chunk24FK4NEO_js = require('./chunk-24FK4NEO.js');
-require('./chunk-PZ5AY32C.js');
+var chunkHD6T7L6C_js = require('./chunk-HD6T7L6C.js');
+var chunk6ME6QXY3_js = require('./chunk-6ME6QXY3.js');
 var React = require('react');
+var lucideReact = require('lucide-react');
 var jsxRuntime = require('react/jsx-runtime');
 
 function _interopDefault (e) { return e && e.__esModule ? e : { default: e }; }
@@ -17536,8 +17536,8 @@ var MediaTile = ({
   const isReference = file2.type === "image/reference";
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile", title: displayName, children: [
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-preview", children: [
-      isReference ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-tile-ref", children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Code, { size: 18 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
-        chunk24FK4NEO_js.TecofPicture,
+      isReference ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-tile-ref", children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Code, { size: 18 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsxRuntime.jsx(
+        chunk6ME6QXY3_js.TecofPicture,
         {
           data: file2,
           alt: displayName,
@@ -17545,7 +17545,7 @@ var MediaTile = ({
           className: "tecof-media-tile-img"
         }
       ) : /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-file", children: [
-        /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.File, { size: 20 }),
+        /* @__PURE__ */ jsxRuntime.jsx(lucideReact.FileIcon, { size: 20 }),
         ext && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-media-tile-ext", children: ext })
       ] }),
       !readOnly && onRemove && /* @__PURE__ */ jsxRuntime.jsx(
@@ -17555,7 +17555,7 @@ var MediaTile = ({
           className: "tecof-media-tile-remove",
           onClick: onRemove,
           title: "Kald\u0131r",
-          children: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.X, { size: 13 })
+          children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.X, { size: 13 })
         }
       )
     ] }),
@@ -17672,7 +17672,7 @@ var UploadFieldImpl = ({
   } else if (rawValue && typeof rawValue === "object") {
     value = [rawValue];
   }
-  const { apiUrl, secretKey } = chunk24FK4NEO_js.useTecof();
+  const { apiUrl, secretKey } = chunk6ME6QXY3_js.useTecof();
   const [filesForPond, setFilesForPond] = React.useState([]);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [refCode, setRefCode] = React.useState("{{ data. }}");
@@ -17805,7 +17805,7 @@ var UploadFieldImpl = ({
   const uploadTab = {
     id: "upload",
     label: "Y\xFCkle",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Upload, { size: 14 }),
+    icon: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Upload, { size: 14 }),
     render: () => /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-upload-panel", children: /* @__PURE__ */ jsxRuntime.jsx(
       FilePond,
       {
@@ -17831,7 +17831,7 @@ var UploadFieldImpl = ({
   const referenceTab = {
     id: "reference",
     label: "Referans",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.Code, { size: 14 }),
+    icon: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Code, { size: 14 }),
     render: () => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-ref-panel", children: [
       /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-media-ref-desc", children: "CMS koleksiyonundan dinamik bir g\xF6rsel de\u011Fi\u015Fkeni ba\u011Flay\u0131n." }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-ref-row", children: [
@@ -17873,14 +17873,14 @@ var UploadFieldImpl = ({
           className: `tecof-media-add-tile${value.length === 0 ? " is-empty" : ""}`,
           onClick: () => setDrawerOpen(true),
           children: [
-            /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.ImagePlus, { size: value.length === 0 ? 22 : 18 }),
+            /* @__PURE__ */ jsxRuntime.jsx(lucideReact.ImagePlus, { size: value.length === 0 ? 22 : 18 }),
             /* @__PURE__ */ jsxRuntime.jsx("span", { children: value.length === 0 ? "Medya ekle" : "Ekle" })
           ]
         }
       )
     ] }),
     /* @__PURE__ */ jsxRuntime.jsx(
-      chunkH5O7C4PW_js.MediaDrawer,
+      chunkHD6T7L6C_js.MediaDrawer,
       {
         open: drawerOpen,
         onOpenChange: setDrawerOpen,
@@ -17978,5 +17978,5 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
 */
 
 module.exports = UploadField_impl_default;
-//# sourceMappingURL=UploadField.impl-HD63HHVZ.js.map
-//# sourceMappingURL=UploadField.impl-HD63HHVZ.js.map
+//# sourceMappingURL=UploadField.impl-PEIMXRP2.js.map
+//# sourceMappingURL=UploadField.impl-PEIMXRP2.js.map

@@ -1,19 +1,30 @@
 import type React from 'react';
 import { generateId } from '../../engine/ids';
-import type { TecofNode } from '../../types';
+import type { StudioConfig, TecofNode } from '../../types';
 
 export const TECOF_NODE_ID = 'application/tecof-node-id';
 export const TECOF_BLOCK_TYPE = 'application/tecof-block-type';
 
-/** Build a fresh node for a palette component type, with a unique id + cloned defaults. */
-export function createNode(config: any, type: string): TecofNode {
-  const compConfig = config?.components?.[type] || {};
-  const defaultProps = compConfig.defaultProps || {};
+/**
+ * Build a fresh node for a palette component type, with a unique id + cloned
+ * defaults. `overrideProps` (e.g. a saved/shared component snapshot) is cloned
+ * over the defaults. The generated id is applied LAST so neither defaultProps
+ * nor overrides can smuggle in a stale id — inserting the same component twice
+ * must never produce duplicate node ids.
+ */
+export function createNode(
+  config: StudioConfig | undefined,
+  type: string,
+  overrideProps?: Record<string, unknown>,
+): TecofNode {
+  const compConfig = config?.components?.[type];
+  const defaultProps = compConfig?.defaultProps || {};
   return {
     type,
     props: {
-      id: generateId(),
       ...JSON.parse(JSON.stringify(defaultProps)),
+      ...(overrideProps ? JSON.parse(JSON.stringify(overrideProps)) : {}),
+      id: generateId(),
     },
   };
 }

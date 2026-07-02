@@ -2,6 +2,7 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
 import react__default, { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
 export { UnderConstruction } from './components/UnderConstruction.mjs';
+import { ClassValue } from 'clsx';
 import * as zustand from 'zustand';
 import { Patch } from 'immer';
 
@@ -950,7 +951,7 @@ declare const createCmsCollectionField: (options?: CmsCollectionFieldOptions) =>
 };
 
 interface IconFieldProps {
-    field: any;
+    field: unknown;
     name: string;
     id: string;
     value: string;
@@ -1163,6 +1164,7 @@ interface NodeStyles {
 /** The prop key under which a node's structured styles live. */
 declare const STYLES_PROP = "_tecofStyles";
 
+declare function cn(...inputs: ClassValue[]): string;
 /**
  * Compile a structured NodeStyles object into a Tailwind className string.
  * Because each property is a single keyed token, conflicting utilities can't
@@ -1182,13 +1184,13 @@ declare function collectStyleClasses(styles?: NodeStyles | null): string[];
 /** Minimal document shape consumed by {@link collectDocumentClasses}. */
 interface StyledDocLike {
     root?: {
-        props?: Record<string, any>;
+        props?: Record<string, unknown>;
     };
     content?: Array<{
-        props?: Record<string, any>;
+        props?: Record<string, unknown>;
     }>;
     zones?: Record<string, Array<{
-        props?: Record<string, any>;
+        props?: Record<string, unknown>;
     }>>;
 }
 /**
@@ -1564,4 +1566,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useTecof, useUiStore };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useTecof, useUiStore };

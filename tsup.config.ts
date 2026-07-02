@@ -11,7 +11,16 @@ export default defineConfig({
   splitting: true,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom', '@tiptap/core', '@tiptap/pm', '@tiptap/react'],
+  external: [
+    'react',
+    'react-dom',
+    '@tiptap/core',
+    '@tiptap/pm',
+    '@tiptap/react',
+    'lucide-react',
+    'lucide-react/dynamic',
+    'lucide-react/dynamicIconImports',
+  ],
   treeshake: true,
   injectStyle: true,
 });

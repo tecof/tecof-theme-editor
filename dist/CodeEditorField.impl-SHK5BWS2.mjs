@@ -1,12 +1,7 @@
-'use strict';
+import K, { memo, forwardRef, useRef, useCallback, useState, useEffect } from 'react';
+import { jsx } from 'react/jsx-runtime';
 
-require('./chunk-PZ5AY32C.js');
-var K = require('react');
-var jsxRuntime = require('react/jsx-runtime');
-
-function _interopDefault (e) { return e && e.__esModule ? e : { default: e }; }
-
-var K__default = /*#__PURE__*/_interopDefault(K);
+// src/components/fields/CodeEditorField.impl.tsx
 
 // node_modules/@monaco-editor/loader/lib/es/_virtual/_rollupPluginBabelHelpers.js
 function _arrayLikeToArray(r, a) {
@@ -491,22 +486,22 @@ var v = le;
 var ae = { container: { display: "flex", height: "100%", width: "100%", justifyContent: "center", alignItems: "center" } };
 var Y = ae;
 function Me({ children: e }) {
-  return K__default.default.createElement("div", { style: Y.container }, e);
+  return K.createElement("div", { style: Y.container }, e);
 }
 var Z = Me;
 var $ = Z;
 function Ee({ width: e, height: r, isEditorReady: n, loading: t, _ref: a, className: m, wrapperProps: E }) {
-  return K__default.default.createElement("section", { style: { ...v.wrapper, width: e, height: r }, ...E }, !n && K__default.default.createElement($, null, t), K__default.default.createElement("div", { ref: a, style: { ...v.fullWidth, ...!n && v.hide }, className: m }));
+  return K.createElement("section", { style: { ...v.wrapper, width: e, height: r }, ...E }, !n && K.createElement($, null, t), K.createElement("div", { ref: a, style: { ...v.fullWidth, ...!n && v.hide }, className: m }));
 }
 var ee = Ee;
-var H = K.memo(ee);
+var H = memo(ee);
 function Ce(e) {
-  K.useEffect(e, []);
+  useEffect(e, []);
 }
 var k = Ce;
 function he(e, r, n = true) {
-  let t = K.useRef(true);
-  K.useEffect(t.current || !n ? () => {
+  let t = useRef(true);
+  useEffect(t.current || !n ? () => {
     t.current = false;
   } : e, r);
 }
@@ -526,7 +521,7 @@ function te(e, r) {
   return e.Uri.parse(r);
 }
 function Oe({ original: e, modified: r, language: n, originalLanguage: t, modifiedLanguage: a, originalModelPath: m, modifiedModelPath: E, keepCurrentOriginalModel: g = false, keepCurrentModifiedModel: N = false, theme: x = "light", loading: P = "Loading...", options: y = {}, height: V = "100%", width: z = "100%", className: F, wrapperProps: j = {}, beforeMount: A = D, onMount: q = D }) {
-  let [M, O] = K.useState(false), [T, s] = K.useState(true), u = K.useRef(null), c = K.useRef(null), w = K.useRef(null), d = K.useRef(q), o = K.useRef(A), b = K.useRef(false);
+  let [M, O] = useState(false), [T, s] = useState(true), u = useRef(null), c = useRef(null), w = useRef(null), d = useRef(q), o = useRef(A), b = useRef(false);
   k(() => {
     let i = loader.init();
     return i.then((f) => (c.current = f) && s(false)).catch((f) => f?.type !== "cancelation" && console.error("Monaco initialization: error:", f)), () => u.current ? I() : i.cancel();
@@ -553,37 +548,37 @@ function Oe({ original: e, modified: r, language: n, originalLanguage: t, modifi
   }, [x], M), l(() => {
     u.current?.updateOptions(y);
   }, [y], M);
-  let L = K.useCallback(() => {
+  let L = useCallback(() => {
     if (!c.current) return;
     o.current(c.current);
     let i = h(c.current, e || "", t || n || "text", m || ""), f = h(c.current, r || "", a || n || "text", E || "");
     u.current?.setModel({ original: i, modified: f });
-  }, [n, r, a, e, t, m, E]), U = K.useCallback(() => {
+  }, [n, r, a, e, t, m, E]), U = useCallback(() => {
     !b.current && w.current && (u.current = c.current.editor.createDiffEditor(w.current, { automaticLayout: true, ...y }), L(), c.current?.editor.setTheme(x), O(true), b.current = true);
   }, [y, x, L]);
-  K.useEffect(() => {
+  useEffect(() => {
     M && d.current(u.current, c.current);
-  }, [M]), K.useEffect(() => {
+  }, [M]), useEffect(() => {
     !T && !M && U();
   }, [T, M, U]);
   function I() {
     let i = u.current?.getModel();
     g || i?.original?.dispose(), N || i?.modified?.dispose(), u.current?.dispose();
   }
-  return K__default.default.createElement(H, { width: z, height: V, isEditorReady: M, loading: P, _ref: w, className: F, wrapperProps: j });
+  return K.createElement(H, { width: z, height: V, isEditorReady: M, loading: P, _ref: w, className: F, wrapperProps: j });
 }
 var ie = Oe;
-K.memo(ie);
+memo(ie);
 function He(e) {
-  let r = K.useRef();
-  return K.useEffect(() => {
+  let r = useRef();
+  return useEffect(() => {
     r.current = e;
   }, [e]), r.current;
 }
 var se = He;
 var _ = /* @__PURE__ */ new Map();
 function Ve({ defaultValue: e, defaultLanguage: r, defaultPath: n, value: t, language: a, path: m, theme: E = "light", line: g, loading: N = "Loading...", options: x = {}, overrideServices: P = {}, saveViewState: y = true, keepCurrentModel: V = false, width: z = "100%", height: F = "100%", className: j, wrapperProps: A = {}, beforeMount: q = D, onMount: M = D, onChange: O, onValidate: T = D }) {
-  let [s, u] = K.useState(false), [c, w] = K.useState(true), d = K.useRef(null), o = K.useRef(null), b = K.useRef(null), L = K.useRef(M), U = K.useRef(q), I = K.useRef(), i = K.useRef(t), f = se(m), Q = K.useRef(false), B = K.useRef(false);
+  let [s, u] = useState(false), [c, w] = useState(true), d = useRef(null), o = useRef(null), b = useRef(null), L = useRef(M), U = useRef(q), I = useRef(), i = useRef(t), f = se(m), Q = useRef(false), B = useRef(false);
   k(() => {
     let p = loader.init();
     return p.then((R) => (d.current = R) && w(false)).catch((R) => R?.type !== "cancelation" && console.error("Monaco initialization: error:", R)), () => o.current ? pe() : p.cancel();
@@ -602,22 +597,22 @@ function Ve({ defaultValue: e, defaultLanguage: r, defaultPath: n, value: t, lan
   }, [g], s), l(() => {
     d.current?.editor.setTheme(E);
   }, [E], s);
-  let X = K.useCallback(() => {
+  let X = useCallback(() => {
     if (!(!b.current || !d.current) && !Q.current) {
       U.current(d.current);
       let p = m || n, R = h(d.current, t || e || "", r || a || "", p || "");
       o.current = d.current?.editor.create(b.current, { model: R, automaticLayout: true, ...x }, P), y && o.current.restoreViewState(_.get(p)), d.current.editor.setTheme(E), g !== void 0 && o.current.revealLine(g), u(true), Q.current = true;
     }
   }, [e, r, n, t, a, m, x, P, y, E, g]);
-  K.useEffect(() => {
+  useEffect(() => {
     s && L.current(o.current, d.current);
-  }, [s]), K.useEffect(() => {
+  }, [s]), useEffect(() => {
     !c && !s && X();
-  }, [c, s, X]), i.current = t, K.useEffect(() => {
+  }, [c, s, X]), i.current = t, useEffect(() => {
     s && O && (I.current?.dispose(), I.current = o.current?.onDidChangeModelContent((p) => {
       B.current || O(o.current.getValue(), p);
     }));
-  }, [s, O]), K.useEffect(() => {
+  }, [s, O]), useEffect(() => {
     if (s) {
       let p = d.current.editor.onDidChangeMarkers((R) => {
         let G = o.current.getModel()?.uri;
@@ -636,12 +631,12 @@ function Ve({ defaultValue: e, defaultLanguage: r, defaultPath: n, value: t, lan
   function pe() {
     I.current?.dispose(), V ? y && _.set(m, o.current.saveViewState()) : o.current.getModel()?.dispose(), o.current.dispose();
   }
-  return K__default.default.createElement(H, { width: z, height: F, isEditorReady: s, loading: N, _ref: b, className: j, wrapperProps: A });
+  return K.createElement(H, { width: z, height: F, isEditorReady: s, loading: N, _ref: b, className: j, wrapperProps: A });
 }
 var fe = Ve;
-var de = K.memo(fe);
+var de = memo(fe);
 var Ft = de;
-var CodeEditorFieldImpl = K.forwardRef(({
+var CodeEditorFieldImpl = forwardRef(({
   value,
   onChange,
   readOnly,
@@ -649,17 +644,17 @@ var CodeEditorFieldImpl = K.forwardRef(({
   height = "300px",
   theme = "vs-dark"
 }, ref) => {
-  const editorRef = K.useRef(null);
-  const onChangeRef = K.useRef(onChange);
+  const editorRef = useRef(null);
+  const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const handleEditorDidMount = K.useCallback((editor) => {
+  const handleEditorDidMount = useCallback((editor) => {
     editorRef.current = editor;
     editor.onDidChangeModelContent(() => {
       const newValue = editor.getValue();
       onChangeRef.current(newValue);
     });
   }, []);
-  return /* @__PURE__ */ jsxRuntime.jsx("div", { ref, className: "tecof-code-editor-container", children: /* @__PURE__ */ jsxRuntime.jsx(
+  return /* @__PURE__ */ jsx("div", { ref, className: "tecof-code-editor-container", children: /* @__PURE__ */ jsx(
     Ft,
     {
       onMount: handleEditorDidMount,
@@ -682,6 +677,6 @@ var CodeEditorFieldImpl = K.forwardRef(({
 CodeEditorFieldImpl.displayName = "CodeEditorFieldImpl";
 var CodeEditorField_impl_default = CodeEditorFieldImpl;
 
-module.exports = CodeEditorField_impl_default;
-//# sourceMappingURL=CodeEditorField.impl-RSTAVTTM.js.map
-//# sourceMappingURL=CodeEditorField.impl-RSTAVTTM.js.map
+export { CodeEditorField_impl_default as default };
+//# sourceMappingURL=CodeEditorField.impl-SHK5BWS2.mjs.map
+//# sourceMappingURL=CodeEditorField.impl-SHK5BWS2.mjs.map

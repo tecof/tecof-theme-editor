@@ -1,6 +1,15 @@
-import type { NodeStyles, StyleProps } from './types';
+import type { Breakpoint, NodeStyles, StyleProps } from './types';
 import { STYLES_PROP } from './types';
 import { CONTROL_BY_ID, BP_PREFIX, STATE_PREFIX } from './tokens';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+/** Breakpoint layers in emission order (base first, then mobile-first up). */
+const BREAKPOINTS: Breakpoint[] = ['base', 'sm', 'md', 'lg', 'xl'];
 
 /** Emit prefixed classes for one style layer. */
 function emit(props: StyleProps | undefined, prefix: string): string[] {
@@ -17,6 +26,14 @@ function emit(props: StyleProps | undefined, prefix: string): string[] {
 }
 
 /**
+ * Compilation cache. NodeStyles objects are replaced immutably on every edit
+ * (`updateProps` swaps the whole `_tecofStyles` value), so a compiled string
+ * can be reused for the lifetime of its styles reference — renderers call
+ * `compileStyles` on every node render.
+ */
+const compileCache = new WeakMap<NodeStyles, string>();
+
+/**
  * Compile a structured NodeStyles object into a Tailwind className string.
  * Because each property is a single keyed token, conflicting utilities can't
  * coexist within a layer — no `tailwind-merge` needed.
@@ -28,13 +45,13 @@ function emit(props: StyleProps | undefined, prefix: string): string[] {
 export function compileStyles(styles?: NodeStyles | null): string {
   if (!styles) return '';
 
-  const classes: string[] = [
-    ...emit(styles.base, BP_PREFIX.base),
-    ...emit(styles.sm, BP_PREFIX.sm),
-    ...emit(styles.md, BP_PREFIX.md),
-    ...emit(styles.lg, BP_PREFIX.lg),
-    ...emit(styles.xl, BP_PREFIX.xl),
-  ];
+  const cached = compileCache.get(styles);
+  if (cached !== undefined) return cached;
+
+  const classes: string[] = [];
+  for (const bp of BREAKPOINTS) {
+    classes.push(...emit(styles[bp], BP_PREFIX[bp]));
+  }
 
   if (styles.states) {
     for (const [key, props] of Object.entries(styles.states)) {
@@ -43,18 +60,23 @@ export function compileStyles(styles?: NodeStyles | null): string {
       // `md:hover:bg-...` (Tailwind's required variant order).
       const [a, b] = key.split(':');
       const bp = b ? a : 'base';
-      const state = b ? b : a;
-      const prefix = (BP_PREFIX[bp] || '') + (STATE_PREFIX[state] || '');
-      classes.push(...emit(props, prefix));
+      const state = b ?? a;
+      const bpPrefix = BP_PREFIX[bp];
+      const statePrefix = STATE_PREFIX[state];
+      // Skip malformed keys instead of silently emitting into the base layer.
+      if (bpPrefix === undefined || statePrefix === undefined) continue;
+      classes.push(...emit(props, bpPrefix + statePrefix));
     }
   }
 
-  return classes.join(' ');
+  const result = classes.join(' ');
+  compileCache.set(styles, result);
+  return result;
 }
 
 /** Merge a compiled style className with any author-provided className. */
 export function mergeClassName(authorClassName: string | undefined, styleClassName: string): string {
-  return [authorClassName, styleClassName].filter(Boolean).join(' ').trim();
+  return cn(authorClassName, styleClassName);
 }
 
 /**
@@ -69,9 +91,9 @@ export function collectStyleClasses(styles?: NodeStyles | null): string[] {
 
 /** Minimal document shape consumed by {@link collectDocumentClasses}. */
 interface StyledDocLike {
-  root?: { props?: Record<string, any> };
-  content?: Array<{ props?: Record<string, any> }>;
-  zones?: Record<string, Array<{ props?: Record<string, any> }>>;
+  root?: { props?: Record<string, unknown> };
+  content?: Array<{ props?: Record<string, unknown> }>;
+  zones?: Record<string, Array<{ props?: Record<string, unknown> }>>;
 }
 
 /**
@@ -88,7 +110,7 @@ interface StyledDocLike {
 export function collectDocumentClasses(doc?: StyledDocLike | null): string[] {
   if (!doc) return [];
   const set = new Set<string>();
-  const visit = (props?: Record<string, any>) => {
+  const visit = (props?: Record<string, unknown>) => {
     const styles = props?.[STYLES_PROP] as NodeStyles | undefined;
     if (styles) for (const cls of collectStyleClasses(styles)) set.add(cls);
   };

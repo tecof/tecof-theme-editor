@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronRight, LayoutGrid, LayoutTemplate, Search, X } from 'lucide-react';
-import type { SectionTemplate, StudioConfig } from '../../types';
+import type { ComponentConfig, SectionTemplate, StudioConfig } from '../../types';
 import { useStudio } from '../context';
 
 /**
@@ -11,8 +11,13 @@ import { useStudio } from '../context';
  */
 const PREVIEW_REFERENCE_WIDTH = 1280;
 
+/** Stable fallbacks so `config?.x || {}` doesn't produce a new reference per render. */
+const NO_TEMPLATES: SectionTemplate[] = [];
+const NO_CATEGORIES: NonNullable<StudioConfig['categories']> = {};
+const NO_COMPONENTS: StudioConfig['components'] = {};
+
 class PreviewErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: any) {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -21,7 +26,7 @@ class PreviewErrorBoundary extends React.Component<{ children: React.ReactNode }
     return { hasError: true };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
+  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
     console.error("Preview render failed:", error, errorInfo);
   }
 
@@ -38,14 +43,14 @@ class PreviewErrorBoundary extends React.Component<{ children: React.ReactNode }
 }
 
 interface PreviewComponentProps {
-  renderFn: (props: any) => React.ReactNode;
-  props: any;
+  renderFn: ComponentConfig['render'];
+  props: Record<string, unknown>;
 }
 
 const PreviewComponent = ({ renderFn, props }: PreviewComponentProps) => {
   return (
     <PreviewErrorBoundary>
-      {renderFn(props) as any}
+      {renderFn(props)}
     </PreviewErrorBoundary>
   );
 };
@@ -124,20 +129,91 @@ const AutoScalePreview = ({ mode, children }: AutoScalePreviewProps) => {
   );
 };
 
+const DummySlot = () => <div className="tecof-modal-dummy-slot">İçerik Alanı</div>;
+
+/**
+ * Build the props a component preview is rendered with: the component's default
+ * props plus editor stubs (dummy drop zones, slot fields rendered as
+ * placeholders) so child rendering can't crash on missing elements.
+ */
+const buildPreviewProps = (
+  compConfig: ComponentConfig | undefined,
+  props: Record<string, unknown>,
+): Record<string, unknown> => {
+  const renderProps: Record<string, unknown> = {
+    ...props,
+    puck: {
+      renderDropZone: () => <DummySlot />,
+      isEditing: false,
+      metadata: {},
+    },
+    editMode: false,
+  };
+
+  for (const [fieldName, fieldDef] of Object.entries(compConfig?.fields ?? {})) {
+    if (fieldDef?.type === 'slot') {
+      renderProps[fieldName] = () => <DummySlot />;
+    }
+  }
+
+  return renderProps;
+};
+
+interface GridCardProps {
+  label: string;
+  /** Secondary line under the label (component type or "Şablon"). */
+  typeText: string;
+  preview: React.ReactNode;
+  onActivate: () => void;
+}
+
+/** Clickable & keyboard-accessible card shell shared by all grid items. */
+const GridCard = ({ label, typeText, preview, onActivate }: GridCardProps) => (
+  <div
+    className="tecof-modal-grid-card"
+    role="button"
+    tabIndex={0}
+    onClick={onActivate}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onActivate();
+      }
+    }}
+  >
+    {preview}
+    <div className="tecof-modal-card-footer">
+      <div className="tecof-modal-card-text">
+        <span className="tecof-modal-card-label">{label}</span>
+        <span className="tecof-modal-card-type">{typeText}</span>
+      </div>
+      <ChevronRight size={15} className="tecof-modal-card-arrow" aria-hidden="true" />
+    </div>
+  </div>
+);
+
+/** A saved/shared component as returned by the studio API. */
+interface SavedSharedComponent {
+  _id: string;
+  name: string;
+  type: string;
+  props: Record<string, unknown>;
+}
+
 interface DisplayItem {
   isSaved: boolean;
   isTemplate?: boolean;
   id: string;
   name: string;
   type: string;
-  props: any;
+  props: Record<string, unknown>;
   template?: SectionTemplate;
 }
 
 export interface AddSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (type: string, customProps?: any) => void;
+  onSelect: (type: string, customProps?: Record<string, unknown>) => void;
   /** Insert a pre-built section template (subtree with fresh ids). */
   onSelectTemplate?: (template: SectionTemplate) => void;
   config: StudioConfig;
@@ -145,28 +221,40 @@ export interface AddSectionModalProps {
 
 export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }: AddSectionModalProps) => {
   const { apiClient } = useStudio();
-  const templates = config?.templates || [];
+  const templates = config?.templates ?? NO_TEMPLATES;
+  const categories = config?.categories ?? NO_CATEGORIES;
+  const components = config?.components ?? NO_COMPONENTS;
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [savedComponents, setSavedComponents] = useState<any[]>([]);
+  const [savedComponents, setSavedComponents] = useState<SavedSharedComponent[]>([]);
 
   // Fetch saved global components when the modal opens
   useEffect(() => {
-    if (isOpen && apiClient) {
-      apiClient.getSharedComponents()
-        .then(res => {
-          if (res && res.success && Array.isArray(res.data)) {
-            setSavedComponents(res.data);
-          }
-        })
-        .catch(err => {
-          console.error("Failed to load saved/shared components:", err);
-        });
-    }
+    if (!isOpen || !apiClient) return;
+    let cancelled = false;
+    apiClient.getSharedComponents()
+      .then(res => {
+        if (!cancelled && res?.success && Array.isArray(res.data)) {
+          setSavedComponents(res.data);
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load saved/shared components:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, apiClient]);
 
-  const categories = config?.categories || {};
-  const components = config?.components || {};
+  // Close on Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   // All category titles mapping
   const categoryList = useMemo(() => {
@@ -177,7 +265,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     if (savedComponents.length > 0) {
       list.push({ key: 'saved', title: 'Kaydedilenler (Ortak)' });
     }
-    Object.entries(categories).forEach(([key, val]: [string, any]) => {
+    Object.entries(categories).forEach(([key, val]) => {
       list.push({ key, title: val.title || key });
     });
     // If no categories in config, default to Genel
@@ -187,37 +275,39 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     return list;
   }, [categories, savedComponents, templates.length]);
 
-  // Group components
+  // Which category key each component type belongs to (single pass; when the
+  // config declares categories, the last category listing a type wins).
+  const categoryKeyByType = useMemo(() => {
+    const map: Record<string, string> = {};
+    const hasCategories = Object.keys(categories).length > 0;
+
+    for (const [name, compConfig] of Object.entries(components)) {
+      map[name] = hasCategories ? 'Genel' : compConfig.category || 'Genel';
+    }
+    if (hasCategories) {
+      for (const [key, val] of Object.entries(categories)) {
+        for (const name of val.components || []) {
+          if (name in map) map[name] = key;
+        }
+      }
+    }
+    return map;
+  }, [components, categories]);
+
+  // Group components by category key (plus the synthetic "all" bucket)
   const groupedComponents = useMemo(() => {
     const map: Record<string, string[]> = { all: [] };
-    
-    // Initialize empty arrays
     categoryList.forEach(cat => {
       map[cat.key] = [];
     });
 
-    Object.entries(components).forEach(([name, compConfig]: [string, any]) => {
-      // Find category key
-      let catKey = 'Genel';
-      if (Object.keys(categories).length > 0) {
-        Object.entries(categories).forEach(([key, val]: [string, any]) => {
-          if (val.components?.includes(name)) {
-            catKey = key;
-          }
-        });
-      } else {
-        catKey = compConfig.category || 'Genel';
-      }
-
-      if (!map[catKey]) {
-        map[catKey] = [];
-      }
-      map[catKey].push(name);
+    for (const name of Object.keys(components)) {
+      const catKey = categoryKeyByType[name];
+      (map[catKey] ??= []).push(name);
       map.all.push(name);
-    });
-
+    }
     return map;
-  }, [components, categories, categoryList]);
+  }, [components, categoryKeyByType, categoryList]);
 
   // Filtered items based on active category and search query
   const displayItems = useMemo<DisplayItem[]>(() => {
@@ -279,16 +369,22 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
   // preview mode. Small "element" components get a centered, fit-to-size preview;
   // everything else is treated as a full-width section.
   const categoryTitleForType = (type: string): string => {
-    for (const [key, val] of Object.entries(categories) as [string, any][]) {
-      if (val?.components?.includes(type)) return String(val.title || key);
-    }
+    const key = categoryKeyByType[type];
+    const category = key ? categories[key] : undefined;
+    if (category) return String(category.title || key);
     return String(components[type]?.category || '');
   };
   const isElementType = (type: string) => /element/i.test(categoryTitleForType(type));
 
   return (
     <div className="tecof-modal-overlay" onClick={onClose}>
-      <div className="tecof-add-section-modal" onClick={e => e.stopPropagation()}>
+      <div
+        className="tecof-add-section-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Bölüm Ekle"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="tecof-modal-header">
           <div className="tecof-modal-title-wrap">
@@ -339,6 +435,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="tecof-modal-search-input"
+                  autoFocus
                 />
               </div>
               <span className="tecof-modal-result-count">{displayItems.length}</span>
@@ -350,121 +447,65 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                 if (item.isTemplate && item.template) {
                   const t = item.template;
                   return (
-                    <div
+                    <GridCard
                       key={item.id}
-                      className="tecof-modal-grid-card"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onSelectTemplate?.(t)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onSelectTemplate?.(t);
-                        }
-                      }}
-                    >
-                      <div className="tecof-modal-preview-wrapper">
-                        <span className="tecof-modal-card-chip">Şablon</span>
-                        {t.thumbnail ? (
-                          <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
-                        ) : (
-                          <div className="tecof-modal-template-icon">
-                            <LayoutTemplate size={28} strokeWidth={1.6} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="tecof-modal-card-footer">
-                        <div className="tecof-modal-card-text">
-                          <span className="tecof-modal-card-label">{t.label}</span>
-                          <span className="tecof-modal-card-type">Şablon</span>
+                      label={t.label}
+                      typeText="Şablon"
+                      onActivate={() => onSelectTemplate?.(t)}
+                      preview={
+                        <div className="tecof-modal-preview-wrapper">
+                          {t.thumbnail ? (
+                            <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
+                          ) : (
+                            <div className="tecof-modal-template-icon">
+                              <LayoutTemplate size={28} strokeWidth={1.6} />
+                            </div>
+                          )}
                         </div>
-                        <ChevronRight size={15} className="tecof-modal-card-arrow" aria-hidden="true" />
-                      </div>
-                    </div>
+                      }
+                    />
                   );
                 }
 
-                const compConfig = components[item.type] || {};
-
-                // Create render props
-                const renderProps: Record<string, any> = {
-                  ...item.props,
-                  puck: {
-                    renderDropZone: () => (
-                      <div className="tecof-modal-dummy-slot">İçerik Alanı</div>
-                    ),
-                    isEditing: false,
-                    metadata: {},
-                  },
-                  editMode: false,
-                };
-
-                // Populate slot fields so that child rendering does not crash due to missing elements
-                if (compConfig.fields) {
-                  Object.entries(compConfig.fields).forEach(([fieldName, fieldDef]: [string, any]) => {
-                    if (fieldDef && fieldDef.type === 'slot') {
-                      renderProps[fieldName] = () => (
-                        <div className="tecof-modal-dummy-slot">İçerik Alanı</div>
-                      );
-                    }
-                  });
-                }
-
-                const handleCardClick = () => {
-                  if (item.isSaved) {
-                    onSelect('SharedComponentRef', {
-                      type: item.type,
-                      sharedComponentId: item.id
-                    });
-                  } else {
-                    onSelect(item.type);
-                  }
-                };
+                const compConfig: ComponentConfig | undefined = components[item.type];
 
                 // Saved/shared components are full sections; otherwise decide by category.
                 const previewMode: PreviewMode =
                   !item.isSaved && isElementType(item.type) ? 'element' : 'section';
 
+                const handleActivate = () => {
+                  if (item.isSaved) {
+                    // Insert a copy of the saved/shared component: its real
+                    // type with the saved props snapshot (fresh id downstream).
+                    onSelect(item.type, item.props);
+                  } else {
+                    onSelect(item.type);
+                  }
+                };
+
                 return (
-                  <div
+                  <GridCard
                     key={item.id}
-                    className="tecof-modal-grid-card"
-                    role="button"
-                    tabIndex={0}
-                    onClick={handleCardClick}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleCardClick();
-                      }
-                    }}
-                  >
-                    <div className={`tecof-modal-preview-wrapper is-${previewMode}`}>
-                      <span className="tecof-modal-card-chip">
-                        {item.isSaved ? 'Ortak' : item.type}
-                      </span>
-                      {compConfig.render ? (
-                        <AutoScalePreview mode={previewMode}>
-                          <PreviewComponent renderFn={compConfig.render} props={renderProps} />
-                        </AutoScalePreview>
-                      ) : (
-                        <div className="tecof-modal-preview-fallback">
-                          Önizleme Yok
-                        </div>
-                      )}
-                    </div>
-                    <div className="tecof-modal-card-footer">
-                      <div className="tecof-modal-card-text">
-                        <span className="tecof-modal-card-label">
-                          {item.isSaved ? item.name : item.name}
-                        </span>
-                        <span className="tecof-modal-card-type">
-                          {item.isSaved ? compConfig.label || item.type : item.type}
-                        </span>
+                    label={item.name}
+                    typeText={item.isSaved ? compConfig?.label || item.type : item.type}
+                    onActivate={handleActivate}
+                    preview={
+                      <div className={`tecof-modal-preview-wrapper is-${previewMode}`}>
+                        {compConfig?.render ? (
+                          <AutoScalePreview mode={previewMode}>
+                            <PreviewComponent
+                              renderFn={compConfig.render}
+                              props={buildPreviewProps(compConfig, item.props)}
+                            />
+                          </AutoScalePreview>
+                        ) : (
+                          <div className="tecof-modal-preview-fallback">
+                            Önizleme Yok
+                          </div>
+                        )}
                       </div>
-                      <ChevronRight size={15} className="tecof-modal-card-arrow" aria-hidden="true" />
-                    </div>
-                  </div>
+                    }
+                  />
                 );
               })}
               {displayItems.length === 0 && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditorStore } from '../../engine/store';
 import { isEmbedded, postToHost } from '../bridge';
@@ -16,6 +16,7 @@ export const Frame = ({
 }: FrameProps) => {
   const [contentRef, setContentRef] = useState<HTMLIFrameElement | null>(null);
   const mountNode = contentRef?.contentWindow?.document?.body;
+  const scrollPosRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!contentRef) return;
@@ -96,7 +97,7 @@ export const Frame = ({
               .join('\n');
             inlineParts.push(cssRules);
           }
-        } catch (e) {
+        } catch {
           // Cross-origin stylesheet rules might fail to read, skip them
         }
       });
@@ -142,6 +143,7 @@ export const Frame = ({
     const body = doc.body;
     let handleBodyClick: ((e: MouseEvent) => void) | null = null;
     let handleIframeKeyDown: ((e: KeyboardEvent) => void) | null = null;
+    let handleScroll: (() => void) | null = null;
 
     if (body) {
       body.className = 'tecof-canvas-body';
@@ -192,8 +194,17 @@ export const Frame = ({
         window.dispatchEvent(event);
       };
 
+      const onScroll = () => {
+        scrollPosRef.current = {
+          x: doc.documentElement.scrollLeft || body.scrollLeft,
+          y: doc.documentElement.scrollTop || body.scrollTop,
+        };
+      };
+      handleScroll = onScroll;
+
       body.addEventListener('click', handleBodyClick);
       doc.addEventListener('keydown', handleIframeKeyDown);
+      doc.addEventListener('scroll', onScroll, { capture: true, passive: true });
     }
 
     return () => {
@@ -208,8 +219,29 @@ export const Frame = ({
       if (handleIframeKeyDown) {
         doc.removeEventListener('keydown', handleIframeKeyDown);
       }
+      if (handleScroll) {
+        doc.removeEventListener('scroll', handleScroll, true);
+      }
     };
   }, [contentRef]);
+
+  // Preserve scroll position on every re-render of the portal children
+  useEffect(() => {
+    if (!contentRef) return;
+    const doc = contentRef.contentDocument;
+    const body = doc?.body;
+    if (doc && body) {
+      const { x, y } = scrollPosRef.current;
+      const currentX = doc.documentElement.scrollLeft || body.scrollLeft;
+      const currentY = doc.documentElement.scrollTop || body.scrollTop;
+      if (currentX !== x || currentY !== y) {
+        doc.documentElement.scrollLeft = x;
+        doc.documentElement.scrollTop = y;
+        body.scrollLeft = x;
+        body.scrollTop = y;
+      }
+    }
+  });
 
   return (
     <iframe

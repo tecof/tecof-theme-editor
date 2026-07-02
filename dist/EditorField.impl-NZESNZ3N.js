@@ -1,9 +1,8 @@
 'use strict';
 
-var chunk4WMKTU6I_js = require('./chunk-4WMKTU6I.js');
-var chunkH5O7C4PW_js = require('./chunk-H5O7C4PW.js');
-var chunk24FK4NEO_js = require('./chunk-24FK4NEO.js');
-require('./chunk-PZ5AY32C.js');
+var chunk7RIYET7N_js = require('./chunk-7RIYET7N.js');
+var chunkHD6T7L6C_js = require('./chunk-HD6T7L6C.js');
+var chunk6ME6QXY3_js = require('./chunk-6ME6QXY3.js');
 var react = require('react');
 var react$1 = require('@tiptap/react');
 var core = require('@tiptap/core');
@@ -6352,7 +6351,7 @@ var TipTapInstance = ({
     ),
     /* @__PURE__ */ jsxRuntime$1.jsx(react$1.EditorContent, { editor }),
     /* @__PURE__ */ jsxRuntime$1.jsx(
-      chunkH5O7C4PW_js.MediaDrawer,
+      chunkHD6T7L6C_js.MediaDrawer,
       {
         open: mediaDrawerOpen,
         onOpenChange: setMediaDrawerOpen,
@@ -6374,11 +6373,11 @@ var EditorFieldImpl = ({
     error,
     activeTab: localActiveTab,
     setActiveTab: localSetActiveTab
-  } = chunk4WMKTU6I_js.useLanguages();
-  const globalLang = chunk4WMKTU6I_js.useActiveLanguage();
+  } = chunk7RIYET7N_js.useLanguages();
+  const globalLang = chunk7RIYET7N_js.useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
-  const { cdnUrl } = chunk24FK4NEO_js.useTecof();
+  const { cdnUrl } = chunk6ME6QXY3_js.useTecof();
   const values = react.useMemo(() => {
     if (!merchantInfo) return value || [];
     const current = value || [];
@@ -6402,13 +6401,13 @@ var EditorFieldImpl = ({
     }
     onChangeRef.current(updated);
   }, []);
-  if (loading) return /* @__PURE__ */ jsxRuntime$1.jsx(chunk4WMKTU6I_js.FieldLoading, {});
+  if (loading) return /* @__PURE__ */ jsxRuntime$1.jsx(chunk7RIYET7N_js.FieldLoading, {});
   if (error && !merchantInfo) return /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-lang-error", children: error });
   if (!merchantInfo) return null;
   const { languages, defaultLanguage } = merchantInfo;
   return /* @__PURE__ */ jsxRuntime$1.jsxs("div", { className: "tecof-lang-container tecof-editor-field", children: [
     !globalLang && /* @__PURE__ */ jsxRuntime$1.jsx(
-      chunk4WMKTU6I_js.LanguageTabBar,
+      chunk7RIYET7N_js.LanguageTabBar,
       {
         languages,
         defaultLanguage,
@@ -6434,5 +6433,5 @@ var EditorFieldImpl = ({
 var EditorField_impl_default = EditorFieldImpl;
 
 module.exports = EditorField_impl_default;
-//# sourceMappingURL=EditorField.impl-CHSOFZ6Y.js.map
-//# sourceMappingURL=EditorField.impl-CHSOFZ6Y.js.map
+//# sourceMappingURL=EditorField.impl-NZESNZ3N.js.map
+//# sourceMappingURL=EditorField.impl-NZESNZ3N.js.map

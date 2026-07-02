@@ -1,5 +1,6 @@
-import { useTecof, Drawer, RefreshCcw, X, Image, Search, Check, TecofPicture, File } from './chunk-OUKYABPK.mjs';
+import { useTecof, Drawer, TecofPicture } from './chunk-6SZFDZOT.mjs';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { RefreshCcw, X, Image, Search, Check, FileIcon } from 'lucide-react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 
 var isImageType = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
@@ -165,7 +166,7 @@ var MediaDrawer = ({
                       size: "thumbnail",
                       className: "tecof-upload-gallery-thumb"
                     }
-                  ) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsx(File, { size: 24, className: "tecof-icon-muted" }) }),
+                  ) : /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-thumb tecof-upload-gallery-file-icon-wrap", children: /* @__PURE__ */ jsx(FileIcon, { size: 24, className: "tecof-icon-muted" }) }),
                   /* @__PURE__ */ jsx("p", { className: "tecof-upload-gallery-file-name", children: file.meta?.originalName || file.name })
                 ]
               },
@@ -179,5 +180,5 @@ var MediaDrawer = ({
 };
 
 export { MediaDrawer };
-//# sourceMappingURL=chunk-UPP5KOIP.mjs.map
-//# sourceMappingURL=chunk-UPP5KOIP.mjs.map
+//# sourceMappingURL=chunk-7DE7RWPS.mjs.map
+//# sourceMappingURL=chunk-7DE7RWPS.mjs.map

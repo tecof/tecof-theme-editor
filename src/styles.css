@@ -5323,6 +5323,24 @@
   transform-origin: top left;
 }
 
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage > * {
+  height: 500px !important;
+  min-height: 500px !important;
+  max-height: 500px !important;
+  overflow: hidden !important;
+}
+
+/* Force viewport-relative heights to resolve correctly inside the 500px card container */
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage [class*="min-h-screen"],
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage [class*="h-screen"],
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage [class*="min-h-[100vh]"],
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage [class*="h-[100vh]"],
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage [class*="h-dvh"],
+.tecof-modal-preview-box.mode-section .tecof-modal-preview-stage [class*="min-h-dvh"] {
+  min-height: 100% !important;
+  height: 100% !important;
+}
+
 .tecof-modal-preview-box.mode-element .tecof-modal-preview-stage {
   position: absolute;
   top: 50%;
