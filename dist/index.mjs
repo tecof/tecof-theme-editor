@@ -3628,6 +3628,7 @@ var GROUP_LABELS = {
 };
 var BP_PREFIX = { base: "", sm: "sm:", md: "md:", lg: "lg:", xl: "xl:" };
 var STATE_PREFIX = { hover: "hover:", focus: "focus:", active: "active:" };
+var importantClass = (cls) => cls.startsWith("tecof-") ? cls : `${cls}!`;
 function getSafelist() {
   const bpPrefixes = ["", ...Object.values(BP_PREFIX).filter(Boolean)];
   const statePrefixes = ["", ...Object.values(STATE_PREFIX)];
@@ -3640,7 +3641,7 @@ function getSafelist() {
     for (const opt of control.options) {
       const cls = control.toClass(opt.value);
       if (!cls) continue;
-      for (const prefix of prefixes) set2.add(prefix + cls);
+      for (const prefix of prefixes) set2.add(prefix + importantClass(cls));
     }
   }
   return Array.from(set2);
@@ -6928,7 +6929,7 @@ function emit(props, prefix) {
     const control = CONTROL_BY_ID[id];
     if (!control) continue;
     const cls = control.toClass(value);
-    if (cls) out.push(prefix + cls);
+    if (cls) out.push(prefix + importantClass(cls));
   }
   return out;
 }

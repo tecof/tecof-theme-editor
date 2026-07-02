@@ -1,6 +1,6 @@
 import type { Breakpoint, NodeStyles, StyleProps } from './types';
 import { STYLES_PROP } from './types';
-import { CONTROL_BY_ID, BP_PREFIX, STATE_PREFIX } from './tokens';
+import { CONTROL_BY_ID, BP_PREFIX, STATE_PREFIX, importantClass } from './tokens';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,7 +11,11 @@ export function cn(...inputs: ClassValue[]) {
 /** Breakpoint layers in emission order (base first, then mobile-first up). */
 const BREAKPOINTS: Breakpoint[] = ['base', 'sm', 'md', 'lg', 'xl'];
 
-/** Emit prefixed classes for one style layer. */
+/**
+ * Emit prefixed classes for one style layer. Every Tailwind utility carries
+ * the v4 important marker (`p-4!`, see {@link importantClass}) so editor
+ * styles override the classes components bake into their own markup.
+ */
 function emit(props: StyleProps | undefined, prefix: string): string[] {
   if (!props) return [];
   const out: string[] = [];
@@ -20,7 +24,7 @@ function emit(props: StyleProps | undefined, prefix: string): string[] {
     const control = CONTROL_BY_ID[id];
     if (!control) continue;
     const cls = control.toClass(value);
-    if (cls) out.push(prefix + cls);
+    if (cls) out.push(prefix + importantClass(cls));
   }
   return out;
 }

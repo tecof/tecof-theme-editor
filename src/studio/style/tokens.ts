@@ -275,6 +275,21 @@ export const BP_PREFIX: Record<string, string> = { base: '', sm: 'sm:', md: 'md:
 export const STATE_PREFIX: Record<string, string> = { hover: 'hover:', focus: 'focus:', active: 'active:' };
 
 /**
+ * Editor-emitted utilities carry Tailwind v4's important marker (`p-4!`) so
+ * they always beat the classes a component bakes into its own markup.
+ * tailwind-merge can only resolve conflicts between classes that meet in the
+ * SAME `cn()` call — a theme's internal `text-[13px]` vs. the editor's
+ * `text-sm` end up in the same class attribute with equal specificity, where
+ * plain CSS source order (not className order) decides. The `!` marker settles
+ * it deterministically in the editor's favour.
+ *
+ * Custom (non-Tailwind) classes such as the `tecof-anim-*` set are exempt:
+ * a literal bang would break their selectors.
+ */
+export const importantClass = (cls: string): string =>
+  cls.startsWith('tecof-') ? cls : `${cls}!`;
+
+/**
  * Every class the editor can ever emit (token × control × variant prefix).
  * Feed this into the host Tailwind config `safelist` so production CSS always
  * contains the classes chosen in the editor.
@@ -294,7 +309,8 @@ export function getSafelist(): string[] {
     for (const opt of control.options) {
       const cls = control.toClass(opt.value);
       if (!cls) continue;
-      for (const prefix of prefixes) set.add(prefix + cls);
+      // Mirror compileStyles: emitted classes are important-marked.
+      for (const prefix of prefixes) set.add(prefix + importantClass(cls));
     }
   }
   return Array.from(set);
