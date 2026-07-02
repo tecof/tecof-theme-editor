@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useEditorStore } from '../../engine/store';
 import type { TecofNode } from '../../types';
+import { isInsideOverlayPortal } from './overlayPortal';
 
 /**
  * Robust double-click inline text editing for a single node.
@@ -99,6 +100,9 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
   const onDoubleClick = useCallback(
     (e: React.MouseEvent) => {
       if (locked) return;
+      // Overlay portals keep their own interaction in edit mode; never start
+      // inline editing from inside one.
+      if (isInsideOverlayPortal(e.target)) return;
       const target = e.target as HTMLElement;
       const wrapper = target.closest('[data-tecof-id]') as HTMLElement | null;
       const marked = target.closest('[data-tecof-prop]') as HTMLElement | null;

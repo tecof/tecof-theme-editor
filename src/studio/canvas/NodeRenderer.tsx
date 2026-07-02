@@ -14,6 +14,7 @@ import { compileStyles, mergeClassName } from '../style/compileStyles';
 import { STYLES_PROP } from '../style/types';
 import { useInlineDragRef } from './useInlineDragRef';
 import { usePermissions } from '../usePermissions';
+import { registerOverlayPortal, isInsideOverlayPortal } from './overlayPortal';
 
 export interface NodeRendererProps {
   node: TecofNode;
@@ -89,6 +90,10 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       if (locked) return;
+      // Overlay portals (tab headers, slider arrows, ...) keep their own click
+      // behaviour in edit mode: don't select, and don't stopPropagation so the
+      // component's handlers on the same element run untouched.
+      if (isInsideOverlayPortal(e.target)) return;
       e.stopPropagation();
 
       // Cmd/Ctrl-click (or Shift-click) toggles multi-selection; plain click is
@@ -169,6 +174,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     puck: {
       dragRef: componentConfig.inline ? dragRef : undefined,
       renderDropZone,
+      registerOverlayPortal,
       isEditing: !locked,
       metadata: {
         ...(metadata || {}),
@@ -223,6 +229,11 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             data-tecof-zone={zoneKey || 'root'}
             draggable={!dragLocked}
             onDragStart={(e) => {
+              // Dragging from inside an overlay portal must not move the node.
+              if (isInsideOverlayPortal(e.target)) {
+                e.preventDefault();
+                return;
+              }
               writeDragData(e, { nodeId: node.props.id });
               e.dataTransfer.effectAllowed = 'move';
               setDragGhost(e, label);

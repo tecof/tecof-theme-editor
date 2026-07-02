@@ -2620,6 +2620,10 @@ var Frame = ({
           position: relative;
           transition: outline 0.15s ease-in-out;
         }
+        /* Overlay portals stay truly interactive in edit mode: restore the
+           normal cursor over them instead of the wrapper's grab cursor. */
+        [data-tecof-portal] { cursor: auto; }
+        [data-tecof-portal] * { cursor: auto; }
         /* Custom scrollbars for iframe */
         ::-webkit-scrollbar {
           width: 8px;
@@ -2982,6 +2986,24 @@ function setDragGhost(e, label) {
     win.requestAnimationFrame(() => ghost.remove());
   });
 }
+
+// src/studio/canvas/overlayPortal.ts
+var OVERLAY_PORTAL_ATTR = "data-tecof-portal";
+function registerOverlayPortal(el) {
+  if (!el) return () => {
+  };
+  el.setAttribute(OVERLAY_PORTAL_ATTR, "true");
+  el.draggable = false;
+  return () => {
+    el.removeAttribute(OVERLAY_PORTAL_ATTR);
+  };
+}
+function isInsideOverlayPortal(target) {
+  if (!target || typeof target.closest !== "function") return false;
+  return target.closest(`[${OVERLAY_PORTAL_ATTR}]`) !== null;
+}
+
+// src/studio/canvas/useInlineEdit.ts
 var VALID_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "div"];
 var resolveMatch = (target, wrapper, node, text, defaultLang) => {
   const marked = target.closest("[data-tecof-prop]");
@@ -3020,6 +3042,7 @@ var useInlineEdit = (node, locked) => {
   const onDoubleClick = useCallback(
     (e) => {
       if (locked) return;
+      if (isInsideOverlayPortal(e.target)) return;
       const target = e.target;
       const wrapper = target.closest("[data-tecof-id]");
       const marked = target.closest("[data-tecof-prop]");
@@ -3623,6 +3646,10 @@ function useInlineDragRef({
     const onNativeDrop = (e) => callbacks.current.onDrop(e);
     const onDragStart = (e) => {
       if (locked) return;
+      if (isInsideOverlayPortal(e.target)) {
+        e.preventDefault();
+        return;
+      }
       writeDragData(e, { nodeId: node.props.id });
       if (e.dataTransfer) {
         e.dataTransfer.effectAllowed = "move";
@@ -3718,6 +3745,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
   const handleClick = useCallback(
     (e) => {
       if (locked) return;
+      if (isInsideOverlayPortal(e.target)) return;
       e.stopPropagation();
       if (e.metaKey || e.ctrlKey || e.shiftKey) {
         toggleSelect(node.props.id);
@@ -3779,6 +3807,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
     puck: {
       dragRef: componentConfig.inline ? dragRef : void 0,
       renderDropZone,
+      registerOverlayPortal,
       isEditing: !locked,
       metadata: {
         ...metadata || {},
@@ -3816,6 +3845,10 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
         "data-tecof-zone": zoneKey || "root",
         draggable: !dragLocked,
         onDragStart: (e) => {
+          if (isInsideOverlayPortal(e.target)) {
+            e.preventDefault();
+            return;
+          }
           writeDragData(e, { nodeId: node.props.id });
           e.dataTransfer.effectAllowed = "move";
           setDragGhost(e, label);
@@ -8595,6 +8628,6 @@ var createIconField = (options = {}) => {
   };
 };
 
-export { CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, IconField, LinkField, RepeaterField, STYLES_PROP, STYLE_CONTROLS, TAILWIND_PALETTE, TAILWIND_SHADES, TecofEditor, TecofRender, TecofStudio, UploadField, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme };
+export { CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, IconField, LinkField, RepeaterField, STYLES_PROP, STYLE_CONTROLS, TAILWIND_PALETTE, TAILWIND_SHADES, TecofEditor, TecofRender, TecofStudio, UploadField, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useUiStore };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

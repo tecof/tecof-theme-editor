@@ -2,6 +2,8 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import * as react from 'react';
 import react__default, { ReactElement, Component, ReactNode, ErrorInfo } from 'react';
 export { UnderConstruction } from './components/UnderConstruction.js';
+import * as zustand from 'zustand';
+import { Patch } from 'immer';
 
 interface ThemeColors {
     primary: string;
@@ -1202,6 +1204,358 @@ interface StyledDocLike {
  */
 declare function collectDocumentClasses(doc?: StyledDocLike | null): string[];
 
+type EditorMode = 'edit' | 'preview';
+/**
+ * Editor *UI* state, deliberately kept separate from the document engine store
+ * (`useEditorStore`). This holds chrome/interaction state that should NOT be part
+ * of the page document or its undo history: the active mode and panel visibility.
+ */
+interface UiState {
+    /** 'edit' = clicks select nodes, links/buttons inert. 'preview' = links/buttons are live. */
+    mode: EditorMode;
+    leftPanelOpen: boolean;
+    rightPanelOpen: boolean;
+    /** Whether the Cmd/Ctrl+K command palette is open. */
+    commandPaletteOpen: boolean;
+    /**
+     * Session style clipboard: the most recently copied node's structured styles
+     * (`_tecofStyles`). Lives here (UI state, not the document) so "paste styles"
+     * buttons can reactively enable/disable. In-memory only (not persisted).
+     */
+    styleClipboard: NodeStyles | null;
+    setMode: (mode: EditorMode) => void;
+    toggleMode: () => void;
+    toggleLeftPanel: () => void;
+    toggleRightPanel: () => void;
+    setLeftPanelOpen: (open: boolean) => void;
+    setRightPanelOpen: (open: boolean) => void;
+    setCommandPaletteOpen: (open: boolean) => void;
+    toggleCommandPalette: () => void;
+    setStyleClipboard: (styles: NodeStyles | null) => void;
+}
+declare const useUiStore: zustand.UseBoundStore<zustand.StoreApi<UiState>>;
+
+/**
+ * A serialized node payload used by the clipboard: the node itself plus the
+ * slice of `zones` describing its full descendant subtree. Keeping the subtree
+ * alongside the node lets paste reconstruct nested children with fresh ids.
+ */
+interface ClipboardPayload {
+    node: TecofNode;
+    zones: Record<string, TecofNode[]>;
+}
+
+interface DragPayload {
+    /** Set when dragging a NEW block from the palette. */
+    type?: string;
+    /** Set when dragging an EXISTING node on the canvas/layers. */
+    id?: string;
+}
+/**
+ * A single undo step. Instead of a full document clone we keep immer patches:
+ * `patches` redo the change, `inversePatches` undo it. This preserves immer's
+ * structural sharing and keeps history memory-light even for large documents.
+ */
+interface HistoryStep {
+    patches: Patch[];
+    inversePatches: Patch[];
+}
+interface EditorState {
+    document: TecofDocument;
+    history: {
+        past: HistoryStep[];
+        future: HistoryStep[];
+    };
+    selection: {
+        /**
+         * PRIMARY selection: the anchor / last-clicked id (or null). All existing
+         * single-selection readers (Inspector, overlay toolbar, breadcrumbs) rely on
+         * this and keep working unchanged. Always equals the last entry of
+         * `selectedIds` (or null when nothing is selected).
+         */
+        selectedId: string | null;
+        /**
+         * FULL multi-selection set. `selectNode` keeps this in sync as `[id]` (or
+         * `[]`); `toggleSelect` adds/removes. Overlay outlines + bulk actions read this.
+         */
+        selectedIds: string[];
+        hoveredId: string | null;
+    };
+    viewport: 'desktop' | 'tablet' | 'mobile';
+    /** Active drag operation (null when idle). Powers drop affordances + ghost. */
+    drag: DragPayload | null;
+    /**
+     * Internal clipboard (NOT part of history). Holds the most recently copied/cut
+     * node subtree. Paste prefers this; falls back to the localStorage mirror.
+     */
+    clipboard: ClipboardPayload | null;
+    /** Internal: last coalescible commit marker (node id + timestamp). */
+    _lastCommit: {
+        id: string;
+        time: number;
+    } | null;
+    /**
+     * Resolves a node's effective permissions. Registered by the studio shell from
+     * the host config; `null` means "unrestricted" (every action allowed). This is
+     * the AUTHORITATIVE gate — every mutating action consults it, so keyboard
+     * shortcuts, the command palette, layers, and the overlay all inherit
+     * enforcement for free (no per-call-site checks required).
+     */
+    permissionResolver: ((node: TecofNode) => Permissions) | null;
+}
+interface EditorActions {
+    setDocument: (doc: TecofDocument) => void;
+    selectNode: (id: string | null) => void;
+    /** Cmd/Ctrl-click: add/remove `id` from the multi-selection, updating primary. */
+    toggleSelect: (id: string) => void;
+    /** Replaces the whole selection set (primary = last entry, or null when empty). */
+    setSelection: (ids: string[]) => void;
+    hoverNode: (id: string | null) => void;
+    setViewport: (viewport: 'desktop' | 'tablet' | 'mobile') => void;
+    beginDrag: (payload: DragPayload) => void;
+    endDrag: () => void;
+    insertNode: (node: TecofNode, targetZoneKey?: string, index?: number) => void;
+    removeNode: (id: string) => void;
+    /** Bulk remove (single undo step). When ids omitted, removes current selection. */
+    removeNodes: (ids?: string[]) => void;
+    moveNode: (id: string, targetZoneKey?: string, index?: number) => void;
+    duplicateNode: (id: string) => void;
+    /** Bulk duplicate (single undo step). When ids omitted, duplicates selection. */
+    duplicateNodes: (ids?: string[]) => void;
+    updateProps: (id: string, patch: Record<string, any>) => void;
+    setRootProps: (patch: Record<string, any>) => void;
+    copyNode: (id?: string) => void;
+    cutNode: (id?: string) => void;
+    pasteClipboard: (targetZoneKey?: string, index?: number) => void;
+    /**
+     * Inserts a self-contained payload (node + its descendant zones) with FRESH
+     * ids at the target — used by section templates / shared blocks. Selects the
+     * inserted root. One undo step.
+     */
+    insertPayload: (payload: ClipboardPayload, targetZoneKey?: string, index?: number) => void;
+    undo: () => void;
+    redo: () => void;
+    /** Registers (or clears with `null`) the resolver used to gate mutations. */
+    setPermissionResolver: (resolver: ((node: TecofNode) => Permissions) | null) => void;
+}
+type EditorStore = EditorState & EditorActions;
+declare const useEditorStore: zustand.UseBoundStore<Omit<zustand.StoreApi<EditorStore>, "setState"> & {
+    setState(nextStateOrUpdater: EditorStore | Partial<EditorStore> | ((state: {
+        document: {
+            root: {
+                props: {
+                    [x: string]: any;
+                };
+            };
+            content: {
+                type: string;
+                props: {
+                    [x: string]: any;
+                    id: string;
+                };
+            }[];
+            zones: {
+                [x: string]: {
+                    type: string;
+                    props: {
+                        [x: string]: any;
+                        id: string;
+                    };
+                }[];
+            };
+        };
+        history: {
+            past: {
+                patches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+                inversePatches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+            }[];
+            future: {
+                patches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+                inversePatches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+            }[];
+        };
+        selection: {
+            selectedId: string | null;
+            selectedIds: string[];
+            hoveredId: string | null;
+        };
+        viewport: "desktop" | "tablet" | "mobile";
+        drag: {
+            type?: string | undefined;
+            id?: string | undefined;
+        } | null;
+        clipboard: {
+            node: {
+                type: string;
+                props: {
+                    [x: string]: any;
+                    id: string;
+                };
+            };
+            zones: {
+                [x: string]: {
+                    type: string;
+                    props: {
+                        [x: string]: any;
+                        id: string;
+                    };
+                }[];
+            };
+        } | null;
+        _lastCommit: {
+            id: string;
+            time: number;
+        } | null;
+        permissionResolver: ((node: TecofNode) => Permissions) | null;
+        setDocument: (doc: TecofDocument) => void;
+        selectNode: (id: string | null) => void;
+        toggleSelect: (id: string) => void;
+        setSelection: (ids: string[]) => void;
+        hoverNode: (id: string | null) => void;
+        setViewport: (viewport: "desktop" | "tablet" | "mobile") => void;
+        beginDrag: (payload: DragPayload) => void;
+        endDrag: () => void;
+        insertNode: (node: TecofNode, targetZoneKey?: string, index?: number) => void;
+        removeNode: (id: string) => void;
+        removeNodes: (ids?: string[]) => void;
+        moveNode: (id: string, targetZoneKey?: string, index?: number) => void;
+        duplicateNode: (id: string) => void;
+        duplicateNodes: (ids?: string[]) => void;
+        updateProps: (id: string, patch: Record<string, any>) => void;
+        setRootProps: (patch: Record<string, any>) => void;
+        copyNode: (id?: string) => void;
+        cutNode: (id?: string) => void;
+        pasteClipboard: (targetZoneKey?: string, index?: number) => void;
+        insertPayload: (payload: ClipboardPayload, targetZoneKey?: string, index?: number) => void;
+        undo: () => void;
+        redo: () => void;
+        setPermissionResolver: (resolver: ((node: TecofNode) => Permissions) | null) => void;
+    }) => void), shouldReplace?: false): void;
+    setState(nextStateOrUpdater: EditorStore | ((state: {
+        document: {
+            root: {
+                props: {
+                    [x: string]: any;
+                };
+            };
+            content: {
+                type: string;
+                props: {
+                    [x: string]: any;
+                    id: string;
+                };
+            }[];
+            zones: {
+                [x: string]: {
+                    type: string;
+                    props: {
+                        [x: string]: any;
+                        id: string;
+                    };
+                }[];
+            };
+        };
+        history: {
+            past: {
+                patches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+                inversePatches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+            }[];
+            future: {
+                patches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+                inversePatches: {
+                    op: "replace" | "remove" | "add";
+                    path: (string | number)[];
+                    value?: any;
+                }[];
+            }[];
+        };
+        selection: {
+            selectedId: string | null;
+            selectedIds: string[];
+            hoveredId: string | null;
+        };
+        viewport: "desktop" | "tablet" | "mobile";
+        drag: {
+            type?: string | undefined;
+            id?: string | undefined;
+        } | null;
+        clipboard: {
+            node: {
+                type: string;
+                props: {
+                    [x: string]: any;
+                    id: string;
+                };
+            };
+            zones: {
+                [x: string]: {
+                    type: string;
+                    props: {
+                        [x: string]: any;
+                        id: string;
+                    };
+                }[];
+            };
+        } | null;
+        _lastCommit: {
+            id: string;
+            time: number;
+        } | null;
+        permissionResolver: ((node: TecofNode) => Permissions) | null;
+        setDocument: (doc: TecofDocument) => void;
+        selectNode: (id: string | null) => void;
+        toggleSelect: (id: string) => void;
+        setSelection: (ids: string[]) => void;
+        hoverNode: (id: string | null) => void;
+        setViewport: (viewport: "desktop" | "tablet" | "mobile") => void;
+        beginDrag: (payload: DragPayload) => void;
+        endDrag: () => void;
+        insertNode: (node: TecofNode, targetZoneKey?: string, index?: number) => void;
+        removeNode: (id: string) => void;
+        removeNodes: (ids?: string[]) => void;
+        moveNode: (id: string, targetZoneKey?: string, index?: number) => void;
+        duplicateNode: (id: string) => void;
+        duplicateNodes: (ids?: string[]) => void;
+        updateProps: (id: string, patch: Record<string, any>) => void;
+        setRootProps: (patch: Record<string, any>) => void;
+        copyNode: (id?: string) => void;
+        cutNode: (id?: string) => void;
+        pasteClipboard: (targetZoneKey?: string, index?: number) => void;
+        insertPayload: (payload: ClipboardPayload, targetZoneKey?: string, index?: number) => void;
+        undo: () => void;
+        redo: () => void;
+        setPermissionResolver: (resolver: ((node: TecofNode) => Permissions) | null) => void;
+    }) => void), shouldReplace: true): void;
+}>;
+
 declare function hexToHsl(hex: string): HSL;
 declare function hslToHex(h: number, s: number, l: number): string;
 declare function lighten(hex: string, amount: number): string;
@@ -1210,4 +1564,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useTecof, useUiStore };

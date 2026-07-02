@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { setDragGhost } from './dragGhost';
 import { writeDragData } from './dndUtils';
+import { isInsideOverlayPortal } from './overlayPortal';
 
 export function useInlineDragRef({
   node,
@@ -95,6 +96,12 @@ export function useInlineDragRef({
     
     const onDragStart = (e: DragEvent) => {
       if (locked) return;
+      // Dragging from inside an overlay portal must not move the node.
+      // (Click/double-click guards live in the shared handlers themselves.)
+      if (isInsideOverlayPortal(e.target)) {
+        e.preventDefault();
+        return;
+      }
       writeDragData(e as any, { nodeId: node.props.id });
       if (e.dataTransfer) {
         e.dataTransfer.effectAllowed = 'move';

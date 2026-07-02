@@ -41,6 +41,10 @@ export const Frame = ({
           position: relative;
           transition: outline 0.15s ease-in-out;
         }
+        /* Overlay portals stay truly interactive in edit mode: restore the
+           normal cursor over them instead of the wrapper's grab cursor. */
+        [data-tecof-portal] { cursor: auto; }
+        [data-tecof-portal] * { cursor: auto; }
         /* Custom scrollbars for iframe */
         ::-webkit-scrollbar {
           width: 8px;

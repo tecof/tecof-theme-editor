@@ -36,6 +36,9 @@ export { compileStyles, collectStyleClasses, collectDocumentClasses } from './st
 export { STYLES_PROP } from './studio/style/types';
 export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';
 
+export { useUiStore } from './studio/uiStore';
+export { useEditorStore } from './engine/store';
+
 /* ─── Utilities ─── */
 export {
   hexToHsl,
