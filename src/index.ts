@@ -30,6 +30,8 @@ export { TecofApiClient } from './api';
 // `collectDocumentClasses(pageData)` over your saved pages at build time and add
 // the result to the safelist as well. See docs/TAILWIND.md.
 export { getSafelist, STYLE_CONTROLS } from './studio/style/tokens';
+export { TAILWIND_PALETTE, TAILWIND_SHADES } from './studio/style/palette';
+export type { PaletteHue, TailwindShade } from './studio/style/palette';
 export { compileStyles, collectStyleClasses, collectDocumentClasses } from './studio/style/compileStyles';
 export { STYLES_PROP } from './studio/style/types';
 export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';

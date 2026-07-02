@@ -131,5 +131,5 @@ export function useInlineDragRef({
     };
   }, [locked, node.props.id, label, setRef]);
 
-  return setRef;
+  return { setRef, nodeRef };
 }

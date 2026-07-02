@@ -33,6 +33,9 @@ export const Frame = ({
           background-color: transparent;
           min-height: 100vh;
           box-sizing: border-box;
+          /* Keep canvas scrolling inside the canvas: when the page hits its
+             scroll end, don't chain the wheel into the editor chrome. */
+          overscroll-behavior-y: contain;
         }
         .tecof-node-wrapper {
           position: relative;
@@ -150,6 +153,29 @@ export const Frame = ({
       };
 
       handleIframeKeyDown = (e: KeyboardEvent) => {
+        // Never forward keystrokes typed into an editable element (inputs or
+        // inline contentEditable editing). Re-dispatching them on the parent
+        // window would bypass the host's input guards — the synthetic event's
+        // target is `window`, so e.g. Delete would remove the selected node
+        // while the user is just deleting text.
+        const target = e.target as HTMLElement | null;
+        if (target) {
+          const tag = target.tagName?.toLowerCase();
+          if (tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable) {
+            return;
+          }
+        }
+        // While a node is selected, arrow keys navigate the sibling selection
+        // in the parent studio. Its preventDefault() only cancels the forwarded
+        // synthetic copy — not this original event — so without this guard the
+        // iframe would ALSO scroll natively on every arrow press.
+        if (
+          !e.metaKey && !e.ctrlKey && !e.altKey &&
+          (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+          useEditorStore.getState().selection.selectedId
+        ) {
+          e.preventDefault();
+        }
         const event = new KeyboardEvent('keydown', {
           key: e.key,
           code: e.code,

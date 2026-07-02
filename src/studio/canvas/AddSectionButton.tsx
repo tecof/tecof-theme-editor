@@ -5,13 +5,19 @@ export interface AddSectionButtonProps {
   index: number;
   onClick: (index: number) => void;
   disabled?: boolean;
+  /**
+   * Always-visible variant for the divider at the very end of the page, so the
+   * user has a permanent "add section" affordance without hunting for the
+   * hover-revealed dividers between sections.
+   */
+  fixed?: boolean;
 }
 
-export const AddSectionButton = ({ index, onClick, disabled }: AddSectionButtonProps) => {
+export const AddSectionButton = ({ index, onClick, disabled, fixed }: AddSectionButtonProps) => {
   if (disabled) return null;
 
   return (
-    <div className="tecof-add-section-divider">
+    <div className={`tecof-add-section-divider${fixed ? ' is-fixed' : ''}`}>
       <div className="tecof-add-section-line" />
       <button
         type="button"

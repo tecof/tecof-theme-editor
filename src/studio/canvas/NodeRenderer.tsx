@@ -21,6 +21,29 @@ export interface NodeRendererProps {
   zoneKey?: string;
 }
 
+const getInlineIndicatorStyle = (
+  el: HTMLElement,
+  axis: 'x' | 'y',
+  position: 'before' | 'after'
+): React.CSSProperties => {
+  const r = el.getBoundingClientRect();
+  return axis === 'x'
+    ? {
+        position: 'fixed',
+        top: r.top,
+        height: r.height,
+        width: 3,
+        left: position === 'before' ? r.left - 5 : r.right + 2,
+      }
+    : {
+        position: 'fixed',
+        left: r.left,
+        width: r.width,
+        height: 3,
+        top: position === 'before' ? r.top - 5 : r.bottom + 2,
+      };
+};
+
 export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const { config, metadata, readOnly: studioReadOnly } = useStudio();
   const mode = useUiStore((s) => s.mode);
@@ -122,7 +145,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // so the component applies them to its root (same prop flows in production).
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
 
-  const dragRef = useInlineDragRef({
+  const { setRef: dragRef, nodeRef: inlineNodeRef } = useInlineDragRef({
     node,
     index,
     zoneKey,
@@ -171,8 +194,14 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     <ParentNodeContext.Provider value={node.props.id}>
       {componentConfig.inline ? (
         <>
-          {position && (
-            <div className={`tecof-drop-indicator is-${axis} is-${position}`} />
+          {/* Inline nodes have no positioned `.tecof-node` wrapper to anchor the
+              absolute indicator, so we place it with fixed coords measured from
+              the node's own element — layout (flex/grid columns) stays intact. */}
+          {position && inlineNodeRef.current && (
+            <div
+              className="tecof-drop-indicator"
+              style={getInlineIndicatorStyle(inlineNodeRef.current, axis, position)}
+            />
           )}
           <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
             {componentConfig.render(componentProps)}

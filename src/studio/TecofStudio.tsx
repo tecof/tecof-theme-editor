@@ -18,7 +18,6 @@ import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
 import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost } from './bridge';
 import type { TecofEditorProps } from '../types';
-import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 
 export const TecofStudio = ({
   pageId,
@@ -65,7 +64,6 @@ export const TecofStudio = ({
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isEmbedded = isEmbeddedHost();
-  useKeyboardShortcuts();
 
   // Lock down the host postMessage target origin (defaults to '*' when unset).
   // Other host-messaging files (NodeRenderer.tsx, Frame.tsx) should adopt

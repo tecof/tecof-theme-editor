@@ -1097,6 +1097,28 @@ declare const STYLE_CONTROLS: StyleControl[];
 declare function getSafelist(): string[];
 
 /**
+ * Tailwind default color palette (hue × shade) used by the visual color picker.
+ *
+ * The stored token is the bare Tailwind preset (`red-500`), so the compiled
+ * class (`bg-red-500`) resolves against the HOST's Tailwind theme — if the host
+ * overrides a hue, the published page follows it. The hex values here are only
+ * swatch previews for the editor chrome (which may not have Tailwind at all);
+ * `tailwindSwatch` prefers the live `--color-*` variable when present and falls
+ * back to the static hex.
+ */
+declare const TAILWIND_SHADES: readonly ["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"];
+type TailwindShade = (typeof TAILWIND_SHADES)[number];
+interface PaletteHue {
+    /** Tailwind hue name as used in class names (`red` → `bg-red-500`). */
+    name: string;
+    /** Display label for the picker UI. */
+    label: string;
+    /** Shade → preview hex, indexed in TAILWIND_SHADES order. */
+    shades: Record<TailwindShade, string>;
+}
+declare const TAILWIND_PALETTE: PaletteHue[];
+
+/**
  * Structured, token-based style model for the Tailwind v4 visual style editor.
  *
  * We store *style intent* (which token is chosen per property) rather than raw
@@ -1188,4 +1210,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useTecof };

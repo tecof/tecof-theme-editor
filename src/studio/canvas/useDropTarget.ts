@@ -45,7 +45,12 @@ type Axis = 'x' | 'y';
  * free, with no extra configuration.
  */
 const getDropAxis = (wrapperEl: HTMLElement): Axis => {
-  const item = wrapperEl.closest('.tecof-node') as HTMLElement | null;
+  // Non-inline nodes sit inside a `.tecof-node` wrapper; inline nodes render
+  // without one and live directly in the layout container, so climbing via
+  // closest('.tecof-node') would find an ANCESTOR node's wrapper and read the
+  // wrong container. Only step up when the direct parent is our own wrapper.
+  const parent = wrapperEl.parentElement;
+  const item = parent?.classList.contains('tecof-node') ? parent : wrapperEl;
   const container = item?.parentElement;
   const win = container?.ownerDocument?.defaultView;
   if (!container || !win) return 'y';

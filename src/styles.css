@@ -3351,6 +3351,8 @@
   overflow: auto;
   height: 100%;
   box-sizing: border-box;
+  /* Don't let canvas-edge scrolling chain into the surrounding editor UI. */
+  overscroll-behavior: contain;
 }
 
 .tecof-canvas-viewport {
@@ -3544,10 +3546,13 @@
   min-height: 28px;
 }
 
+/* box-shadow instead of a border so the dragover affordance never shifts the
+   layout — a 2px border appearing mid-drag moves the columns under the pointer
+   and causes dragover/dragleave flicker in tight multi-column slots. */
 .tecof-dropzone.is-dragover {
-  border: 2px dashed var(--tecof-accent);
+  border-color: var(--tecof-accent);
   background: var(--tecof-accent-subtle);
-  box-shadow: inset 0 0 0 1px var(--tecof-accent-ring);
+  box-shadow: inset 0 0 0 2px var(--tecof-accent);
 }
 
 .tecof-dropzone-hint {
@@ -3651,6 +3656,12 @@
   box-sizing: border-box;
   pointer-events: none;
   transition: top 0.1s ease-out, left 0.1s ease-out, width 0.1s ease-out, height 0.1s ease-out;
+}
+
+/* While the canvas scrolls, the position transition would make outlines trail
+   behind the content — track it 1:1 instead. */
+.tecof-overlay.is-scrolling .tecof-outline {
+  transition: none;
 }
 
 /* Hover: clear solid outline + a very faint tint so the hovered component is
@@ -4284,6 +4295,129 @@
     var(--tecof-surface);
 }
 
+/* ── Color picker (theme / brand / Tailwind palette / custom) ── */
+.tecof-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tecof-color-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-surface);
+  color: var(--tecof-text);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+
+.tecof-color-trigger:hover,
+.tecof-color-trigger.is-open { border-color: var(--tecof-accent); }
+
+.tecof-color-trigger-swatch {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.tecof-color-trigger-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tecof-color-trigger-chevron {
+  flex-shrink: 0;
+  color: var(--tecof-text-muted);
+  transition: transform 0.15s ease;
+}
+
+.tecof-color-trigger-chevron.is-open { transform: rotate(180deg); }
+
+.tecof-color-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-bg);
+}
+
+.tecof-color-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tecof-color-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tecof-text-muted);
+}
+
+/* Hue selector: one dot per Tailwind hue (500 shade preview) */
+.tecof-color-hues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tecof-color-hue {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid var(--tecof-border-strong);
+  border-radius: 50%;
+  background: var(--swatch, transparent);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.12s ease;
+}
+
+.tecof-color-hue:hover { transform: scale(1.15); }
+
+.tecof-color-hue.is-active {
+  box-shadow: 0 0 0 2px var(--tecof-surface), 0 0 0 4px var(--tecof-accent);
+}
+
+.tecof-color-custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tecof-color-input {
+  flex-shrink: 0;
+  width: 32px;
+  height: 28px;
+  padding: 2px;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-surface);
+  cursor: pointer;
+}
+
+.tecof-color-hex-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--tecof-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+}
+
 /* Inspector tabs (Content / Style) */
 .tecof-inspector-tabs {
   display: flex;
@@ -4777,6 +4911,26 @@
 .tecof-add-section-divider:hover .tecof-add-section-btn {
   opacity: 1;
   transform: scale(1);
+}
+
+/* Trailing divider (end of page): always visible, no hover hunting. It sits
+   after the last section, so it drops the negative overlap margins too. */
+.tecof-add-section-divider.is-fixed {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.tecof-add-section-divider.is-fixed .tecof-add-section-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tecof-add-section-divider.is-fixed .tecof-add-section-line {
+  background: var(--tecof-border);
+}
+
+.tecof-add-section-divider.is-fixed:hover .tecof-add-section-line {
+  background: var(--tecof-accent);
 }
 
 .tecof-canvas-empty-add-btn {

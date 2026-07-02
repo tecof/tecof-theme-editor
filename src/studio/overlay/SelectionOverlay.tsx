@@ -49,10 +49,24 @@ const useOverlayCoords = (
       const doc = iframeEl.contentDocument;
       if (!doc) return;
 
-      const element = doc.querySelector(`[data-tecof-id="${id}"]`);
-      if (!element) {
+      const wrapper = doc.querySelector(`[data-tecof-id="${id}"]`);
+      if (!wrapper) {
         setCoords(null);
         return;
+      }
+
+      // The editor wrapper is a full-width block even when the component's
+      // real box is narrower (an inline button, a fixed-width card), which
+      // made the outline always span the whole row. Measure the rendered
+      // component root instead when it is the wrapper's single element child,
+      // falling back to the wrapper for fragments/empty renders. Inline
+      // components carry data-tecof-id on their own root (no wrapper), so
+      // they are measured directly.
+      let element: Element = wrapper;
+      if (wrapper.classList.contains('tecof-node-wrapper') && wrapper.childElementCount === 1) {
+        const inner = wrapper.firstElementChild as Element;
+        const innerRect = inner.getBoundingClientRect();
+        if (innerRect.width > 0 && innerRect.height > 0) element = inner;
       }
 
       const rect = element.getBoundingClientRect();
@@ -91,7 +105,7 @@ const useOverlayCoords = (
 
     updateCoords();
 
-    const iframeWin = iframeEl.contentWindow;
+    const iframeDoc = iframeEl.contentDocument;
 
     // Watch iframe resize
     resizeObserver = new ResizeObserver(() => {
@@ -99,14 +113,27 @@ const useOverlayCoords = (
     });
     resizeObserver.observe(iframeEl);
 
-    // Watch scroll inside iframe and resize globally
-    iframeWin?.addEventListener('scroll', updateCoords);
+    // Watch scrolling inside the iframe. Capture phase on the document catches
+    // nested scroll containers too (scroll doesn't bubble), and the rAF
+    // coalescing keeps the per-scroll work to one measurement per frame — the
+    // raw handler ran layout reads on every scroll event and made canvas
+    // scrolling stutter with a selection active.
+    let scrollRaf = 0;
+    const onAnyScroll = () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        updateCoords();
+      });
+    };
+    iframeDoc?.addEventListener('scroll', onAnyScroll, { capture: true, passive: true });
     window.addEventListener('resize', updateCoords);
 
     return () => {
       if (resizeObserver) resizeObserver.disconnect();
       if (targetResizeObserver) targetResizeObserver.disconnect();
-      iframeWin?.removeEventListener('scroll', updateCoords);
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      iframeDoc?.removeEventListener('scroll', onAnyScroll, true);
       window.removeEventListener('resize', updateCoords);
     };
   }, [id, iframeEl, containerEl, documentState]);
@@ -209,6 +236,27 @@ export const SelectionOverlay = () => {
     setIframeEl(iframe);
   }, [documentState]);
 
+  // While the canvas is actively scrolling, outlines must track the content
+  // 1:1 — the top/left transition (nice when hopping between nodes) reads as
+  // the selection box lagging behind the page. Flag scroll activity so CSS can
+  // suspend the transition, clearing shortly after the last scroll event.
+  const [isScrolling, setIsScrolling] = useState(false);
+  useEffect(() => {
+    const doc = iframeEl?.contentDocument;
+    if (!doc) return;
+    let timer: number | null = null;
+    const onScroll = () => {
+      setIsScrolling(true);
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setIsScrolling(false), 120);
+    };
+    doc.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    return () => {
+      doc.removeEventListener('scroll', onScroll, true);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [iframeEl]);
+
   const selectedCoords = useOverlayCoords(selectedId, iframeEl, containerRef.current, documentState);
   const hoveredCoords = useOverlayCoords(
     hoveredId !== selectedId ? hoveredId : null,
@@ -231,7 +279,11 @@ export const SelectionOverlay = () => {
   const handleMove = (direction: 'up' | 'down') => {
     if (!selectedId || !nodeDetails) return;
     const { zoneKey, index } = nodeDetails.path;
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    // moveNode expects a drop index measured BEFORE the node is removed from
+    // the list (drag-and-drop semantics): it subtracts 1 itself when the target
+    // is past the source. So "one down" = insert before the element two ahead;
+    // passing index + 1 would compensate back to the original spot (no-op).
+    const newIndex = direction === 'up' ? index - 1 : index + 2;
     moveNode(selectedId, zoneKey, newIndex);
   };
 
@@ -248,7 +300,7 @@ export const SelectionOverlay = () => {
   return (
     <div
       ref={containerRef}
-      className="tecof-overlay"
+      className={`tecof-overlay${isScrolling ? ' is-scrolling' : ''}`}
     >
       {/* Hover Highlight + spacing (padding/margin) visualization */}
       {hoveredCoords && (

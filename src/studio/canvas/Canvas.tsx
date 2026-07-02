@@ -137,6 +137,9 @@ export const Canvas = () => {
               {!readOnly && (
                 <AddSectionButton
                   index={index + 1}
+                  // The trailing divider (below the last section) stays always
+                  // visible; in-between dividers keep the hover reveal.
+                  fixed={index === content.length - 1}
                   onClick={(idx) => {
                     setInsertIndex(idx);
                     setModalOpen(true);

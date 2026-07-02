@@ -1184,6 +1184,30 @@ hem editöre hem canvas iframe'ine anında enjekte eder; yayında ise host,
 `generateCSSVariables` çıktısını sayfaya dahil etmelidir. Tema, sayfanın
 `root.props._tecofTheme`'inde saklanır.
 
+### Renk seçici: dört renk kaynağı
+
+Renk kontrolleri (`bg`, `text`, `borderColor`) tek bir **renk seçici panelinde**
+dört kaynağı sunar:
+
+| Kaynak | Saklanan token | Derlenen class | Üretim güvencesi |
+|---|---|---|---|
+| Hızlı seçim (şeffaf/beyaz/siyah) | `white` | `bg-white` | `getSafelist()` |
+| Tema renkleri (canlı) | `[var(--theme-color-primary)]` | `bg-[var(--theme-color-primary)]` | `getSafelist()` |
+| Marka skalası | `primary-600` | `bg-primary-600` | `getSafelist()` |
+| **Tailwind varsayılan paleti** | `red-500` | `bg-red-500` | `getSafelist()` |
+| **Özel renk (color picker / hex)** | `[#ff6b00]` | `bg-[#ff6b00]` | `collectDocumentClasses()` |
+
+Tailwind paleti, v4 varsayılan paletinin tamamıdır: **22 renk × 11 ton**
+(`red`…`rose`, `slate`…`stone`; `50`–`950`). Panelde önce renk noktası (hue),
+sonra ton şeridi seçilir. Palet verisi `TAILWIND_PALETTE` / `TAILWIND_SHADES`
+olarak paketten export edilir. Editör chrome'undaki swatch önizlemeleri host'un
+`--color-*` @theme değişkenini okur; tanımlı değilse gömülü varsayılan hex'e
+düşer — yani host paleti override ederse editör de üretim de onu izler.
+
+Özel renk bölümü native `<input type="color">` picker'ı ve `#rrggbb` hex girişi
+sunar; seçim arbitrary token (`[#ff6b00]`) olarak saklanır ve üretimde
+görünmesi için §3b'deki `collectDocumentClasses` akışı gerekir.
+
 ---
 
 ## 3. Üretimde class'ların var olması: Safelist
@@ -1214,6 +1238,12 @@ döndürür — **breakpoint × state kombinasyonları dahil** (ör. `p-4`, `md:
 arbitrary'lerini** de içerir (ör. `bg-[var(--theme-color-primary)]`,
 `text-[var(--theme-color-foreground)]`), çünkü tema renkleri sabit bir kümedir.
 Böylece editörde seçilebilen her preset ve tema rengi üretimde kesinlikle bulunur.
+
+> **Boyut notu:** Tam Tailwind paleti (22×11 renk) üç renk kontrolü ve tüm
+> breakpoint×state prefix'leriyle çarpıldığı için `getSafelist()` çıktısı
+> büyüktür (~20k class). Tailwind yalnızca CSS üretir, JS maliyeti yoktur; yine
+> de CSS boyutu kritikse listeyi host tarafında filtreleyebilirsiniz (örn.
+> yalnızca kullandığınız hue'ları bırakın).
 
 ### 3b. Arbitrary (custom) değerler → `collectDocumentClasses`
 

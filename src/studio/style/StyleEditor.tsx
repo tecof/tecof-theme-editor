@@ -12,6 +12,7 @@ import {
 import type { NodeStyles, StyleProps, Breakpoint, StateVariant } from './types';
 import { useUiStore } from '../uiStore';
 import { cloneStyles, isEmptyStyles } from './styleClipboard';
+import { ColorPicker } from './ColorPicker';
 
 /** True when a style layer carries at least one set property. */
 const hasProps = (props?: StyleProps): boolean =>
@@ -160,7 +161,9 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
           <div className="tecof-style-group-title">{GROUP_LABELS[group]}</div>
           {controls.map((control) => (
             <ControlRow
-              key={control.id}
+              // Keyed by layer so per-row local state (custom input drafts,
+              // picker open state) resets when switching breakpoint/state.
+              key={`${bp}:${state}:${control.id}`}
               control={control}
               value={layer[control.id] || ''}
               inherited={inheritedLayer[control.id]}
@@ -184,7 +187,10 @@ const ControlRow = ({
   inherited?: string;
   onChange: (value: string) => void;
 }) => {
-  const supportsArbitrary = !!control.arbitraryPrefix;
+  const isColor = control.type === 'color';
+  // Color controls own their custom (arbitrary) input inside the ColorPicker,
+  // so the generic +/× toggle and free-text input only apply to other types.
+  const supportsArbitrary = !!control.arbitraryPrefix && !isColor;
   // A value is "custom" only when it's an arbitrary literal the user typed — not
   // when it's a known option that merely happens to be encoded as arbitrary (e.g.
   // theme colors like `[var(--theme-color-primary)]`), which must render as a
@@ -222,21 +228,7 @@ const ControlRow = ({
       </span>
       <div className="tecof-style-control">
         {control.type === 'color' ? (
-          <div className="tecof-style-swatches">
-            {control.options.map((opt) => {
-              const isNone = opt.value === '';
-              return (
-                <button
-                  key={opt.value || 'none'}
-                  type="button"
-                  title={opt.label}
-                  className={`tecof-style-swatch${presetValue === opt.value ? ' is-active' : ''}${isNone ? ' is-none' : ''}`}
-                  style={!isNone ? ({ '--swatch': opt.swatch || opt.value } as React.CSSProperties) : undefined}
-                  onClick={() => onChange(opt.value)}
-                />
-              );
-            })}
-          </div>
+          <ColorPicker value={value} onChange={onChange} />
         ) : control.type === 'segment' ? (
           <div className="tecof-style-seg">
             {control.options.map((opt) => (

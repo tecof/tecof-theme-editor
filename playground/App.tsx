@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Blocks,
   BookOpen,
+  Bot,
   Box,
   Braces,
   Check,
@@ -152,6 +153,48 @@ export default async function StorePage({ params }) {
     </div>
   ),
 };`,
+  sliderSlot: `const Slider = {
+  label: "Slider",
+  acceptsChildren: true,
+  fields: {
+    slides: {
+      type: "slot",
+      label: "Slaytlar",
+      orientation: "horizontal",
+    },
+  },
+  render: ({ puck, editMode, className }) => (
+    <section className={className}>
+      {puck.renderDropZone({
+        zone: "slides",
+        orientation: "horizontal",
+        // Editörde slaytlar yan yana, sarmalı ve tamamı seçilebilir.
+        // Yayında aynı zone yatay scroll-snap carousel'e dönüşür.
+        className: editMode
+          ? "gap-4"
+          : "snap-x snap-mandatory overflow-x-auto gap-4",
+        style: editMode ? undefined : { flexWrap: "nowrap" },
+      })}
+    </section>
+  ),
+};
+
+const Slide = {
+  label: "Slayt",
+  allowedParents: ["Slider"],   // yalnızca Slider içine bırakılabilir
+  fields: {
+    image: createUploadField({ label: "Görsel" }),
+    caption: { type: "text", label: "Başlık" },
+  },
+  render: ({ image, caption, className }) => (
+    <figure className={\`w-80 shrink-0 snap-center \${className ?? ""}\`}>
+      <TecofPicture data={image} alt={caption ?? ""} size="large" />
+      {caption && (
+        <figcaption className="mt-2 text-sm">{caption}</figcaption>
+      )}
+    </figure>
+  ),
+};`,
   fields: `import {
   createLanguageField,
   createEditorField,
@@ -291,6 +334,38 @@ window.addEventListener("message", (event) => {
     },
   },
 };`,
+  mcpLocal: `// .mcp.json — repo kökünde hazır gelir (project-level MCP)
+{
+  "mcpServers": {
+    "tecof-theme-editor-docs": {
+      "command": "node",
+      "args": ["mcp/server.mjs"]
+    }
+  }
+}
+
+// Absolute path isteyen client'larda:
+{
+  "mcpServers": {
+    "tecof-theme-editor-docs": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/tecof-theme-editor/mcp/server.mjs"]
+    }
+  }
+}`,
+  mcpPrepare: `npm install
+npm run docs:ai   # mcp-manifest.json + llms.txt üretir
+npm run build     # dist/index.d.ts → tip araçları için gerekli`,
+  mcpFlow: `// Önerilen ajan akışı:
+// 1. Konuyu ara
+search_tecof_docs({ query: "safelist arbitrary" })
+
+// 2. İlgili kaynağı tam oku
+read_tecof_doc({ slug: "tailwind" })
+
+// 3. API uydurma — gerçek tip bildirimini doğrula
+list_exported_types({})
+read_type_definition({ name: "StudioConfig" })`,
   permissions: `const config = {
   permissions: {
     drag: true,
@@ -945,10 +1020,11 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
     navTitle: 'Slotlar & şablonlar',
     description: 'İç içe içerik bölgeleri oluşturun ve tekrar kullanılabilir bölüm şablonları sunun.',
     icon: Layers3,
-    keywords: ['slot', 'zone', 'template', 'section', 'orientation', 'nested'],
+    keywords: ['slot', 'zone', 'template', 'section', 'orientation', 'nested', 'slider', 'carousel'],
     toc: [
       { id: 'zone-modeli', label: 'Zone modeli' },
       { id: 'orientation', label: 'Dikey ve yatay slot' },
+      { id: 'slider-deseni', label: 'Slider / carousel deseni' },
       { id: 'sablonlar', label: 'Bölüm şablonları' },
       { id: 'id-guvenligi', label: 'ID güvenliği' },
     ],
@@ -970,6 +1046,39 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
             editör drop eksenini sol/sağ olarak hesaplar ve public render aynı düzeni korur.
           </p>
           <CodeBlock code={codeSamples.slot} title="Grid.tsx" />
+        </section>
+        <section id="slider-deseni">
+          <h2>Slider / carousel deseni</h2>
+          <p>
+            Slider gibi bileşenlerde slaytlar ayrı bir bileşen olarak slot’a bırakılır.
+            Kritik nokta <code>editMode</code> ayrımıdır: editörde tüm slaytlar yan yana
+            görünüp sürükle-bırak almalı, yayında ise aynı zone kaydırılabilir bir
+            carousel’e dönüşmelidir. <code>puck.renderDropZone</code> her iki tarafta da
+            <code>className</code> ve <code>style</code> kabul ettiği için zone’un kendisini
+            scroll container yapabilirsiniz.
+          </p>
+          <CodeBlock code={codeSamples.sliderSlot} title="Slider.tsx" />
+          <ul>
+            <li>
+              <code>{'allowedParents: ["Slider"]'}</code> slaytın başka yere bırakılmasını,
+              <code>maxItems</code> ise slayt sayısının aşılmasını engine seviyesinde engeller.
+            </li>
+            <li>
+              <code>snap-*</code> class’ları slaytın kendi kökünde durur; yayında zone
+              çocukları doğrudan render edildiği için scroll-snap birebir çalışır.
+            </li>
+            <li>
+              Zone’un yatay flex düzeni <code>{'orientation: "horizontal"'}</code>’dan gelir;
+              yayında <code>{'flexWrap: "nowrap"'}</code> style’ı sarmayı kapatıp tek satır
+              carousel yapar.
+            </li>
+          </ul>
+          <Callout type="warning" title="JS slider kütüphaneleri">
+            Swiper/Embla gibi DOM’u klonlayan veya ölçen kütüphaneleri yalnızca
+            <code>editMode === false</code> iken mount edin; editörde zone düz layout
+            kalmalı ki seçim, overlay ve drop hedefleri doğru çalışsın. Çoğu senaryoda
+            CSS scroll-snap yeterlidir ve iki taraf arasında görsel sapma üretmez.
+          </Callout>
         </section>
         <section id="sablonlar">
           <h2>Bölüm şablonları</h2>
@@ -997,9 +1106,10 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
     navTitle: 'Tailwind stil editörü',
     description: 'Token tabanlı responsive stilleri üretime güvenli şekilde derleyin ve safelist’i yönetin.',
     icon: SwatchBook,
-    keywords: ['tailwind', 'style', 'safelist', 'breakpoint', 'hover', 'arbitrary'],
+    keywords: ['tailwind', 'style', 'safelist', 'breakpoint', 'hover', 'arbitrary', 'renk', 'color picker', 'palet'],
     toc: [
       { id: 'palet', label: 'Marka paleti' },
+      { id: 'renk-sistemi', label: 'Renk sistemi' },
       { id: 'token-modeli', label: 'Token modeli' },
       { id: 'responsive', label: 'Responsive & state' },
       { id: 'safelist', label: 'Production safelist' },
@@ -1014,6 +1124,35 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
             kullanılmalıdır.
           </p>
           <CodeBlock code={codeSamples.tailwind} language="css" title="app.css" />
+        </section>
+        <section id="renk-sistemi">
+          <h2>Renk sistemi</h2>
+          <p>
+            Arka plan, metin ve kenarlık rengi kontrolleri tek bir renk seçici panelinde dört
+            kaynağı birleştirir. Hangi kaynağı seçtiğiniz, kaydedilen token’ı ve üretim
+            gereksinimini belirler.
+          </p>
+          <PropsTable
+            rows={[
+              ['Tema renkleri', '[var(--theme-color-primary)]', 'Canlı tema CSS değişkenini referans eder; tema değişince sayfa da değişir', 'getSafelist()'],
+              ['Marka (Primary)', 'primary-600', 'Host @theme’inde tanımlı --color-primary-* skalası', 'getSafelist()'],
+              ['Tailwind paleti', 'red-500', '22 renk × 11 ton hazır Tailwind paleti (bg-red-500 gibi derlenir)', 'getSafelist()'],
+              ['Özel renk', '[#ff6b00]', 'Color picker veya hex girişi; bg-[#ff6b00] olarak derlenir', 'collectDocumentClasses()'],
+            ]}
+          />
+          <p>
+            Tailwind paleti bölümünde önce renk (hue) noktasına, ardından 50–950 ton şeridinden
+            tona tıklayın. Özel renk bölümündeki native color picker ile serbest bir renk seçebilir
+            veya <code>#rrggbb</code> formatında hex yazabilirsiniz. Editör chrome’unda palet
+            önizlemeleri host’un <code>--color-*</code> değişkenlerini okur; değişken yoksa
+            varsayılan Tailwind hex’ine düşer.
+          </p>
+          <Callout type="info" title="Preset ve özel renk farkı">
+            Tema, marka ve Tailwind paleti seçimleri sonlu preset token’lardır ve
+            <code>getSafelist()</code> ile otomatik güvence altındadır. Color picker’dan seçilen
+            özel renkler arbitrary değer olarak kaydedilir; üretimde görünmeleri için
+            <code>collectDocumentClasses()</code> akışı şarttır.
+          </Callout>
         </section>
         <section id="token-modeli">
           <h2>Yapısal token modeli</h2>
@@ -1339,6 +1478,116 @@ import { TecofPicture } from "@tecof/theme-editor";
   hostOrigin="https://panel.example.com"
 />`}
           />
+        </section>
+      </>
+    ),
+  },
+  {
+    slug: 'mcp',
+    group: 'Entegrasyon',
+    title: 'MCP dokümantasyon sunucusu',
+    navTitle: 'MCP sunucusu',
+    description: 'AI asistanlarına paket dokümanlarını ve gerçek tip tanımlarını MCP araçları olarak sunun.',
+    icon: Bot,
+    keywords: ['mcp', 'model context protocol', 'claude', 'cursor', 'chatgpt', 'ai', 'connector', 'stdio'],
+    toc: [
+      { id: 'mcp-nedir', label: 'Nedir?' },
+      { id: 'mcp-araclar', label: 'Araçlar' },
+      { id: 'mcp-yerel', label: 'Yerel kullanım (stdio)' },
+      { id: 'mcp-uzak', label: 'Uzak sunucu (HTTP)' },
+      { id: 'mcp-akis', label: 'Önerilen akış' },
+    ],
+    content: (
+      <>
+        <section id="mcp-nedir">
+          <h2>MCP sunucusu nedir?</h2>
+          <p>
+            Repo, <strong>Model Context Protocol</strong> üzerinden paket dokümantasyonunu ve
+            <code>dist/index.d.ts</code>’teki gerçek TypeScript bildirimlerini AI asistanlarına
+            (Claude Code, Claude Desktop, Cursor, ChatGPT) salt-okunur araçlar olarak sunan bir
+            MCP sunucusu içerir. Amaç, asistanın API uydurmak yerine güncel dokümanı ve gerçek
+            tip kaynağını okumasıdır.
+          </p>
+          <p>
+            Araç ve resource mantığı <code>mcp/create-server.mjs</code> içinde paylaşılan tek bir
+            fabrikada tanımlıdır; aynı mantık iki transport ile çalışır: yerel geliştirme için
+            stdio (<code>mcp/server.mjs</code>) ve Vercel’e deploy edilen stateless Streamable
+            HTTP ucu (<code>playground/api/mcp.mjs</code>).
+          </p>
+        </section>
+        <section id="mcp-araclar">
+          <h2>Araçlar ve resource’lar</h2>
+          <PropsTable
+            rows={[
+              ['list_tecof_docs', 'tool', 'Mevcut doküman kaynaklarını listeler'],
+              ['search_tecof_docs', 'tool', 'Tüm kaynaklarda puanlı tam metin araması yapar'],
+              ['read_tecof_doc', 'tool', 'Bir kaynağı eksiksiz Markdown olarak döndürür'],
+              ['list_exported_types', 'tool', 'Paketin gerçekten export ettiği tip/bileşen/fonksiyon adları'],
+              ['read_type_definition', 'tool', 'Verilen export adının gerçek TypeScript bildirimi'],
+            ]}
+          />
+          <p>
+            Aynı içerikler <code>tecof-docs://</code> şemalı resource olarak da sunulur:
+            <code>index</code>, <code>ai-guide</code>, <code>package-reference</code>,
+            <code>tailwind</code>, <code>architecture</code>, <code>permissions</code> ve tam
+            rollup tip dosyası için <code>types</code>.
+          </p>
+          <Callout type="warning" title="Tip araçları build ister">
+            <code>list_exported_types</code> ve <code>read_type_definition</code>,
+            <code>dist/index.d.ts</code> üzerinden çalışır. Paket <code>npm run build</code> ile
+            derlenmediyse sunucu çökmez; yalnızca bu iki araç devre dışı kalır.
+          </Callout>
+        </section>
+        <section id="mcp-yerel">
+          <h2>Yerel kullanım (stdio)</h2>
+          <p>Önce doküman manifestini ve tip dosyasını hazırlayın:</p>
+          <CodeBlock code={codeSamples.mcpPrepare} language="bash" title="Terminal" />
+          <p>
+            Repo kökündeki <code>.mcp.json</code>, project-level MCP destekleyen client’lar
+            (örn. Claude Code) için hazırdır — repoyu açtığınızda sunucu otomatik tanınır.
+            Client stdio sürecini kendisi başlattığı için ayrı bir terminalde açık tutmanız
+            gerekmez.
+          </p>
+          <CodeBlock code={codeSamples.mcpLocal} language="json" title=".mcp.json" />
+        </section>
+        <section id="mcp-uzak">
+          <h2>Uzak sunucu (Streamable HTTP)</h2>
+          <p>
+            <code>playground/api/mcp.mjs</code>, Vercel serverless function olarak deploy edilen
+            <strong>stateless</strong> bir uç noktadır: her istek kendi{' '}
+            <code>McpServer</code> + transport çiftini oluşturup kapatır, bu yüzden farklı Lambda
+            instance’larına düşen istekler sorun çıkarmaz. Deploy sonrası adres:
+            <code>https://&lt;domain&gt;/api/mcp</code>
+          </p>
+          <PropsTable
+            rows={[
+              ['Claude.ai / Desktop', 'Custom connector', 'Settings → Connectors → Add custom connector → URL'],
+              ['ChatGPT', 'Connector', 'Settings → Connectors → Create → URL'],
+              ['Claude Code', 'claude mcp add', 'claude mcp add --transport http tecof-docs <URL>'],
+            ]}
+          />
+          <Callout type="info" title="Vercel includeFiles">
+            <code>api/mcp.mjs</code> dokümanları dinamik path ile okuduğundan Node File Trace
+            bunları göremez; <code>playground/vercel.json</code>’daki{' '}
+            <code>includeFiles</code> ayarı <code>public/**</code> ve{' '}
+            <code>dist/index.d.ts</code>’i pakete dahil eder. Kod değişince{' '}
+            <code>npm run build</code> çalıştırıp <code>dist/</code>’i commit etmeyi unutmayın;
+            yoksa MCP’den okunan tipler eski kalır.
+          </Callout>
+          <p>
+            Uç nokta salt-okunur olduğundan kimlik doğrulaması yoktur; gerekirse handler’ın
+            başına bir <code>Authorization</code> header kontrolü eklemek yeterlidir.
+          </p>
+        </section>
+        <section id="mcp-akis">
+          <h2>Önerilen ajan akışı</h2>
+          <p>
+            Sunucu, bağlanan asistana şu talimatı verir: önce <code>search_tecof_docs</code> ile
+            ara, uygulama kodu önermeden önce ilgili kaynağı <code>read_tecof_doc</code> ile oku,
+            belgede olmayan API uydurma ve çelişkide exported TypeScript tiplerini son doğruluk
+            kaynağı kabul et.
+          </p>
+          <CodeBlock code={codeSamples.mcpFlow} language="ts" title="Ajan akışı" />
         </section>
       </>
     ),

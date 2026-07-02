@@ -2616,6 +2616,9 @@ var Frame = ({
           background-color: transparent;
           min-height: 100vh;
           box-sizing: border-box;
+          /* Keep canvas scrolling inside the canvas: when the page hits its
+             scroll end, don't chain the wheel into the editor chrome. */
+          overscroll-behavior-y: contain;
         }
         .tecof-node-wrapper {
           position: relative;
@@ -2707,6 +2710,16 @@ var Frame = ({
         }
       };
       handleIframeKeyDown = (e) => {
+        const target = e.target;
+        if (target) {
+          const tag = target.tagName?.toLowerCase();
+          if (tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable) {
+            return;
+          }
+        }
+        if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight") && useEditorStore.getState().selection.selectedId) {
+          e.preventDefault();
+        }
         const event = new KeyboardEvent("keydown", {
           key: e.key,
           code: e.code,
@@ -2813,7 +2826,8 @@ var resolveNodeType = (doc, id) => {
 
 // src/studio/canvas/useDropTarget.ts
 var getDropAxis = (wrapperEl) => {
-  const item = wrapperEl.closest(".tecof-node");
+  const parent = wrapperEl.parentElement;
+  const item = parent?.classList.contains("tecof-node") ? parent : wrapperEl;
   const container = item?.parentElement;
   const win = container?.ownerDocument?.defaultView;
   if (!container || !win) return "y";
@@ -3011,33 +3025,35 @@ var useInlineEdit = (node, locked) => {
     (e) => {
       if (locked) return;
       const target = e.target;
-      const tag = target.tagName.toLowerCase();
+      const wrapper = target.closest("[data-tecof-id]");
+      const marked = target.closest("[data-tecof-prop]");
+      const editTarget = marked && (!wrapper || wrapper.contains(marked)) ? marked : target;
+      const tag = editTarget.tagName.toLowerCase();
       if (!VALID_TAGS.includes(tag)) return;
-      const text = target.textContent?.trim() || "";
+      const text = editTarget.textContent?.trim() || "";
       if (!text) return;
-      const ownerDoc = target.ownerDocument;
+      const ownerDoc = editTarget.ownerDocument;
       const ownerWin = ownerDoc.defaultView;
       const defaultLang = ownerDoc.documentElement.lang || "tr";
-      const wrapper = target.closest("[data-tecof-id]");
-      const match = resolveMatch(target, wrapper, node, text, defaultLang);
+      const match = resolveMatch(editTarget, wrapper, node, text, defaultLang);
       if (!match) return;
       e.stopPropagation();
       const { propName, isMultilingual, langCode } = match;
-      const originalText = target.textContent || "";
-      target.contentEditable = "true";
-      target.setAttribute("data-tecof-inline-editing", "true");
-      target.focus();
+      const originalText = editTarget.textContent || "";
+      editTarget.contentEditable = "true";
+      editTarget.setAttribute("data-tecof-inline-editing", "true");
+      editTarget.focus();
       const range = ownerDoc.createRange();
-      range.selectNodeContents(target);
+      range.selectNodeContents(editTarget);
       const sel = ownerWin?.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
       const commitInlineEdit = () => {
-        target.contentEditable = "false";
-        target.removeAttribute("data-tecof-inline-editing");
-        target.removeEventListener("blur", handleBlur);
-        target.removeEventListener("keydown", handleKeyDown);
-        const newText = target.textContent?.trim() || "";
+        editTarget.contentEditable = "false";
+        editTarget.removeAttribute("data-tecof-inline-editing");
+        editTarget.removeEventListener("blur", handleBlur);
+        editTarget.removeEventListener("keydown", handleKeyDown);
+        const newText = editTarget.textContent?.trim() || "";
         if (isMultilingual) {
           const currentArray = Array.isArray(node.props[propName]) ? node.props[propName] : [];
           const updatedArray = currentArray.map((item) => {
@@ -3059,11 +3075,11 @@ var useInlineEdit = (node, locked) => {
         }
       };
       const cancelInlineEdit = () => {
-        target.textContent = originalText;
-        target.contentEditable = "false";
-        target.removeAttribute("data-tecof-inline-editing");
-        target.removeEventListener("blur", handleBlur);
-        target.removeEventListener("keydown", handleKeyDown);
+        editTarget.textContent = originalText;
+        editTarget.contentEditable = "false";
+        editTarget.removeAttribute("data-tecof-inline-editing");
+        editTarget.removeEventListener("blur", handleBlur);
+        editTarget.removeEventListener("keydown", handleKeyDown);
       };
       const handleBlur = () => {
         commitInlineEdit();
@@ -3076,11 +3092,11 @@ var useInlineEdit = (node, locked) => {
         }
         if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
-          target.blur();
+          editTarget.blur();
         }
       };
-      target.addEventListener("blur", handleBlur);
-      target.addEventListener("keydown", handleKeyDown);
+      editTarget.addEventListener("blur", handleBlur);
+      editTarget.addEventListener("keydown", handleKeyDown);
     },
     [node, locked]
   );
@@ -3123,6 +3139,66 @@ var NodeErrorBoundary = class extends React.Component {
   }
 };
 
+// src/studio/style/palette.ts
+var TAILWIND_SHADES = [
+  "50",
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900",
+  "950"
+];
+var hue = (name, label, hex) => ({
+  name,
+  label,
+  shades: Object.fromEntries(TAILWIND_SHADES.map((s, i) => [s, hex[i]]))
+});
+var TAILWIND_PALETTE = [
+  hue("red", "Red", ["#fef2f2", "#fee2e2", "#fecaca", "#fca5a5", "#f87171", "#ef4444", "#dc2626", "#b91c1c", "#991b1b", "#7f1d1d", "#450a0a"]),
+  hue("orange", "Orange", ["#fff7ed", "#ffedd5", "#fed7aa", "#fdba74", "#fb923c", "#f97316", "#ea580c", "#c2410c", "#9a3412", "#7c2d12", "#431407"]),
+  hue("amber", "Amber", ["#fffbeb", "#fef3c7", "#fde68a", "#fcd34d", "#fbbf24", "#f59e0b", "#d97706", "#b45309", "#92400e", "#78350f", "#451a03"]),
+  hue("yellow", "Yellow", ["#fefce8", "#fef9c3", "#fef08a", "#fde047", "#facc15", "#eab308", "#ca8a04", "#a16207", "#854d0e", "#713f12", "#422006"]),
+  hue("lime", "Lime", ["#f7fee7", "#ecfccb", "#d9f99d", "#bef264", "#a3e635", "#84cc16", "#65a30d", "#4d7c0f", "#3f6212", "#365314", "#1a2e05"]),
+  hue("green", "Green", ["#f0fdf4", "#dcfce7", "#bbf7d0", "#86efac", "#4ade80", "#22c55e", "#16a34a", "#15803d", "#166534", "#14532d", "#052e16"]),
+  hue("emerald", "Emerald", ["#ecfdf5", "#d1fae5", "#a7f3d0", "#6ee7b7", "#34d399", "#10b981", "#059669", "#047857", "#065f46", "#064e3b", "#022c22"]),
+  hue("teal", "Teal", ["#f0fdfa", "#ccfbf1", "#99f6e4", "#5eead4", "#2dd4bf", "#14b8a6", "#0d9488", "#0f766e", "#115e59", "#134e4a", "#042f2e"]),
+  hue("cyan", "Cyan", ["#ecfeff", "#cffafe", "#a5f3fc", "#67e8f9", "#22d3ee", "#06b6d4", "#0891b2", "#0e7490", "#155e75", "#164e63", "#083344"]),
+  hue("sky", "Sky", ["#f0f9ff", "#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0ea5e9", "#0284c7", "#0369a1", "#075985", "#0c4a6e", "#082f49"]),
+  hue("blue", "Blue", ["#eff6ff", "#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8", "#1e40af", "#1e3a8a", "#172554"]),
+  hue("indigo", "Indigo", ["#eef2ff", "#e0e7ff", "#c7d2fe", "#a5b4fc", "#818cf8", "#6366f1", "#4f46e5", "#4338ca", "#3730a3", "#312e81", "#1e1b4b"]),
+  hue("violet", "Violet", ["#f5f3ff", "#ede9fe", "#ddd6fe", "#c4b5fd", "#a78bfa", "#8b5cf6", "#7c3aed", "#6d28d9", "#5b21b6", "#4c1d95", "#2e1065"]),
+  hue("purple", "Purple", ["#faf5ff", "#f3e8ff", "#e9d5ff", "#d8b4fe", "#c084fc", "#a855f7", "#9333ea", "#7e22ce", "#6b21a8", "#581c87", "#3b0764"]),
+  hue("fuchsia", "Fuchsia", ["#fdf4ff", "#fae8ff", "#f5d0fe", "#f0abfc", "#e879f9", "#d946ef", "#c026d3", "#a21caf", "#86198f", "#701a75", "#4a044e"]),
+  hue("pink", "Pink", ["#fdf2f8", "#fce7f3", "#fbcfe8", "#f9a8d4", "#f472b6", "#ec4899", "#db2777", "#be185d", "#9d174d", "#831843", "#500724"]),
+  hue("rose", "Rose", ["#fff1f2", "#ffe4e6", "#fecdd3", "#fda4af", "#fb7185", "#f43f5e", "#e11d48", "#be123c", "#9f1239", "#881337", "#4c0519"]),
+  hue("slate", "Slate", ["#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155", "#1e293b", "#0f172a", "#020617"]),
+  hue("gray", "Gray", ["#f9fafb", "#f3f4f6", "#e5e7eb", "#d1d5db", "#9ca3af", "#6b7280", "#4b5563", "#374151", "#1f2937", "#111827", "#030712"]),
+  hue("zinc", "Zinc", ["#fafafa", "#f4f4f5", "#e4e4e7", "#d4d4d8", "#a1a1aa", "#71717a", "#52525b", "#3f3f46", "#27272a", "#18181b", "#09090b"]),
+  hue("neutral", "Neutral", ["#fafafa", "#f5f5f5", "#e5e5e5", "#d4d4d4", "#a3a3a3", "#737373", "#525252", "#404040", "#262626", "#171717", "#0a0a0a"]),
+  hue("stone", "Stone", ["#fafaf9", "#f5f5f4", "#e7e5e4", "#d6d3d1", "#a8a29e", "#78716c", "#57534e", "#44403c", "#292524", "#1c1917", "#0c0a09"])
+];
+var PALETTE_BY_NAME = Object.fromEntries(
+  TAILWIND_PALETTE.map((h) => [h.name, h])
+);
+var tailwindSwatch = (hueName, shade) => {
+  const hex = PALETTE_BY_NAME[hueName]?.shades[shade] ?? "#000000";
+  return `var(--color-${hueName}-${shade}, ${hex})`;
+};
+var parsePaletteToken = (value) => {
+  const idx = value.lastIndexOf("-");
+  if (idx <= 0) return null;
+  const hueName = value.slice(0, idx);
+  const shade = value.slice(idx + 1);
+  const found = PALETTE_BY_NAME[hueName];
+  if (!found || !(shade in found.shades)) return null;
+  return { hue: found, shade };
+};
+
 // src/studio/style/tokens.ts
 var isArbitrary = (value) => value.length > 1 && value.startsWith("[") && value.endsWith("]");
 var arbitraryRaw = (value) => isArbitrary(value) ? value.slice(1, -1) : value;
@@ -3147,26 +3223,36 @@ var THEME_COLOR_OPTIONS = THEME_COLORS.map(({ label, key }) => ({
   value: `[var(--theme-color-${key})]`,
   swatch: `var(--theme-color-${key})`
 }));
-var COLOR_OPTIONS = [
+var BASE_COLOR_OPTIONS = [
   { label: "Yok", value: "" },
   { label: "\u015Eeffaf", value: "transparent", swatch: "transparent" },
   { label: "Beyaz", value: "white", swatch: "#ffffff" },
-  { label: "Siyah", value: "black", swatch: "#000000" },
+  { label: "Siyah", value: "black", swatch: "#000000" }
+];
+var BRAND_COLOR_OPTIONS = TAILWIND_SHADES.map((s) => ({
+  label: `Primary ${s}`,
+  value: `primary-${s}`,
+  swatch: `var(--tecof-primary-${s})`
+}));
+var TAILWIND_COLOR_OPTIONS = TAILWIND_PALETTE.flatMap(
+  (hue2) => TAILWIND_SHADES.map((shade) => ({
+    label: `${hue2.label} ${shade}`,
+    value: `${hue2.name}-${shade}`,
+    swatch: tailwindSwatch(hue2.name, shade)
+  }))
+);
+var COLOR_OPTIONS = [
+  ...BASE_COLOR_OPTIONS,
   // Live theme colors (host --theme-color-* variables)
   ...THEME_COLOR_OPTIONS,
-  // Brand palette (Tailwind v4 @theme: --color-primary-*)
-  ...["50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"].map((s) => ({
-    label: `Primary ${s}`,
-    value: `primary-${s}`,
-    swatch: `var(--tecof-primary-${s})`
-  })),
-  // A few neutrals (Tailwind defaults)
-  { label: "Zinc 100", value: "zinc-100", swatch: "#f4f4f5" },
-  { label: "Zinc 300", value: "zinc-300", swatch: "#d4d4d8" },
-  { label: "Zinc 500", value: "zinc-500", swatch: "#71717a" },
-  { label: "Zinc 700", value: "zinc-700", swatch: "#3f3f46" },
-  { label: "Zinc 900", value: "zinc-900", swatch: "#18181b" }
+  ...BRAND_COLOR_OPTIONS,
+  ...TAILWIND_COLOR_OPTIONS
 ];
+var COLOR_SECTIONS = {
+  base: BASE_COLOR_OPTIONS,
+  theme: THEME_COLOR_OPTIONS,
+  brand: BRAND_COLOR_OPTIONS
+};
 var opts = (values, withNone = true) => [
   ...withNone ? [{ label: "\u2014", value: "" }] : [],
   ...values.map((v) => ({ label: v, value: v }))
@@ -3343,7 +3429,7 @@ var STYLE_CONTROLS = [
     label: "Kenarl\u0131k",
     group: "border",
     type: "select",
-    options: opts(["0", "2", "4", "8"]),
+    options: opts(["0", "1", "2", "4", "8"]),
     toClass: (v) => v ? v === "1" ? "border" : `border-${v}` : null
   },
   {
@@ -3573,7 +3659,7 @@ function useInlineDragRef({
       el.removeEventListener("drop", onNativeDrop);
     };
   }, [locked, node.props.id, label, setRef]);
-  return setRef;
+  return { setRef, nodeRef };
 }
 
 // src/studio/usePermissions.ts
@@ -3584,6 +3670,22 @@ var usePermissions = (id) => {
   );
   if (!node) return DEFAULT_PERMISSIONS;
   return getNodePermissions(config, node);
+};
+var getInlineIndicatorStyle = (el, axis, position) => {
+  const r = el.getBoundingClientRect();
+  return axis === "x" ? {
+    position: "fixed",
+    top: r.top,
+    height: r.height,
+    width: 3,
+    left: position === "before" ? r.left - 5 : r.right + 2
+  } : {
+    position: "fixed",
+    left: r.left,
+    width: r.width,
+    height: 3,
+    top: position === "before" ? r.top - 5 : r.bottom + 2
+  };
 };
 var NodeRenderer = ({ node, index, zoneKey }) => {
   const { config, metadata, readOnly: studioReadOnly } = useStudio();
@@ -3658,7 +3760,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
     isDragging ? "is-dragging" : ""
   ].filter(Boolean).join(" ");
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
-  const dragRef = useInlineDragRef({
+  const { setRef: dragRef, nodeRef: inlineNodeRef } = useInlineDragRef({
     node,
     index,
     zoneKey,
@@ -3698,7 +3800,13 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
   }
   const errorResetKey = `${node.props.id}:${JSON.stringify(node.props)}`;
   return /* @__PURE__ */ jsxRuntime.jsx(ParentNodeContext.Provider, { value: node.props.id, children: componentConfig.inline ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    position && /* @__PURE__ */ jsxRuntime.jsx("div", { className: `tecof-drop-indicator is-${axis} is-${position}` }),
+    position && inlineNodeRef.current && /* @__PURE__ */ jsxRuntime.jsx(
+      "div",
+      {
+        className: "tecof-drop-indicator",
+        style: getInlineIndicatorStyle(inlineNodeRef.current, axis, position)
+      }
+    ),
     /* @__PURE__ */ jsxRuntime.jsx(NodeErrorBoundary, { label, type: node.type, resetKey: errorResetKey, children: componentConfig.render(componentProps) })
   ] }) : /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-node", children: [
     position && /* @__PURE__ */ jsxRuntime.jsx("div", { className: `tecof-drop-indicator is-${axis} is-${position}` }),
@@ -3732,9 +3840,9 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
     )
   ] }) });
 };
-var AddSectionButton = ({ index, onClick, disabled }) => {
+var AddSectionButton = ({ index, onClick, disabled, fixed }) => {
   if (disabled) return null;
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-add-section-divider", children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-add-section-divider${fixed ? " is-fixed" : ""}`, children: [
     /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-add-section-line" }),
     /* @__PURE__ */ jsxRuntime.jsxs(
       "button",
@@ -4171,6 +4279,7 @@ var Canvas = () => {
             AddSectionButton,
             {
               index: index + 1,
+              fixed: index === content.length - 1,
               onClick: (idx) => {
                 setInsertIndex(idx);
                 setModalOpen(true);
@@ -4220,10 +4329,16 @@ var useOverlayCoords = (id, iframeEl, containerEl, documentState) => {
     const updateCoords = () => {
       const doc = iframeEl.contentDocument;
       if (!doc) return;
-      const element = doc.querySelector(`[data-tecof-id="${id}"]`);
-      if (!element) {
+      const wrapper = doc.querySelector(`[data-tecof-id="${id}"]`);
+      if (!wrapper) {
         setCoords(null);
         return;
+      }
+      let element = wrapper;
+      if (wrapper.classList.contains("tecof-node-wrapper") && wrapper.childElementCount === 1) {
+        const inner = wrapper.firstElementChild;
+        const innerRect = inner.getBoundingClientRect();
+        if (innerRect.width > 0 && innerRect.height > 0) element = inner;
       }
       const rect = element.getBoundingClientRect();
       const iframeRect = iframeEl.getBoundingClientRect();
@@ -4259,17 +4374,26 @@ var useOverlayCoords = (id, iframeEl, containerEl, documentState) => {
       }
     };
     updateCoords();
-    const iframeWin = iframeEl.contentWindow;
+    const iframeDoc = iframeEl.contentDocument;
     resizeObserver = new ResizeObserver(() => {
       updateCoords();
     });
     resizeObserver.observe(iframeEl);
-    iframeWin?.addEventListener("scroll", updateCoords);
+    let scrollRaf = 0;
+    const onAnyScroll = () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        updateCoords();
+      });
+    };
+    iframeDoc?.addEventListener("scroll", onAnyScroll, { capture: true, passive: true });
     window.addEventListener("resize", updateCoords);
     return () => {
       if (resizeObserver) resizeObserver.disconnect();
       if (targetResizeObserver) targetResizeObserver.disconnect();
-      iframeWin?.removeEventListener("scroll", updateCoords);
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      iframeDoc?.removeEventListener("scroll", onAnyScroll, true);
       window.removeEventListener("resize", updateCoords);
     };
   }, [id, iframeEl, containerEl, documentState]);
@@ -4336,6 +4460,22 @@ var SelectionOverlay = () => {
     const iframe = document.querySelector(".tecof-canvas-viewport iframe");
     setIframeEl(iframe);
   }, [documentState]);
+  const [isScrolling, setIsScrolling] = React.useState(false);
+  React.useEffect(() => {
+    const doc = iframeEl?.contentDocument;
+    if (!doc) return;
+    let timer = null;
+    const onScroll = () => {
+      setIsScrolling(true);
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setIsScrolling(false), 120);
+    };
+    doc.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => {
+      doc.removeEventListener("scroll", onScroll, true);
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [iframeEl]);
   const selectedCoords = useOverlayCoords(selectedId, iframeEl, containerRef.current, documentState);
   const hoveredCoords = useOverlayCoords(
     hoveredId !== selectedId ? hoveredId : null,
@@ -4354,7 +4494,7 @@ var SelectionOverlay = () => {
   const handleMove = (direction) => {
     if (!selectedId || !nodeDetails) return;
     const { zoneKey, index } = nodeDetails.path;
-    const newIndex = direction === "up" ? index - 1 : index + 1;
+    const newIndex = direction === "up" ? index - 1 : index + 2;
     moveNode2(selectedId, zoneKey, newIndex);
   };
   const breadcrumbs = selectedId ? getBreadcrumbs(documentState, selectedId) : [];
@@ -4364,7 +4504,7 @@ var SelectionOverlay = () => {
     "div",
     {
       ref: containerRef,
-      className: "tecof-overlay",
+      className: `tecof-overlay${isScrolling ? " is-scrolling" : ""}`,
       children: [
         hoveredCoords && /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
           /* @__PURE__ */ jsxRuntime.jsx(SpacingBands, { coords: hoveredCoords }),
@@ -5314,6 +5454,166 @@ var useResolvedFields = (node, componentConfig) => {
   }
   return state.id === nodeId ? { fields: state.fields, readOnly: state.readOnly } : { fields: staticFields, readOnly: EMPTY_READONLY };
 };
+var HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+var toInputHex = (raw) => {
+  if (/^#[0-9a-f]{6}$/i.test(raw)) return raw;
+  if (/^#[0-9a-f]{8}$/i.test(raw)) return raw.slice(0, 7);
+  if (/^#[0-9a-f]{3,4}$/i.test(raw)) {
+    const [r, g, b] = raw.slice(1, 4).split("");
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  return "#000000";
+};
+var findOption = (value) => [...COLOR_SECTIONS.base, ...COLOR_SECTIONS.theme, ...COLOR_SECTIONS.brand].find(
+  (o) => o.value === value
+);
+var describeValue = (value) => {
+  if (!value) return { label: "Yok", swatch: null };
+  const option = findOption(value);
+  if (option) return { label: option.label, swatch: option.swatch ?? option.value };
+  const palette = parsePaletteToken(value);
+  if (palette) {
+    return {
+      label: `${palette.hue.label} ${palette.shade}`,
+      swatch: tailwindSwatch(palette.hue.name, palette.shade)
+    };
+  }
+  if (isArbitrary(value)) {
+    const raw = arbitraryRaw(value);
+    return { label: raw, swatch: raw };
+  }
+  return { label: value, swatch: value };
+};
+var Swatch = ({
+  option,
+  active,
+  onSelect
+}) => {
+  const isNone = option.value === "";
+  return /* @__PURE__ */ jsxRuntime.jsx(
+    "button",
+    {
+      type: "button",
+      title: option.label,
+      className: `tecof-style-swatch${active ? " is-active" : ""}${isNone ? " is-none" : ""}`,
+      style: !isNone ? { "--swatch": option.swatch || option.value } : void 0,
+      onClick: () => onSelect(option.value)
+    }
+  );
+};
+var ColorPicker = ({ value, onChange }) => {
+  const [open, setOpen] = React.useState(false);
+  const { label, swatch } = describeValue(value);
+  const paletteMatch = parsePaletteToken(value);
+  const [browsedHue, setBrowsedHue] = React.useState("red");
+  const activeHueName = paletteMatch?.hue.name ?? browsedHue;
+  const activeHue = TAILWIND_PALETTE.find((h) => h.name === activeHueName) ?? TAILWIND_PALETTE[0];
+  const isCustom = isArbitrary(value) && !findOption(value);
+  const customRaw = isCustom ? arbitraryRaw(value) : "";
+  const [hexDraft, setHexDraft] = React.useState(customRaw);
+  const commitHex = (raw) => {
+    const trimmed = raw.trim().toLowerCase();
+    if (!trimmed) return;
+    const hex = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+    if (!HEX_RE.test(hex)) {
+      setHexDraft(customRaw);
+      return;
+    }
+    setHexDraft(hex);
+    onChange(toArbitrary(hex));
+  };
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-picker", children: [
+    /* @__PURE__ */ jsxRuntime.jsxs(
+      "button",
+      {
+        type: "button",
+        className: `tecof-color-trigger${open ? " is-open" : ""}`,
+        "aria-expanded": open,
+        onClick: () => setOpen((o) => !o),
+        children: [
+          /* @__PURE__ */ jsxRuntime.jsx(
+            "span",
+            {
+              className: `tecof-style-swatch tecof-color-trigger-swatch${!swatch ? " is-none" : ""}`,
+              style: swatch ? { "--swatch": swatch } : void 0
+            }
+          ),
+          /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-color-trigger-label", children: label }),
+          /* @__PURE__ */ jsxRuntime.jsx(chunk24FK4NEO_js.ChevronDown, { size: 13, className: `tecof-color-trigger-chevron${open ? " is-open" : ""}` })
+        ]
+      }
+    ),
+    open && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-panel", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section", children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.base.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value || "none")) }) }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "Tema renkleri" }),
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.theme.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "Marka (Primary)" }),
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.brand.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value)) })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "Tailwind paleti" }),
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-hues", children: TAILWIND_PALETTE.map((h) => /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            title: h.label,
+            className: `tecof-color-hue${activeHueName === h.name ? " is-active" : ""}`,
+            style: { "--swatch": tailwindSwatch(h.name, "500") },
+            onClick: () => setBrowsedHue(h.name)
+          },
+          h.name
+        )) }),
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: TAILWIND_SHADES.map((shade) => {
+          const token = `${activeHue.name}-${shade}`;
+          return /* @__PURE__ */ jsxRuntime.jsx(
+            Swatch,
+            {
+              option: { label: `${activeHue.label} ${shade}`, value: token, swatch: tailwindSwatch(activeHue.name, shade) },
+              active: value === token,
+              onSelect: onChange
+            },
+            token
+          );
+        }) })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "\xD6zel renk" }),
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-custom", children: [
+          /* @__PURE__ */ jsxRuntime.jsx(
+            "input",
+            {
+              type: "color",
+              className: "tecof-color-input",
+              "aria-label": "\xD6zel renk se\xE7",
+              value: toInputHex(customRaw || (hexDraft && HEX_RE.test(hexDraft) ? hexDraft : "#000000")),
+              onChange: (e) => {
+                setHexDraft(e.target.value);
+                onChange(toArbitrary(e.target.value));
+              }
+            }
+          ),
+          /* @__PURE__ */ jsxRuntime.jsx(
+            "input",
+            {
+              type: "text",
+              className: "tecof-input tecof-color-hex-input",
+              placeholder: "#rrggbb",
+              value: hexDraft,
+              onChange: (e) => setHexDraft(e.target.value),
+              onBlur: (e) => commitHex(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter") e.target.blur();
+              }
+            }
+          )
+        ] })
+      ] })
+    ] })
+  ] });
+};
 var hasProps = (props) => !!props && Object.values(props).some(Boolean);
 var BREAKPOINTS = [
   { key: "base", label: "Genel" },
@@ -5426,7 +5726,7 @@ var StyleEditor = ({ value, onChange }) => {
           inherited: inheritedLayer[control.id],
           onChange: (v) => setLayerValue(control.id, v)
         },
-        control.id
+        `${bp}:${state}:${control.id}`
       ))
     ] }, group))
   ] });
@@ -5437,7 +5737,8 @@ var ControlRow = ({
   inherited,
   onChange
 }) => {
-  const supportsArbitrary = !!control.arbitraryPrefix;
+  const isColor = control.type === "color";
+  const supportsArbitrary = !!control.arbitraryPrefix && !isColor;
   const matchesOption = control.options.some((o) => o.value === value);
   const valueIsArbitrary = supportsArbitrary && isArbitrary(value) && !matchesOption;
   const [customOpen, setCustomOpen] = React.useState(valueIsArbitrary);
@@ -5456,20 +5757,7 @@ var ControlRow = ({
       !value && inheritedLabel && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-style-inherited", title: `Devral\u0131nan de\u011Fer: ${inheritedLabel}`, children: inheritedLabel })
     ] }),
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-control", children: [
-      control.type === "color" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: control.options.map((opt) => {
-        const isNone = opt.value === "";
-        return /* @__PURE__ */ jsxRuntime.jsx(
-          "button",
-          {
-            type: "button",
-            title: opt.label,
-            className: `tecof-style-swatch${presetValue === opt.value ? " is-active" : ""}${isNone ? " is-none" : ""}`,
-            style: !isNone ? { "--swatch": opt.swatch || opt.value } : void 0,
-            onClick: () => onChange(opt.value)
-          },
-          opt.value || "none"
-        );
-      }) }) : control.type === "segment" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", children: control.options.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(
+      control.type === "color" ? /* @__PURE__ */ jsxRuntime.jsx(ColorPicker, { value, onChange }) : control.type === "segment" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", children: control.options.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(
         "button",
         {
           type: "button",
@@ -6804,44 +7092,6 @@ var LeftPanel = () => {
     ] }) : /* @__PURE__ */ jsxRuntime.jsx(LayersTree, {}) })
   ] });
 };
-function useKeyboardShortcuts() {
-  const undo = useEditorStore((state) => state.undo);
-  const redo = useEditorStore((state) => state.redo);
-  const removeNodes2 = useEditorStore((state) => state.removeNodes);
-  const duplicateNodes2 = useEditorStore((state) => state.duplicateNodes);
-  const selectedIds = useEditorStore((state) => state.selection.selectedIds);
-  React.useEffect(() => {
-    const handleKeyDown = (e) => {
-      const target = e.target;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable) {
-        return;
-      }
-      const isMac2 = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-      const cmdOrCtrl = isMac2 ? e.metaKey : e.ctrlKey;
-      if (cmdOrCtrl && !e.shiftKey && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        undo();
-      } else if (cmdOrCtrl && e.shiftKey && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        redo();
-      } else if (e.key === "Backspace" || e.key === "Delete") {
-        if (selectedIds.length > 0) {
-          e.preventDefault();
-          removeNodes2();
-        }
-      } else if (cmdOrCtrl && e.key.toLowerCase() === "d") {
-        if (selectedIds.length > 0) {
-          e.preventDefault();
-          duplicateNodes2();
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [undo, redo, removeNodes2, duplicateNodes2, selectedIds]);
-}
 var TecofStudio = ({
   pageId,
   config,
@@ -6878,7 +7128,6 @@ var TecofStudio = ({
   savingRef.current = saving;
   const autoSaveTimerRef = React.useRef(null);
   const isEmbedded2 = isEmbedded();
-  useKeyboardShortcuts();
   React.useEffect(() => {
     configureBridge(hostOrigin);
   }, [hostOrigin]);
@@ -8392,6 +8641,8 @@ exports.LinkField = LinkField;
 exports.RepeaterField = RepeaterField;
 exports.STYLES_PROP = STYLES_PROP;
 exports.STYLE_CONTROLS = STYLE_CONTROLS;
+exports.TAILWIND_PALETTE = TAILWIND_PALETTE;
+exports.TAILWIND_SHADES = TAILWIND_SHADES;
 exports.TecofEditor = TecofEditor;
 exports.TecofRender = TecofRender;
 exports.TecofStudio = TecofStudio;

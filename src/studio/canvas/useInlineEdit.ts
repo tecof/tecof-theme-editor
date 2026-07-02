@@ -100,44 +100,50 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
     (e: React.MouseEvent) => {
       if (locked) return;
       const target = e.target as HTMLElement;
+      const wrapper = target.closest('[data-tecof-id]') as HTMLElement | null;
+      const marked = target.closest('[data-tecof-prop]') as HTMLElement | null;
 
-      const tag = target.tagName.toLowerCase();
+      // Resolve the actual editable target: prefer the element explicitly marked
+      // with data-tecof-prop (within this node wrapper) to keep whole block editable,
+      // falling back to the clicked target itself.
+      const editTarget = (marked && (!wrapper || wrapper.contains(marked))) ? marked : target;
+
+      const tag = editTarget.tagName.toLowerCase();
       if (!VALID_TAGS.includes(tag)) return;
 
-      const text = target.textContent?.trim() || '';
+      const text = editTarget.textContent?.trim() || '';
       if (!text) return;
 
-      const ownerDoc = target.ownerDocument;
+      const ownerDoc = editTarget.ownerDocument;
       const ownerWin = ownerDoc.defaultView;
       const defaultLang = ownerDoc.documentElement.lang || 'tr';
-      const wrapper = target.closest('[data-tecof-id]') as HTMLElement | null;
 
-      const match = resolveMatch(target, wrapper, node, text, defaultLang);
+      const match = resolveMatch(editTarget, wrapper, node, text, defaultLang);
       if (!match) return;
 
       e.stopPropagation();
 
       const { propName, isMultilingual, langCode } = match;
-      const originalText = target.textContent || '';
+      const originalText = editTarget.textContent || '';
 
-      target.contentEditable = 'true';
-      target.setAttribute('data-tecof-inline-editing', 'true');
-      target.focus();
+      editTarget.contentEditable = 'true';
+      editTarget.setAttribute('data-tecof-inline-editing', 'true');
+      editTarget.focus();
 
       // Range select the whole contents.
       const range = ownerDoc.createRange();
-      range.selectNodeContents(target);
+      range.selectNodeContents(editTarget);
       const sel = ownerWin?.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
 
       const commitInlineEdit = () => {
-        target.contentEditable = 'false';
-        target.removeAttribute('data-tecof-inline-editing');
-        target.removeEventListener('blur', handleBlur);
-        target.removeEventListener('keydown', handleKeyDown);
+        editTarget.contentEditable = 'false';
+        editTarget.removeAttribute('data-tecof-inline-editing');
+        editTarget.removeEventListener('blur', handleBlur);
+        editTarget.removeEventListener('keydown', handleKeyDown);
 
-        const newText = target.textContent?.trim() || '';
+        const newText = editTarget.textContent?.trim() || '';
 
         if (isMultilingual) {
           const currentArray = Array.isArray(node.props[propName]) ? node.props[propName] : [];
@@ -163,11 +169,11 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
       };
 
       const cancelInlineEdit = () => {
-        target.textContent = originalText;
-        target.contentEditable = 'false';
-        target.removeAttribute('data-tecof-inline-editing');
-        target.removeEventListener('blur', handleBlur);
-        target.removeEventListener('keydown', handleKeyDown);
+        editTarget.textContent = originalText;
+        editTarget.contentEditable = 'false';
+        editTarget.removeAttribute('data-tecof-inline-editing');
+        editTarget.removeEventListener('blur', handleBlur);
+        editTarget.removeEventListener('keydown', handleKeyDown);
       };
 
       const handleBlur = () => {
@@ -183,12 +189,12 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
 
         if (event.key === 'Enter' && !event.shiftKey) {
           event.preventDefault();
-          target.blur();
+          editTarget.blur();
         }
       };
 
-      target.addEventListener('blur', handleBlur);
-      target.addEventListener('keydown', handleKeyDown);
+      editTarget.addEventListener('blur', handleBlur);
+      editTarget.addEventListener('keydown', handleKeyDown);
     },
     [node, locked]
   );

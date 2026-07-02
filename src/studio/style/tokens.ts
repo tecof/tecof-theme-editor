@@ -11,6 +11,8 @@
  * host registers `--color-primary-*` in its `@theme`.
  */
 
+import { TAILWIND_PALETTE, TAILWIND_SHADES, tailwindSwatch } from './palette';
+
 export type StyleGroup = 'layout' | 'spacing' | 'sizing' | 'typography' | 'background' | 'border' | 'effects';
 export type StyleControlType = 'segment' | 'select' | 'color' | 'space';
 
@@ -84,26 +86,44 @@ const THEME_COLOR_OPTIONS: StyleControlOption[] = THEME_COLORS.map(({ label, key
   swatch: `var(--theme-color-${key})`,
 }));
 
-const COLOR_OPTIONS: StyleControlOption[] = [
+/** Quick picks shown at the top of the color picker. */
+const BASE_COLOR_OPTIONS: StyleControlOption[] = [
   { label: 'Yok', value: '' },
   { label: 'Şeffaf', value: 'transparent', swatch: 'transparent' },
   { label: 'Beyaz', value: 'white', swatch: '#ffffff' },
   { label: 'Siyah', value: 'black', swatch: '#000000' },
+];
+
+/** Brand palette (Tailwind v4 @theme: --color-primary-*). */
+const BRAND_COLOR_OPTIONS: StyleControlOption[] = TAILWIND_SHADES.map((s) => ({
+  label: `Primary ${s}`,
+  value: `primary-${s}`,
+  swatch: `var(--tecof-primary-${s})`,
+}));
+
+/** Full Tailwind default palette (`red-500` → `bg-red-500`). */
+const TAILWIND_COLOR_OPTIONS: StyleControlOption[] = TAILWIND_PALETTE.flatMap((hue) =>
+  TAILWIND_SHADES.map((shade) => ({
+    label: `${hue.label} ${shade}`,
+    value: `${hue.name}-${shade}`,
+    swatch: tailwindSwatch(hue.name, shade),
+  }))
+);
+
+const COLOR_OPTIONS: StyleControlOption[] = [
+  ...BASE_COLOR_OPTIONS,
   // Live theme colors (host --theme-color-* variables)
   ...THEME_COLOR_OPTIONS,
-  // Brand palette (Tailwind v4 @theme: --color-primary-*)
-  ...['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'].map((s) => ({
-    label: `Primary ${s}`,
-    value: `primary-${s}`,
-    swatch: `var(--tecof-primary-${s})`,
-  })),
-  // A few neutrals (Tailwind defaults)
-  { label: 'Zinc 100', value: 'zinc-100', swatch: '#f4f4f5' },
-  { label: 'Zinc 300', value: 'zinc-300', swatch: '#d4d4d8' },
-  { label: 'Zinc 500', value: 'zinc-500', swatch: '#71717a' },
-  { label: 'Zinc 700', value: 'zinc-700', swatch: '#3f3f46' },
-  { label: 'Zinc 900', value: 'zinc-900', swatch: '#18181b' },
+  ...BRAND_COLOR_OPTIONS,
+  ...TAILWIND_COLOR_OPTIONS,
 ];
+
+/** Grouped color sections consumed by the ColorPicker UI. */
+export const COLOR_SECTIONS = {
+  base: BASE_COLOR_OPTIONS,
+  theme: THEME_COLOR_OPTIONS,
+  brand: BRAND_COLOR_OPTIONS,
+} as const;
 
 const opts = (values: string[], withNone = true): StyleControlOption[] => [
   ...(withNone ? [{ label: '—', value: '' }] : []),
@@ -199,7 +219,7 @@ export const STYLE_CONTROLS: StyleControl[] = [
     options: opts(['none', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', 'full']),
     toClass: (v) => (v ? (v === 'md' ? 'rounded' : `rounded-${v}`) : null) },
   { id: 'border', label: 'Kenarlık', group: 'border', type: 'select',
-    options: opts(['0', '2', '4', '8']),
+    options: opts(['0', '1', '2', '4', '8']),
     toClass: (v) => (v ? (v === '1' ? 'border' : `border-${v}`) : null) },
   { id: 'borderColor', label: 'Kenarlık rengi', group: 'border', type: 'color', options: COLOR_OPTIONS,
     arbitraryPrefix: 'border', toClass: withArbitrary('border', (v) => `border-${v}`) },

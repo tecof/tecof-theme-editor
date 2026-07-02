@@ -91,11 +91,31 @@ describe('Tecof Studio Engine', () => {
       insertNode({ type: 'C', props: { id: 'c' } });
       
       moveNode('c', undefined, 0); // move C to start
-      
+
       const { document } = useEditorStore.getState();
       expect(document.content[0].props.id).toBe('c');
       expect(document.content[1].props.id).toBe('a');
       expect(document.content[2].props.id).toBe('b');
+    });
+
+    it('moves a node one step down with pre-removal (drop) index semantics', () => {
+      const { insertNode, moveNode } = useEditorStore.getState();
+
+      insertNode({ type: 'A', props: { id: 'a' } });
+      insertNode({ type: 'B', props: { id: 'b' } });
+      insertNode({ type: 'C', props: { id: 'c' } });
+
+      // The target index is measured BEFORE the node leaves the list: "one down"
+      // for the first item means inserting before the element at index 2. The
+      // selection-overlay arrow buttons rely on this (index + 2 for down).
+      moveNode('a', undefined, 2);
+
+      const { document } = useEditorStore.getState();
+      expect(document.content.map((n) => n.props.id)).toEqual(['b', 'a', 'c']);
+
+      // index + 1 would compensate back to the original spot (no-op).
+      moveNode('b', undefined, 1);
+      expect(useEditorStore.getState().document.content.map((n) => n.props.id)).toEqual(['b', 'a', 'c']);
     });
 
     it('should prevent moving a node into its own descendant zone', () => {

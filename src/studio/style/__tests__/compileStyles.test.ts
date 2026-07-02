@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { compileStyles, mergeClassName, collectDocumentClasses } from '../compileStyles';
 import { getSafelist } from '../tokens';
+import { TAILWIND_PALETTE, TAILWIND_SHADES, parsePaletteToken, tailwindSwatch } from '../palette';
 import type { NodeStyles } from '../types';
 
 describe('compileStyles', () => {
@@ -91,6 +92,47 @@ describe('getSafelist', () => {
     expect(safelist).toContain('bg-[var(--theme-color-primary)]');
     expect(safelist).toContain('text-[var(--theme-color-foreground)]');
     expect(safelist).toContain('md:bg-[var(--theme-color-primary)]');
+  });
+
+  it('includes the full Tailwind default palette for every color control', () => {
+    const safelist = getSafelist();
+    expect(safelist).toContain('bg-red-500');
+    expect(safelist).toContain('text-sky-300');
+    expect(safelist).toContain('border-stone-950');
+    expect(safelist).toContain('hover:bg-rose-800');
+    expect(safelist).toContain('md:hover:text-emerald-50');
+  });
+
+  it('includes the 1px border preset', () => {
+    expect(getSafelist()).toContain('border');
+  });
+});
+
+describe('Tailwind palette tokens', () => {
+  it('compiles palette presets to standard Tailwind classes', () => {
+    expect(compileStyles({ base: { bg: 'red-500', text: 'zinc-100', borderColor: 'sky-700' } })).toBe(
+      'bg-red-500 text-zinc-100 border-sky-700'
+    );
+  });
+
+  it('parsePaletteToken resolves hue + shade and rejects non-palette tokens', () => {
+    expect(parsePaletteToken('red-500')?.hue.name).toBe('red');
+    expect(parsePaletteToken('red-500')?.shade).toBe('500');
+    expect(parsePaletteToken('primary-600')).toBeNull();
+    expect(parsePaletteToken('white')).toBeNull();
+    expect(parsePaletteToken('red-499')).toBeNull();
+  });
+
+  it('every hue defines all 11 shades as hex previews', () => {
+    for (const hue of TAILWIND_PALETTE) {
+      for (const shade of TAILWIND_SHADES) {
+        expect(hue.shades[shade]).toMatch(/^#[0-9a-f]{6}$/);
+      }
+    }
+  });
+
+  it('tailwindSwatch prefers the live theme variable with a hex fallback', () => {
+    expect(tailwindSwatch('red', '500')).toBe('var(--color-red-500, #ef4444)');
   });
 });
 
