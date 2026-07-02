@@ -1,54 +1,114 @@
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef } from 'react';
+import type React from 'react';
 import { setDragGhost } from './dragGhost';
 import { writeDragData } from './dndUtils';
 import { isInsideOverlayPortal } from './overlayPortal';
+import type { TecofNode } from '../../types';
+import type { DragPayload } from '../../engine/store';
 
-export function useInlineDragRef({
-  node,
-  index,
-  zoneKey,
-  locked,
-  wrapperClassName,
-  label,
-  beginDrag,
-  endDrag,
-  handleMouseEnter,
-  handleMouseLeave,
-  handleClick,
-  onDoubleClick,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-}: any) {
+/**
+ * Options for {@link useInlineDragRef}. Handler fields use method syntax +
+ * native/React event unions on purpose: method members are checked
+ * bivariantly, so NodeRenderer can pass its existing React-event-typed
+ * handlers while we invoke them with native events (inline nodes bind native
+ * listeners on the component's own root element; the handlers only touch the
+ * structural overlap of the two event shapes).
+ */
+interface UseInlineDragRefOptions {
+  node: TecofNode;
+  index: number;
+  zoneKey?: string;
+  locked: boolean;
+  wrapperClassName: string;
+  label: string;
+  beginDrag(payload: DragPayload): void;
+  endDrag(): void;
+  handleMouseEnter(e: MouseEvent | React.MouseEvent): void;
+  handleMouseLeave(e: MouseEvent | React.MouseEvent): void;
+  handleClick(e: MouseEvent | React.MouseEvent): void;
+  onDoubleClick(e: MouseEvent | React.MouseEvent): void;
+  onContextMenu?(e: MouseEvent | React.MouseEvent): void;
+  onDragOver(e: DragEvent | React.DragEvent): void;
+  onDragLeave(e: DragEvent | React.DragEvent): void;
+  onDrop(e: DragEvent | React.DragEvent): void;
+}
+
+/** Every event the inline root listens to — add/remove stays symmetric. */
+const BOUND_EVENTS = [
+  'mouseenter',
+  'mouseleave',
+  'click',
+  'dblclick',
+  'contextmenu',
+  'dragstart',
+  'dragend',
+  'dragover',
+  'dragleave',
+  'drop',
+] as const;
+
+/**
+ * Wires an INLINE component's own root element up as a full editor node:
+ * data attributes, wrapper classes, drag source behaviour and all interaction
+ * listeners — without an extra wrapper div.
+ *
+ * Listeners are attached/detached inside the ref callback itself (not in an
+ * effect), so they always live on the CURRENT element: React can re-attach the
+ * ref to a brand-new DOM element without any dep changing, which would leave an
+ * effect-bound listener set on the detached element. The bound handler set is
+ * created once and reads the latest callbacks/metadata through refs.
+ */
+export function useInlineDragRef(options: UseInlineDragRefOptions) {
+  const { node, index, zoneKey, locked, wrapperClassName, label } = options;
+
   const nodeRef = useRef<HTMLElement | null>(null);
-  
-  const callbacks = useRef({
-    handleMouseEnter,
-    handleMouseLeave,
-    handleClick,
-    onDoubleClick,
-    onDragOver,
-    onDragLeave,
-    onDrop,
-    beginDrag,
-    endDrag,
-  });
-  
-  useEffect(() => {
-    callbacks.current = {
-      handleMouseEnter,
-      handleMouseLeave,
-      handleClick,
-      onDoubleClick,
-      onDragOver,
-      onDragLeave,
-      onDrop,
-      beginDrag,
-      endDrag,
+
+  // Latest callbacks + drag metadata, readable from the stable bound handlers.
+  const callbacksRef = useRef(options);
+  callbacksRef.current = options;
+  const metaRef = useRef({ nodeId: node.props.id, label, locked });
+  metaRef.current = { nodeId: node.props.id, label, locked };
+
+  // One stable listener set for the hook's lifetime.
+  const boundRef = useRef<Record<(typeof BOUND_EVENTS)[number], EventListener> | null>(null);
+  if (!boundRef.current) {
+    boundRef.current = {
+      mouseenter: (e) => callbacksRef.current.handleMouseEnter(e as MouseEvent),
+      mouseleave: (e) => callbacksRef.current.handleMouseLeave(e as MouseEvent),
+      click: (e) => callbacksRef.current.handleClick(e as MouseEvent),
+      dblclick: (e) => callbacksRef.current.onDoubleClick(e as MouseEvent),
+      contextmenu: (e) => callbacksRef.current.onContextMenu?.(e as MouseEvent),
+      dragover: (e) => callbacksRef.current.onDragOver(e as DragEvent),
+      dragleave: (e) => callbacksRef.current.onDragLeave(e as DragEvent),
+      drop: (e) => callbacksRef.current.onDrop(e as DragEvent),
+      dragstart: (e) => {
+        const de = e as DragEvent;
+        const meta = metaRef.current;
+        if (meta.locked) return;
+        // Dragging from inside an overlay portal must not move the node.
+        // (Click/double-click guards live in the shared handlers themselves.)
+        if (isInsideOverlayPortal(de.target)) {
+          de.preventDefault();
+          return;
+        }
+        writeDragData(de, { nodeId: meta.nodeId });
+        if (de.dataTransfer) {
+          de.dataTransfer.effectAllowed = 'move';
+        }
+        // setDragGhost only touches currentTarget/dataTransfer — structurally
+        // identical between native and React drag events.
+        setDragGhost(de as unknown as React.DragEvent, meta.label);
+        callbacksRef.current.beginDrag({ id: meta.nodeId });
+      },
+      dragend: () => {
+        if (!metaRef.current.locked) callbacksRef.current.endDrag();
+      },
     };
-  });
+  }
 
   const setRef = useCallback((el: HTMLElement | null) => {
+    const bound = boundRef.current!;
+
     if (nodeRef.current) {
       const old = nodeRef.current;
       old.removeAttribute('data-tecof-id');
@@ -56,10 +116,13 @@ export function useInlineDragRef({
       old.removeAttribute('data-tecof-index');
       old.removeAttribute('data-tecof-zone');
       old.removeAttribute('draggable');
-      
+
       const classesToRemove = wrapperClassName.split(' ').filter(Boolean);
       if (classesToRemove.length > 0) {
         old.classList.remove(...classesToRemove);
+      }
+      for (const eventName of BOUND_EVENTS) {
+        old.removeEventListener(eventName, bound[eventName]);
       }
     }
 
@@ -68,7 +131,7 @@ export function useInlineDragRef({
       el.setAttribute('data-tecof-type', node.type);
       el.setAttribute('data-tecof-index', String(index));
       el.setAttribute('data-tecof-zone', zoneKey || 'root');
-      
+
       if (!locked) {
         el.setAttribute('draggable', 'true');
       }
@@ -77,66 +140,13 @@ export function useInlineDragRef({
       if (classesToAdd.length > 0) {
         el.classList.add(...classesToAdd);
       }
+      for (const eventName of BOUND_EVENTS) {
+        el.addEventListener(eventName, bound[eventName]);
+      }
     }
-    
+
     nodeRef.current = el;
   }, [node.props.id, node.type, index, zoneKey, locked, wrapperClassName]);
-
-  useEffect(() => {
-    const el = nodeRef.current;
-    if (!el) return;
-
-    const onMouseEnter = (e: MouseEvent) => callbacks.current.handleMouseEnter(e);
-    const onMouseLeave = (e: MouseEvent) => callbacks.current.handleMouseLeave(e);
-    const onClick = (e: MouseEvent) => callbacks.current.handleClick(e);
-    const onDblClick = (e: MouseEvent) => callbacks.current.onDoubleClick(e);
-    const onNativeDragOver = (e: DragEvent) => callbacks.current.onDragOver(e);
-    const onNativeDragLeave = (e: DragEvent) => callbacks.current.onDragLeave(e);
-    const onNativeDrop = (e: DragEvent) => callbacks.current.onDrop(e);
-    
-    const onDragStart = (e: DragEvent) => {
-      if (locked) return;
-      // Dragging from inside an overlay portal must not move the node.
-      // (Click/double-click guards live in the shared handlers themselves.)
-      if (isInsideOverlayPortal(e.target)) {
-        e.preventDefault();
-        return;
-      }
-      writeDragData(e as any, { nodeId: node.props.id });
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-      }
-      setDragGhost(e as any, label);
-      callbacks.current.beginDrag({ id: node.props.id });
-    };
-    
-    const onDragEnd = () => {
-      if (locked) return;
-      callbacks.current.endDrag();
-    };
-
-    el.addEventListener('mouseenter', onMouseEnter);
-    el.addEventListener('mouseleave', onMouseLeave);
-    el.addEventListener('click', onClick);
-    el.addEventListener('dblclick', onDblClick);
-    el.addEventListener('dragstart', onDragStart);
-    el.addEventListener('dragend', onDragEnd);
-    el.addEventListener('dragover', onNativeDragOver);
-    el.addEventListener('dragleave', onNativeDragLeave);
-    el.addEventListener('drop', onNativeDrop);
-
-    return () => {
-      el.removeEventListener('mouseenter', onMouseEnter);
-      el.removeEventListener('mouseleave', onMouseLeave);
-      el.removeEventListener('click', onClick);
-      el.removeEventListener('dblclick', onDblClick);
-      el.removeEventListener('dragstart', onDragStart);
-      el.removeEventListener('dragend', onDragEnd);
-      el.removeEventListener('dragover', onNativeDragOver);
-      el.removeEventListener('dragleave', onNativeDragLeave);
-      el.removeEventListener('drop', onNativeDrop);
-    };
-  }, [locked, node.props.id, label, setRef]);
 
   return { setRef, nodeRef };
 }

@@ -1,6 +1,10 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import { Plus } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
+import { findNodeById } from '../../engine/zones';
+import { isValidDrop } from '../../engine/rules';
 import { NodeRenderer } from './NodeRenderer';
 import { useDropTarget } from './useDropTarget';
 
@@ -17,13 +21,27 @@ export interface DropZoneProps {
 export const DropZone = ({ zone, className, style, orientation = 'vertical' }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
-  const { readOnly } = useStudio();
-  // Global "is any drag active" flag drives the dropzone affordance; this is a
-  // legitimately global subscription (not node-scoped).
-  const isDragActive = useEditorStore((state) => state.drag != null);
+  const { config, readOnly } = useStudio();
+  const openAddSection = useUiStore((state) => state.openAddSection);
+  // Drag payload drives both the affordance flag and the validity check; this
+  // is a legitimately global subscription (not node-scoped).
+  const dragPayload = useEditorStore((state) => state.drag);
+  const isDragActive = dragPayload != null;
 
   // Get items for this zone from the store
   const items = useEditorStore((state) => state.document.zones[zoneKey]) || [];
+
+  // Sürüklenen tip bu zone'un kurallarına uymuyorsa görsel olarak pasifleştir —
+  // tüm zone'ların aynı anda "bırakılabilir" gibi parlamasını önler.
+  const isDropDenied = useMemo(() => {
+    if (!dragPayload) return false;
+    const doc = useEditorStore.getState().document;
+    const payload = dragPayload as { id?: string; type?: string };
+    const draggedType =
+      payload.type ?? (payload.id ? findNodeById(doc, payload.id)?.node.type ?? null : null);
+    if (!draggedType) return false;
+    return !isValidDrop(config, draggedType, zoneKey, doc);
+  }, [dragPayload, config, zoneKey]);
 
   const { isDragOver, onDragOver, onDragLeave, onDrop } = useDropTarget({
     zoneKey,
@@ -37,6 +55,7 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical' }: D
     items.length === 0 ? 'is-empty' : '',
     isDragOver ? 'is-dragover' : '',
     isDragActive ? 'is-drag-active' : '',
+    isDropDenied ? 'is-drop-denied' : '',
     className,
   ]
     .filter(Boolean)
@@ -53,9 +72,28 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical' }: D
       data-tecof-orientation={orientation}
     >
       {items.length === 0 ? (
-        <span className="tecof-dropzone-hint">
-          {isDragOver ? 'Buraya Bırakın' : 'Bileşen Sürükleyin'}
-        </span>
+        readOnly ? null : (
+          // Boş slot tıklanınca "Bölüm Ekle" modalı bu zone'u hedefleyerek
+          // açılır ve yalnızca buraya bırakılabilecek tipleri listeler.
+          <button
+            type="button"
+            className="tecof-dropzone-hint"
+            onClick={(e) => {
+              e.stopPropagation();
+              openAddSection({ zoneKey, index: 0 });
+            }}
+            title="Bu alana bileşen ekle"
+          >
+            {isDragOver ? (
+              'Buraya Bırakın'
+            ) : (
+              <>
+                <Plus size={12} aria-hidden="true" />
+                Bileşen Ekle
+              </>
+            )}
+          </button>
+        )
       ) : (
         items.map((item, index) => (
           <NodeRenderer key={item.props.id} node={item} index={index} zoneKey={zoneKey} />

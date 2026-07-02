@@ -1,16 +1,30 @@
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { FieldLabel } from '../../components/fields/FieldLabel';
+import { FieldErrorBoundary } from '../../components/fields/FieldErrorBoundary';
 import { CmsBindingButton } from '../../components/fields/CmsBindingButton';
-import { ExternalField } from '../../components/fields/ExternalField';
+import { ExternalField, type ExternalFieldConfig } from '../../components/fields/ExternalField';
+import type { FieldConfig } from '../../types';
 
 export interface FieldRendererProps {
   name: string;
-  definition: any;
-  value: any;
-  onChange: (value: any) => void;
+  definition: FieldConfig;
+  value: unknown;
+  onChange: (value: unknown) => void;
   readOnly?: boolean;
 }
+
+interface SelectOption {
+  value: string;
+  label?: string;
+}
+
+/** Current string value with the field's declared default as display fallback. */
+const stringValue = (value: unknown, definition: FieldConfig): string => {
+  if (typeof value === 'string') return value;
+  if (typeof definition.defaultValue === 'string') return definition.defaultValue;
+  return '';
+};
 
 export const FieldRenderer = ({
   name,
@@ -24,74 +38,82 @@ export const FieldRenderer = ({
   const label = definition.label || name;
   const type = definition.type;
 
-  // 1. Custom Render (Custom Fields from create*Field factories)
+  // 1. Custom Render (Custom Fields from create*Field factories). Guarded by an
+  // error boundary so one broken custom field can't take down the inspector.
   if (definition.render) {
     return (
       <div className="tecof-field-custom">
-        {definition.render({
-          field: definition,
-          name,
-          id: `field-${name}`,
-          value,
-          onChange,
-          readOnly,
-        })}
+        <FieldErrorBoundary fieldName={name}>
+          {definition.render({
+            field: definition,
+            name,
+            id: `field-${name}`,
+            value,
+            onChange,
+            readOnly,
+          })}
+        </FieldErrorBoundary>
       </div>
     );
   }
 
   // 2. Built-in types (Standard fields)
   switch (type) {
-    case 'text':
+    case 'text': {
+      const current = stringValue(value, definition);
       return (
         <FieldLabel label={label} readOnly={readOnly}>
           <div className="tecof-field-bindable">
             <input
               id={`field-${name}`}
               type="text"
-              value={value || ''}
+              value={current}
               disabled={readOnly}
               onChange={(e) => onChange(e.target.value)}
               className="tecof-input-text"
             />
             {!readOnly && definition.bindable !== false && (
-              <CmsBindingButton onInsert={(t) => onChange(value ? `${value} ${t}` : t)} />
+              <CmsBindingButton onInsert={(t) => onChange(current ? `${current} ${t}` : t)} />
             )}
           </div>
         </FieldLabel>
       );
+    }
 
-    case 'textarea':
+    case 'textarea': {
+      const current = stringValue(value, definition);
       return (
         <FieldLabel label={label} readOnly={readOnly}>
           <div className="tecof-field-bindable is-textarea">
             <textarea
               id={`field-${name}`}
               rows={4}
-              value={value || ''}
+              value={current}
               disabled={readOnly}
               onChange={(e) => onChange(e.target.value)}
               className="tecof-input-textarea"
             />
             {!readOnly && definition.bindable !== false && (
-              <CmsBindingButton onInsert={(t) => onChange(value ? `${value} ${t}` : t)} />
+              <CmsBindingButton onInsert={(t) => onChange(current ? `${current} ${t}` : t)} />
             )}
           </div>
         </FieldLabel>
       );
+    }
 
-    case 'select':
+    case 'select': {
+      const options: SelectOption[] = Array.isArray(definition.options) ? definition.options : [];
       return (
         <FieldLabel label={label} readOnly={readOnly}>
           <div className="tecof-field-select-wrap">
             <select
               id={`field-${name}`}
-              value={value || ''}
+              value={stringValue(value, definition)}
               disabled={readOnly}
               onChange={(e) => onChange(e.target.value)}
               className="tecof-input-select"
             >
-              {(definition.options || []).map((opt: any) => (
+              {options.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label || opt.value}
                 </option>
@@ -103,23 +125,39 @@ export const FieldRenderer = ({
           </div>
         </FieldLabel>
       );
+    }
 
-    case 'number':
+    case 'number': {
+      const current =
+        typeof value === 'number'
+          ? value
+          : typeof definition.defaultValue === 'number'
+            ? definition.defaultValue
+            : undefined;
       return (
         <FieldLabel label={label} readOnly={readOnly}>
           <input
             id={`field-${name}`}
             type="number"
-            value={value !== undefined ? value : ''}
+            value={current !== undefined ? current : ''}
+            min={definition.min}
+            max={definition.max}
+            step={definition.step}
             disabled={readOnly}
             onChange={(e) => {
               const val = e.target.value;
-              onChange(val === '' ? undefined : Number(val));
+              if (val === '') {
+                onChange(undefined);
+                return;
+              }
+              const num = Number(val);
+              if (!Number.isNaN(num)) onChange(num);
             }}
             className="tecof-input-number"
           />
         </FieldLabel>
       );
+    }
 
     case 'boolean':
     case 'toggle': {
@@ -175,11 +213,12 @@ export const FieldRenderer = ({
       );
     }
 
-    case 'radio':
+    case 'radio': {
+      const options: SelectOption[] = Array.isArray(definition.options) ? definition.options : [];
       return (
         <FieldLabel label={label} readOnly={readOnly}>
           <div className="tecof-field-radio-group">
-            {(definition.options || []).map((opt: any) => (
+            {options.map((opt) => (
               <label
                 key={opt.value}
                 className={`tecof-field-radio${readOnly ? ' is-readonly' : ''}`}
@@ -198,19 +237,22 @@ export const FieldRenderer = ({
           </div>
         </FieldLabel>
       );
+    }
 
     case 'array': {
-      const items = Array.isArray(value) ? value : [];
+      const items = Array.isArray(value) ? (value as Record<string, unknown>[]) : [];
       const arrayFields = definition.arrayFields || {};
 
-      const getItemLabel = (item: any, idx: number) => {
+      const getItemLabel = (item: Record<string, unknown> | null | undefined, idx: number) => {
         if (!item) return `Öğe ${idx + 1}`;
         for (const val of Object.values(item)) {
           if (typeof val === 'string' && val.trim().length > 0) {
             return val;
           }
           if (Array.isArray(val)) {
-            const trVal = val.find((v) => typeof v === 'object' && v !== null && 'value' in v);
+            const trVal = val.find(
+              (v): v is { value: unknown } => typeof v === 'object' && v !== null && 'value' in v
+            );
             if (trVal && typeof trVal.value === 'string' && trVal.value.trim().length > 0) {
               return trVal.value;
             }
@@ -224,8 +266,9 @@ export const FieldRenderer = ({
       };
 
       const handleAdd = () => {
-        const newItem: any = {};
-        Object.entries(arrayFields).forEach(([subName, subDef]: [string, any]) => {
+        if (readOnly) return;
+        const newItem: Record<string, unknown> = {};
+        Object.entries(arrayFields).forEach(([subName, subDef]) => {
           newItem[subName] = subDef.defaultValue !== undefined ? subDef.defaultValue : null;
         });
         onChange([...items, newItem]);
@@ -236,12 +279,21 @@ export const FieldRenderer = ({
         const copy = [...items];
         copy.splice(idx, 1);
         onChange(copy);
-        const newExpanded = { ...expandedIndices };
-        delete newExpanded[idx];
-        setExpandedIndices(newExpanded);
+        // Kaldırılan öğeden sonrakilerin açık/kapalı durumu bir index kayar —
+        // sadece silineni düşürmek durumun yanlış öğeye yapışmasına yol açıyordu.
+        setExpandedIndices((prev) => {
+          const next: Record<number, boolean> = {};
+          for (const [key, expanded] of Object.entries(prev)) {
+            const i = Number(key);
+            if (i < idx) next[i] = expanded;
+            else if (i > idx) next[i - 1] = expanded;
+          }
+          return next;
+        });
       };
 
       const handleMove = (idx: number, direction: 'up' | 'down') => {
+        if (readOnly) return;
         if (direction === 'up' && idx === 0) return;
         if (direction === 'down' && idx === items.length - 1) return;
 
@@ -252,11 +304,13 @@ export const FieldRenderer = ({
         copy[targetIdx] = temp;
         onChange(copy);
 
-        const newExpanded = { ...expandedIndices };
-        const tempExpanded = newExpanded[idx];
-        newExpanded[idx] = newExpanded[targetIdx];
-        newExpanded[targetIdx] = tempExpanded;
-        setExpandedIndices(newExpanded);
+        setExpandedIndices((prev) => {
+          const next = { ...prev };
+          const tempExpanded = next[idx];
+          next[idx] = next[targetIdx];
+          next[targetIdx] = tempExpanded;
+          return next;
+        });
       };
 
       return (
@@ -287,33 +341,35 @@ export const FieldRenderer = ({
                     </div>
 
                     <div className="tecof-array-item-actions" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => handleMove(idx, 'up')}
-                        disabled={idx === 0}
-                        className="tecof-array-btn"
-                        title="Yukarı taşı"
-                      >
-                        <ArrowUp size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMove(idx, 'down')}
-                        disabled={idx === items.length - 1}
-                        className="tecof-array-btn"
-                        title="Aşağı taşı"
-                      >
-                        <ArrowDown size={12} />
-                      </button>
                       {!readOnly && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(idx)}
-                          className="tecof-array-btn danger"
-                          title="Sil"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleMove(idx, 'up')}
+                            disabled={idx === 0}
+                            className="tecof-array-btn"
+                            title="Yukarı taşı"
+                          >
+                            <ArrowUp size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMove(idx, 'down')}
+                            disabled={idx === items.length - 1}
+                            className="tecof-array-btn"
+                            title="Aşağı taşı"
+                          >
+                            <ArrowDown size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemove(idx)}
+                            className="tecof-array-btn danger"
+                            title="Sil"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -334,7 +390,7 @@ export const FieldRenderer = ({
                             };
                             onChange(updatedItems);
                           }}
-                          readOnly={readOnly || (subFieldDef as any)?.readOnly === true}
+                          readOnly={readOnly || subFieldDef.readOnly === true}
                         />
                       ))}
                     </div>
@@ -361,7 +417,10 @@ export const FieldRenderer = ({
     case 'object': {
       // Puck-compatible object field: a fixed group of named sub-fields.
       const objectFields = definition.objectFields || {};
-      const objVal = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+      const objVal =
+        value && typeof value === 'object' && !Array.isArray(value)
+          ? (value as Record<string, unknown>)
+          : {};
 
       return (
         <FieldLabel label={label} readOnly={readOnly}>
@@ -373,7 +432,7 @@ export const FieldRenderer = ({
                 definition={subFieldDef}
                 value={objVal[subFieldName]}
                 onChange={(newSubVal) => onChange({ ...objVal, [subFieldName]: newSubVal })}
-                readOnly={readOnly || (subFieldDef as any)?.readOnly === true}
+                readOnly={readOnly || subFieldDef.readOnly === true}
               />
             ))}
           </div>
@@ -382,9 +441,11 @@ export const FieldRenderer = ({
     }
 
     case 'external':
+      // FieldConfig'in serbest index imzası external alan üyelerini (fetchList
+      // vb.) taşır; burada somut tipe daraltıyoruz.
       return (
         <ExternalField
-          field={definition}
+          field={definition as unknown as ExternalFieldConfig}
           name={name}
           value={value}
           onChange={onChange}

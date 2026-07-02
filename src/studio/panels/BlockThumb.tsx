@@ -1,20 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
-import type { TecofApiClient } from '../../api';
+import type { StudioConfig } from '../../types';
+import { LiveBlockPreview, type PreviewMode } from './LivePreview';
 
 interface BlockThumbProps {
   /** Component type / config key — used both as the preview name and drag payload. */
   type: string;
-  /** Human-readable label shown as fallback text and tooltip. */
+  /** Human-readable label shown on the card and tooltip. */
   label: string;
-  /**
-   * Merchant domain used to fetch the rendered preview. When undefined, the
-   * thumbnail feature degrades gracefully to the text-only button.
-   */
-  domain?: string;
-  /** API client exposing `getComponentPreview`. May be undefined in some contexts. */
-  apiClient?: TecofApiClient;
-  /** Whether to show the preview image inline inside the card. */
+  /** Studio config — used to live-render the block preview. */
+  config: StudioConfig;
+  /** 'element' → compact fit-to-size preview; 'section' → desktop-scaled. */
+  previewMode: PreviewMode;
+  /** Whether to show the live preview inline inside the card. */
   showPreview?: boolean;
   /** Click-to-add handler (existing behavior). */
   onAdd: (type: string) => void;
@@ -24,148 +22,57 @@ interface BlockThumbProps {
   onDragEnd: (e: React.DragEvent) => void;
 }
 
-type PreviewState = 'idle' | 'loading' | 'loaded' | 'failed';
-
 /**
  * A single draggable block card in the "Blok Ekle" palette.
  *
- * Renders the existing text + icon button, enhanced with a lazily-loaded
- * preview thumbnail. The image is only fetched once the card scrolls into view
- * (via IntersectionObserver), or when it is hovered, and any in-flight work is ignored after unmount.
- * On a null/error preview — or when no domain/apiClient is available — it falls
- * back to the plain text button, preserving all drag/click behavior.
+ * Previews are LIVE renders of the component with its default props (via
+ * {@link LiveBlockPreview}) — the same preview the Add Section modal shows —
+ * instead of server-fetched screenshots, so they need no domain/API plumbing
+ * and always match the current theme code. Inline preview when `showPreview`
+ * is on; otherwise a hover popover. All drag/click behavior is preserved.
  */
 export const BlockThumb = ({
   type,
   label,
-  domain,
-  apiClient,
+  config,
+  previewMode,
   showPreview = false,
   onAdd,
   onDragStart,
   onDragEnd,
 }: BlockThumbProps) => {
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const [state, setState] = useState<PreviewState>('idle');
-  const [src, setSrc] = useState<string | null>(null);
   const [hovered, setHovered] = useState(false);
-
-  // Thumbnails are only possible when we have both a client and a domain.
-  const canPreview = Boolean(apiClient && domain);
-
-  // Function to load the preview image
-  const loadPreview = useRef<() => void>(() => {});
-
-  useEffect(() => {
-    // No client/domain → stay in fallback (text button) forever.
-    if (!canPreview) return;
-
-    const el = buttonRef.current;
-    if (!el) return;
-
-    let cancelled = false;
-    let observer: IntersectionObserver | null = null;
-
-    const load = () => {
-      if (cancelled) return;
-      // Already loading or loaded
-      if (state !== 'idle') return;
-      setState('loading');
-      apiClient!
-        .getComponentPreview(domain!, type)
-        .then((url) => {
-          if (cancelled) return;
-          if (url) {
-            setSrc(url);
-            setState('loaded');
-          } else {
-            setState('failed');
-          }
-        })
-        .catch(() => {
-          if (!cancelled) setState('failed');
-        });
-    };
-
-    loadPreview.current = load;
-
-    // If showPreview is true, lazy load via observer.
-    if (showPreview) {
-      if (typeof IntersectionObserver !== 'undefined') {
-        observer = new IntersectionObserver(
-          (entries) => {
-            if (entries.some((entry) => entry.isIntersecting)) {
-              observer?.disconnect();
-              observer = null;
-              load();
-            }
-          },
-          { rootMargin: '200px' }
-        );
-        observer.observe(el);
-      } else {
-        load();
-      }
-    }
-
-    return () => {
-      cancelled = true;
-      observer?.disconnect();
-    };
-  }, [canPreview, apiClient, domain, type, showPreview, state]);
-
-  // Load preview immediately if hovered
-  useEffect(() => {
-    if (hovered && state === 'idle') {
-      loadPreview.current();
-    }
-  }, [hovered, state]);
-
-  const showImage = showPreview && state === 'loaded' && src;
-  const showSkeleton = showPreview && canPreview && (state === 'idle' || state === 'loading');
-  const showHoverPopover = !showPreview && state === 'loaded' && src && hovered;
 
   return (
     <button
-      ref={buttonRef}
       type="button"
       onClick={() => onAdd(type)}
       draggable={true}
-      onDragStart={(e) => onDragStart(e, type, label)}
+      onDragStart={(e) => {
+        setHovered(false);
+        onDragStart(e, type, label);
+      }}
       onDragEnd={onDragEnd}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className={`tecof-block-btn${showImage ? ' tecof-block-btn--thumb' : ''}`}
+      className={`tecof-block-btn${showPreview ? ' tecof-block-btn--thumb' : ''}`}
       title={`${label} ekle`}
     >
-      {showImage ? (
-        <span className="tecof-block-thumb">
-          <img
-            src={src!}
-            alt={label}
-            className="tecof-block-thumb-img"
-            draggable={false}
-            loading="lazy"
-          />
+      {showPreview && (
+        <span className={`tecof-block-thumb is-${previewMode}`}>
+          <LiveBlockPreview config={config} type={type} mode={previewMode} />
         </span>
-      ) : showSkeleton ? (
-        <span className="tecof-block-thumb tecof-block-thumb--loading">
-          <span className="tecof-skeleton tecof-block-thumb-skeleton" />
-        </span>
-      ) : null}
+      )}
       <span className="tecof-block-btn-label">{label}</span>
       <Plus size={14} className="tecof-block-btn-icon" />
 
-      {/* Popover hover preview */}
-      {showHoverPopover && (
+      {/* Popover hover preview (only when inline previews are off) */}
+      {!showPreview && hovered && (
         <span className="tecof-block-popover">
-          <span className="tecof-block-popover-title">{label} Önizleme</span>
-          <img
-            src={src!}
-            alt={label}
-            className="tecof-block-popover-img"
-            draggable={false}
-          />
+          <span className="tecof-block-popover-title">{label}</span>
+          <span className={`tecof-block-popover-preview is-${previewMode}`}>
+            <LiveBlockPreview config={config} type={type} mode={previewMode} />
+          </span>
         </span>
       )}
     </button>

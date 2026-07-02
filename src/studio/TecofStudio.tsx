@@ -12,6 +12,7 @@ import { StudioContext } from './context';
 import { LanguageProvider } from './language/LanguageContext';
 import { Canvas } from './canvas/Canvas';
 import { SelectionOverlay } from './overlay/SelectionOverlay';
+import { NodeContextMenu } from './overlay/NodeContextMenu';
 import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
@@ -443,6 +444,7 @@ export const TecofStudio = ({
             <div className="tecof-studio-workspace">
               <Canvas />
               <SelectionOverlay />
+              <NodeContextMenu />
             </div>
             {rightPanelOpen ? (
               <Inspector />

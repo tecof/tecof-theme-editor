@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
 import { useEditorStore } from '../../engine/store';
+import { findNodeById } from '../../engine/zones';
+import { useActiveLanguage } from '../language/LanguageContext';
 import type { TecofNode } from '../../types';
 import { isInsideOverlayPortal } from './overlayPortal';
 
@@ -25,9 +27,19 @@ import { isInsideOverlayPortal } from './overlayPortal';
  *      we fall back to the original heuristic: compare the element's trimmed
  *      textContent against string props and translation-array values. Kept for
  *      backward compatibility with components that don't mark their text.
+ *
+ * Language resolution order for multilingual props: the explicit
+ * `data-tecof-lang` marker → the studio's app-wide active editing language
+ * (TopBar switcher) → the iframe document's `lang` → `'tr'`.
  */
 
 const VALID_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'a', 'div'];
+
+/** One entry of a multilingual prop array: `{ code: 'tr', value: '...' }`. */
+interface LocalizedEntry {
+  code?: string;
+  value?: unknown;
+}
 
 interface MatchResult {
   propName: string;
@@ -69,14 +81,14 @@ const resolveMatch = (
       return { propName: key, isMultilingual: false, langCode: defaultLang };
     }
     if (Array.isArray(value)) {
-      const matchedItem = value.find(
+      const matchedItem = (value as LocalizedEntry[]).find(
         (item) =>
           item &&
           typeof item === 'object' &&
           typeof item.value === 'string' &&
           item.value.trim() === text
       );
-      if (matchedItem) {
+      if (matchedItem && typeof matchedItem.code === 'string') {
         return {
           propName: key,
           isMultilingual: true,
@@ -97,8 +109,11 @@ const resolveMatch = (
  * @returns `{ onDoubleClick }` to spread on the node wrapper element.
  */
 export const useInlineEdit = (node: TecofNode, locked: boolean) => {
+  // Studio'nun global "düzenlenen dil" seçimi (TopBar); provider dışında null.
+  const activeLanguage = useActiveLanguage()?.activeLanguage ?? null;
+
   const onDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent | MouseEvent) => {
       if (locked) return;
       // Overlay portals keep their own interaction in edit mode; never start
       // inline editing from inside one.
@@ -112,6 +127,10 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
       // falling back to the clicked target itself.
       const editTarget = (marked && (!wrapper || wrapper.contains(marked))) ? marked : target;
 
+      // Already mid-edit (second double-click) — the listeners are live; a
+      // re-entry would stack duplicate blur/keydown handlers.
+      if (editTarget.getAttribute('data-tecof-inline-editing') === 'true') return;
+
       const tag = editTarget.tagName.toLowerCase();
       if (!VALID_TAGS.includes(tag)) return;
 
@@ -120,7 +139,7 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
 
       const ownerDoc = editTarget.ownerDocument;
       const ownerWin = ownerDoc.defaultView;
-      const defaultLang = ownerDoc.documentElement.lang || 'tr';
+      const defaultLang = activeLanguage || ownerDoc.documentElement.lang || 'tr';
 
       const match = resolveMatch(editTarget, wrapper, node, text, defaultLang);
       if (!match) return;
@@ -141,43 +160,51 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
       sel?.removeAllRanges();
       sel?.addRange(range);
 
-      const commitInlineEdit = () => {
+      const teardown = () => {
         editTarget.contentEditable = 'false';
         editTarget.removeAttribute('data-tecof-inline-editing');
         editTarget.removeEventListener('blur', handleBlur);
         editTarget.removeEventListener('keydown', handleKeyDown);
+        ownerWin?.getSelection()?.removeAllRanges();
+      };
+
+      const commitInlineEdit = () => {
+        teardown();
 
         const newText = editTarget.textContent?.trim() || '';
 
+        // Commit against the CURRENT props from the store — the document may
+        // have changed since double-click (undo, another field edit), and the
+        // render-time `node` closure would clobber those changes.
+        const store = useEditorStore.getState();
+        const currentProps =
+          findNodeById(store.document, node.props.id)?.node.props ?? node.props;
+
         if (isMultilingual) {
-          const currentArray = Array.isArray(node.props[propName]) ? node.props[propName] : [];
-          const updatedArray = currentArray.map((item: any) => {
+          const currentArray = Array.isArray(currentProps[propName])
+            ? (currentProps[propName] as LocalizedEntry[])
+            : [];
+          const updatedArray = currentArray.map((item) => {
             if (item && item.code === langCode) {
               return { ...item, value: newText };
             }
             return item;
           });
 
-          if (!updatedArray.some((item: any) => item && item.code === langCode)) {
+          if (!updatedArray.some((item) => item && item.code === langCode)) {
             updatedArray.push({ code: langCode, value: newText });
           }
 
-          useEditorStore.getState().updateProps(node.props.id, {
-            [propName]: updatedArray,
-          });
+          store.updateProps(node.props.id, { [propName]: updatedArray });
         } else {
-          useEditorStore.getState().updateProps(node.props.id, {
-            [propName]: newText,
-          });
+          store.updateProps(node.props.id, { [propName]: newText });
         }
       };
 
       const cancelInlineEdit = () => {
+        // Sıra önemli: teardown blur handler'ını söker, textContent geri alınır.
+        teardown();
         editTarget.textContent = originalText;
-        editTarget.contentEditable = 'false';
-        editTarget.removeAttribute('data-tecof-inline-editing');
-        editTarget.removeEventListener('blur', handleBlur);
-        editTarget.removeEventListener('keydown', handleKeyDown);
       };
 
       const handleBlur = () => {
@@ -200,7 +227,7 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
       editTarget.addEventListener('blur', handleBlur);
       editTarget.addEventListener('keydown', handleKeyDown);
     },
-    [node, locked]
+    [node, locked, activeLanguage]
   );
 
   return { onDoubleClick };

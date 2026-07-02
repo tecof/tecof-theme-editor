@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useStudio } from '../context';
 import { useEditorStore } from '../../engine/store';
 import { LayersTree } from './LayersTree';
@@ -7,40 +7,8 @@ import { Layers, Grid, Search, Eye, EyeOff } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
 
-/**
- * Resolve the merchant domain used for component preview thumbnails.
- *
- * There is no first-class `domain` in the studio context, so we look in
- * priority order and degrade gracefully (returning undefined) when nothing is
- * found — in which case the palette renders text-only buttons as before.
- *
- *  1. A host-supplied value on the config (`config.domain` / `config.metadata.domain`).
- *  2. A value on the studio `metadata` bag (`metadata.domain`).
- *  3. The hostname derived from the API client's CDN/API URL.
- */
-const resolveDomain = (
-  config: Record<string, any>,
-  metadata: Record<string, any> | undefined,
-  baseUrl: string | undefined
-): string | undefined => {
-  const explicit =
-    config?.domain ||
-    config?.metadata?.domain ||
-    metadata?.domain;
-  if (typeof explicit === 'string' && explicit.trim()) return explicit.trim();
-
-  if (baseUrl) {
-    try {
-      return new URL(baseUrl).hostname;
-    } catch {
-      /* not a parseable URL — fall through to undefined */
-    }
-  }
-  return undefined;
-};
-
 export const LeftPanel = () => {
-  const { config, metadata, apiClient } = useStudio();
+  const { config } = useStudio();
   const insertNode = useEditorStore((state) => state.insertNode);
   const beginDrag = useEditorStore((state) => state.beginDrag);
   const endDrag = useEditorStore((state) => state.endDrag);
@@ -49,12 +17,6 @@ export const LeftPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showPreviews, setShowPreviews] = useState(false);
 
-  // Domain for preview thumbnails (undefined → graceful text-only fallback).
-  const domain = useMemo(
-    () => resolveDomain(config as Record<string, any>, metadata, apiClient?.cdnUrl),
-    [config, metadata, apiClient]
-  );
-
   // Extract all categories and their components from config
   const categories = config.categories || {};
   const components = config.components || {};
@@ -62,12 +24,12 @@ export const LeftPanel = () => {
   // If config.categories doesn't exist, group by category field or put in default category
   const groupedComponents: Record<string, string[]> = {};
   if (Object.keys(categories).length > 0) {
-    Object.entries(categories).forEach(([key, value]: [string, any]) => {
-      groupedComponents[value.title || key] = value.components;
+    Object.entries(categories).forEach(([key, value]) => {
+      groupedComponents[value.title || key] = value.components || [];
     });
   } else {
     // Fallback: group by category prop in component config
-    Object.entries(components).forEach(([name, compConfig]: [string, any]) => {
+    Object.entries(components).forEach(([name, compConfig]) => {
       const cat = compConfig.category || 'Genel';
       if (!groupedComponents[cat]) {
         groupedComponents[cat] = [];
@@ -130,16 +92,14 @@ export const LeftPanel = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="tecof-search-input"
               />
-              {domain && apiClient && (
-                <button
-                  type="button"
-                  onClick={() => setShowPreviews(!showPreviews)}
-                  className={`tecof-search-preview-toggle${showPreviews ? ' is-active' : ''}`}
-                  title={showPreviews ? "Resim Önizlemelerini Kapat" : "Resim Önizlemelerini Aç"}
-                >
-                  {showPreviews ? <Eye size={13} /> : <EyeOff size={13} />}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPreviews(!showPreviews)}
+                className={`tecof-search-preview-toggle${showPreviews ? ' is-active' : ''}`}
+                title={showPreviews ? "Önizlemeleri Kapat" : "Önizlemeleri Aç"}
+              >
+                {showPreviews ? <Eye size={13} /> : <EyeOff size={13} />}
+              </button>
             </div>
 
             {/* List Categories */}
@@ -151,6 +111,8 @@ export const LeftPanel = () => {
               });
 
               if (filteredTypes.length === 0) return null;
+
+              const previewMode = /element/i.test(catTitle) ? 'element' : 'section';
 
               return (
                 <div key={catTitle} className="tecof-block-cat">
@@ -165,8 +127,8 @@ export const LeftPanel = () => {
                           key={type}
                           type={type}
                           label={label}
-                          domain={domain}
-                          apiClient={apiClient}
+                          config={config}
+                          previewMode={previewMode}
                           showPreview={showPreviews}
                           onAdd={handleAddBlock}
                           onDragStart={handleBlockDragStart}

@@ -1,15 +1,5 @@
-import dynamicIconImports from 'lucide-react/dynamicIconImports';
-import React, {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ComponentType,
-  type LazyExoticComponent,
-} from 'react';
+import { icons } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFloating } from '../../utils/useFloating';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
@@ -33,42 +23,43 @@ export interface IconFieldOptions {
   visible?: boolean;
 }
 
-// Extract valid lowercase icon names from lucide-react/dynamicIconImports
-const ALL_ICON_NAMES = Object.keys(dynamicIconImports).sort();
+/**
+ * The static `icons` map from lucide-react (PascalCase keys: `ArrowUpRight`).
+ *
+ * Why static instead of `lucide-react/dynamicIconImports`:
+ * - the dynamic variant resolves icons with runtime `import()` calls, which
+ *   break once this package is prebuilt and consumed as an external dep;
+ * - themes look icons up by PascalCase (`LucideIcons[props.icon]`), so the
+ *   stored value must be the PascalCase name — dynamicIconImports keys are
+ *   kebab-case and never matched.
+ */
+const ALL_ICONS = Object.entries(icons)
+  .map(([name, Icon]) => ({ name, lower: name.toLowerCase(), Icon }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
-/** Cap the rendered grid so typing stays responsive (~1500 icons in total). */
+/** Cap the rendered grid so typing stays responsive (~1700 icons in total). */
 const MAX_VISIBLE_ICONS = 120;
 
-type LucideIconComponent = ComponentType<{ size?: number; className?: string }>;
+/** `arrow-up-right` → `ArrowUpRight` (legacy stored values). */
+const kebabToPascal = (name: string) =>
+  name
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
 
-/**
- * `lazy()` must not be called during render: it returns a brand-new component
- * every time, which remounts the icon and re-triggers Suspense on each
- * keystroke. Cache one lazy component per icon name for the module lifetime.
- */
-const lazyIconCache = new Map<string, LazyExoticComponent<LucideIconComponent>>();
-
-const getLazyIcon = (name: string): LazyExoticComponent<LucideIconComponent> | null => {
-  const importFn = dynamicIconImports[name as keyof typeof dynamicIconImports];
-  if (!importFn) return null;
-  let icon = lazyIconCache.get(name);
-  if (!icon) {
-    icon = lazy(importFn);
-    lazyIconCache.set(name, icon);
-  }
-  return icon;
+/** Canonical PascalCase icon name, tolerating legacy kebab-case values. */
+const canonicalIconName = (name?: string): string | null => {
+  if (!name) return null;
+  if (name in icons) return name;
+  const pascal = kebabToPascal(name);
+  return pascal in icons ? pascal : null;
 };
 
-const DynamicIcon = ({ name, size = 16, className }: { name: string; size?: number; className?: string }) => {
-  const LucideIcon = getLazyIcon(name);
-  const placeholder = <div style={{ width: size, height: size }} className={className} />;
-  if (!LucideIcon) return placeholder;
-
-  return (
-    <Suspense fallback={placeholder}>
-      <LucideIcon size={size} className={className} />
-    </Suspense>
-  );
+const IconPreview = ({ name, size = 16, className }: { name?: string; size?: number; className?: string }) => {
+  const canonical = canonicalIconName(name);
+  if (!canonical) return <div style={{ width: size, height: size }} className={className} />;
+  const Icon = icons[canonical as keyof typeof icons];
+  return <Icon size={size} className={className} />;
 };
 
 export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
@@ -86,11 +77,11 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
     setSearch('');
   }, []);
 
-  // Filter icons based on search query (names are already lowercase)
+  // Filter icons based on search query
   const filteredIcons = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const names = query ? ALL_ICON_NAMES.filter((name) => name.includes(query)) : ALL_ICON_NAMES;
-    return names.slice(0, MAX_VISIBLE_ICONS);
+    const list = query ? ALL_ICONS.filter((item) => item.lower.includes(query)) : ALL_ICONS;
+    return list.slice(0, MAX_VISIBLE_ICONS);
   }, [search]);
 
   // Close on outside click / Escape
@@ -120,8 +111,8 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
     close();
   };
 
-  // Check if selected icon is valid
-  const hasSelectedIcon = Boolean(value && value in dynamicIconImports);
+  // Canonical name of the current value (null when empty/unknown)
+  const selectedName = canonicalIconName(value);
 
   return (
     <div className="tecof-icon-field-container">
@@ -134,8 +125,8 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
           onClick={() => (isOpen ? close() : setIsOpen(true))}
         >
           <div className="tecof-icon-trigger-left">
-            {hasSelectedIcon ? (
-              <DynamicIcon name={value} className="tecof-icon-trigger-preview-icon" size={16} />
+            {selectedName ? (
+              <IconPreview name={selectedName} className="tecof-icon-trigger-preview-icon" size={16} />
             ) : (
               <div className="tecof-icon-trigger-placeholder" />
             )}
@@ -178,15 +169,15 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
             />
           </div>
           <div className="tecof-icon-grid">
-            {filteredIcons.map((name) => (
+            {filteredIcons.map(({ name, Icon }) => (
               <button
                 key={name}
                 type="button"
-                className={`tecof-icon-item-btn ${value === name ? 'selected' : ''}`}
+                className={`tecof-icon-item-btn ${selectedName === name ? 'selected' : ''}`}
                 title={name}
                 onClick={() => selectIcon(name)}
               >
-                <DynamicIcon name={name} size={16} />
+                <Icon size={16} />
                 <span className="tecof-icon-name">{name}</span>
               </button>
             ))}

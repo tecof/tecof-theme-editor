@@ -119,6 +119,32 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     [selectNode, toggleSelect, node.props.id, node.type, locked]
   );
 
+  const setContextMenu = useUiStore((s) => s.setContextMenu);
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (locked) return;
+      if (isInsideOverlayPortal(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      selectNode(node.props.id);
+      // This event fires INSIDE the canvas iframe, so its client coords are in
+      // the iframe's viewport. The menu renders in the parent document —
+      // translate by the iframe's position there (same technique as
+      // SelectionOverlay's coordinate mapping).
+      const iframe = document.querySelector<HTMLIFrameElement>(
+        '.tecof-canvas-viewport iframe'
+      );
+      const iframeRect = iframe?.getBoundingClientRect();
+      setContextMenu({
+        nodeId: node.props.id,
+        x: e.clientX + (iframeRect?.left ?? 0),
+        y: e.clientY + (iframeRect?.top ?? 0),
+      });
+    },
+    [locked, selectNode, node.props.id, setContextMenu]
+  );
+
   const { onDoubleClick } = useInlineEdit(node, locked);
 
   const { position, axis, onDragOver, onDragLeave, onDrop } = useDropTarget({
@@ -129,15 +155,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     selfId: node.props.id,
   });
 
-  if (!componentConfig) {
-    return (
-      <div className="tecof-node-missing">
-        Bileşen bulunamadı: {node.type}
-      </div>
-    );
-  }
-
-  const label = componentConfig.label || node.type;
+  const label = componentConfig?.label || node.type;
   const wrapperClassName = [
     'tecof-node-wrapper',
     locked ? 'is-readonly' : '',
@@ -150,6 +168,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // so the component applies them to its root (same prop flows in production).
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
 
+  // Hook order: must run before the missing-component early return below.
   const { setRef: dragRef, nodeRef: inlineNodeRef } = useInlineDragRef({
     node,
     index,
@@ -163,10 +182,19 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     handleMouseLeave,
     handleClick,
     onDoubleClick,
+    onContextMenu: handleContextMenu,
     onDragOver,
     onDragLeave,
     onDrop,
   });
+
+  if (!componentConfig) {
+    return (
+      <div className="tecof-node-missing">
+        Bileşen bulunamadı: {node.type}
+      </div>
+    );
+  }
 
   const componentProps = {
     ...node.props,
@@ -246,6 +274,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             onMouseLeave={handleMouseLeave}
             onClick={handleClick}
             onDoubleClick={onDoubleClick}
+            onContextMenu={handleContextMenu}
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}

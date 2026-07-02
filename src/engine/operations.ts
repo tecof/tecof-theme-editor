@@ -182,6 +182,40 @@ export const serializeNodeWithZones = (
 };
 
 /**
+ * Serializes a node into a fully SELF-CONTAINED snapshot: every descendant zone
+ * (`doc.zones["<nodeId>:<slotName>"]`) is folded back into the corresponding
+ * slot prop array, recursively — the exact inverse of `extractDefaultSlots`.
+ *
+ * The result is a deep, detached clone (safe to stash in UI state or POST to an
+ * API as a shared component). Feeding it back through `insertNode` re-extracts
+ * the inlined slot arrays into zones with fresh child ids, so the subtree
+ * round-trips without losing nested content.
+ */
+export const serializeNodeSubtree = (
+  doc: TecofDocument,
+  id: string
+): TecofNode | null => {
+  const result = findNodeById(doc, id);
+  if (!result) return null;
+
+  const mergeZones = (node: TecofNode): TecofNode => {
+    const merged: TecofNode = { type: node.type, props: { ...node.props } };
+    const prefix = `${node.props.id}:`;
+    for (const [zoneKey, children] of Object.entries(doc.zones)) {
+      if (zoneKey.startsWith(prefix)) {
+        // Zone keys are "<parentId>:<slotName>"; the remainder is the slot prop.
+        const slotName = zoneKey.slice(prefix.length);
+        merged.props[slotName] = children.map(mergeZones);
+      }
+    }
+    return merged;
+  };
+
+  // JSON round-trip so the snapshot never references live/immer document state.
+  return JSON.parse(JSON.stringify(mergeZones(result.node)));
+};
+
+/**
  * Pastes a clipboard payload as a DEEP COPY with FRESH ids into the target
  * zone/index. Returns the new (remapped) root node so callers can select it.
  * Mutates the draft in place (immer-friendly).

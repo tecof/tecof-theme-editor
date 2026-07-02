@@ -1,174 +1,44 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronRight, LayoutGrid, LayoutTemplate, Search, X } from 'lucide-react';
-import type { ComponentConfig, SectionTemplate, StudioConfig } from '../../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Bookmark, LayoutGrid, LayoutTemplate, Plus, Search, X } from 'lucide-react';
+import type { SectionTemplate, StudioConfig } from '../../types';
 import { useStudio } from '../context';
-
-/**
- * Reference desktop width the preview is rendered at before being scaled down to
- * fit the card. Full-width website sections are designed for a desktop viewport,
- * so rendering at a real desktop width (then scaling) keeps their layout intact
- * instead of squishing them into the card's narrow physical width.
- */
-const PREVIEW_REFERENCE_WIDTH = 1280;
+import { LiveBlockPreview } from './LivePreview';
 
 /** Stable fallbacks so `config?.x || {}` doesn't produce a new reference per render. */
 const NO_TEMPLATES: SectionTemplate[] = [];
 const NO_CATEGORIES: NonNullable<StudioConfig['categories']> = {};
 const NO_COMPONENTS: StudioConfig['components'] = {};
 
-class PreviewErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: unknown, errorInfo: React.ErrorInfo) {
-    console.error("Preview render failed:", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="tecof-modal-preview-fallback">
-          Önizleme Yüklenemedi
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-interface PreviewComponentProps {
-  renderFn: ComponentConfig['render'];
+/** A saved/shared component as returned by the studio API. */
+interface SavedSharedComponent {
+  _id: string;
+  name: string;
+  type: string;
   props: Record<string, unknown>;
 }
 
-const PreviewComponent = ({ renderFn, props }: PreviewComponentProps) => {
-  return (
-    <PreviewErrorBoundary>
-      {renderFn(props)}
-    </PreviewErrorBoundary>
-  );
-};
-
-type PreviewMode = 'section' | 'element';
-
-interface AutoScalePreviewProps {
-  mode: PreviewMode;
-  children: React.ReactNode;
-}
-
-/**
- * Renders a live component preview and scales it to fit the card, measuring the
- * available box with a ResizeObserver instead of relying on a hard-coded CSS
- * scale factor.
- *
- * - `section`: the content is rendered at {@link PREVIEW_REFERENCE_WIDTH} (a real
- *   desktop width) and uniformly scaled down to the card width, top-aligned — so
- *   full-bleed sections keep their intended desktop layout.
- * - `element`: small/inline components are measured at their natural size and
- *   scaled to *fit* (never upscaled past 1×), centered in the box.
- */
-const AutoScalePreview = ({ mode, children }: AutoScalePreviewProps) => {
-  const boxRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(mode === 'section' ? 0.2 : 1);
-
-  useEffect(() => {
-    const box = boxRef.current;
-    const stage = stageRef.current;
-    if (!box || !stage) return;
-
-    const update = () => {
-      const boxWidth = box.clientWidth;
-      const boxHeight = box.clientHeight;
-      if (boxWidth <= 0 || boxHeight <= 0) return;
-
-      if (mode === 'section') {
-        setScale(boxWidth / PREVIEW_REFERENCE_WIDTH);
-        return;
-      }
-
-      // element: fit the content's natural size into the box (with a little padding)
-      const naturalWidth = stage.scrollWidth || 1;
-      const naturalHeight = stage.scrollHeight || 1;
-      const pad = 28;
-      const next = Math.min(
-        1,
-        (boxWidth - pad) / naturalWidth,
-        (boxHeight - pad) / naturalHeight,
-      );
-      setScale(next > 0 ? next : 1);
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(box);
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, [mode]);
-
-  return (
-    <div ref={boxRef} className={`tecof-modal-preview-box mode-${mode}`}>
-      <div
-        ref={stageRef}
-        className="tecof-modal-preview-stage"
-        style={
-          mode === 'section'
-            ? { width: PREVIEW_REFERENCE_WIDTH, transform: `scale(${scale})` }
-            : { transform: `translate(-50%, -50%) scale(${scale})` }
-        }
-      >
-        {children}
-      </div>
-    </div>
-  );
-};
-
-const DummySlot = () => <div className="tecof-modal-dummy-slot">İçerik Alanı</div>;
-
-/**
- * Build the props a component preview is rendered with: the component's default
- * props plus editor stubs (dummy drop zones, slot fields rendered as
- * placeholders) so child rendering can't crash on missing elements.
- */
-const buildPreviewProps = (
-  compConfig: ComponentConfig | undefined,
-  props: Record<string, unknown>,
-): Record<string, unknown> => {
-  const renderProps: Record<string, unknown> = {
-    ...props,
-    puck: {
-      renderDropZone: () => <DummySlot />,
-      isEditing: false,
-      metadata: {},
-    },
-    editMode: false,
-  };
-
-  for (const [fieldName, fieldDef] of Object.entries(compConfig?.fields ?? {})) {
-    if (fieldDef?.type === 'slot') {
-      renderProps[fieldName] = () => <DummySlot />;
-    }
-  }
-
-  return renderProps;
-};
-
-interface GridCardProps {
-  label: string;
-  /** Secondary line under the label (component type or "Şablon"). */
+interface DisplayItem {
+  id: string;
+  /** Card title. */
+  name: string;
+  /** Secondary line under the title (component type or "Şablon"). */
   typeText: string;
   preview: React.ReactNode;
   onActivate: () => void;
 }
 
-/** Clickable & keyboard-accessible card shell shared by all grid items. */
-const GridCard = ({ label, typeText, preview, onActivate }: GridCardProps) => (
+interface DisplayGroup {
+  key: string;
+  title: string;
+  /** Element groups render in a compact grid; section groups in a wide grid. */
+  isElement: boolean;
+  items: DisplayItem[];
+}
+
+type GridCardProps = Omit<DisplayItem, 'id'>;
+
+/** Clickable & keyboard-accessible card shared by all grid items. */
+const GridCard = ({ name, typeText, preview, onActivate }: GridCardProps) => (
   <div
     className="tecof-modal-grid-card"
     role="button"
@@ -181,34 +51,19 @@ const GridCard = ({ label, typeText, preview, onActivate }: GridCardProps) => (
       }
     }}
   >
-    {preview}
+    <div className="tecof-modal-preview-frame">
+      {preview}
+      <span className="tecof-modal-card-add" aria-hidden="true">
+        <Plus size={13} strokeWidth={2.4} />
+        Ekle
+      </span>
+    </div>
     <div className="tecof-modal-card-footer">
-      <div className="tecof-modal-card-text">
-        <span className="tecof-modal-card-label">{label}</span>
-        <span className="tecof-modal-card-type">{typeText}</span>
-      </div>
-      <ChevronRight size={15} className="tecof-modal-card-arrow" aria-hidden="true" />
+      <span className="tecof-modal-card-label">{name}</span>
+      <span className="tecof-modal-card-type">{typeText}</span>
     </div>
   </div>
 );
-
-/** A saved/shared component as returned by the studio API. */
-interface SavedSharedComponent {
-  _id: string;
-  name: string;
-  type: string;
-  props: Record<string, unknown>;
-}
-
-interface DisplayItem {
-  isSaved: boolean;
-  isTemplate?: boolean;
-  id: string;
-  name: string;
-  type: string;
-  props: Record<string, unknown>;
-  template?: SectionTemplate;
-}
 
 export interface AddSectionModalProps {
   isOpen: boolean;
@@ -217,11 +72,17 @@ export interface AddSectionModalProps {
   /** Insert a pre-built section template (subtree with fresh ids). */
   onSelectTemplate?: (template: SectionTemplate) => void;
   config: StudioConfig;
+  /**
+   * Restricts the listed component types (e.g. only what a target zone's drop
+   * rules allow). Applies to components, saved snapshots (by their type) and
+   * templates (by their root node type). Undefined = show everything.
+   */
+  filterType?: (type: string) => boolean;
 }
 
-export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config }: AddSectionModalProps) => {
+export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config, filterType }: AddSectionModalProps) => {
   const { apiClient } = useStudio();
-  const templates = config?.templates ?? NO_TEMPLATES;
+  const allTemplates = config?.templates ?? NO_TEMPLATES;
   const categories = config?.categories ?? NO_CATEGORIES;
   const components = config?.components ?? NO_COMPONENTS;
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -256,24 +117,15 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
-  // All category titles mapping
-  const categoryList = useMemo(() => {
-    const list = [{ key: 'all', title: 'Tümü' }];
-    if (templates.length > 0) {
-      list.push({ key: 'templates', title: 'Şablonlar' });
-    }
-    if (savedComponents.length > 0) {
-      list.push({ key: 'saved', title: 'Kaydedilenler (Ortak)' });
-    }
-    Object.entries(categories).forEach(([key, val]) => {
-      list.push({ key, title: val.title || key });
-    });
-    // If no categories in config, default to Genel
-    if (list.length === 1 && savedComponents.length === 0 && templates.length === 0) {
-      list.push({ key: 'Genel', title: 'Genel' });
-    }
-    return list;
-  }, [categories, savedComponents, templates.length]);
+  // filterType (zone hedefli açılış) uygulanmış görünür kümeler.
+  const templates = useMemo(
+    () => (filterType ? allTemplates.filter((t) => filterType(t.payload.node.type)) : allTemplates),
+    [allTemplates, filterType],
+  );
+  const visibleSaved = useMemo(
+    () => (filterType ? savedComponents.filter((item) => filterType(item.type)) : savedComponents),
+    [savedComponents, filterType],
+  );
 
   // Which category key each component type belongs to (single pass; when the
   // config declares categories, the last category listing a type wins).
@@ -294,87 +146,137 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     return map;
   }, [components, categories]);
 
-  // Group components by category key (plus the synthetic "all" bucket)
-  const groupedComponents = useMemo(() => {
-    const map: Record<string, string[]> = { all: [] };
-    categoryList.forEach(cat => {
-      map[cat.key] = [];
-    });
+  // Ordered component categories (config order, plus a Genel bucket for strays).
+  const componentCategories = useMemo(() => {
+    const list: { key: string; title: string }[] = [];
+    if (Object.keys(categories).length > 0) {
+      for (const [key, val] of Object.entries(categories)) {
+        list.push({ key, title: String(val.title || key) });
+      }
+      if (Object.values(categoryKeyByType).includes('Genel') && !categories['Genel']) {
+        list.push({ key: 'Genel', title: 'Genel' });
+      }
+    } else {
+      const seen = new Set<string>();
+      for (const key of Object.values(categoryKeyByType)) {
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({ key, title: key });
+        }
+      }
+    }
+    return list;
+  }, [categories, categoryKeyByType]);
 
+  // Component types per category key (filterType uygulanmış).
+  const typesByCategory = useMemo(() => {
+    const map: Record<string, string[]> = {};
     for (const name of Object.keys(components)) {
-      const catKey = categoryKeyByType[name];
-      (map[catKey] ??= []).push(name);
-      map.all.push(name);
+      if (filterType && !filterType(name)) continue;
+      (map[categoryKeyByType[name]] ??= []).push(name);
     }
     return map;
-  }, [components, categoryKeyByType, categoryList]);
+  }, [components, categoryKeyByType, filterType]);
 
-  // Filtered items based on active category and search query
-  const displayItems = useMemo<DisplayItem[]>(() => {
-    const query = searchQuery.toLowerCase();
+  const isElementCategory = (title: string) => /element/i.test(title);
 
-    if (activeCategory === 'templates') {
-      return templates
+  /**
+   * The visible groups: templates + saved + component categories, filtered by
+   * the active sidebar selection and the search query. "Tümü" keeps the
+   * grouped layout (with headers) instead of one flat mixed grid.
+   */
+  const displayGroups = useMemo<DisplayGroup[]>(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const showAll = activeCategory === 'all';
+    const groups: DisplayGroup[] = [];
+
+    if ((showAll || activeCategory === 'templates') && templates.length > 0) {
+      const items = templates
         .filter((t) => t.label.toLowerCase().includes(query))
-        .map((t) => ({
-          isSaved: false,
-          isTemplate: true,
-          id: t.id,
+        .map<DisplayItem>((t) => ({
+          id: `template:${t.id}`,
           name: t.label,
-          type: 'template',
-          props: {},
-          template: t,
+          typeText: 'Şablon',
+          onActivate: () => onSelectTemplate?.(t),
+          preview: t.thumbnail ? (
+            <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
+          ) : (
+            <div className="tecof-modal-template-icon">
+              <LayoutTemplate size={28} strokeWidth={1.6} />
+            </div>
+          ),
         }));
+      if (items.length > 0) {
+        groups.push({ key: 'templates', title: 'Şablonlar', isElement: false, items });
+      }
     }
 
-    if (activeCategory === 'saved') {
-      return savedComponents
-        .filter(item => item.name.toLowerCase().includes(query))
-        .map(item => ({
-          isSaved: true,
-          id: item._id,
+    if ((showAll || activeCategory === 'saved') && visibleSaved.length > 0) {
+      const items = visibleSaved
+        .filter((item) => item.name.toLowerCase().includes(query))
+        .map<DisplayItem>((item) => ({
+          id: `saved:${item._id}`,
           name: item.name,
-          type: item.type,
-          props: item.props
+          typeText: components[item.type]?.label || item.type,
+          // Insert a copy of the saved/shared component: its real type with
+          // the saved props snapshot (fresh id downstream).
+          onActivate: () => onSelect(item.type, item.props),
+          preview: <LiveBlockPreview config={config} type={item.type} props={item.props} mode="section" />,
         }));
+      if (items.length > 0) {
+        groups.push({ key: 'saved', title: 'Kaydedilenler (Ortak)', isElement: false, items });
+      }
     }
 
-    const list = groupedComponents[activeCategory] || [];
-    return list
-      .filter(type => {
-        const label = components[type]?.label || type;
-        return label.toLowerCase().includes(query);
-      })
-      .map(type => ({
-        isSaved: false,
-        id: type,
-        name: components[type]?.label || type,
-        type: type,
-        props: components[type]?.defaultProps || {}
-      }));
-  }, [groupedComponents, activeCategory, searchQuery, components, savedComponents, templates]);
+    for (const cat of componentCategories) {
+      if (!showAll && activeCategory !== cat.key) continue;
+      const isElement = isElementCategory(cat.title);
+      const items = (typesByCategory[cat.key] || [])
+        .filter((type) => (components[type]?.label || type).toLowerCase().includes(query))
+        .map<DisplayItem>((type) => ({
+          id: `component:${type}`,
+          name: components[type]?.label || type,
+          typeText: type,
+          onActivate: () => onSelect(type),
+          preview: (
+            <LiveBlockPreview config={config} type={type} mode={isElement ? 'element' : 'section'} />
+          ),
+        }));
+      if (items.length > 0) {
+        groups.push({ key: cat.key, title: cat.title, isElement, items });
+      }
+    }
+
+    return groups;
+  }, [
+    activeCategory, searchQuery, templates, visibleSaved,
+    componentCategories, typesByCategory, components, config,
+    onSelect, onSelectTemplate,
+  ]);
+
+  const totalVisible = useMemo(
+    () => displayGroups.reduce((sum, group) => sum + group.items.length, 0),
+    [displayGroups],
+  );
+
+  // Sidebar entries with counts (independent of the search filter).
+  const sidebarEntries = useMemo(() => {
+    const allCount = Object.values(typesByCategory).reduce((sum, arr) => sum + arr.length, 0);
+    const entries = [{ key: 'all', title: 'Tümü', count: allCount }];
+    if (templates.length > 0) entries.push({ key: 'templates', title: 'Şablonlar', count: templates.length });
+    if (visibleSaved.length > 0) {
+      entries.push({ key: 'saved', title: 'Kaydedilenler (Ortak)', count: visibleSaved.length });
+    }
+    for (const cat of componentCategories) {
+      entries.push({ key: cat.key, title: cat.title, count: typesByCategory[cat.key]?.length || 0 });
+    }
+    return entries;
+  }, [templates.length, visibleSaved.length, componentCategories, typesByCategory]);
 
   if (!isOpen) return null;
 
-  const getCategoryCount = (key: string) => {
-    if (key === 'saved') return savedComponents.length;
-    if (key === 'templates') return templates.length;
-    return groupedComponents[key]?.length || 0;
-  };
-
   const activeCategoryTitle =
-    categoryList.find((cat) => cat.key === activeCategory)?.title || 'Tümü';
-
-  // Resolve the category label a component belongs to, so we can pick the right
-  // preview mode. Small "element" components get a centered, fit-to-size preview;
-  // everything else is treated as a full-width section.
-  const categoryTitleForType = (type: string): string => {
-    const key = categoryKeyByType[type];
-    const category = key ? categories[key] : undefined;
-    if (category) return String(category.title || key);
-    return String(components[type]?.category || '');
-  };
-  const isElementType = (type: string) => /element/i.test(categoryTitleForType(type));
+    sidebarEntries.find((entry) => entry.key === activeCategory)?.title || 'Tümü';
 
   return (
     <div className="tecof-modal-overlay" onClick={onClose}>
@@ -394,7 +296,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
             <div>
               <h2 className="tecof-modal-title">Bölüm Ekle</h2>
               <span className="tecof-modal-subtitle">
-                {activeCategoryTitle} · {displayItems.length} bileşen
+                {activeCategoryTitle} · {totalVisible} bileşen
               </span>
             </div>
           </div>
@@ -409,15 +311,19 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
           <div className="tecof-modal-sidebar">
             <div className="tecof-modal-sidebar-title">Kategoriler</div>
             <ul className="tecof-modal-cat-list">
-              {categoryList.map(cat => (
-                <li key={cat.key}>
+              {sidebarEntries.map(entry => (
+                <li key={entry.key}>
                   <button
                     type="button"
-                    className={`tecof-modal-cat-btn ${activeCategory === cat.key ? 'is-active' : ''}`}
-                    onClick={() => setActiveCategory(cat.key)}
+                    className={`tecof-modal-cat-btn ${activeCategory === entry.key ? 'is-active' : ''}`}
+                    onClick={() => setActiveCategory(entry.key)}
                   >
-                    <span>{cat.title}</span>
-                    <span className="tecof-modal-cat-count">{getCategoryCount(cat.key)}</span>
+                    <span className="tecof-modal-cat-btn-title">
+                      {entry.key === 'saved' && <Bookmark size={12} aria-hidden="true" />}
+                      {entry.key === 'templates' && <LayoutTemplate size={12} aria-hidden="true" />}
+                      {entry.title}
+                    </span>
+                    <span className="tecof-modal-cat-count">{entry.count}</span>
                   </button>
                 </li>
               ))}
@@ -438,77 +344,24 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
                   autoFocus
                 />
               </div>
-              <span className="tecof-modal-result-count">{displayItems.length}</span>
+              <span className="tecof-modal-result-count">{totalVisible}</span>
             </div>
 
-            <div className="tecof-modal-grid">
-              {displayItems.map(item => {
-                // Template cards: insert a whole pre-built subtree on click.
-                if (item.isTemplate && item.template) {
-                  const t = item.template;
-                  return (
-                    <GridCard
-                      key={item.id}
-                      label={t.label}
-                      typeText="Şablon"
-                      onActivate={() => onSelectTemplate?.(t)}
-                      preview={
-                        <div className="tecof-modal-preview-wrapper">
-                          {t.thumbnail ? (
-                            <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
-                          ) : (
-                            <div className="tecof-modal-template-icon">
-                              <LayoutTemplate size={28} strokeWidth={1.6} />
-                            </div>
-                          )}
-                        </div>
-                      }
-                    />
-                  );
-                }
-
-                const compConfig: ComponentConfig | undefined = components[item.type];
-
-                // Saved/shared components are full sections; otherwise decide by category.
-                const previewMode: PreviewMode =
-                  !item.isSaved && isElementType(item.type) ? 'element' : 'section';
-
-                const handleActivate = () => {
-                  if (item.isSaved) {
-                    // Insert a copy of the saved/shared component: its real
-                    // type with the saved props snapshot (fresh id downstream).
-                    onSelect(item.type, item.props);
-                  } else {
-                    onSelect(item.type);
-                  }
-                };
-
-                return (
-                  <GridCard
-                    key={item.id}
-                    label={item.name}
-                    typeText={item.isSaved ? compConfig?.label || item.type : item.type}
-                    onActivate={handleActivate}
-                    preview={
-                      <div className={`tecof-modal-preview-wrapper is-${previewMode}`}>
-                        {compConfig?.render ? (
-                          <AutoScalePreview mode={previewMode}>
-                            <PreviewComponent
-                              renderFn={compConfig.render}
-                              props={buildPreviewProps(compConfig, item.props)}
-                            />
-                          </AutoScalePreview>
-                        ) : (
-                          <div className="tecof-modal-preview-fallback">
-                            Önizleme Yok
-                          </div>
-                        )}
-                      </div>
-                    }
-                  />
-                );
-              })}
-              {displayItems.length === 0 && (
+            <div className="tecof-modal-groups">
+              {displayGroups.map((group) => (
+                <section key={group.key} className="tecof-modal-group">
+                  <div className="tecof-modal-group-head">
+                    <span className="tecof-modal-group-title">{group.title}</span>
+                    <span className="tecof-modal-group-count">{group.items.length}</span>
+                  </div>
+                  <div className={`tecof-modal-grid ${group.isElement ? 'is-elements' : 'is-sections'}`}>
+                    {group.items.map(({ id, ...item }) => (
+                      <GridCard key={id} {...item} />
+                    ))}
+                  </div>
+                </section>
+              ))}
+              {totalVisible === 0 && (
                 <div className="tecof-modal-empty">Uyumlu bileşen bulunamadı.</div>
               )}
             </div>

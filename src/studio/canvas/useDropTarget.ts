@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
-import { findNodeById } from '../../engine/zones';
+import { findNodeById, getParentId } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
+import type { TecofDocument } from '../../types';
 import { createEventAutoScroller, createNode, readDragData } from './dndUtils';
 
 /**
@@ -25,12 +26,13 @@ import { createEventAutoScroller, createNode, readDragData } from './dndUtils';
  *     drop appends at `getIndex()` (end of the zone). A single `isDragOver`
  *     boolean is tracked instead of a top/bottom position.
  *
- * Drop-rule enforcement: before computing the position we resolve the dragged
- * type (palette type directly, or the existing node's type via `findNodeById`)
- * and call `isValidDrop(config, type, zoneKey, doc)`. When invalid we suppress
- * the affordance (no position / not-dragover), set `dropEffect = 'none'`, and the
- * drop itself bails out without mutating. Default configs declare no constraints,
- * so `isValidDrop` is permissive and behaviour is unchanged.
+ * Drop-rule enforcement: browsers hide `dataTransfer` DATA during dragover
+ * (only `types` are exposed), so the payload is read from the editor store's
+ * live drag state first and from the event on the final drop. With the type
+ * resolved we call `isValidDrop(config, type, zoneKey, doc)` plus an
+ * own-subtree guard; when invalid we suppress the affordance (no position /
+ * not-dragover), set `dropEffect = 'none'`, and the drop itself bails out
+ * without mutating.
  */
 
 type Position = 'before' | 'after';
@@ -95,6 +97,34 @@ export interface UseDropTargetResult {
   onDrop: (e: React.DragEvent) => void;
 }
 
+/**
+ * Dragged payload: `dataTransfer` data is only readable on `drop`, so prefer
+ * the store's live drag state (set by every drag source via `beginDrag`) and
+ * fall back to the event payload for the final drop / cross-window drags.
+ */
+const getDragInfo = (e: React.DragEvent): { nodeId: string; type: string } => {
+  const stored = useEditorStore.getState().drag;
+  const fromEvent = readDragData(e);
+  return {
+    nodeId: fromEvent.nodeId || stored?.id || '',
+    type: fromEvent.type || stored?.type || '',
+  };
+};
+
+/** True when the target zone lives anywhere inside `nodeId`'s own subtree. */
+const isZoneInsideNode = (
+  doc: TecofDocument,
+  zoneKey: string | undefined,
+  nodeId: string,
+): boolean => {
+  let current: string | null = zoneKey ? zoneKey.split(':')[0] : null;
+  while (current) {
+    if (current === nodeId) return true;
+    current = getParentId(doc, current);
+  }
+  return false;
+};
+
 /** Resolves the type of whatever is being dragged, for rule checks. */
 const resolveDraggedType = (
   nodeId: string,
@@ -122,22 +152,32 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
   const [axis, setAxis] = useState<Axis>('y');
   const [isDragOver, setIsDragOver] = useState(false);
 
-  /**
-   * Validates the current drag against the engine rules. dataTransfer payload is
-   * only reliably readable on `drop` in some browsers, but the TYPE we need lives
-   * in our custom MIME entries which ARE readable during dragover, so we use them
-   * to gate the affordance. Returns null when the drop is disallowed.
-   */
-  const checkValid = (e: React.DragEvent): boolean => {
-    const { nodeId, type } = readDragData(e);
-    // Dragging a node onto itself is a no-op, treat as invalid affordance.
-    if (nodeId && selfId && nodeId === selfId) return false;
-    const draggedType = resolveDraggedType(nodeId, type);
-    // No payload yet (e.g. cross-window drag) — stay permissive.
-    if (!draggedType) return true;
-    const doc = useEditorStore.getState().document;
-    return isValidDrop(config, draggedType, zoneKey, doc);
-  };
+  // A drag can end while the pointer is outside this target (or the target can
+  // unmount mid-drag); make sure the rAF scroll loop never outlives the hook.
+  useEffect(() => {
+    const scroller = autoScrollerRef.current;
+    return () => scroller.stop();
+  }, []);
+
+  /** Validates the current drag against the engine rules. */
+  const checkValid = useCallback(
+    (e: React.DragEvent): boolean => {
+      const { nodeId, type } = getDragInfo(e);
+      // Dragging a node onto itself is a no-op, treat as invalid affordance.
+      if (nodeId && selfId && nodeId === selfId) return false;
+
+      const doc = useEditorStore.getState().document;
+      // A node can never be dropped into its own subtree — that would detach
+      // it from the document while re-inserting it inside itself.
+      if (nodeId && isZoneInsideNode(doc, zoneKey, nodeId)) return false;
+
+      const draggedType = resolveDraggedType(nodeId, type);
+      // No payload at all (e.g. cross-window drag) — stay permissive.
+      if (!draggedType) return true;
+      return isValidDrop(config, draggedType, zoneKey, doc);
+    },
+    [config, zoneKey, selfId],
+  );
 
   const onDragOver = useCallback(
     (e: React.DragEvent) => {
@@ -172,9 +212,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
         setIsDragOver(true);
       }
     },
-    // checkValid/checkValid deps are captured fresh on each render via closure.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [locked, positional, zoneKey, config]
+    [locked, positional, checkValid],
   );
 
   const onDragLeave = useCallback((e: React.DragEvent) => {
@@ -202,7 +240,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
         return;
       }
 
-      const { nodeId, type } = readDragData(e);
+      const { nodeId, type } = getDragInfo(e);
       const targetIndex = positional
         ? (droppedPosition === 'before' ? index : index + 1)
         : (getIndex ? getIndex() : 0);
@@ -214,8 +252,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
       }
       endDrag();
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [locked, positional, index, getIndex, zoneKey, config, selfId, position, moveNode, insertNode, endDrag]
+    [locked, positional, index, getIndex, zoneKey, config, selfId, position, checkValid, moveNode, insertNode, endDrag],
   );
 
   return { position, axis, isDragOver, onDragOver, onDragLeave, onDrop };

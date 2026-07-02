@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Copy, ClipboardPaste } from 'lucide-react';
 import {
   STYLE_CONTROLS,
@@ -10,6 +10,7 @@ import {
   type StyleGroup,
 } from './tokens';
 import type { NodeStyles, StyleProps, Breakpoint, StateVariant } from './types';
+import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { cloneStyles, isEmptyStyles } from './styleClipboard';
 import { ColorPicker } from './ColorPicker';
@@ -17,6 +18,49 @@ import { ColorPicker } from './ColorPicker';
 /** True when a style layer carries at least one set property. */
 const hasProps = (props?: StyleProps): boolean =>
   !!props && Object.values(props).some(Boolean);
+
+type Viewport = 'desktop' | 'tablet' | 'mobile';
+
+/** TopBar viewport → the style breakpoint that canvas width most represents. */
+const VIEWPORT_TO_BP: Record<Viewport, Breakpoint> = {
+  desktop: 'base',
+  tablet: 'md',
+  mobile: 'sm',
+};
+
+/** Style breakpoint → the TopBar viewport that previews this layer. */
+const BP_TO_VIEWPORT: Record<Breakpoint, Viewport> = {
+  base: 'desktop',
+  sm: 'mobile',
+  md: 'tablet',
+  lg: 'desktop',
+  xl: 'desktop',
+};
+
+const STATE_VARIANTS: StateVariant[] = ['hover', 'focus', 'active'];
+
+/**
+ * True when a breakpoint carries any explicit value: its normal layer OR any of
+ * its state layers (`hover` at base, `md:hover` at `md`, …).
+ */
+const bpHasOverrides = (styles: NodeStyles, bp: Breakpoint): boolean =>
+  hasProps(styles[bp]) ||
+  STATE_VARIANTS.some((s) =>
+    hasProps(styles.states?.[bp === 'base' ? s : `${bp}:${s}`])
+  );
+
+/**
+ * Shared "this layer has an explicit value" badge. Same visual language as the
+ * original breakpoint-segment dot; `inline` renders it in-flow (control labels)
+ * instead of pinned to a segment button corner.
+ */
+const OverrideBadge = ({ title, inline }: { title: string; inline?: boolean }) => (
+  <span
+    className={`tecof-style-seg-dot${inline ? ' tecof-style-seg-dot--inline' : ''}`}
+    title={title}
+    aria-hidden="true"
+  />
+);
 
 export interface StyleEditorProps {
   value?: NodeStyles;
@@ -42,8 +86,48 @@ const GROUP_ORDER: StyleGroup[] = ['layout', 'spacing', 'sizing', 'typography', 
 
 export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
   const styles: NodeStyles = value || {};
-  const [bp, setBp] = useState<Breakpoint>('base');
+  // Start on the layer matching the current canvas viewport (non-reactive read;
+  // live changes are handled by the subscription below).
+  const [bp, setBp] = useState<Breakpoint>(
+    () => VIEWPORT_TO_BP[useEditorStore.getState().viewport]
+  );
   const [state, setState] = useState<'base' | StateVariant>('base');
+
+  const setViewport = useEditorStore((s) => s.setViewport);
+
+  // ── Two-way viewport ⇄ breakpoint sync ──
+  // `syncingViewportRef` flags viewport writes WE initiated from a breakpoint
+  // pick, so our own subscription ignores them (no loop, and picking `lg`/`xl`
+  // is never bounced back to `base`). `bpRef` mirrors `bp` for reads inside the
+  // non-reactive store listener.
+  const syncingViewportRef = useRef(false);
+  const bpRef = useRef(bp);
+  bpRef.current = bp;
+
+  // Viewport → breakpoint: follow REAL viewport changes only (TopBar clicks
+  // etc.). Skip when the current bp already previews at that viewport.
+  useEffect(
+    () =>
+      useEditorStore.subscribe((cur, prev) => {
+        if (cur.viewport === prev.viewport) return;
+        if (syncingViewportRef.current) return;
+        if (BP_TO_VIEWPORT[bpRef.current] === cur.viewport) return;
+        setBp(VIEWPORT_TO_BP[cur.viewport]);
+      }),
+    []
+  );
+
+  // Breakpoint → viewport: picking a layer switches the canvas to the matching
+  // width so the user immediately previews what they are editing.
+  const selectBp = (next: Breakpoint) => {
+    setBp(next);
+    const target = BP_TO_VIEWPORT[next];
+    if (useEditorStore.getState().viewport !== target) {
+      syncingViewportRef.current = true;
+      setViewport(target);
+      syncingViewportRef.current = false;
+    }
+  };
 
   // Style clipboard: copy this node's whole style object into the session buffer,
   // or replace this node's styles with the buffered ones. (See styleClipboard.ts.)
@@ -120,16 +204,18 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
       <div className="tecof-style-scopes">
         <div className="tecof-style-seg" role="group" aria-label="Breakpoint">
           {BREAKPOINTS.map((b) => {
-            const overridden = hasProps(styles[b.key]);
+            // Badge covers the normal layer AND the bp's state layers (`md` +
+            // `md:hover` …), so a hover-only override still marks its bp.
+            const overridden = bpHasOverrides(styles, b.key);
             return (
               <button
                 key={b.key}
                 type="button"
                 className={`tecof-style-seg-btn${bp === b.key ? ' is-active' : ''}`}
-                onClick={() => setBp(b.key)}
+                onClick={() => selectBp(b.key)}
               >
                 {b.label}
-                {overridden && <span className="tecof-style-seg-dot" aria-hidden="true" />}
+                {overridden && <OverrideBadge title="Bu kırılımda özelleştirildi" />}
               </button>
             );
           })}
@@ -148,7 +234,7 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
                 onClick={() => setState(s.key)}
               >
                 {s.label}
-                {overridden && <span className="tecof-style-seg-dot" aria-hidden="true" />}
+                {overridden && <OverrideBadge title="Bu durumda özelleştirildi" />}
               </button>
             );
           })}
@@ -219,7 +305,10 @@ const ControlRow = ({
     <div className={`tecof-style-row${value ? ' is-active' : ''}`}>
       <span className="tecof-style-label">
         {control.label}
-        {value && <span className="tecof-style-row-active-dot" title="Özel değer tanımlı" />}
+        {/* Same badge language as the breakpoint buttons: an explicit value is
+            set for this control in the ACTIVE layer (bp + state). Applies to
+            every control type — segment, select and color alike. */}
+        {value && <OverrideBadge inline title="Bu katmanda özelleştirildi" />}
         {!value && inheritedLabel && (
           <span className="tecof-style-inherited" title={`Devralınan değer: ${inheritedLabel}`}>
             {inheritedLabel}

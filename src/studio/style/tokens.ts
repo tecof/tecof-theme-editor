@@ -231,6 +231,27 @@ export const STYLE_CONTROLS: StyleControl[] = [
   { id: 'opacity', label: 'Saydamlık', group: 'effects', type: 'select',
     options: opts(['0', '25', '50', '75', '90', '100']),
     toClass: (v) => (v ? `opacity-${v}` : null) },
+  // Entrance animations — custom (non-Tailwind) classes; CSS lives in
+  // `animationCss.ts` (published pages) and mirrored at the end of `styles.css`
+  // (editor canvas). No arbitraryPrefix: custom values are meaningless here.
+  { id: 'anim', label: 'Giriş Animasyonu', group: 'effects', type: 'select',
+    options: [
+      { label: 'Yok', value: '' },
+      { label: 'Belirme', value: 'fade' },
+      { label: 'Yukarı Süzülme', value: 'fade-up' },
+      { label: 'Aşağı Süzülme', value: 'fade-down' },
+      { label: 'Büyüme', value: 'zoom-in' },
+    ],
+    toClass: (v) => (v ? `tecof-anim-${v}` : null) },
+  { id: 'animDelay', label: 'Animasyon Gecikmesi', group: 'effects', type: 'select',
+    options: [
+      { label: 'Yok', value: '' },
+      { label: '100ms', value: '100' },
+      { label: '200ms', value: '200' },
+      { label: '300ms', value: '300' },
+      { label: '500ms', value: '500' },
+    ],
+    toClass: (v) => (v ? `tecof-anim-delay-${v}` : null) },
 ];
 
 /** Fast lookup: control id → control. */

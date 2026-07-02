@@ -29,15 +29,25 @@ export function createNode(
   };
 }
 
+/**
+ * Structural event shape so both React synthetic events and native DragEvents
+ * (inline nodes bind listeners natively) work without casts.
+ */
+interface DragDataEvent {
+  dataTransfer: DataTransfer | null;
+}
+
 /** Read the drag payload (existing node id OR new block type) off a drag event. */
-export function readDragData(e: React.DragEvent): { nodeId: string; type: string } {
+export function readDragData(e: DragDataEvent): { nodeId: string; type: string } {
+  if (!e.dataTransfer) return { nodeId: '', type: '' };
   return {
     nodeId: e.dataTransfer.getData(TECOF_NODE_ID),
     type: e.dataTransfer.getData(TECOF_BLOCK_TYPE),
   };
 }
 
-export function writeDragData(e: React.DragEvent, payload: { nodeId?: string; type?: string }) {
+export function writeDragData(e: DragDataEvent, payload: { nodeId?: string; type?: string }) {
+  if (!e.dataTransfer) return;
   if (payload.nodeId) {
     e.dataTransfer.setData(TECOF_NODE_ID, payload.nodeId);
   }

@@ -63,6 +63,15 @@ describe('compileStyles', () => {
     expect(compileStyles({ base: { p: '[10px]', bg: 'primary-600' } })).toBe('p-[10px] bg-primary-600');
   });
 
+  it('compiles entrance-animation tokens to tecof-anim classes', () => {
+    expect(compileStyles({ base: { anim: 'fade-up', animDelay: '200' } })).toBe(
+      'tecof-anim-fade-up tecof-anim-delay-200'
+    );
+    expect(compileStyles({ base: { anim: 'zoom-in' } })).toBe('tecof-anim-zoom-in');
+    // Empty values emit nothing.
+    expect(compileStyles({ base: { anim: '', animDelay: '' } })).toBe('');
+  });
+
   it('mergeClassName joins author + style classes', () => {
     expect(mergeClassName('card', 'p-4 bg-primary-600')).toBe('card p-4 bg-primary-600');
     expect(mergeClassName(undefined, 'p-4')).toBe('p-4');
@@ -105,6 +114,15 @@ describe('getSafelist', () => {
 
   it('includes the 1px border preset', () => {
     expect(getSafelist()).toContain('border');
+  });
+
+  it('includes the entrance-animation classes', () => {
+    const safelist = getSafelist();
+    expect(safelist).toContain('tecof-anim-fade');
+    expect(safelist).toContain('tecof-anim-fade-up');
+    expect(safelist).toContain('tecof-anim-fade-down');
+    expect(safelist).toContain('tecof-anim-zoom-in');
+    expect(safelist).toContain('tecof-anim-delay-200');
   });
 });
 

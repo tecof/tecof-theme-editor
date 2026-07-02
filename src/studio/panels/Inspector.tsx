@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
+import { ChevronUp, Lock } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
-import { findNodeById } from '../../engine/zones';
+import { findNodeById, getParentId } from '../../engine/zones';
 import { useStudio } from '../context';
 import { usePermissions } from '../usePermissions';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
@@ -47,7 +48,7 @@ export const Inspector = () => {
   const editableFields = useMemo(
     () =>
       Object.entries(resolved.fields).filter(
-        ([, fieldDef]: [string, any]) => fieldDef?.type !== 'slot'
+        ([, fieldDef]) => fieldDef?.type !== 'slot'
       ),
     [resolved.fields]
   );
@@ -63,6 +64,7 @@ export const Inspector = () => {
     }
 
     const { node, label } = activeNodeInfo;
+    const parentId = getParentId(documentState, selectedId);
 
     return (
       <div className="tecof-inspector">
@@ -72,9 +74,21 @@ export const Inspector = () => {
             <h3 className="tecof-inspector-title">{label}</h3>
             <span className="tecof-inspector-id">{selectedId}</span>
           </div>
-          <button onClick={() => selectNode(null)} className="tecof-inspector-deselect">
-            Seçimi Kaldır
-          </button>
+          <div className="tecof-inspector-header-actions">
+            {parentId && (
+              <button
+                onClick={() => selectNode(parentId)}
+                className="tecof-inspector-deselect"
+                title="Üst öğeyi seç"
+              >
+                <ChevronUp size={12} aria-hidden="true" />
+                Üst Öğe
+              </button>
+            )}
+            <button onClick={() => selectNode(null)} className="tecof-inspector-deselect">
+              Seçimi Kaldır
+            </button>
+          </div>
         </div>
 
         {/* Content / Style tabs */}
@@ -101,6 +115,12 @@ export const Inspector = () => {
 
         {/* Fields List / Style Editor */}
         <div className="tecof-inspector-fields">
+          {fieldsReadOnly && (
+            <div className="tecof-inspector-readonly-note">
+              <Lock size={12} aria-hidden="true" />
+              Salt okunur — bu bileşen düzenlemeye kilitli.
+            </div>
+          )}
           {tab === 'style' ? (
             <StyleEditor
               value={node.props[STYLES_PROP]}
@@ -121,7 +141,7 @@ export const Inspector = () => {
                 readOnly={
                   fieldsReadOnly ||
                   resolved.readOnly[fieldName] === true ||
-                  (fieldDef as any)?.readOnly === true
+                  fieldDef?.readOnly === true
                 }
               />
             ))

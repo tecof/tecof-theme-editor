@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import type { TecofRenderProps, TecofNode } from '../types';
 import { compileStyles, mergeClassName } from '../studio/style/compileStyles';
 import { STYLES_PROP } from '../studio/style/types';
+import { ANIMATION_CSS } from '../studio/style/animationCss';
 import { migrateDocument } from '../engine/migrate';
 
 const RenderContext = createContext<{
@@ -132,6 +133,9 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
 
   return (
     <RenderContext.Provider value={contextValue}>
+      {/* Entrance-animation keyframes for the `anim` style control (ThemeVars-style
+          <style> injection). Emitted once per page; harmless when unused. */}
+      <style data-tecof-animations>{ANIMATION_CSS}</style>
       <div className={className}>
         {contentWithLayout}
       </div>

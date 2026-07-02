@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
 import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
@@ -7,6 +8,7 @@ import { useDropTarget } from './useDropTarget';
 import { AddSectionButton } from './AddSectionButton';
 import { AddSectionModal } from '../panels/AddSectionModal';
 import { createNode } from './dndUtils';
+import { isValidDrop } from '../../engine/rules';
 import { LayoutTemplate, Plus } from 'lucide-react';
 import { postToHost } from '../bridge';
 import type { SectionTemplate } from '../../types';
@@ -20,8 +22,17 @@ export const Canvas = () => {
   const insertPayload = useEditorStore((state) => state.insertPayload);
   const selectNode = useEditorStore((state) => state.selectNode);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [insertIndex, setInsertIndex] = useState(0);
+  // Modal hedefi UI store'da: boş DropZone'lar da (Canvas dışından) açabilsin.
+  const addSectionTarget = useUiStore((s) => s.addSectionTarget);
+  const openAddSection = useUiStore((s) => s.openAddSection);
+  const closeAddSection = useUiStore((s) => s.closeAddSection);
+
+  // Zone hedefli açılışta modal yalnızca o zone'a bırakılabilecek tipleri
+  // göstersin (drop kurallarıyla aynı kaynaktan).
+  const modalFilterType = addSectionTarget?.zoneKey
+    ? (type: string) =>
+        isValidDrop(config, type, addSectionTarget.zoneKey, useEditorStore.getState().document)
+    : undefined;
 
   const {
     isDragOver: isRootDragOver,
@@ -39,8 +50,8 @@ export const Canvas = () => {
     // `customProps` carries a saved/shared component's props snapshot; without
     // it the node starts from the component's defaultProps.
     const newNode = createNode(config, type, customProps);
-    insertNode(newNode, undefined, insertIndex);
-    setModalOpen(false);
+    insertNode(newNode, addSectionTarget?.zoneKey, addSectionTarget?.index);
+    closeAddSection();
   };
 
   const handleSelectTemplate = (template: SectionTemplate) => {
@@ -49,8 +60,8 @@ export const Canvas = () => {
       node: template.payload.node,
       zones: template.payload.zones || {},
     }));
-    insertPayload(payload, undefined, insertIndex);
-    setModalOpen(false);
+    insertPayload(payload, addSectionTarget?.zoneKey, addSectionTarget?.index);
+    closeAddSection();
   };
 
   const clearSelection = () => {
@@ -112,10 +123,7 @@ export const Canvas = () => {
             <button
               type="button"
               className="tecof-canvas-empty-add-btn"
-              onClick={() => {
-                setInsertIndex(0);
-                setModalOpen(true);
-              }}
+              onClick={() => openAddSection({ index: 0 })}
             >
               <Plus size={16} strokeWidth={2.4} />
               Bölüm Ekle
@@ -127,10 +135,7 @@ export const Canvas = () => {
           {!readOnly && (
             <AddSectionButton
               index={0}
-              onClick={(idx) => {
-                setInsertIndex(idx);
-                setModalOpen(true);
-              }}
+              onClick={(idx) => openAddSection({ index: idx })}
             />
           )}
           {content.map((item, index) => (
@@ -142,10 +147,7 @@ export const Canvas = () => {
                   // The trailing divider (below the last section) stays always
                   // visible; in-between dividers keep the hover reveal.
                   fixed={index === content.length - 1}
-                  onClick={(idx) => {
-                    setInsertIndex(idx);
-                    setModalOpen(true);
-                  }}
+                  onClick={(idx) => openAddSection({ index: idx })}
                 />
               )}
             </React.Fragment>
@@ -174,11 +176,12 @@ export const Canvas = () => {
       </div>
 
       <AddSectionModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        isOpen={addSectionTarget != null}
+        onClose={closeAddSection}
         onSelect={handleSelectComponent}
         onSelectTemplate={handleSelectTemplate}
         config={config}
+        filterType={modalFilterType}
       />
     </div>
   );

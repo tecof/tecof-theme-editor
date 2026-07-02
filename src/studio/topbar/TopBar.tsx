@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { useActiveLanguage } from '../language/LanguageContext';
+import { collectTranslationGaps } from '../language/translationCoverage';
 import {
   Monitor, Tablet, Smartphone, Undo2, Redo2, Save, Check,
   PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown,
@@ -17,9 +18,43 @@ interface TopBarProps {
   autoSave?: boolean;
 }
 
+/** Turkish display names for language codes (e.g. 'en' → 'İngilizce'). */
+const trLanguageNames = (() => {
+  try {
+    return new Intl.DisplayNames(['tr'], { type: 'language' });
+  } catch {
+    return null;
+  }
+})();
+
+const langNameTr = (code: string): string => {
+  try {
+    return trLanguageNames?.of(code) ?? code.toUpperCase();
+  } catch {
+    return code.toUpperCase();
+  }
+};
+
 const LanguageSwitcher = () => {
   const lang = useActiveLanguage();
+  const document = useEditorStore((state) => state.document);
+  const languages = lang?.languages;
+
+  // Missing-translation coverage for the current page. Recomputed only when
+  // the document changes; skipped entirely for single-language merchants.
+  const coverage = useMemo(() => {
+    if (!languages || languages.length <= 1) return null;
+    return collectTranslationGaps(document, languages);
+  }, [document, languages]);
+
   if (!lang || lang.languages.length <= 1) return null;
+
+  const missingByLang = coverage?.missingByLang ?? {};
+  const totalMissing = coverage?.total ?? 0;
+  const badgeTitle = lang.languages
+    .filter((code) => (missingByLang[code] ?? 0) > 0)
+    .map((code) => `${missingByLang[code]} alanın ${langNameTr(code)} çevirisi eksik`)
+    .join(', ');
 
   return (
     <div className="tecof-lang-switcher" title="Düzenlenen dil">
@@ -30,13 +65,22 @@ const LanguageSwitcher = () => {
         onChange={(e) => lang.setActiveLanguage(e.target.value)}
         aria-label="Düzenlenen dil"
       >
-        {lang.languages.map((code) => (
-          <option key={code} value={code}>
-            {code.toUpperCase()}
-            {code === lang.defaultLanguage ? ' • Varsayılan' : ''}
-          </option>
-        ))}
+        {lang.languages.map((code) => {
+          const missing = missingByLang[code] ?? 0;
+          return (
+            <option key={code} value={code}>
+              {code.toUpperCase()}
+              {code === lang.defaultLanguage ? ' • Varsayılan' : ''}
+              {missing > 0 ? ` · ${missing} eksik` : ''}
+            </option>
+          );
+        })}
       </select>
+      {totalMissing > 0 && (
+        <span className="tecof-lang-switcher-badge" title={badgeTitle}>
+          {totalMissing}
+        </span>
+      )}
       <ChevronDown size={12} className="tecof-lang-switcher-caret" />
     </div>
   );
