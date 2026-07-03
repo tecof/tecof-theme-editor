@@ -7698,6 +7698,306 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config, fi
     }
   ) });
 };
+
+// src/studio/style/cssGenerator.ts
+var REM = (n) => `${n * 0.25}rem`;
+var FONT_SIZES = {
+  xs: ["0.75rem", "1rem"],
+  sm: ["0.875rem", "1.25rem"],
+  base: ["1rem", "1.5rem"],
+  lg: ["1.125rem", "1.75rem"],
+  xl: ["1.25rem", "1.75rem"],
+  "2xl": ["1.5rem", "2rem"],
+  "3xl": ["1.875rem", "2.25rem"],
+  "4xl": ["2.25rem", "2.5rem"],
+  "5xl": ["3rem", "1"]
+};
+var FONT_WEIGHTS = {
+  normal: "400",
+  medium: "500",
+  semibold: "600",
+  bold: "700",
+  extrabold: "800"
+};
+var LEADING = {
+  none: "1",
+  tight: "1.25",
+  snug: "1.375",
+  normal: "1.5",
+  relaxed: "1.625",
+  loose: "2"
+};
+var RADII = {
+  none: "0",
+  sm: "0.125rem",
+  md: "0.25rem",
+  lg: "0.5rem",
+  xl: "0.75rem",
+  "2xl": "1rem",
+  "3xl": "1.5rem",
+  full: "9999px"
+};
+var SHADOWS = {
+  none: "none",
+  sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+  md: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+  lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  xl: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+  "2xl": "0 25px 50px -12px rgb(0 0 0 / 0.25)"
+};
+var MAX_WIDTHS = {
+  none: "none",
+  sm: "24rem",
+  md: "28rem",
+  lg: "32rem",
+  xl: "36rem",
+  "2xl": "42rem",
+  "4xl": "56rem",
+  "6xl": "72rem",
+  full: "100%"
+};
+var FRACTIONS = {
+  "1/2": "50%",
+  "1/3": "33.333333%",
+  "2/3": "66.666667%",
+  "1/4": "25%",
+  "3/4": "75%"
+};
+var JUSTIFY = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  between: "space-between",
+  around: "space-around",
+  evenly: "space-evenly"
+};
+var ITEMS = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  stretch: "stretch",
+  baseline: "baseline"
+};
+var colorValue = (token) => {
+  if (token === "transparent") return "transparent";
+  if (token === "white") return "#ffffff";
+  if (token === "black") return "#000000";
+  const brand = /^primary-(\d{2,3})$/.exec(token);
+  if (brand) {
+    return `var(--color-primary-${brand[1]}, var(--tecof-primary-${brand[1]}))`;
+  }
+  const palette = parsePaletteToken(token);
+  if (palette) return tailwindSwatch(palette.hue.name, palette.shade);
+  return null;
+};
+var spaceValue = (token) => {
+  if (isArbitrary(token)) return arbitraryRaw(token);
+  const n = Number(token);
+  return Number.isFinite(n) ? REM(n) : null;
+};
+var declarationsFor = (controlId, value) => {
+  const raw = isArbitrary(value) ? arbitraryRaw(value) : null;
+  switch (controlId) {
+    case "display":
+      return [["display", value === "hidden" ? "none" : value]];
+    case "flexDir":
+      return [["flex-direction", value === "col" ? "column" : "row"]];
+    case "justify":
+      return JUSTIFY[value] ? [["justify-content", JUSTIFY[value]]] : null;
+    case "items":
+      return ITEMS[value] ? [["align-items", ITEMS[value]]] : null;
+    case "alignSelf":
+      return [["align-self", value === "start" ? "flex-start" : value === "end" ? "flex-end" : value]];
+    case "gap": {
+      const v = spaceValue(value);
+      return v ? [["gap", v]] : null;
+    }
+    case "p": {
+      const v = spaceValue(value);
+      return v ? [["padding", v]] : null;
+    }
+    case "px": {
+      const v = spaceValue(value);
+      return v ? [["padding-left", v], ["padding-right", v]] : null;
+    }
+    case "py": {
+      const v = spaceValue(value);
+      return v ? [["padding-top", v], ["padding-bottom", v]] : null;
+    }
+    case "m": {
+      const v = spaceValue(value);
+      return v ? [["margin", v]] : null;
+    }
+    case "mx": {
+      const v = spaceValue(value);
+      return v ? [["margin-left", v], ["margin-right", v]] : null;
+    }
+    case "my": {
+      const v = spaceValue(value);
+      return v ? [["margin-top", v], ["margin-bottom", v]] : null;
+    }
+    case "marginAlign":
+      switch (value) {
+        case "auto":
+          return [["margin", "auto"]];
+        case "l-auto":
+          return [["margin-left", "auto"]];
+        case "r-auto":
+          return [["margin-right", "auto"]];
+        case "x-auto":
+          return [["margin-left", "auto"], ["margin-right", "auto"]];
+        default:
+          return null;
+      }
+    case "w": {
+      if (raw) return [["width", raw]];
+      if (value === "auto") return [["width", "auto"]];
+      if (value === "full") return [["width", "100%"]];
+      if (value === "screen") return [["width", "100vw"]];
+      if (value === "fit") return [["width", "fit-content"]];
+      return FRACTIONS[value] ? [["width", FRACTIONS[value]]] : null;
+    }
+    case "h": {
+      if (raw) return [["height", raw]];
+      if (value === "auto") return [["height", "auto"]];
+      if (value === "full") return [["height", "100%"]];
+      if (value === "screen") return [["height", "100vh"]];
+      if (value === "fit") return [["height", "fit-content"]];
+      return null;
+    }
+    case "maxW": {
+      if (raw) return [["max-width", raw]];
+      return MAX_WIDTHS[value] ? [["max-width", MAX_WIDTHS[value]]] : null;
+    }
+    case "bg": {
+      const v = raw ?? colorValue(value);
+      return v ? [["background-color", v]] : null;
+    }
+    case "text": {
+      const v = raw ?? colorValue(value);
+      return v ? [["color", v]] : null;
+    }
+    case "borderColor": {
+      const v = raw ?? colorValue(value);
+      return v ? [["border-color", v]] : null;
+    }
+    case "fontSize": {
+      const v = FONT_SIZES[value];
+      return v ? [["font-size", v[0]], ["line-height", v[1]]] : null;
+    }
+    case "fontWeight":
+      return FONT_WEIGHTS[value] ? [["font-weight", FONT_WEIGHTS[value]]] : null;
+    case "align":
+      return [["text-align", value]];
+    case "leading":
+      return LEADING[value] ? [["line-height", LEADING[value]]] : null;
+    case "radius":
+      return RADII[value] ? [["border-radius", RADII[value]]] : null;
+    case "border":
+      return [["border-width", `${value}px`], ["border-style", "solid"]];
+    case "shadow":
+      return SHADOWS[value] ? [["box-shadow", SHADOWS[value]]] : null;
+    case "opacity": {
+      const n = Number(value);
+      return Number.isFinite(n) ? [["opacity", String(n / 100)]] : null;
+    }
+    default:
+      return null;
+  }
+};
+var PRESET_BY_CLASS = {};
+for (const control of STYLE_CONTROLS) {
+  for (const opt of control.options) {
+    if (!opt.value) continue;
+    const cls = control.toClass(opt.value);
+    if (cls) PRESET_BY_CLASS[cls] = { controlId: control.id, value: opt.value };
+  }
+}
+var ARBITRARY_PREFIXES = STYLE_CONTROLS.filter((c) => c.arbitraryPrefix).map((c) => ({ prefix: `${c.arbitraryPrefix}-[`, controlId: c.id })).sort((a, b) => b.prefix.length - a.prefix.length);
+var resolveUtility = (utility) => {
+  const preset = PRESET_BY_CLASS[utility];
+  if (preset) return preset;
+  for (const { prefix, controlId } of ARBITRARY_PREFIXES) {
+    if (utility.startsWith(prefix) && utility.endsWith("]")) {
+      return { controlId, value: utility.slice(prefix.length - 1) };
+    }
+  }
+  return null;
+};
+var MEDIA = {
+  sm: "(min-width: 640px)",
+  md: "(min-width: 768px)",
+  lg: "(min-width: 1024px)",
+  xl: "(min-width: 1280px)"
+};
+var PSEUDO = {
+  hover: ":hover",
+  focus: ":focus",
+  active: ":active"
+};
+var escapeSelector = (cls) => cls.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
+var parseClass = (cls) => {
+  const parts = cls.split(":");
+  let media = null;
+  let pseudo = null;
+  let index = 0;
+  while (index < parts.length - 1) {
+    const part = parts[index];
+    if (MEDIA[part] && media === null) {
+      media = MEDIA[part];
+      index += 1;
+      continue;
+    }
+    if (PSEUDO[part] && pseudo === null) {
+      pseudo = PSEUDO[part];
+      index += 1;
+      continue;
+    }
+    return null;
+  }
+  let utility = parts.slice(index).join(":");
+  if (utility.endsWith("!")) utility = utility.slice(0, -1);
+  return utility ? { media, pseudo, utility } : null;
+};
+function generateStyleCss(classes) {
+  const plain = [];
+  const byMedia = /* @__PURE__ */ new Map();
+  const seen = /* @__PURE__ */ new Set();
+  for (const cls of classes) {
+    if (!cls || seen.has(cls)) continue;
+    seen.add(cls);
+    const parsed = parseClass(cls);
+    if (!parsed) continue;
+    const info = resolveUtility(parsed.utility);
+    if (!info) continue;
+    const decls = declarationsFor(info.controlId, info.value);
+    if (!decls || decls.length === 0) continue;
+    const selector = `.${escapeSelector(cls)}${parsed.pseudo ?? ""}`;
+    const body = decls.map(([prop, value]) => `${prop}: ${value} !important;`).join(" ");
+    const rule = `${selector} { ${body} }`;
+    if (parsed.media) {
+      const bucket = byMedia.get(parsed.media) ?? [];
+      bucket.push(rule);
+      byMedia.set(parsed.media, bucket);
+    } else {
+      plain.push(rule);
+    }
+  }
+  const chunks = [...plain];
+  for (const [media, rules] of byMedia) {
+    chunks.push(`@media ${media} { ${rules.join(" ")} }`);
+  }
+  return chunks.join("\n");
+}
+var CanvasStyleInjector = () => {
+  const documentState = useEditorStore((state) => state.document);
+  const css = React.useMemo(
+    () => generateStyleCss(collectDocumentClasses(documentState)),
+    [documentState]
+  );
+  if (!css) return null;
+  return /* @__PURE__ */ jsxRuntime.jsx("style", { "data-tecof-canvas-styles": true, children: css });
+};
 var Canvas = () => {
   const content = useEditorStore((state) => state.document.content);
   const viewport = useEditorStore((state) => state.viewport);
@@ -7811,7 +8111,10 @@ var Canvas = () => {
     editMode: true
   }) : renderedContent;
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-canvas-container", onMouseDown: handleCanvasShellClick, children: [
-    /* @__PURE__ */ jsxRuntime.jsx("div", { className: viewportClassName, children: /* @__PURE__ */ jsxRuntime.jsx(Frame, { className: "tecof-canvas-frame", children: contentWithLayout }) }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: viewportClassName, children: /* @__PURE__ */ jsxRuntime.jsxs(Frame, { className: "tecof-canvas-frame", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(CanvasStyleInjector, {}),
+      contentWithLayout
+    ] }) }),
     /* @__PURE__ */ jsxRuntime.jsx(
       AddSectionModal,
       {
@@ -8131,11 +8434,8 @@ var SpacingBands = ({ coords }) => {
   if (b.pr > 0) push("tecof-space-padding", { top: top + b.pt, left: left + width - b.pr, width: b.pr, height: innerH }, b.pr);
   return /* @__PURE__ */ jsxRuntime.jsx(jsxRuntime.Fragment, { children: bands.map((band, i) => /* @__PURE__ */ jsxRuntime.jsx("div", { className: band.cls, style: band.style, children: band.label && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-space-label", children: band.label }) }, i)) });
 };
-var SizeBadge = ({ coords }) => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-size-badge", title: "Geni\u015Flik \xD7 Y\xFCkseklik (px)", children: [
-  Math.round(coords.width),
-  " \xD7 ",
-  Math.round(coords.height)
-] });
+var SPACING_HANDLES_MIN_WIDTH = 90;
+var SPACING_HANDLES_MIN_HEIGHT = 48;
 var InfoPopover = ({ node, componentConfig }) => {
   const [open, setOpen] = React.useState(false);
   const fields = Object.entries(componentConfig?.fields ?? {});
@@ -8255,27 +8555,35 @@ var OverlayToolbar = ({
     }
   )
 ] });
-var Breadcrumbs = ({
+var OverlayStatusBar = ({
   documentState,
-  selectedId
+  selectedId,
+  coords
 }) => {
   const selectNode = useEditorStore((state) => state.selectNode);
   const hoverNode = useEditorStore((state) => state.hoverNode);
   const crumbs = getBreadcrumbs(documentState, selectedId);
-  if (crumbs.length <= 1) return null;
-  return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-breadcrumbs", children: crumbs.map((crumb, idx) => /* @__PURE__ */ jsxRuntime.jsxs(React__default.default.Fragment, { children: [
-    idx > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-breadcrumb-sep", children: ">" }),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      "span",
-      {
-        onClick: () => selectNode(crumb.id),
-        className: `tecof-breadcrumb${crumb.id === selectedId ? " is-active" : ""}`,
-        onMouseEnter: () => hoverNode(crumb.id),
-        onMouseLeave: () => hoverNode(null),
-        children: crumb.type
-      }
-    )
-  ] }, crumb.id)) });
+  if (crumbs.length === 0) return null;
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-overlay-statusbar", children: [
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-breadcrumbs", children: crumbs.map((crumb, idx) => /* @__PURE__ */ jsxRuntime.jsxs(React__default.default.Fragment, { children: [
+      idx > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-breadcrumb-sep", children: ">" }),
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "span",
+        {
+          onClick: () => selectNode(crumb.id),
+          className: `tecof-breadcrumb${crumb.id === selectedId ? " is-active" : ""}`,
+          onMouseEnter: () => hoverNode(crumb.id),
+          onMouseLeave: () => hoverNode(null),
+          children: crumb.type
+        }
+      )
+    ] }, crumb.id)) }),
+    /* @__PURE__ */ jsxRuntime.jsxs("span", { className: "tecof-statusbar-size", title: "Geni\u015Flik \xD7 Y\xFCkseklik (px)", children: [
+      Math.round(coords.width),
+      " \xD7 ",
+      Math.round(coords.height)
+    ] })
+  ] });
 };
 var SelectionOverlay = () => {
   const { config } = useStudio();
@@ -8402,17 +8710,23 @@ var SelectionOverlay = () => {
                   onDelete: handleDelete
                 }
               ),
-              !isMulti && perms.edit !== false && selectedCoords.box && /* @__PURE__ */ jsxRuntime.jsx(
+              !isMulti && perms.edit !== false && selectedCoords.box && selectedCoords.width >= SPACING_HANDLES_MIN_WIDTH && selectedCoords.height >= SPACING_HANDLES_MIN_HEIGHT && /* @__PURE__ */ jsxRuntime.jsx(
                 SpacingDragHandles,
                 {
                   nodeId: selectedId,
                   coords: selectedCoords,
                   onDragAxisChange: setSpacingDragAxis
                 }
-              ),
-              !spacingDragAxis && /* @__PURE__ */ jsxRuntime.jsx(SizeBadge, { coords: selectedCoords }),
-              /* @__PURE__ */ jsxRuntime.jsx(Breadcrumbs, { documentState, selectedId })
+              )
             ]
+          }
+        ),
+        selectedId && selectedCoords && nodeDetails && /* @__PURE__ */ jsxRuntime.jsx(
+          OverlayStatusBar,
+          {
+            documentState,
+            selectedId,
+            coords: selectedCoords
           }
         )
       ]
@@ -11902,8 +12216,10 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     children: renderedContent,
     editMode: false
   }) : renderedContent;
+  const styleCss = generateStyleCss(collectDocumentClasses(doc));
   return /* @__PURE__ */ jsxRuntime.jsxs(RenderContext.Provider, { value: contextValue, children: [
     /* @__PURE__ */ jsxRuntime.jsx("style", { "data-tecof-animations": true, children: ANIMATION_CSS }),
+    styleCss && /* @__PURE__ */ jsxRuntime.jsx("style", { "data-tecof-styles": true, children: styleCss }),
     /* @__PURE__ */ jsxRuntime.jsx("div", { className, children: contentWithLayout })
   ] });
 };

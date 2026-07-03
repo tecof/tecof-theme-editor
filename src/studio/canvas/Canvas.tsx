@@ -7,6 +7,7 @@ import { NodeRenderer } from './NodeRenderer';
 import { useDropTarget } from './useDropTarget';
 import { AddSectionButton } from './AddSectionButton';
 import { AddSectionModal } from '../panels/AddSectionModal';
+import { CanvasStyleInjector } from './CanvasStyleInjector';
 import { createNode } from './dndUtils';
 import { isValidDrop } from '../../engine/rules';
 import { LayoutTemplate, Plus } from 'lucide-react';
@@ -171,6 +172,9 @@ export const Canvas = () => {
     <div className="tecof-canvas-container" onMouseDown={handleCanvasShellClick}>
       <div className={viewportClassName}>
         <Frame className="tecof-canvas-frame">
+          {/* Stil token'larının CSS'i host Tailwind build'ine bağımlı değil —
+              iframe içine canlı üretilir (cssGenerator.ts). */}
+          <CanvasStyleInjector />
           {contentWithLayout}
         </Frame>
       </div>

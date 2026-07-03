@@ -6154,23 +6154,42 @@
 .tecof-space-padding .tecof-space-label { background: rgb(90, 140, 0); }
 .tecof-space-margin .tecof-space-label { background: rgb(201, 124, 24); }
 
-/* W × H (px) chip at the bottom-right of the selection outline — mirrors the
-   breadcrumbs chip that sits bottom-left. */
-.tecof-size-badge {
+/* Fixed status bar at the bottom-left of the canvas overlay: node ancestry +
+   W × H. Replaces the node-attached breadcrumb/size chips, which covered
+   neighbouring content and hijacked clicks on small elements. */
+.tecof-overlay-statusbar {
   position: absolute;
-  right: -2px;
-  bottom: -28px;
-  padding: 4px 8px;
-  border-radius: 0 0 6px 6px;
+  left: 10px;
+  bottom: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+  pointer-events: none;
+}
+
+/* Node'a yapışık konumlandırmayı durum çubuğu içinde etkisizleştir. */
+.tecof-overlay-statusbar .tecof-breadcrumbs {
+  position: static;
+  border-radius: 6px;
+  overflow: hidden;
+  max-width: 100%;
+  pointer-events: auto;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+}
+
+.tecof-statusbar-size {
   background: var(--tecof-text);
   color: #ffffff;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 10px;
   font-weight: 600;
   line-height: 1.4;
+  padding: 4px 8px;
+  border-radius: 6px;
   white-space: nowrap;
-  pointer-events: none;
-  z-index: 1;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
 }
 
 /* ─── Spacing drag handles ─── */
