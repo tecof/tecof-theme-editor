@@ -1,4 +1,4 @@
-import type { ThemeConfig } from '../../types';
+import type { ThemeConfig, DeepPartialThemeConfig } from '../../types';
 import { getDefaultTheme, mergeTheme } from '../../utils';
 
 /** Root-prop key under which the page's theme override is stored (persists + undoable). */
@@ -13,9 +13,9 @@ export const THEME_STYLE_ID = 'tecof-theme-vars';
  */
 export const resolveTheme = (
   rootProps?: Record<string, any> | null,
-  configTheme?: Partial<ThemeConfig> | null
+  configTheme?: DeepPartialThemeConfig | null
 ): ThemeConfig =>
   mergeTheme(
     mergeTheme(getDefaultTheme(), configTheme ?? {}),
-    (rootProps?.[THEME_PROP] as Partial<ThemeConfig>) ?? {}
+    (rootProps?.[THEME_PROP] as DeepPartialThemeConfig) ?? {}
   );

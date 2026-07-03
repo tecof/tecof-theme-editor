@@ -53,9 +53,11 @@ export {
 /* ─── Types ─── */
 export type {
   ThemeConfig,
+  DeepPartialThemeConfig,
   ThemeColors,
   ThemeTypography,
   ThemeSpacing,
+  StudioConfig,
   HSL,
   PuckContentItem,
   PuckPageData,

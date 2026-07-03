@@ -55,6 +55,15 @@ export interface ThemeConfig {
   customTokens?: Record<string, string>;
 }
 
+export interface DeepPartialThemeConfig {
+  colors?: Partial<ThemeColors>;
+  typography?: Partial<ThemeTypography> & {
+    headingScale?: Partial<ThemeTypography['headingScale']>;
+  };
+  spacing?: Partial<ThemeSpacing>;
+  customTokens?: Record<string, string>;
+}
+
 /* ─── HSL ─── */
 
 export interface HSL {
@@ -343,7 +352,7 @@ export interface StudioConfig {
    * theme package ship its brand colors as the starting point, so untouched
    * pages keep the theme's look while `--theme-*` variables stay defined.
    */
-  theme?: Partial<ThemeConfig>;
+  theme?: DeepPartialThemeConfig;
   /** Allow host-specific extra props without breaking typing. */
   [key: string]: any;
 }

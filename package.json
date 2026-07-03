@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.55",
+    "version": "0.0.56",
     "description": "React theme editor and renderer library for Tecof projects",
     "keywords": [
         "react",
@@ -66,6 +66,7 @@
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
+        "@tecof/theme-editor": "^0.0.55",
         "zod": "^4.4.3"
     },
     "devDependencies": {
@@ -96,6 +97,7 @@
         "@types/react-dom": "^19.0.0",
         "@vitejs/plugin-react": "^4.7.0",
         "browser-image-compression": "^2.0.2",
+        "clsx": "^2.1.1",
         "esbuild": "^0.28.1",
         "eslint": "^9.0.0",
         "eslint-plugin-react": "^7.37.5",
@@ -117,14 +119,13 @@
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
         "react-filepond": "^7.1.3",
+        "tailwind-merge": "^3.0.0",
         "tsup": "^8.0.0",
         "typescript": "^5.0.0",
         "typescript-eslint": "^8.62.0",
         "vaul": "^1.1.2",
         "vite": "^6.4.3",
         "vitest": "^3.0.0",
-        "zustand": "^5.0.14",
-        "tailwind-merge": "^3.0.0",
-        "clsx": "^2.1.1"
+        "zustand": "^5.0.14"
     }
 }

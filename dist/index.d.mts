@@ -51,6 +51,14 @@ interface ThemeConfig {
     spacing: ThemeSpacing;
     customTokens?: Record<string, string>;
 }
+interface DeepPartialThemeConfig {
+    colors?: Partial<ThemeColors>;
+    typography?: Partial<ThemeTypography> & {
+        headingScale?: Partial<ThemeTypography['headingScale']>;
+    };
+    spacing?: Partial<ThemeSpacing>;
+    customTokens?: Record<string, string>;
+}
 interface HSL {
     h: number;
     s: number;
@@ -291,7 +299,7 @@ interface StudioConfig {
      * theme package ship its brand colors as the starting point, so untouched
      * pages keep the theme's look while `--theme-*` variables stay defined.
      */
-    theme?: Partial<ThemeConfig>;
+    theme?: DeepPartialThemeConfig;
     /** Allow host-specific extra props without breaking typing. */
     [key: string]: any;
 }
@@ -1622,6 +1630,6 @@ declare function lighten(hex: string, amount: number): string;
 declare function darken(hex: string, amount: number): string;
 declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
-declare function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig;
+declare function mergeTheme(base: ThemeConfig, overrides: DeepPartialThemeConfig): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useTecof, useUiStore };
+export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, type DeepPartialThemeConfig, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, type StudioConfig, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useTecof, useUiStore };

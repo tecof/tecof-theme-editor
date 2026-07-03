@@ -1,4 +1,4 @@
-import type { ThemeConfig, HSL } from '../types';
+import type { ThemeConfig, HSL, DeepPartialThemeConfig } from '../types';
 
 /* ─── Color Converters ─── */
 
@@ -200,7 +200,7 @@ function isObject(item: unknown): item is Record<string, unknown> {
   return Boolean(item && typeof item === 'object' && !Array.isArray(item));
 }
 
-export function mergeTheme(base: ThemeConfig, overrides: Partial<ThemeConfig>): ThemeConfig {
+export function mergeTheme(base: ThemeConfig, overrides: DeepPartialThemeConfig): ThemeConfig {
   const result: ThemeConfig = {
     colors: { ...base.colors, ...(overrides.colors ?? {}) },
     typography: { ...base.typography, ...(overrides.typography ?? {}) },
