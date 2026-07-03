@@ -284,6 +284,14 @@ interface StudioConfig {
         render?: (props: any) => React.ReactNode;
         [key: string]: any;
     };
+    /**
+     * Theme-level design-token defaults (colors, typography, spacing). Merge
+     * order: built-in defaults ← `config.theme` ← the page's own override
+     * (`root.props._tecofTheme`, edited in the studio's Tema panel). Lets a
+     * theme package ship its brand colors as the starting point, so untouched
+     * pages keep the theme's look while `--theme-*` variables stay defined.
+     */
+    theme?: Partial<ThemeConfig>;
     /** Allow host-specific extra props without breaking typing. */
     [key: string]: any;
 }

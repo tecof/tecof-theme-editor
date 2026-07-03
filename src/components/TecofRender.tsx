@@ -5,6 +5,8 @@ import { STYLES_PROP } from '../studio/style/types';
 import { ANIMATION_CSS } from '../studio/style/animationCss';
 import { collectDocumentClasses } from '../studio/style/compileStyles';
 import { generateStyleCss } from '../studio/style/cssGenerator';
+import { resolveTheme } from '../studio/theme/theme';
+import { generateCSSVariables } from '../utils';
 import { migrateDocument } from '../engine/migrate';
 
 const RenderContext = createContext<{
@@ -138,8 +140,15 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
   // in `_tecofStyles` get their CSS generated right here (see cssGenerator.ts).
   const styleCss = generateStyleCss(collectDocumentClasses(doc));
 
+  // Published-page counterpart of the studio's ThemeVars: the `--theme-*`
+  // variables (Tema panel + config.theme defaults) must exist here too, or
+  // every `var(--theme-color-*)` reference — theme swatches picked in the
+  // style editor, components reading the central theme — resolves to nothing.
+  const themeCss = generateCSSVariables(resolveTheme(rootProps, config.theme));
+
   return (
     <RenderContext.Provider value={contextValue}>
+      <style data-tecof-theme>{themeCss}</style>
       {/* Entrance-animation keyframes for the `anim` style control (ThemeVars-style
           <style> injection). Emitted once per page; harmless when unused. */}
       <style data-tecof-animations>{ANIMATION_CSS}</style>

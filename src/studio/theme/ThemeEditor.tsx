@@ -1,4 +1,5 @@
 import { useEditorStore } from '../../engine/store';
+import { useStudio } from '../context';
 import { ColorField } from '../../components/fields/ColorField';
 import type { ThemeColors, ThemeConfig } from '../../types';
 import { resolveTheme, THEME_PROP } from './theme';
@@ -65,7 +66,11 @@ const TextRow = ({ label, value, onChange }: { label: string; value: string; onC
 export const ThemeEditor = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
   const setRootProps = useEditorStore((s) => s.setRootProps);
-  const theme = resolveTheme(rootProps);
+  const { config } = useStudio();
+  // Panel + reset both resolve against the theme package's own defaults
+  // (config.theme), so "sıfırla" returns to the THEME's brand, not the
+  // editor's built-ins.
+  const theme = resolveTheme(rootProps, config.theme);
 
   const patch = (next: ThemeConfig) => setRootProps({ [THEME_PROP]: next });
   const setColor = (key: keyof ThemeColors, value: string) =>

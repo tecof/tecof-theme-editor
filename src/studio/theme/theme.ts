@@ -7,6 +7,15 @@ export const THEME_PROP = '_tecofTheme';
 /** id of the injected <style> element carrying the theme CSS variables. */
 export const THEME_STYLE_ID = 'tecof-theme-vars';
 
-/** Resolves the effective theme = built-in defaults merged with the stored override. */
-export const resolveTheme = (rootProps?: Record<string, any> | null): ThemeConfig =>
-  mergeTheme(getDefaultTheme(), (rootProps?.[THEME_PROP] as Partial<ThemeConfig>) ?? {});
+/**
+ * Resolves the effective theme: built-in defaults ← the theme package's
+ * `config.theme` defaults ← the page's stored override (root props).
+ */
+export const resolveTheme = (
+  rootProps?: Record<string, any> | null,
+  configTheme?: Partial<ThemeConfig> | null
+): ThemeConfig =>
+  mergeTheme(
+    mergeTheme(getDefaultTheme(), configTheme ?? {}),
+    (rootProps?.[THEME_PROP] as Partial<ThemeConfig>) ?? {}
+  );

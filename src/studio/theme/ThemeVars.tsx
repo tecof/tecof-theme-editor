@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useEditorStore } from '../../engine/store';
+import { useStudio } from '../context';
 import { generateCSSVariables } from '../../utils';
 import { resolveTheme, THEME_STYLE_ID } from './theme';
 
@@ -16,9 +17,10 @@ import { resolveTheme, THEME_STYLE_ID } from './theme';
  */
 export const ThemeVars = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
+  const { config } = useStudio();
 
   useEffect(() => {
-    const css = generateCSSVariables(resolveTheme(rootProps));
+    const css = generateCSSVariables(resolveTheme(rootProps, config.theme));
 
     const ensure = (doc: Document | null | undefined) => {
       if (!doc?.head) return;
@@ -34,7 +36,7 @@ export const ThemeVars = () => {
     ensure(document);
     const iframe = document.querySelector('.tecof-canvas-viewport iframe') as HTMLIFrameElement | null;
     ensure(iframe?.contentDocument);
-  }, [rootProps]);
+  }, [rootProps, config.theme]);
 
   return null;
 };

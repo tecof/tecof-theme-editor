@@ -2527,13 +2527,17 @@ function mergeTheme(base, overrides) {
 // src/studio/theme/theme.ts
 var THEME_PROP = "_tecofTheme";
 var THEME_STYLE_ID = "tecof-theme-vars";
-var resolveTheme = (rootProps) => mergeTheme(getDefaultTheme(), rootProps?.[THEME_PROP] ?? {});
+var resolveTheme = (rootProps, configTheme) => mergeTheme(
+  mergeTheme(getDefaultTheme(), configTheme ?? {}),
+  rootProps?.[THEME_PROP] ?? {}
+);
 
 // src/studio/theme/ThemeVars.tsx
 var ThemeVars = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
+  const { config } = useStudio();
   useEffect(() => {
-    const css = generateCSSVariables(resolveTheme(rootProps));
+    const css = generateCSSVariables(resolveTheme(rootProps, config.theme));
     const ensure = (doc) => {
       if (!doc?.head) return;
       let el = doc.getElementById(THEME_STYLE_ID);
@@ -2547,7 +2551,7 @@ var ThemeVars = () => {
     ensure(document);
     const iframe = document.querySelector(".tecof-canvas-viewport iframe");
     ensure(iframe?.contentDocument);
-  }, [rootProps]);
+  }, [rootProps, config.theme]);
   return null;
 };
 
@@ -11256,7 +11260,8 @@ var TextRow = ({ label, value, onChange }) => /* @__PURE__ */ jsxs("label", { cl
 var ThemeEditor = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
   const setRootProps2 = useEditorStore((s) => s.setRootProps);
-  const theme = resolveTheme(rootProps);
+  const { config } = useStudio();
+  const theme = resolveTheme(rootProps, config.theme);
   const patch = (next) => setRootProps2({ [THEME_PROP]: next });
   const setColor = (key, value) => patch({ ...theme, colors: { ...theme.colors, [key]: value } });
   const setSpacing = (key, value) => patch({ ...theme, spacing: { ...theme.spacing, [key]: value } });
@@ -12643,7 +12648,9 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     editMode: false
   }) : renderedContent;
   const styleCss = generateStyleCss(collectDocumentClasses(doc));
+  const themeCss = generateCSSVariables(resolveTheme(rootProps, config.theme));
   return /* @__PURE__ */ jsxs(RenderContext.Provider, { value: contextValue, children: [
+    /* @__PURE__ */ jsx("style", { "data-tecof-theme": true, children: themeCss }),
     /* @__PURE__ */ jsx("style", { "data-tecof-animations": true, children: ANIMATION_CSS }),
     styleCss && /* @__PURE__ */ jsx("style", { "data-tecof-styles": true, children: styleCss }),
     /* @__PURE__ */ jsx("div", { className, children: contentWithLayout })
