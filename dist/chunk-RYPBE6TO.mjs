@@ -1,4 +1,4 @@
-import { useTecof, Drawer, TecofPicture } from './chunk-6SZFDZOT.mjs';
+import { useTecof, Drawer, TecofPicture } from './chunk-HKP3NVYI.mjs';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCcw, X, Image, Search, Check, FileIcon } from 'lucide-react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
@@ -6,6 +6,7 @@ import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 var isImageType = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
   (t) => type?.toLowerCase().includes(t)
 );
+var isPreviewableImage = (file) => file.type === "external" || file.provider === "external" || isImageType(file.type);
 var MediaDrawer = ({
   open,
   onOpenChange,
@@ -41,7 +42,7 @@ var MediaDrawer = ({
   const filteredGallery = useMemo(() => {
     let files = galleryFiles;
     if (filterImages) {
-      files = files.filter((f) => isImageType(f.type));
+      files = files.filter(isPreviewableImage);
     }
     if (gallerySearch.trim()) {
       const q = gallerySearch.toLowerCase();
@@ -158,7 +159,7 @@ var MediaDrawer = ({
                 onClick: () => handleSelect(file),
                 children: [
                   selected && /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsx(Check, { size: 12, strokeWidth: 3 }) }),
-                  isImageType(file.type) ? /* @__PURE__ */ jsx(
+                  isPreviewableImage(file) ? /* @__PURE__ */ jsx(
                     TecofPicture,
                     {
                       data: file,
@@ -180,5 +181,5 @@ var MediaDrawer = ({
 };
 
 export { MediaDrawer };
-//# sourceMappingURL=chunk-7DE7RWPS.mjs.map
-//# sourceMappingURL=chunk-7DE7RWPS.mjs.map
+//# sourceMappingURL=chunk-RYPBE6TO.mjs.map
+//# sourceMappingURL=chunk-RYPBE6TO.mjs.map

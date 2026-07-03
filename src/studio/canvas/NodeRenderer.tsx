@@ -220,9 +220,11 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     });
   }
 
-  // Reset the error boundary when the node id or its props change, so the
-  // component can recover after the user edits the offending prop.
-  const errorResetKey = `${node.props.id}:${JSON.stringify(node.props)}`;
+  // Reset the error boundary when the node's props change so the component can
+  // recover after the user edits the offending prop. The props REFERENCE is the
+  // cheapest change signal: immer swaps it on every edit, and stringifying all
+  // props here ran on every render of every node.
+  const errorResetKey = node.props;
 
   return (
     <ParentNodeContext.Provider value={node.props.id}>

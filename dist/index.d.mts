@@ -1072,14 +1072,27 @@ interface StyleControlOption {
     /** Optional CSS color for color-swatch rendering in the UI. */
     swatch?: string;
 }
+/** ColorPicker panel sections a color control can expose. */
+type ColorSectionKey = 'base' | 'theme' | 'brand' | 'palette' | 'custom';
 interface StyleControl {
     id: string;
     label: string;
     group: StyleGroup;
     type: StyleControlType;
     options: StyleControlOption[];
-    /** Token value → Tailwind class (or null to emit nothing). */
+    /**
+     * Token value → Tailwind class(es) (or null to emit nothing). May return
+     * multiple space-separated utilities (e.g. `transition-all duration-300`);
+     * emitters split on spaces so variant prefixes/important markers attach to
+     * each class individually.
+     */
     toClass: (value: string) => string | null;
+    /**
+     * Which ColorPicker sections a `color` control shows (default: all).
+     * Gradient stops restrict this to the finite sets (base/theme/brand) so the
+     * safelist stays bounded — the full Tailwind palette would double it.
+     */
+    colorSections?: ColorSectionKey[];
     /**
      * Tailwind utility prefix for arbitrary (custom) values. When set, the user
      * can type a raw value `V` (e.g. `10px`, `#ff0000`) and it compiles to

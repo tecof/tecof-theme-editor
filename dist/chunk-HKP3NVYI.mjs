@@ -1,5 +1,5 @@
 import * as React__default from 'react';
-import React__default__default, { createContext, memo, useContext, useState, useMemo, useLayoutEffect, useEffect } from 'react';
+import React__default__default, { createContext, memo, useState, useContext, useMemo, useLayoutEffect, useEffect } from 'react';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 import * as ReactDOM from 'react-dom';
 import ReactDOM__default from 'react-dom';
@@ -348,6 +348,24 @@ var isVideo = (type) => {
   const t = type.toLowerCase();
   return VIDEO_EXTENSIONS.some((ext) => t.includes(ext)) || t.startsWith("video/");
 };
+var urlLooksLikeVideo = (url) => {
+  const path = url.split(/[?#]/)[0].toLowerCase();
+  return VIDEO_EXTENSIONS.some((ext) => path.endsWith(`.${ext}`));
+};
+var pickVariantName = (data, size) => {
+  const m = data.meta;
+  if (!m) return data.name;
+  switch (size) {
+    case "thumbnail":
+      return m.thumbnail || m.medium || m.large || m.webp || data.name;
+    case "medium":
+      return m.medium || m.large || m.webp || data.name;
+    case "large":
+      return m.large || m.webp || data.name;
+    default:
+      return m.webp || data.name;
+  }
+};
 var getSizes = (size) => {
   switch (size) {
     case "thumbnail":
@@ -382,12 +400,16 @@ var TecofPicture = memo(({
 }) => {
   const { apiClient } = useTecof();
   const cdnUrl = apiClient.cdnUrl;
+  const [loadedUrl, setLoadedUrl] = useState(null);
   if (!data) return null;
-  const buildPath = (fileName) => data?.folder && data.folder !== "/" ? `${data.folder.replace(/^\//, "")}/${fileName}` : fileName;
-  const isExternal = data?.type === "external" || data?.provider === "external";
-  const fileURL = isExternal ? data?.url || "" : `${cdnUrl}/${buildPath(data?.name)}`;
-  const isImageType = isExternal ? true : isImage(data?.type);
-  const isVideoType = isExternal ? false : isVideo(data?.type);
+  if (data.type === "image/reference") return null;
+  const isExternal = data.type === "external" || data.provider === "external";
+  if (!isExternal && !data.name) return null;
+  const buildURL = (fileName) => `${cdnUrl}/${data.folder && data.folder !== "/" ? `${data.folder.replace(/^\//, "")}/${fileName}` : fileName}`;
+  const originalURL = isExternal ? data.url || "" : buildURL(data.name);
+  const fileURL = isExternal ? originalURL : buildURL(pickVariantName(data, size));
+  const isVideoType = isExternal ? urlLooksLikeVideo(originalURL) : isVideo(data.type);
+  const isImageType = isExternal ? !isVideoType : isImage(data.type);
   if (!fileURL) return null;
   const imgWidth = width || data?.meta?.width || 500;
   const imgHeight = height || data?.meta?.height || 500;
@@ -400,6 +422,7 @@ var TecofPicture = memo(({
       loop: true,
       muted: true,
       playsInline: true,
+      preload: "metadata",
       className: `tecof-picture-video ${imgClassName || ""}`.trim(),
       style: imgStyle
     }
@@ -414,7 +437,8 @@ var TecofPicture = memo(({
       loading,
       sizes,
       className: computedImgClass,
-      style: imgStyle
+      style: imgStyle,
+      onLoad: () => setLoadedUrl(fileURL)
     };
     if (ImageComponent) {
       return /* @__PURE__ */ jsx(
@@ -438,14 +462,16 @@ var TecofPicture = memo(({
     );
   };
   const containerClassName = `tecof-picture-wrapper ${fill ? "fill" : ""} ${className || ""}`.trim();
+  const showBlur = usePlaceholder && isImageType && loadedUrl !== fileURL;
+  const containerStyle = showBlur ? { ...style, backgroundImage: `url("${blurDataURL}")`, backgroundSize: "cover" } : style;
   if (fancybox && (isImageType || isVideoType)) {
     return /* @__PURE__ */ jsx(
       "a",
       {
         "data-fancybox": fancyboxName,
-        href: fileURL,
+        href: originalURL || fileURL,
         className: "tecof-picture-link",
-        children: /* @__PURE__ */ jsx("div", { style, className: containerClassName, children: isVideoType ? renderVideo() : renderImg() })
+        children: /* @__PURE__ */ jsx("div", { style: containerStyle, className: containerClassName, children: isVideoType ? renderVideo() : renderImg() })
       }
     );
   }
@@ -453,7 +479,7 @@ var TecofPicture = memo(({
     return /* @__PURE__ */ jsx("div", { style, className: containerClassName, children: renderVideo() });
   }
   if (isImageType) {
-    return /* @__PURE__ */ jsx("div", { style, className: containerClassName, children: renderImg() });
+    return /* @__PURE__ */ jsx("div", { style: containerStyle, className: containerClassName, children: renderImg() });
   }
   return null;
 });
@@ -3951,5 +3977,5 @@ var Drawer = {
 };
 
 export { Drawer, TecofApiClient, TecofPicture, TecofProvider, useTecof };
-//# sourceMappingURL=chunk-6SZFDZOT.mjs.map
-//# sourceMappingURL=chunk-6SZFDZOT.mjs.map
+//# sourceMappingURL=chunk-HKP3NVYI.mjs.map
+//# sourceMappingURL=chunk-HKP3NVYI.mjs.map

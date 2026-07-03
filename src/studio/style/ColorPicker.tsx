@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { COLOR_SECTIONS, isArbitrary, arbitraryRaw, toArbitrary, type StyleControlOption } from './tokens';
+import {
+  COLOR_SECTIONS,
+  isArbitrary,
+  arbitraryRaw,
+  toArbitrary,
+  type StyleControlOption,
+  type ColorSectionKey,
+} from './tokens';
 import { TAILWIND_PALETTE, TAILWIND_SHADES, tailwindSwatch, parsePaletteToken } from './palette';
 
 /** #rgb / #rgba / #rrggbb / #rrggbbaa */
@@ -66,16 +73,25 @@ export interface ColorPickerProps {
   /** Stored token: '', 'white', 'primary-600', 'red-500', '[var(--theme-color-x)]' or '[#hex]'. */
   value: string;
   onChange: (value: string) => void;
+  /**
+   * Which panel sections to show (default: all). Controls with a bounded
+   * safelist (gradient stops) exclude `'palette'` so users can't pick tokens
+   * whose classes never make it into the production CSS.
+   */
+  sections?: ColorSectionKey[];
 }
+
+const ALL_SECTIONS: ColorSectionKey[] = ['base', 'theme', 'brand', 'palette', 'custom'];
 
 /**
  * Color control for the style editor. Presents four token sources in one panel:
  * quick picks, live theme colors, the brand (primary) scale, the full Tailwind
  * default palette and a free color-picker that stores an arbitrary hex token.
  */
-export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
+export const ColorPicker = ({ value, onChange, sections = ALL_SECTIONS }: ColorPickerProps) => {
   const [open, setOpen] = useState(false);
   const { label, swatch } = describeValue(value);
+  const show = (key: ColorSectionKey) => sections.includes(key);
 
   const paletteMatch = parsePaletteToken(value);
   // Last hue the user browsed; the current value's hue wins when it is a palette token.
@@ -119,6 +135,7 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
 
       {open && (
         <div className="tecof-color-panel">
+          {show('base') && (
           <div className="tecof-color-section">
             <div className="tecof-style-swatches">
               {COLOR_SECTIONS.base.map((opt) => (
@@ -126,7 +143,9 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
               ))}
             </div>
           </div>
+          )}
 
+          {show('theme') && (
           <div className="tecof-color-section">
             <div className="tecof-color-section-title">Tema renkleri</div>
             <div className="tecof-style-swatches">
@@ -135,7 +154,9 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
               ))}
             </div>
           </div>
+          )}
 
+          {show('brand') && (
           <div className="tecof-color-section">
             <div className="tecof-color-section-title">Marka (Primary)</div>
             <div className="tecof-style-swatches">
@@ -144,7 +165,9 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
               ))}
             </div>
           </div>
+          )}
 
+          {show('palette') && (
           <div className="tecof-color-section">
             <div className="tecof-color-section-title">Tailwind paleti</div>
             <div className="tecof-color-hues">
@@ -173,7 +196,9 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
               })}
             </div>
           </div>
+          )}
 
+          {show('custom') && (
           <div className="tecof-color-section">
             <div className="tecof-color-section-title">Özel renk</div>
             <div className="tecof-color-custom">
@@ -200,6 +225,7 @@ export const ColorPicker = ({ value, onChange }: ColorPickerProps) => {
               />
             </div>
           </div>
+          )}
         </div>
       )}
     </div>

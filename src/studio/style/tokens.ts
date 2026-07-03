@@ -23,14 +23,28 @@ export interface StyleControlOption {
   swatch?: string;
 }
 
+/** ColorPicker panel sections a color control can expose. */
+export type ColorSectionKey = 'base' | 'theme' | 'brand' | 'palette' | 'custom';
+
 export interface StyleControl {
   id: string;
   label: string;
   group: StyleGroup;
   type: StyleControlType;
   options: StyleControlOption[];
-  /** Token value → Tailwind class (or null to emit nothing). */
+  /**
+   * Token value → Tailwind class(es) (or null to emit nothing). May return
+   * multiple space-separated utilities (e.g. `transition-all duration-300`);
+   * emitters split on spaces so variant prefixes/important markers attach to
+   * each class individually.
+   */
   toClass: (value: string) => string | null;
+  /**
+   * Which ColorPicker sections a `color` control shows (default: all).
+   * Gradient stops restrict this to the finite sets (base/theme/brand) so the
+   * safelist stays bounded — the full Tailwind palette would double it.
+   */
+  colorSections?: ColorSectionKey[];
   /**
    * Tailwind utility prefix for arbitrary (custom) values. When set, the user
    * can type a raw value `V` (e.g. `10px`, `#ff0000`) and it compiles to
@@ -125,6 +139,18 @@ export const COLOR_SECTIONS = {
   brand: BRAND_COLOR_OPTIONS,
 } as const;
 
+/**
+ * Gradient stop palette: the finite sections only. Every option here lands in
+ * the safelist as `from-*`/`to-*` × every variant prefix, so the full Tailwind
+ * palette (~250 tokens) is deliberately excluded; custom hex stops still work
+ * as arbitrary values via `collectDocumentClasses`.
+ */
+const GRADIENT_COLOR_OPTIONS: StyleControlOption[] = [
+  ...BASE_COLOR_OPTIONS,
+  ...THEME_COLOR_OPTIONS,
+  ...BRAND_COLOR_OPTIONS,
+];
+
 const opts = (values: string[], withNone = true): StyleControlOption[] => [
   ...(withNone ? [{ label: '—', value: '' }] : []),
   ...values.map((v) => ({ label: v, value: v })),
@@ -159,20 +185,40 @@ export const STYLE_CONTROLS: StyleControl[] = [
   { id: 'items', label: 'Dikey hiza', group: 'layout', type: 'select',
     options: opts(['start', 'center', 'end', 'stretch', 'baseline']),
     toClass: (v) => (v ? `items-${v}` : null) },
+  { id: 'flexWrap', label: 'Satır kaydır', group: 'layout', type: 'segment',
+    options: opts(['wrap', 'nowrap']),
+    toClass: (v) => (v ? `flex-${v}` : null) },
   { id: 'gap', label: 'Boşluk (gap)', group: 'layout', type: 'space',
     options: spaceOptions(), arbitraryPrefix: 'gap', toClass: withArbitrary('gap', (v) => `gap-${v}`) },
   { id: 'alignSelf', label: 'Bireysel Hiza (self)', group: 'layout', type: 'select',
     options: opts(['auto', 'start', 'center', 'end', 'stretch']),
     toClass: (v) => (v ? `self-${v}` : null) },
+  { id: 'position', label: 'Konumlama', group: 'layout', type: 'select',
+    options: opts(['static', 'relative', 'absolute', 'sticky', 'fixed']),
+    toClass: (v) => v || null },
+  { id: 'zIndex', label: 'Katman (z-index)', group: 'layout', type: 'select',
+    options: opts(['auto', '0', '10', '20', '30', '40', '50']),
+    toClass: (v) => (v ? `z-${v}` : null) },
+  { id: 'overflow', label: 'Taşma', group: 'layout', type: 'select',
+    options: opts(['visible', 'hidden', 'auto', 'scroll']),
+    toClass: (v) => (v ? `overflow-${v}` : null) },
 
-  // Spacing — padding
+  // Spacing — padding (shorthands + per-side; sides render in the SpacingBox)
   { id: 'p', label: 'Padding', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'p', toClass: withArbitrary('p', (v) => `p-${v}`) },
   { id: 'px', label: 'Padding X', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'px', toClass: withArbitrary('px', (v) => `px-${v}`) },
   { id: 'py', label: 'Padding Y', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'py', toClass: withArbitrary('py', (v) => `py-${v}`) },
+  { id: 'pt', label: 'Padding Üst', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'pt', toClass: withArbitrary('pt', (v) => `pt-${v}`) },
+  { id: 'pb', label: 'Padding Alt', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'pb', toClass: withArbitrary('pb', (v) => `pb-${v}`) },
+  { id: 'pl', label: 'Padding Sol', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'pl', toClass: withArbitrary('pl', (v) => `pl-${v}`) },
+  { id: 'pr', label: 'Padding Sağ', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'pr', toClass: withArbitrary('pr', (v) => `pr-${v}`) },
   // Spacing — margin
   { id: 'm', label: 'Margin', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'm', toClass: withArbitrary('m', (v) => `m-${v}`) },
   { id: 'mx', label: 'Margin X', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'mx', toClass: withArbitrary('mx', (v) => `mx-${v}`) },
   { id: 'my', label: 'Margin Y', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'my', toClass: withArbitrary('my', (v) => `my-${v}`) },
+  { id: 'mt', label: 'Margin Üst', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'mt', toClass: withArbitrary('mt', (v) => `mt-${v}`) },
+  { id: 'mb', label: 'Margin Alt', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'mb', toClass: withArbitrary('mb', (v) => `mb-${v}`) },
+  { id: 'ml', label: 'Margin Sol', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'ml', toClass: withArbitrary('ml', (v) => `ml-${v}`) },
+  { id: 'mr', label: 'Margin Sağ', group: 'spacing', type: 'space', options: spaceOptions(), arbitraryPrefix: 'mr', toClass: withArbitrary('mr', (v) => `mr-${v}`) },
   { id: 'marginAlign', label: 'Özel Hiza (margin)', group: 'spacing', type: 'select',
     options: [
       { label: '—', value: '' },
@@ -197,6 +243,25 @@ export const STYLE_CONTROLS: StyleControl[] = [
   // Background
   { id: 'bg', label: 'Arka plan', group: 'background', type: 'color', options: COLOR_OPTIONS,
     arbitraryPrefix: 'bg', toClass: withArbitrary('bg', (v) => `bg-${v}`) },
+  // Gradient: direction + two color stops. `bg-gradient-to-*` (v4 alias of
+  // bg-linear-to-*) keeps v3 hosts working too.
+  { id: 'bgGradient', label: 'Gradient yönü', group: 'background', type: 'select',
+    options: [
+      { label: '—', value: '' },
+      { label: 'Sağa', value: 'to-r' },
+      { label: 'Sola', value: 'to-l' },
+      { label: 'Aşağı', value: 'to-b' },
+      { label: 'Yukarı', value: 'to-t' },
+      { label: 'Sağ alta', value: 'to-br' },
+      { label: 'Sağ üste', value: 'to-tr' },
+    ],
+    toClass: (v) => (v ? `bg-gradient-${v}` : null) },
+  { id: 'gradientFrom', label: 'Gradient başlangıç', group: 'background', type: 'color',
+    options: GRADIENT_COLOR_OPTIONS, colorSections: ['base', 'theme', 'brand', 'custom'],
+    arbitraryPrefix: 'from', toClass: withArbitrary('from', (v) => `from-${v}`) },
+  { id: 'gradientTo', label: 'Gradient bitiş', group: 'background', type: 'color',
+    options: GRADIENT_COLOR_OPTIONS, colorSections: ['base', 'theme', 'brand', 'custom'],
+    arbitraryPrefix: 'to', toClass: withArbitrary('to', (v) => `to-${v}`) },
 
   // Typography
   { id: 'text', label: 'Metin rengi', group: 'typography', type: 'color', options: COLOR_OPTIONS,
@@ -213,6 +278,26 @@ export const STYLE_CONTROLS: StyleControl[] = [
   { id: 'leading', label: 'Satır yüks.', group: 'typography', type: 'select',
     options: opts(['none', 'tight', 'snug', 'normal', 'relaxed', 'loose']),
     toClass: (v) => (v ? `leading-${v}` : null) },
+  { id: 'tracking', label: 'Harf aralığı', group: 'typography', type: 'select',
+    options: opts(['tighter', 'tight', 'normal', 'wide', 'wider', 'widest']),
+    toClass: (v) => (v ? `tracking-${v}` : null) },
+  { id: 'textTransform', label: 'Harf dönüşümü', group: 'typography', type: 'select',
+    options: [
+      { label: '—', value: '' },
+      { label: 'BÜYÜK HARF', value: 'uppercase' },
+      { label: 'küçük harf', value: 'lowercase' },
+      { label: 'Baş Harfler', value: 'capitalize' },
+      { label: 'Normal', value: 'normal-case' },
+    ],
+    toClass: (v) => v || null },
+  { id: 'decoration', label: 'Süsleme', group: 'typography', type: 'select',
+    options: [
+      { label: '—', value: '' },
+      { label: 'Altı çizili', value: 'underline' },
+      { label: 'Üstü çizili', value: 'line-through' },
+      { label: 'Çizgisiz', value: 'no-underline' },
+    ],
+    toClass: (v) => v || null },
 
   // Border
   { id: 'radius', label: 'Köşe yarıçapı', group: 'border', type: 'select',
@@ -231,6 +316,29 @@ export const STYLE_CONTROLS: StyleControl[] = [
   { id: 'opacity', label: 'Saydamlık', group: 'effects', type: 'select',
     options: opts(['0', '25', '50', '75', '90', '100']),
     toClass: (v) => (v ? `opacity-${v}` : null) },
+  { id: 'blur', label: 'Bulanıklık', group: 'effects', type: 'select',
+    options: opts(['none', 'sm', 'md', 'lg', 'xl']),
+    toClass: (v) => (v ? (v === 'md' ? 'blur' : `blur-${v}`) : null) },
+  // Hover/focus pairs: set these on the Hover state and add a transition so the
+  // change animates instead of snapping.
+  { id: 'scale', label: 'Ölçek (scale)', group: 'effects', type: 'select',
+    options: opts(['90', '95', '100', '105', '110', '125']),
+    toClass: (v) => (v ? `scale-${v}` : null) },
+  { id: 'rotate', label: 'Döndürme', group: 'effects', type: 'select',
+    options: opts(['0', '1', '2', '3', '6', '12', '45', '90', '180']),
+    toClass: (v) => (v ? `rotate-${v}` : null) },
+  // Multi-class value: `transition-all` + `duration-*` (emitters split on
+  // spaces — see StyleControl.toClass).
+  { id: 'transition', label: 'Geçiş süresi', group: 'effects', type: 'select',
+    options: [
+      { label: '—', value: '' },
+      { label: '75ms', value: '75' },
+      { label: '150ms', value: '150' },
+      { label: '300ms', value: '300' },
+      { label: '500ms', value: '500' },
+      { label: '700ms', value: '700' },
+    ],
+    toClass: (v) => (v ? `transition-all duration-${v}` : null) },
   // Entrance animations — custom (non-Tailwind) classes; CSS lives in
   // `animationCss.ts` (published pages) and mirrored at the end of `styles.css`
   // (editor canvas). No arbitraryPrefix: custom values are meaningless here.
@@ -309,8 +417,10 @@ export function getSafelist(): string[] {
     for (const opt of control.options) {
       const cls = control.toClass(opt.value);
       if (!cls) continue;
-      // Mirror compileStyles: emitted classes are important-marked.
-      for (const prefix of prefixes) set.add(prefix + importantClass(cls));
+      // Mirror compileStyles: split multi-class values, important-mark each.
+      for (const single of cls.split(' ')) {
+        for (const prefix of prefixes) set.add(prefix + importantClass(single));
+      }
     }
   }
   return Array.from(set);

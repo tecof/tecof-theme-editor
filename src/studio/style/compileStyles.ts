@@ -24,7 +24,12 @@ function emit(props: StyleProps | undefined, prefix: string): string[] {
     const control = CONTROL_BY_ID[id];
     if (!control) continue;
     const cls = control.toClass(value);
-    if (cls) out.push(prefix + importantClass(cls));
+    if (!cls) continue;
+    // toClass may emit multiple utilities (e.g. `transition-all duration-300`);
+    // the prefix and important marker must attach to each one.
+    for (const single of cls.split(' ')) {
+      out.push(prefix + importantClass(single));
+    }
   }
   return out;
 }

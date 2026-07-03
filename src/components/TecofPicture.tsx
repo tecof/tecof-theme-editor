@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTecof } from './TecofProvider';
 import type { UploadedFile } from '../types';
 
@@ -17,6 +17,35 @@ const isVideo = (type: string): boolean => {
   if (!type) return false;
   const t = type.toLowerCase();
   return VIDEO_EXTENSIONS.some((ext) => t.includes(ext)) || t.startsWith('video/');
+};
+
+/** External URLs carry no `type`; sniff videos from the URL path extension. */
+const urlLooksLikeVideo = (url: string): boolean => {
+  const path = url.split(/[?#]/)[0].toLowerCase();
+  return VIDEO_EXTENSIONS.some((ext) => path.endsWith(`.${ext}`));
+};
+
+/**
+ * Pick the backend-generated size variant matching the requested display size.
+ * Uploads of raster images (png/jpg/jpeg/webp) get `meta.thumbnail` (360),
+ * `meta.medium` (540), `meta.large` (720) square crops plus a full-size
+ * `meta.webp`; other types carry no variants and fall back to the original.
+ * Falls upward (thumbnail → medium → large → webp) so a missing variant never
+ * breaks the image.
+ */
+const pickVariantName = (data: UploadedFile, size: PictureSize): string => {
+  const m = data.meta;
+  if (!m) return data.name;
+  switch (size) {
+    case 'thumbnail':
+      return m.thumbnail || m.medium || m.large || m.webp || data.name;
+    case 'medium':
+      return m.medium || m.large || m.webp || data.name;
+    case 'large':
+      return m.large || m.webp || data.name;
+    default:
+      return m.webp || data.name;
+  }
 };
 
 /* ─── Size Map ─── */
@@ -105,14 +134,28 @@ export const TecofPicture = memo(({
   const { apiClient } = useTecof();
   const cdnUrl = apiClient.cdnUrl;
 
+  // Blur placeholder: tracks the last URL that finished loading, so swapping
+  // to a new source shows the placeholder again (no stale "loaded" flag).
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
+
   if (!data) return null;
 
+  // CMS reference tokens ({{ data.x }}) have no real file behind them here —
+  // building a CDN URL from the raw token would just render a broken image.
+  if (data.type === 'image/reference') return null;
+
   /* ── External vs CDN URL Resolution ── */
-  const buildPath = (fileName: string) => data?.folder && data.folder !== "/" ? `${data.folder.replace(/^\//, "")}/${fileName}` : fileName;
-  const isExternal = data?.type === 'external' || data?.provider === 'external';
-  const fileURL = isExternal ? (data?.url || '') : `${cdnUrl}/${buildPath(data?.name)}`;
-  const isImageType = isExternal ? true : isImage(data?.type);
-  const isVideoType = isExternal ? false : isVideo(data?.type);
+  const isExternal = data.type === 'external' || data.provider === 'external';
+  if (!isExternal && !data.name) return null;
+
+  const buildURL = (fileName: string) =>
+    `${cdnUrl}/${data.folder && data.folder !== '/' ? `${data.folder.replace(/^\//, '')}/${fileName}` : fileName}`;
+
+  // Original for the lightbox link; the size-matched variant for the <img>.
+  const originalURL = isExternal ? (data.url || '') : buildURL(data.name);
+  const fileURL = isExternal ? originalURL : buildURL(pickVariantName(data, size));
+  const isVideoType = isExternal ? urlLooksLikeVideo(originalURL) : isVideo(data.type);
+  const isImageType = isExternal ? !isVideoType : isImage(data.type);
 
   if (!fileURL) return null;
 
@@ -127,6 +170,7 @@ export const TecofPicture = memo(({
       loop
       muted
       playsInline
+      preload="metadata"
       className={`tecof-picture-video ${imgClassName || ''}`.trim()}
       style={imgStyle}
     />
@@ -147,6 +191,7 @@ export const TecofPicture = memo(({
       sizes,
       className: computedImgClass,
       style: imgStyle,
+      onLoad: () => setLoadedUrl(fileURL),
     };
 
     // If ImageComponent is provided (e.g. Next.js Image), use it
@@ -176,16 +221,24 @@ export const TecofPicture = memo(({
 
   const containerClassName = `tecof-picture-wrapper ${fill ? 'fill' : ''} ${className || ''}`.trim();
 
+  // Blur-up: paint the placeholder behind the image until its URL reports
+  // loaded. (Videos manage their own poster/loading.)
+  const showBlur = usePlaceholder && isImageType && loadedUrl !== fileURL;
+  const containerStyle: React.CSSProperties | undefined = showBlur
+    ? { ...style, backgroundImage: `url("${blurDataURL}")`, backgroundSize: 'cover' }
+    : style;
+
   /* ── Fancybox Wrapper ── */
 
   if (fancybox && (isImageType || isVideoType)) {
     return (
       <a
         data-fancybox={fancyboxName}
-        href={fileURL}
+        // Lightbox always opens the ORIGINAL file, not the sized variant.
+        href={originalURL || fileURL}
         className="tecof-picture-link"
       >
-        <div style={style} className={containerClassName}>
+        <div style={containerStyle} className={containerClassName}>
           {isVideoType ? renderVideo() : renderImg()}
         </div>
       </a>
@@ -204,7 +257,7 @@ export const TecofPicture = memo(({
 
   if (isImageType) {
     return (
-      <div style={style} className={containerClassName}>
+      <div style={containerStyle} className={containerClassName}>
         {renderImg()}
       </div>
     );

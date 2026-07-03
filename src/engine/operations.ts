@@ -152,6 +152,9 @@ export const updateProps = (draft: TecofDocument, id: string, patch: Record<stri
   if (!result) return;
 
   Object.assign(result.node.props, patch);
+  // Identity is immutable: descendant zones are keyed `${id}:<slot>` and
+  // selection/history reference it — a patch must never swap it.
+  result.node.props.id = id;
 };
 
 export const setRootProps = (draft: TecofDocument, patch: Record<string, any>) => {

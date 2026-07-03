@@ -34,6 +34,14 @@ const isImageType = (type: string) =>
     (t) => type?.toLowerCase().includes(t)
   );
 
+/**
+ * External stock photos (Freepik vb.) carry `type: 'external'` + a direct
+ * `url` instead of an image extension — TecofPicture already resolves them,
+ * so they count as images for both the library filter and tile previews.
+ */
+const isPreviewableImage = (file: UploadedFile) =>
+  file.type === 'external' || file.provider === 'external' || isImageType(file.type);
+
 /* ─── Props ─── */
 
 /** An extra tab rendered alongside the built-in "Kütüphane" (library) tab. */
@@ -116,7 +124,7 @@ export const MediaDrawer = ({
 
     // Filter images only if requested
     if (filterImages) {
-      files = files.filter(f => isImageType(f.type));
+      files = files.filter(isPreviewableImage);
     }
 
     // Search filter
@@ -257,7 +265,7 @@ export const MediaDrawer = ({
                           <Check size={12} strokeWidth={3} />
                         </div>
                       )}
-                      {isImageType(file.type) ? (
+                      {isPreviewableImage(file) ? (
                         <TecofPicture
                           data={file}
                           alt={file.name}

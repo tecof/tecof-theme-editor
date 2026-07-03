@@ -1,8 +1,8 @@
 'use strict';
 
-var chunkXCYVCP33_js = require('./chunk-XCYVCP33.js');
-var chunk7RIYET7N_js = require('./chunk-7RIYET7N.js');
-var chunk6ME6QXY3_js = require('./chunk-6ME6QXY3.js');
+var chunkX52JFTUZ_js = require('./chunk-X52JFTUZ.js');
+var chunkH5UCK33D_js = require('./chunk-H5UCK33D.js');
+var chunkZSOIJLRO_js = require('./chunk-ZSOIJLRO.js');
 var React = require('react');
 var lucideReact = require('lucide-react');
 var reactDom = require('react-dom');
@@ -1712,6 +1712,7 @@ var updateProps = (draft, id, patch) => {
   const result = findNodeById(draft, id);
   if (!result) return;
   Object.assign(result.node.props, patch);
+  result.node.props.id = id;
 };
 var setRootProps = (draft, patch) => {
   Object.assign(draft.root.props, patch);
@@ -2889,15 +2890,15 @@ var getDropAxis = (wrapperEl) => {
   const win = container?.ownerDocument?.defaultView;
   if (!container || !win) return "y";
   const cs = win.getComputedStyle(container);
-  const display = cs.display;
-  if (display === "flex" || display === "inline-flex") {
+  const display2 = cs.display;
+  if (display2 === "flex" || display2 === "inline-flex") {
     return cs.flexDirection.startsWith("row") ? "x" : "y";
   }
-  if (display === "grid" || display === "inline-grid") {
+  if (display2 === "grid" || display2 === "inline-grid") {
     const cols = cs.gridTemplateColumns.split(" ").filter((t) => t && t !== "none").length;
     return cols > 1 ? "x" : "y";
   }
-  return display.startsWith("inline") ? "x" : "y";
+  return display2.startsWith("inline") ? "x" : "y";
 };
 var getDragInfo = (e) => {
   const stored = useEditorStore.getState().drag;
@@ -2954,7 +2955,6 @@ var useDropTarget = (options) => {
     (e) => {
       if (locked) return;
       e.preventDefault();
-      if (positional) e.stopPropagation();
       if (!checkValid(e)) {
         e.dataTransfer.dropEffect = "none";
         autoScrollerRef.current.stop();
@@ -2962,6 +2962,8 @@ var useDropTarget = (options) => {
         setIsDragOver(false);
         return;
       }
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = getDragInfo(e).nodeId ? "move" : "copy";
       autoScrollerRef.current.update(e);
       if (positional) {
         const el = e.currentTarget;
@@ -2986,7 +2988,6 @@ var useDropTarget = (options) => {
     (e) => {
       if (locked) return;
       e.preventDefault();
-      if (positional) e.stopPropagation();
       autoScrollerRef.current.stop();
       const valid = checkValid(e);
       const droppedPosition = position;
@@ -2996,6 +2997,7 @@ var useDropTarget = (options) => {
         endDrag();
         return;
       }
+      e.stopPropagation();
       const { nodeId, type } = getDragInfo(e);
       const targetIndex = positional ? droppedPosition === "before" ? index : index + 1 : getIndex ? getIndex() : 0;
       if (nodeId && nodeId !== selfId) {
@@ -3147,7 +3149,7 @@ var resolveMatch = (target, wrapper, node, text, defaultLang) => {
   return null;
 };
 var useInlineEdit = (node, locked) => {
-  const activeLanguage = chunk7RIYET7N_js.useActiveLanguage()?.activeLanguage ?? null;
+  const activeLanguage = chunkH5UCK33D_js.useActiveLanguage()?.activeLanguage ?? null;
   const onDoubleClick = React.useCallback(
     (e) => {
       if (locked) return;
@@ -3182,6 +3184,9 @@ var useInlineEdit = (node, locked) => {
         editTarget.removeAttribute("data-tecof-inline-editing");
         editTarget.removeEventListener("blur", handleBlur);
         editTarget.removeEventListener("keydown", handleKeyDown);
+        ownerDoc.removeEventListener("mousedown", handleOutsideMouseDown, true);
+        document.removeEventListener("mousedown", handleOutsideMouseDown, true);
+        ownerWin?.removeEventListener("blur", handleWindowBlur);
         ownerWin?.getSelection()?.removeAllRanges();
       };
       const commitInlineEdit = () => {
@@ -3223,8 +3228,19 @@ var useInlineEdit = (node, locked) => {
           editTarget.blur();
         }
       };
+      const handleOutsideMouseDown = (ev) => {
+        const clicked = ev.target;
+        if (clicked && editTarget.contains(clicked)) return;
+        commitInlineEdit();
+      };
+      const handleWindowBlur = () => {
+        commitInlineEdit();
+      };
       editTarget.addEventListener("blur", handleBlur);
       editTarget.addEventListener("keydown", handleKeyDown);
+      ownerDoc.addEventListener("mousedown", handleOutsideMouseDown, true);
+      document.addEventListener("mousedown", handleOutsideMouseDown, true);
+      ownerWin?.addEventListener("blur", handleWindowBlur);
     },
     [node, locked, activeLanguage]
   );
@@ -3381,6 +3397,11 @@ var COLOR_SECTIONS = {
   theme: THEME_COLOR_OPTIONS,
   brand: BRAND_COLOR_OPTIONS
 };
+var GRADIENT_COLOR_OPTIONS = [
+  ...BASE_COLOR_OPTIONS,
+  ...THEME_COLOR_OPTIONS,
+  ...BRAND_COLOR_OPTIONS
+];
 var opts = (values, withNone = true) => [
   ...withNone ? [{ label: "\u2014", value: "" }] : [],
   ...values.map((v) => ({ label: v, value: v }))
@@ -3425,6 +3446,14 @@ var STYLE_CONTROLS = [
     toClass: (v) => v ? `items-${v}` : null
   },
   {
+    id: "flexWrap",
+    label: "Sat\u0131r kayd\u0131r",
+    group: "layout",
+    type: "segment",
+    options: opts(["wrap", "nowrap"]),
+    toClass: (v) => v ? `flex-${v}` : null
+  },
+  {
     id: "gap",
     label: "Bo\u015Fluk (gap)",
     group: "layout",
@@ -3441,14 +3470,46 @@ var STYLE_CONTROLS = [
     options: opts(["auto", "start", "center", "end", "stretch"]),
     toClass: (v) => v ? `self-${v}` : null
   },
-  // Spacing — padding
+  {
+    id: "position",
+    label: "Konumlama",
+    group: "layout",
+    type: "select",
+    options: opts(["static", "relative", "absolute", "sticky", "fixed"]),
+    toClass: (v) => v || null
+  },
+  {
+    id: "zIndex",
+    label: "Katman (z-index)",
+    group: "layout",
+    type: "select",
+    options: opts(["auto", "0", "10", "20", "30", "40", "50"]),
+    toClass: (v) => v ? `z-${v}` : null
+  },
+  {
+    id: "overflow",
+    label: "Ta\u015Fma",
+    group: "layout",
+    type: "select",
+    options: opts(["visible", "hidden", "auto", "scroll"]),
+    toClass: (v) => v ? `overflow-${v}` : null
+  },
+  // Spacing — padding (shorthands + per-side; sides render in the SpacingBox)
   { id: "p", label: "Padding", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "p", toClass: withArbitrary("p", (v) => `p-${v}`) },
   { id: "px", label: "Padding X", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "px", toClass: withArbitrary("px", (v) => `px-${v}`) },
   { id: "py", label: "Padding Y", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "py", toClass: withArbitrary("py", (v) => `py-${v}`) },
+  { id: "pt", label: "Padding \xDCst", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "pt", toClass: withArbitrary("pt", (v) => `pt-${v}`) },
+  { id: "pb", label: "Padding Alt", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "pb", toClass: withArbitrary("pb", (v) => `pb-${v}`) },
+  { id: "pl", label: "Padding Sol", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "pl", toClass: withArbitrary("pl", (v) => `pl-${v}`) },
+  { id: "pr", label: "Padding Sa\u011F", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "pr", toClass: withArbitrary("pr", (v) => `pr-${v}`) },
   // Spacing — margin
   { id: "m", label: "Margin", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "m", toClass: withArbitrary("m", (v) => `m-${v}`) },
   { id: "mx", label: "Margin X", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "mx", toClass: withArbitrary("mx", (v) => `mx-${v}`) },
   { id: "my", label: "Margin Y", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "my", toClass: withArbitrary("my", (v) => `my-${v}`) },
+  { id: "mt", label: "Margin \xDCst", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "mt", toClass: withArbitrary("mt", (v) => `mt-${v}`) },
+  { id: "mb", label: "Margin Alt", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "mb", toClass: withArbitrary("mb", (v) => `mb-${v}`) },
+  { id: "ml", label: "Margin Sol", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "ml", toClass: withArbitrary("ml", (v) => `ml-${v}`) },
+  { id: "mr", label: "Margin Sa\u011F", group: "spacing", type: "space", options: spaceOptions(), arbitraryPrefix: "mr", toClass: withArbitrary("mr", (v) => `mr-${v}`) },
   {
     id: "marginAlign",
     label: "\xD6zel Hiza (margin)",
@@ -3501,6 +3562,44 @@ var STYLE_CONTROLS = [
     arbitraryPrefix: "bg",
     toClass: withArbitrary("bg", (v) => `bg-${v}`)
   },
+  // Gradient: direction + two color stops. `bg-gradient-to-*` (v4 alias of
+  // bg-linear-to-*) keeps v3 hosts working too.
+  {
+    id: "bgGradient",
+    label: "Gradient y\xF6n\xFC",
+    group: "background",
+    type: "select",
+    options: [
+      { label: "\u2014", value: "" },
+      { label: "Sa\u011Fa", value: "to-r" },
+      { label: "Sola", value: "to-l" },
+      { label: "A\u015Fa\u011F\u0131", value: "to-b" },
+      { label: "Yukar\u0131", value: "to-t" },
+      { label: "Sa\u011F alta", value: "to-br" },
+      { label: "Sa\u011F \xFCste", value: "to-tr" }
+    ],
+    toClass: (v) => v ? `bg-gradient-${v}` : null
+  },
+  {
+    id: "gradientFrom",
+    label: "Gradient ba\u015Flang\u0131\xE7",
+    group: "background",
+    type: "color",
+    options: GRADIENT_COLOR_OPTIONS,
+    colorSections: ["base", "theme", "brand", "custom"],
+    arbitraryPrefix: "from",
+    toClass: withArbitrary("from", (v) => `from-${v}`)
+  },
+  {
+    id: "gradientTo",
+    label: "Gradient biti\u015F",
+    group: "background",
+    type: "color",
+    options: GRADIENT_COLOR_OPTIONS,
+    colorSections: ["base", "theme", "brand", "custom"],
+    arbitraryPrefix: "to",
+    toClass: withArbitrary("to", (v) => `to-${v}`)
+  },
   // Typography
   {
     id: "text",
@@ -3542,6 +3641,41 @@ var STYLE_CONTROLS = [
     type: "select",
     options: opts(["none", "tight", "snug", "normal", "relaxed", "loose"]),
     toClass: (v) => v ? `leading-${v}` : null
+  },
+  {
+    id: "tracking",
+    label: "Harf aral\u0131\u011F\u0131",
+    group: "typography",
+    type: "select",
+    options: opts(["tighter", "tight", "normal", "wide", "wider", "widest"]),
+    toClass: (v) => v ? `tracking-${v}` : null
+  },
+  {
+    id: "textTransform",
+    label: "Harf d\xF6n\xFC\u015F\xFCm\xFC",
+    group: "typography",
+    type: "select",
+    options: [
+      { label: "\u2014", value: "" },
+      { label: "B\xDCY\xDCK HARF", value: "uppercase" },
+      { label: "k\xFC\xE7\xFCk harf", value: "lowercase" },
+      { label: "Ba\u015F Harfler", value: "capitalize" },
+      { label: "Normal", value: "normal-case" }
+    ],
+    toClass: (v) => v || null
+  },
+  {
+    id: "decoration",
+    label: "S\xFCsleme",
+    group: "typography",
+    type: "select",
+    options: [
+      { label: "\u2014", value: "" },
+      { label: "Alt\u0131 \xE7izili", value: "underline" },
+      { label: "\xDCst\xFC \xE7izili", value: "line-through" },
+      { label: "\xC7izgisiz", value: "no-underline" }
+    ],
+    toClass: (v) => v || null
   },
   // Border
   {
@@ -3585,6 +3719,49 @@ var STYLE_CONTROLS = [
     type: "select",
     options: opts(["0", "25", "50", "75", "90", "100"]),
     toClass: (v) => v ? `opacity-${v}` : null
+  },
+  {
+    id: "blur",
+    label: "Bulan\u0131kl\u0131k",
+    group: "effects",
+    type: "select",
+    options: opts(["none", "sm", "md", "lg", "xl"]),
+    toClass: (v) => v ? v === "md" ? "blur" : `blur-${v}` : null
+  },
+  // Hover/focus pairs: set these on the Hover state and add a transition so the
+  // change animates instead of snapping.
+  {
+    id: "scale",
+    label: "\xD6l\xE7ek (scale)",
+    group: "effects",
+    type: "select",
+    options: opts(["90", "95", "100", "105", "110", "125"]),
+    toClass: (v) => v ? `scale-${v}` : null
+  },
+  {
+    id: "rotate",
+    label: "D\xF6nd\xFCrme",
+    group: "effects",
+    type: "select",
+    options: opts(["0", "1", "2", "3", "6", "12", "45", "90", "180"]),
+    toClass: (v) => v ? `rotate-${v}` : null
+  },
+  // Multi-class value: `transition-all` + `duration-*` (emitters split on
+  // spaces — see StyleControl.toClass).
+  {
+    id: "transition",
+    label: "Ge\xE7i\u015F s\xFCresi",
+    group: "effects",
+    type: "select",
+    options: [
+      { label: "\u2014", value: "" },
+      { label: "75ms", value: "75" },
+      { label: "150ms", value: "150" },
+      { label: "300ms", value: "300" },
+      { label: "500ms", value: "500" },
+      { label: "700ms", value: "700" }
+    ],
+    toClass: (v) => v ? `transition-all duration-${v}` : null
   },
   // Entrance animations — custom (non-Tailwind) classes; CSS lives in
   // `animationCss.ts` (published pages) and mirrored at the end of `styles.css`
@@ -3645,7 +3822,9 @@ function getSafelist() {
     for (const opt of control.options) {
       const cls = control.toClass(opt.value);
       if (!cls) continue;
-      for (const prefix of prefixes) set2.add(prefix + importantClass(cls));
+      for (const single of cls.split(" ")) {
+        for (const prefix of prefixes) set2.add(prefix + importantClass(single));
+      }
     }
   }
   return Array.from(set2);
@@ -6933,7 +7112,10 @@ function emit(props, prefix) {
     const control = CONTROL_BY_ID[id];
     if (!control) continue;
     const cls = control.toClass(value);
-    if (cls) out.push(prefix + importantClass(cls));
+    if (!cls) continue;
+    for (const single of cls.split(" ")) {
+      out.push(prefix + importantClass(single));
+    }
   }
   return out;
 }
@@ -7229,7 +7411,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
       }
     });
   }
-  const errorResetKey = `${node.props.id}:${JSON.stringify(node.props)}`;
+  const errorResetKey = node.props;
   return /* @__PURE__ */ jsxRuntime.jsx(ParentNodeContext.Provider, { value: node.props.id, children: componentConfig.inline ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
     position && inlineNodeRef.current && /* @__PURE__ */ jsxRuntime.jsx(
       "div",
@@ -9151,7 +9333,7 @@ var BindingPopover = ({
   onInsert,
   onClose
 }) => {
-  const { apiClient } = chunk6ME6QXY3_js.useTecof();
+  const { apiClient } = chunkZSOIJLRO_js.useTecof();
   const { floatingRef, style: floatingStyle } = useFloating({
     anchor,
     open: true,
@@ -9414,8 +9596,8 @@ var ExternalField = ({ field, name, value, onChange, readOnly }) => {
     onChange(field.mapProp ? field.mapProp(row) : row);
     setOpen(false);
   };
-  return /* @__PURE__ */ jsxRuntime.jsxs(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: field.label || name, children: [
-    /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: field.label || name, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-external", children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: field.label || name, children: [
+    /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: field.label || name, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-external", children: [
       /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
         {
@@ -9472,7 +9654,7 @@ var FieldRenderer = ({
   const label = definition.label || name;
   const type = definition.type;
   if (definition.render) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-custom", children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: definition.render({
+    return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-custom", children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: definition.render({
       field: definition,
       name,
       id: `field-${name}`,
@@ -9484,7 +9666,7 @@ var FieldRenderer = ({
   switch (type) {
     case "text": {
       const current2 = stringValue(value, definition);
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "input",
           {
@@ -9501,7 +9683,7 @@ var FieldRenderer = ({
     }
     case "textarea": {
       const current2 = stringValue(value, definition);
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable is-textarea", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable is-textarea", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "textarea",
           {
@@ -9518,7 +9700,7 @@ var FieldRenderer = ({
     }
     case "select": {
       const options = Array.isArray(definition.options) ? definition.options : [];
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-select-wrap", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-select-wrap", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "select",
           {
@@ -9535,7 +9717,7 @@ var FieldRenderer = ({
     }
     case "number": {
       const current2 = typeof value === "number" ? value : typeof definition.defaultValue === "number" ? definition.defaultValue : void 0;
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
         "input",
         {
           id: `field-${name}`,
@@ -9561,7 +9743,7 @@ var FieldRenderer = ({
     case "boolean":
     case "toggle": {
       const checked = value === true || value === "true";
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
         {
           id: `field-${name}`,
@@ -9583,7 +9765,7 @@ var FieldRenderer = ({
       const max = typeof definition.max === "number" ? definition.max : 100;
       const step = typeof definition.step === "number" ? definition.step : 1;
       const current2 = typeof value === "number" ? value : typeof definition.defaultValue === "number" ? definition.defaultValue : min;
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-range", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-range", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "input",
           {
@@ -9606,7 +9788,7 @@ var FieldRenderer = ({
     }
     case "radio": {
       const options = Array.isArray(definition.options) ? definition.options : [];
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-radio-group", children: options.map((opt) => /* @__PURE__ */ jsxRuntime.jsxs(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-radio-group", children: options.map((opt) => /* @__PURE__ */ jsxRuntime.jsxs(
         "label",
         {
           className: `tecof-field-radio${readOnly ? " is-readonly" : ""}`,
@@ -9692,7 +9874,7 @@ var FieldRenderer = ({
           return next;
         });
       };
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-array", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-array", children: [
         items.map((item, idx) => {
           const isExpanded = !!expandedIndices[idx];
           const itemLabel = getItemLabel(item, idx);
@@ -9790,7 +9972,7 @@ var FieldRenderer = ({
     case "object": {
       const objectFields = definition.objectFields || {};
       const objVal = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-      return /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-object", children: Object.entries(objectFields).map(([subFieldName, subFieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-object", children: Object.entries(objectFields).map(([subFieldName, subFieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
         FieldRenderer,
         {
           name: subFieldName,
@@ -9951,9 +10133,11 @@ var Swatch = ({
     }
   );
 };
-var ColorPicker = ({ value, onChange }) => {
+var ALL_SECTIONS = ["base", "theme", "brand", "palette", "custom"];
+var ColorPicker = ({ value, onChange, sections = ALL_SECTIONS }) => {
   const [open, setOpen] = React.useState(false);
   const { label, swatch } = describeValue(value);
+  const show = (key) => sections.includes(key);
   const paletteMatch = parsePaletteToken(value);
   const [browsedHue, setBrowsedHue] = React.useState("red");
   const activeHueName = paletteMatch?.hue.name ?? browsedHue;
@@ -9994,16 +10178,16 @@ var ColorPicker = ({ value, onChange }) => {
       }
     ),
     open && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-panel", children: [
-      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section", children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.base.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value || "none")) }) }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+      show("base") && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section", children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.base.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value || "none")) }) }),
+      show("theme") && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "Tema renkleri" }),
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.theme.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value)) })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+      show("brand") && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "Marka (Primary)" }),
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-swatches", children: COLOR_SECTIONS.brand.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(Swatch, { option: opt, active: value === opt.value, onSelect: onChange }, opt.value)) })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+      show("palette") && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "Tailwind paleti" }),
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-hues", children: TAILWIND_PALETTE.map((h) => /* @__PURE__ */ jsxRuntime.jsx(
           "button",
@@ -10029,7 +10213,7 @@ var ColorPicker = ({ value, onChange }) => {
           );
         }) })
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
+      show("custom") && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-section", children: [
         /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-color-section-title", children: "\xD6zel renk" }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-color-custom", children: [
           /* @__PURE__ */ jsxRuntime.jsx(
@@ -10061,6 +10245,114 @@ var ColorPicker = ({ value, onChange }) => {
           )
         ] })
       ] })
+    ] })
+  ] });
+};
+var FALLBACKS = {
+  p: ["p"],
+  px: ["px", "p"],
+  py: ["py", "p"],
+  pt: ["pt", "py", "p"],
+  pb: ["pb", "py", "p"],
+  pl: ["pl", "px", "p"],
+  pr: ["pr", "px", "p"],
+  m: ["m"],
+  mx: ["mx", "m"],
+  my: ["my", "m"],
+  mt: ["mt", "my", "m"],
+  mb: ["mb", "my", "m"],
+  ml: ["ml", "mx", "m"],
+  mr: ["mr", "mx", "m"]
+};
+var SPACING_BOX_IDS = new Set(Object.keys(FALLBACKS));
+var display = (v) => v ? arbitraryRaw(v) : "";
+var parseSpaceToken = (raw) => {
+  const t = raw.trim();
+  if (!t) return "";
+  if (/^\d+(\.\d+)?$/.test(t)) return t;
+  if (isArbitrary(t)) return t;
+  return toArbitrary(t);
+};
+var SpaceCell = ({ id, layer, inherited, onSet }) => {
+  const explicit = layer[id] || "";
+  let hint = "";
+  if (!explicit) {
+    for (const key of FALLBACKS[id]) {
+      if (layer[key]) {
+        hint = display(layer[key]);
+        break;
+      }
+    }
+    if (!hint) {
+      for (const key of FALLBACKS[id]) {
+        if (inherited[key]) {
+          hint = display(inherited[key]);
+          break;
+        }
+      }
+    }
+  }
+  const label = CONTROL_BY_ID[id]?.label ?? id;
+  return /* @__PURE__ */ jsxRuntime.jsx(
+    "input",
+    {
+      type: "text",
+      className: `tecof-spacebox-cell${explicit ? " is-set" : ""}`,
+      defaultValue: display(explicit),
+      placeholder: hint || "\u2013",
+      title: `${label} \u2014 \xF6l\xE7ek (0\u201324) veya \xF6zel de\u011Fer (\xF6r. 10px)`,
+      spellCheck: false,
+      onBlur: (e) => {
+        const next = parseSpaceToken(e.target.value);
+        if (next !== explicit) onSet(id, next);
+      },
+      onKeyDown: (e) => {
+        const input = e.target;
+        if (e.key === "Enter") input.blur();
+        if (e.key === "Escape") {
+          input.value = display(explicit);
+          input.blur();
+        }
+      }
+    },
+    explicit
+  );
+};
+var SpacingBox = ({ layer, inherited, onSet }) => {
+  const cell = (id) => /* @__PURE__ */ jsxRuntime.jsx(SpaceCell, { id, layer, inherited, onSet });
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-spacebox-wrap", children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-spacebox", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-tag", children: "margin" }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-spacebox-row", children: cell("mt") }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-spacebox-mid", children: [
+        cell("ml"),
+        /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-spacebox-inner", children: [
+          /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-tag", children: "padding" }),
+          /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-spacebox-row", children: cell("pt") }),
+          /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-spacebox-mid", children: [
+            cell("pl"),
+            /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-spacebox-core", "aria-hidden": "true" }),
+            cell("pr")
+          ] }),
+          /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-spacebox-row", children: cell("pb") })
+        ] }),
+        cell("mr")
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-spacebox-row", children: cell("mb") })
+    ] }),
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-spacebox-shorthands", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-sh-label", "aria-hidden": "true" }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-sh-head", children: "T\xFCm\xFC" }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-sh-head", children: "X" }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-sh-head", children: "Y" }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-sh-label", children: "Padding" }),
+      cell("p"),
+      cell("px"),
+      cell("py"),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-spacebox-sh-label", children: "Margin" }),
+      cell("m"),
+      cell("mx"),
+      cell("my")
     ] })
   ] });
 };
@@ -10102,7 +10394,24 @@ var STATES = [
   { key: "focus", label: "Focus" },
   { key: "active", label: "Active" }
 ];
-var GROUP_ORDER = ["layout", "spacing", "sizing", "typography", "background", "border", "effects"];
+var TABS = [
+  { key: "layout", label: "D\xFCzen", Icon: lucideReact.LayoutGrid, groups: ["layout", "spacing", "sizing"] },
+  { key: "text", label: "Metin", Icon: lucideReact.Type, groups: ["typography"] },
+  { key: "appearance", label: "G\xF6r\xFCn\xFCm", Icon: lucideReact.Paintbrush, groups: ["background", "border", "effects"] }
+];
+var panelUi = {
+  tab: "layout",
+  open: {
+    layout: true,
+    spacing: true,
+    sizing: false,
+    typography: true,
+    background: true,
+    border: true,
+    effects: false
+  }
+};
+var valueLabel = (control, value) => control.options.find((o) => o.value === value)?.label ?? arbitraryRaw(value);
 var StyleEditor = ({ value, onChange }) => {
   const styles = value || {};
   const [bp, setBp] = React.useState(
@@ -10146,10 +10455,39 @@ var StyleEditor = ({ value, onChange }) => {
       onChange({ ...styles, states: { ...styles.states, [stateKey]: nextLayer } });
     }
   };
-  const grouped = GROUP_ORDER.map((group) => ({
-    group,
-    controls: STYLE_CONTROLS.filter((c) => c.group === group)
-  })).filter((g) => g.controls.length > 0);
+  const clearLayer = () => {
+    if (state === "base") {
+      onChange({ ...styles, [bp]: {} });
+    } else {
+      onChange({ ...styles, states: { ...styles.states, [stateKey]: {} } });
+    }
+  };
+  const [tab, setTabState] = React.useState(panelUi.tab);
+  const [openGroups, setOpenGroups] = React.useState(panelUi.open);
+  const setTab = (next) => {
+    panelUi.tab = next;
+    setTabState(next);
+  };
+  const toggleGroup = (group) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [group]: !prev[group] };
+      panelUi.open = next;
+      return next;
+    });
+  };
+  const jumpToControl = (control) => {
+    const target = TABS.find((t) => t.groups.includes(control.group));
+    if (!target) return;
+    setTab(target.key);
+    setOpenGroups((prev) => {
+      const next = { ...prev, [control.group]: true };
+      panelUi.open = next;
+      return next;
+    });
+  };
+  const activeControls = STYLE_CONTROLS.filter((c) => layer[c.id]);
+  const groupSetCount = (group) => activeControls.filter((c) => c.group === group).length;
+  const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0];
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-editor", children: [
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-editor-head", children: [
       /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-style-editor-title", children: "Stil" }),
@@ -10214,19 +10552,111 @@ var StyleEditor = ({ value, onChange }) => {
         );
       }) })
     ] }),
-    grouped.map(({ group, controls }) => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-group", children: [
-      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-group-title", children: GROUP_LABELS[group] }),
-      controls.map((control) => /* @__PURE__ */ jsxRuntime.jsx(
-        ControlRow,
+    activeControls.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-chips", children: [
+      activeControls.map((control) => /* @__PURE__ */ jsxRuntime.jsxs("span", { className: "tecof-style-chip", children: [
+        /* @__PURE__ */ jsxRuntime.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "tecof-style-chip-label",
+            title: `${control.label}: ${valueLabel(control, layer[control.id])} \u2014 kontrole git`,
+            onClick: () => jumpToControl(control),
+            children: [
+              control.label,
+              ": ",
+              valueLabel(control, layer[control.id])
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-style-chip-x",
+            title: "Bu stili kald\u0131r",
+            "aria-label": `${control.label} stilini kald\u0131r`,
+            onClick: () => setLayerValue(control.id, ""),
+            children: "\xD7"
+          }
+        )
+      ] }, control.id)),
+      /* @__PURE__ */ jsxRuntime.jsxs(
+        "button",
         {
-          control,
-          value: layer[control.id] || "",
-          inherited: inheritedLayer[control.id],
-          onChange: (v) => setLayerValue(control.id, v)
+          type: "button",
+          className: "tecof-style-chip-clear",
+          title: "Bu katmandaki (k\u0131r\u0131l\u0131m + durum) t\xFCm stilleri temizle",
+          onClick: clearLayer,
+          children: [
+            /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Eraser, { size: 12 }),
+            "Temizle"
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-tabs", role: "tablist", "aria-label": "Stil kategorileri", children: TABS.map(({ key, label, Icon, groups }) => {
+      const hasOverride = groups.some((g) => groupSetCount(g) > 0);
+      return /* @__PURE__ */ jsxRuntime.jsxs(
+        "button",
+        {
+          type: "button",
+          role: "tab",
+          "aria-selected": tab === key,
+          className: `tecof-style-tab${tab === key ? " is-active" : ""}`,
+          onClick: () => setTab(key),
+          children: [
+            /* @__PURE__ */ jsxRuntime.jsx(Icon, { size: 13 }),
+            label,
+            hasOverride && /* @__PURE__ */ jsxRuntime.jsx(OverrideBadge, { title: "Bu sekmede \xF6zelle\u015Ftirme var" })
+          ]
         },
-        `${bp}:${state}:${control.id}`
-      ))
-    ] }, group))
+        key
+      );
+    }) }),
+    activeTab.groups.map((group) => {
+      const controls = STYLE_CONTROLS.filter(
+        (c) => c.group === group && !(group === "spacing" && SPACING_BOX_IDS.has(c.id))
+      );
+      const count = groupSetCount(group);
+      const isOpen = openGroups[group];
+      return /* @__PURE__ */ jsxRuntime.jsxs("section", { className: "tecof-style-acc", children: [
+        /* @__PURE__ */ jsxRuntime.jsxs(
+          "button",
+          {
+            type: "button",
+            className: "tecof-style-acc-head",
+            "aria-expanded": isOpen,
+            onClick: () => toggleGroup(group),
+            children: [
+              isOpen ? /* @__PURE__ */ jsxRuntime.jsx(lucideReact.ChevronDown, { size: 13 }) : /* @__PURE__ */ jsxRuntime.jsx(lucideReact.ChevronRight, { size: 13 }),
+              GROUP_LABELS[group],
+              count > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-style-acc-count", title: "Bu katmanda ayarl\u0131 stil say\u0131s\u0131", children: count })
+            ]
+          }
+        ),
+        isOpen && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-acc-body", children: [
+          group === "spacing" && /* @__PURE__ */ jsxRuntime.jsx(
+            SpacingBox,
+            {
+              layer,
+              inherited: inheritedLayer,
+              onSet: setLayerValue
+            },
+            `${bp}:${state}`
+          ),
+          controls.map((control) => /* @__PURE__ */ jsxRuntime.jsx(
+            ControlRow,
+            {
+              control,
+              value: layer[control.id] || "",
+              inherited: inheritedLayer[control.id],
+              onChange: (v) => setLayerValue(control.id, v)
+            },
+            `${bp}:${state}:${control.id}`
+          ))
+        ] })
+      ] }, group);
+    })
   ] });
 };
 var ControlRow = ({
@@ -10255,7 +10685,7 @@ var ControlRow = ({
       !value && inheritedLabel && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-style-inherited", title: `Devral\u0131nan de\u011Fer: ${inheritedLabel}`, children: inheritedLabel })
     ] }),
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-style-control", children: [
-      control.type === "color" ? /* @__PURE__ */ jsxRuntime.jsx(ColorPicker, { value, onChange }) : control.type === "segment" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", children: control.options.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(
+      control.type === "color" ? /* @__PURE__ */ jsxRuntime.jsx(ColorPicker, { value, onChange, sections: control.colorSections }) : control.type === "segment" ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-seg", children: control.options.map((opt) => /* @__PURE__ */ jsxRuntime.jsx(
         "button",
         {
           type: "button",
@@ -10767,7 +11197,7 @@ var createColorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       ColorField,
       {
         field,
@@ -11130,7 +11560,7 @@ var langNameTr = (code) => {
   }
 };
 var LanguageSwitcher = () => {
-  const lang = chunk7RIYET7N_js.useActiveLanguage();
+  const lang = chunkH5UCK33D_js.useActiveLanguage();
   const document2 = useEditorStore((state) => state.document);
   const languages = lang?.languages;
   const coverage = React.useMemo(() => {
@@ -11758,7 +12188,7 @@ var TecofStudio = ({
   warnOnUnsavedChanges = true,
   className
 }) => {
-  const { apiClient } = chunk6ME6QXY3_js.useTecof();
+  const { apiClient } = chunkZSOIJLRO_js.useTecof();
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [saveStatus, setSaveStatus] = React.useState("idle");
@@ -12053,7 +12483,7 @@ var TecofStudio = ({
   if (loading) {
     return /* @__PURE__ */ jsxRuntime.jsx(StudioSkeleton, { className });
   }
-  return /* @__PURE__ */ jsxRuntime.jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.LanguageProvider, { children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
+  return /* @__PURE__ */ jsxRuntime.jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.LanguageProvider, { children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsxRuntime.jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus, dirty, autoSave }),
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-studio-workspace-container", children: [
       leftPanelOpen ? /* @__PURE__ */ jsxRuntime.jsx(LeftPanel, {}) : /* @__PURE__ */ jsxRuntime.jsx(PanelRail, { side: "left", onExpand: toggleLeftPanel }),
@@ -12223,8 +12653,8 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     /* @__PURE__ */ jsxRuntime.jsx("div", { className, children: contentWithLayout })
   ] });
 };
-var EditorFieldImpl = React.lazy(() => import('./EditorField.impl-NZESNZ3N.js'));
-var EditorField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(EditorFieldImpl, { ...props }) });
+var EditorFieldImpl = React.lazy(() => import('./EditorField.impl-IEZBUV4O.js'));
+var EditorField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
@@ -12233,7 +12663,7 @@ var createEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       EditorField,
       {
         field,
@@ -12247,8 +12677,8 @@ var createEditorField = (options = {}) => {
     ) }) })
   };
 };
-var UploadFieldImpl = React.lazy(() => import('./UploadField.impl-PEIMXRP2.js'));
-var UploadField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(UploadFieldImpl, { ...props }) });
+var UploadFieldImpl = React.lazy(() => import('./UploadField.impl-WKWHXPK7.js'));
+var UploadField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(UploadFieldImpl, { ...props }) });
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12258,7 +12688,7 @@ var createUploadField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       UploadField,
       {
         field,
@@ -12273,7 +12703,7 @@ var createUploadField = (options = {}) => {
   };
 };
 var CodeEditorFieldImpl = React.lazy(() => import('./CodeEditorField.impl-4Y5UBX4Q.js'));
-var CodeEditorField = React.forwardRef((props, ref) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(CodeEditorFieldImpl, { ref, ...props }) }));
+var CodeEditorField = React.forwardRef((props, ref) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(CodeEditorFieldImpl, { ref, ...props }) }));
 CodeEditorField.displayName = "CodeEditorField";
 var createCodeEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12283,7 +12713,7 @@ var createCodeEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       CodeEditorField,
       {
         field,
@@ -12304,15 +12734,15 @@ var LinkField = ({
   showTarget = true,
   placeholder = "https://..."
 }) => {
-  const { apiClient } = chunk6ME6QXY3_js.useTecof();
+  const { apiClient } = chunkZSOIJLRO_js.useTecof();
   const {
     merchantInfo,
     loading: langLoading,
     error: langError,
     activeTab: localActiveTab,
     setActiveTab: localSetActiveTab
-  } = chunk7RIYET7N_js.useLanguages();
-  const globalLang = chunk7RIYET7N_js.useActiveLanguage();
+  } = chunkH5UCK33D_js.useLanguages();
+  const globalLang = chunkH5UCK33D_js.useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -12403,7 +12833,7 @@ var LinkField = ({
   const hasValue = activeValue && activeValue.url && activeValue.url !== "";
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-container", children: [
     !globalLang && merchantInfo && merchantInfo.languages.length > 1 && /* @__PURE__ */ jsxRuntime.jsx(
-      chunk7RIYET7N_js.LanguageTabBar,
+      chunkH5UCK33D_js.LanguageTabBar,
       {
         languages: merchantInfo.languages,
         defaultLanguage: merchantInfo.defaultLanguage,
@@ -12411,7 +12841,7 @@ var LinkField = ({
         onTabChange: setActiveTab
       }
     ),
-    langLoading && /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLoading, {}),
+    langLoading && /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLoading, {}),
     hasValue && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-box", children: [
       /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-value-icon", children: activeValue.type === "page" ? /* @__PURE__ */ jsxRuntime.jsx(lucideReact.FileText, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Globe, { size: 16 }) }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-info", children: [
@@ -12482,11 +12912,11 @@ var LinkField = ({
         )
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(chunk6ME6QXY3_js.Drawer.Portal, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Overlay, { className: "tecof-link-drawer-overlay" }),
-      /* @__PURE__ */ jsxRuntime.jsxs(chunk6ME6QXY3_js.Drawer.Content, { className: "tecof-link-drawer-content", children: [
-        /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Title, { className: "tecof-sr-only", children: "Ba\u011Flant\u0131 Sayfas\u0131 Se\xE7ici" }),
-        /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Description, { className: "tecof-sr-only", children: "Sayfa listesinden se\xE7im yap\u0131n veya arama yap\u0131n" }),
+    /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkZSOIJLRO_js.Drawer.Portal, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Overlay, { className: "tecof-link-drawer-overlay" }),
+      /* @__PURE__ */ jsxRuntime.jsxs(chunkZSOIJLRO_js.Drawer.Content, { className: "tecof-link-drawer-content", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Title, { className: "tecof-sr-only", children: "Ba\u011Flant\u0131 Sayfas\u0131 Se\xE7ici" }),
+        /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Description, { className: "tecof-sr-only", children: "Sayfa listesinden se\xE7im yap\u0131n veya arama yap\u0131n" }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-drawer-header", children: [
           /* @__PURE__ */ jsxRuntime.jsx("h2", { className: "tecof-link-drawer-title", children: "Sayfa Se\xE7" }),
           /* @__PURE__ */ jsxRuntime.jsx("button", { className: "tecof-link-drawer-close-btn", onClick: () => setDrawerOpen(false), children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.X, { size: 16 }) })
@@ -12545,7 +12975,7 @@ var createLinkField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       LinkField,
       {
         field,
@@ -12847,7 +13277,7 @@ var createRepeaterField = (options) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       RepeaterField,
       {
         field,
@@ -12870,7 +13300,7 @@ var CmsCollectionField = ({
   showSort = true,
   slots
 }) => {
-  const { apiClient } = chunk6ME6QXY3_js.useTecof();
+  const { apiClient } = chunkZSOIJLRO_js.useTecof();
   const [collections, setCollections] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -13148,7 +13578,7 @@ var createCmsCollectionField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       CmsCollectionField,
       {
         field,
@@ -13300,7 +13730,7 @@ var createIconField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunk7RIYET7N_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkH5UCK33D_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       IconField,
       {
         field,
@@ -13316,35 +13746,35 @@ var createIconField = (options = {}) => {
 
 Object.defineProperty(exports, "UnderConstruction", {
   enumerable: true,
-  get: function () { return chunkXCYVCP33_js.UnderConstruction; }
+  get: function () { return chunkX52JFTUZ_js.UnderConstruction; }
 });
 Object.defineProperty(exports, "FieldErrorBoundary", {
   enumerable: true,
-  get: function () { return chunk7RIYET7N_js.FieldErrorBoundary; }
+  get: function () { return chunkH5UCK33D_js.FieldErrorBoundary; }
 });
 Object.defineProperty(exports, "LanguageField", {
   enumerable: true,
-  get: function () { return chunk7RIYET7N_js.LanguageField; }
+  get: function () { return chunkH5UCK33D_js.LanguageField; }
 });
 Object.defineProperty(exports, "createLanguageField", {
   enumerable: true,
-  get: function () { return chunk7RIYET7N_js.createLanguageField; }
+  get: function () { return chunkH5UCK33D_js.createLanguageField; }
 });
 Object.defineProperty(exports, "TecofApiClient", {
   enumerable: true,
-  get: function () { return chunk6ME6QXY3_js.TecofApiClient; }
+  get: function () { return chunkZSOIJLRO_js.TecofApiClient; }
 });
 Object.defineProperty(exports, "TecofPicture", {
   enumerable: true,
-  get: function () { return chunk6ME6QXY3_js.TecofPicture; }
+  get: function () { return chunkZSOIJLRO_js.TecofPicture; }
 });
 Object.defineProperty(exports, "TecofProvider", {
   enumerable: true,
-  get: function () { return chunk6ME6QXY3_js.TecofProvider; }
+  get: function () { return chunkZSOIJLRO_js.TecofProvider; }
 });
 Object.defineProperty(exports, "useTecof", {
   enumerable: true,
-  get: function () { return chunk6ME6QXY3_js.useTecof; }
+  get: function () { return chunkZSOIJLRO_js.useTecof; }
 });
 exports.CmsCollectionField = CmsCollectionField;
 exports.CodeEditorField = CodeEditorField;

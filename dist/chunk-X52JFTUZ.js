@@ -1,37 +1,21 @@
-import React from 'react';
+'use strict';
 
-export interface UnderConstructionProps {
-  title: string;
-  description: string;
-  subtitle?: string;
-  logoUrl?: string | null;
-  accentColor?: string;
-}
+var jsxRuntime = require('react/jsx-runtime');
 
-/**
- * "Yapım aşamasında" sayfası — minimal, light bir tasarım.
- *
- * Tek vurgu rengi (varsayılan: Tecof primary #74b500) üzerine kurulu:
- * ince nokta ızgaralı açık zemin, üstten süzülen hafif renk tonu, canlı
- * durum rozeti (ping animasyonlu nokta) ve tek dekoratif öğe olarak akan
- * ilerleme çizgisi. Kart/cam efekti yok — içerik doğrudan zeminde durur.
- *
- * Renk türevleri `color-mix` ile accent'ten hesaplanır, bu yüzden herhangi
- * bir marka rengiyle (accentColor prop) uyumlu kalır.
- */
-export const UnderConstruction: React.FC<UnderConstructionProps> = ({
+// src/components/UnderConstruction.tsx
+var UnderConstruction = ({
   title,
   description,
   subtitle,
   logoUrl,
-  accentColor = '#74b500', // Tecof primary (ana renk)
+  accentColor = "#74b500"
+  // Tecof primary (ana renk)
 }) => {
-  return (
-    <div className="tecof-uc-wrapper">
-      <style dangerouslySetInnerHTML={{ __html: `
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-uc-wrapper", children: [
+    /* @__PURE__ */ jsxRuntime.jsx("style", { dangerouslySetInnerHTML: { __html: `
         .tecof-uc-wrapper {
           --uc-accent: ${accentColor};
-          /* Metinde kullanılacak koyu ton: küçük yazıda da okunur kalsın. */
+          /* Metinde kullan\u0131lacak koyu ton: k\xFC\xE7\xFCk yaz\u0131da da okunur kals\u0131n. */
           --uc-accent-ink: color-mix(in srgb, ${accentColor} 68%, #223005);
           --uc-accent-tint: color-mix(in srgb, ${accentColor} 10%, transparent);
           --uc-accent-track: color-mix(in srgb, ${accentColor} 14%, #f1f2ec);
@@ -59,7 +43,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           animation: tecof-uc-rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
-        /* ── Logo ── */
+        /* \u2500\u2500 Logo \u2500\u2500 */
         .tecof-uc-logo-area {
           margin-bottom: 2.75rem;
           display: flex;
@@ -84,7 +68,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           color: var(--uc-accent);
         }
 
-        /* ── Metin ── */
+        /* \u2500\u2500 Metin \u2500\u2500 */
         .tecof-uc-subtitle {
           font-size: 0.75rem;
           font-weight: 700;
@@ -111,7 +95,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           max-width: 400px;
         }
 
-        /* ── Durum rozeti ── */
+        /* \u2500\u2500 Durum rozeti \u2500\u2500 */
         .tecof-uc-badge {
           display: inline-flex;
           align-items: center;
@@ -145,7 +129,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           animation: tecof-uc-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
 
-        /* ── Akan ilerleme çizgisi (tek dekoratif öğe) ── */
+        /* \u2500\u2500 Akan ilerleme \xE7izgisi (tek dekoratif \xF6\u011Fe) \u2500\u2500 */
         .tecof-uc-progress {
           width: 128px;
           height: 4px;
@@ -165,7 +149,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           animation: tecof-uc-slide 2.4s ease-in-out infinite;
         }
 
-        /* ── Animasyonlar ── */
+        /* \u2500\u2500 Animasyonlar \u2500\u2500 */
         @keyframes tecof-uc-rise {
           from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
@@ -191,35 +175,26 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           .tecof-uc-logo-area { margin-bottom: 2.1rem; }
           .tecof-uc-description { font-size: 0.95rem; }
         }
-      ` }} />
-
-      <div className="tecof-uc-content">
-        {/* Logo */}
-        <div className="tecof-uc-logo-area">
-          {logoUrl ? (
-            <img src={logoUrl} alt="Mağaza logosu" className="tecof-uc-logo" />
-          ) : (
-            <div className="tecof-uc-logo-fallback">
-              TECOF<em>.</em>
-            </div>
-          )}
-        </div>
-
-        {/* İçerik */}
-        {subtitle && <div className="tecof-uc-subtitle">{subtitle}</div>}
-        <h1 className="tecof-uc-title">{title}</h1>
-        <p className="tecof-uc-description">{description}</p>
-
-        {/* Durum */}
-        <div className="tecof-uc-badge">
-          <span className="tecof-uc-badge-dot" aria-hidden="true"></span>
-          <span>Yapım Aşamasında</span>
-        </div>
-
-        <div className="tecof-uc-progress" aria-hidden="true"></div>
-      </div>
-    </div>
-  );
+      ` } }),
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-uc-content", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-uc-logo-area", children: logoUrl ? /* @__PURE__ */ jsxRuntime.jsx("img", { src: logoUrl, alt: "Ma\u011Faza logosu", className: "tecof-uc-logo" }) : /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-uc-logo-fallback", children: [
+        "TECOF",
+        /* @__PURE__ */ jsxRuntime.jsx("em", { children: "." })
+      ] }) }),
+      subtitle && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-uc-subtitle", children: subtitle }),
+      /* @__PURE__ */ jsxRuntime.jsx("h1", { className: "tecof-uc-title", children: title }),
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-uc-description", children: description }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-uc-badge", children: [
+        /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-uc-badge-dot", "aria-hidden": "true" }),
+        /* @__PURE__ */ jsxRuntime.jsx("span", { children: "Yap\u0131m A\u015Famas\u0131nda" })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-uc-progress", "aria-hidden": "true" })
+    ] })
+  ] });
 };
+var UnderConstruction_default = UnderConstruction;
 
-export default UnderConstruction;
+exports.UnderConstruction = UnderConstruction;
+exports.UnderConstruction_default = UnderConstruction_default;
+//# sourceMappingURL=chunk-X52JFTUZ.js.map
+//# sourceMappingURL=chunk-X52JFTUZ.js.map

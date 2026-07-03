@@ -2,17 +2,17 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var chunkXCYVCP33_js = require('../chunk-XCYVCP33.js');
+var chunkX52JFTUZ_js = require('../chunk-X52JFTUZ.js');
 
 
 
 Object.defineProperty(exports, "UnderConstruction", {
   enumerable: true,
-  get: function () { return chunkXCYVCP33_js.UnderConstruction; }
+  get: function () { return chunkX52JFTUZ_js.UnderConstruction; }
 });
 Object.defineProperty(exports, "default", {
   enumerable: true,
-  get: function () { return chunkXCYVCP33_js.UnderConstruction_default; }
+  get: function () { return chunkX52JFTUZ_js.UnderConstruction_default; }
 });
 //# sourceMappingURL=UnderConstruction.js.map
 //# sourceMappingURL=UnderConstruction.js.map

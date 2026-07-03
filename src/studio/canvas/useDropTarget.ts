@@ -183,16 +183,27 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
     (e: React.DragEvent) => {
       if (locked) return;
       e.preventDefault();
-      if (positional) e.stopPropagation();
 
       if (!checkValid(e)) {
-        // Reject the affordance and tell the browser this isn't a valid target.
+        // Reject the affordance and tell the browser this isn't a valid
+        // target. Deliberately DON'T stop propagation: an outer target (host
+        // node, parent zone, canvas root) may still accept this drag.
         e.dataTransfer.dropEffect = 'none';
         autoScrollerRef.current.stop();
         setPosition(null);
         setIsDragOver(false);
         return;
       }
+
+      // Claim the drag: the innermost VALID target wins. Without this a
+      // zone's dragover bubbles into its host node's positional target (and
+      // the canvas root), so several targets show affordances at once — and
+      // the eventual drop mutates once per target (the classic "drop into a
+      // group duplicates the node" bug).
+      e.stopPropagation();
+      // An inner invalid target may have written 'none' before the event
+      // reached us; re-assert the effect the drag source allows.
+      e.dataTransfer.dropEffect = getDragInfo(e).nodeId ? 'move' : 'copy';
 
       autoScrollerRef.current.update(e);
 
@@ -226,7 +237,6 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
     (e: React.DragEvent) => {
       if (locked) return;
       e.preventDefault();
-      if (positional) e.stopPropagation();
       autoScrollerRef.current.stop();
 
       const valid = checkValid(e);
@@ -236,9 +246,16 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
       setIsDragOver(false);
 
       if (!valid) {
+        // Let the drop bubble to an outer target that may accept it. The
+        // payload survives in the event's dataTransfer, so the outer handler
+        // doesn't depend on the store's drag state.
         endDrag();
         return;
       }
+
+      // Only the innermost valid target mutates the document — mirrors the
+      // dragover claim above.
+      e.stopPropagation();
 
       const { nodeId, type } = getDragInfo(e);
       const targetIndex = positional

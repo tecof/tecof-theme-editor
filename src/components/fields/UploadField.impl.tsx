@@ -69,6 +69,14 @@ const isImageType = (type: string) =>
     (t) => type?.toLowerCase().includes(t)
   );
 
+/**
+ * External stock photos (Freepik vb.) carry `type: 'external'` + a direct
+ * `url` instead of an image extension — TecofPicture already resolves them,
+ * so they must be treated as previewable images here too.
+ */
+const isPreviewableImage = (file: UploadedFile) =>
+  file.type === 'external' || file.provider === 'external' || isImageType(file.type);
+
 const getFileExtension = (filename: string) => {
   if (!filename) return '';
   const parts = filename.split('.');
@@ -98,7 +106,7 @@ const MediaTile = ({
           <div className="tecof-media-tile-ref">
             <Code size={18} />
           </div>
-        ) : isImageType(file.type) ? (
+        ) : isPreviewableImage(file) ? (
           <TecofPicture
             data={file}
             alt={displayName}

@@ -11,8 +11,10 @@ import { isInsideOverlayPortal } from './overlayPortal';
  * Returns an `onDoubleClick` handler to spread onto the node wrapper. When the
  * user double-clicks an editable element we make it `contentEditable`, select
  * its contents, and commit the edited text back into the node's props via
- * `updateProps`. Enter commits, Shift+Enter inserts a newline, Escape cancels,
- * and blur commits — mirroring the original NodeRenderer behaviour exactly.
+ * `updateProps`. Enter commits, Shift+Enter inserts a newline, Escape cancels.
+ * Clicking anywhere outside the editable — including parent-document UI
+ * (panels, TopBar, overlays) — or moving focus out of the canvas iframe also
+ * commits, so Enter is never *required* to save.
  *
  * Prop matching (which prop the edited text belongs to) is resolved in two ways:
  *
@@ -165,6 +167,9 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
         editTarget.removeAttribute('data-tecof-inline-editing');
         editTarget.removeEventListener('blur', handleBlur);
         editTarget.removeEventListener('keydown', handleKeyDown);
+        ownerDoc.removeEventListener('mousedown', handleOutsideMouseDown, true);
+        document.removeEventListener('mousedown', handleOutsideMouseDown, true);
+        ownerWin?.removeEventListener('blur', handleWindowBlur);
         ownerWin?.getSelection()?.removeAllRanges();
       };
 
@@ -224,8 +229,27 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
         }
       };
 
+      // Blur alone is not a reliable commit signal: the editable lives inside
+      // the canvas iframe, and parent-document UI (panels, TopBar, overlays)
+      // can take the pointer without ever blurring it — the edit would then be
+      // silently lost on the next re-render. So also commit on any pointer-down
+      // outside the editable (both documents, capture phase so an overlay's
+      // preventDefault() can't swallow it) and when the iframe window itself
+      // loses focus.
+      const handleOutsideMouseDown = (ev: MouseEvent) => {
+        const clicked = ev.target as Node | null;
+        if (clicked && editTarget.contains(clicked)) return;
+        commitInlineEdit();
+      };
+      const handleWindowBlur = () => {
+        commitInlineEdit();
+      };
+
       editTarget.addEventListener('blur', handleBlur);
       editTarget.addEventListener('keydown', handleKeyDown);
+      ownerDoc.addEventListener('mousedown', handleOutsideMouseDown, true);
+      document.addEventListener('mousedown', handleOutsideMouseDown, true);
+      ownerWin?.addEventListener('blur', handleWindowBlur);
     },
     [node, locked, activeLanguage]
   );

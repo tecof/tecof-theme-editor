@@ -1,8 +1,14 @@
-import { MediaDrawer } from './chunk-7DE7RWPS.mjs';
-import { useTecof, TecofPicture } from './chunk-6SZFDZOT.mjs';
-import React, { createElement as createElement$2, useState, useRef, useCallback } from 'react';
-import { ImagePlus, Upload, Code, FileIcon, X } from 'lucide-react';
-import { jsxs, jsx } from 'react/jsx-runtime';
+'use strict';
+
+var chunkDPF4IKWT_js = require('./chunk-DPF4IKWT.js');
+var chunkZSOIJLRO_js = require('./chunk-ZSOIJLRO.js');
+var React = require('react');
+var lucideReact = require('lucide-react');
+var jsxRuntime = require('react/jsx-runtime');
+
+function _interopDefault (e) { return e && e.__esModule ? e : { default: e }; }
+
+var React__default = /*#__PURE__*/_interopDefault(React);
 
 // node_modules/filepond/dist/filepond.esm.js
 var isNode = (value) => value instanceof HTMLElement;
@@ -6811,7 +6817,7 @@ var filteredMethods = [
   "restoreElement",
   "destroy"
 ];
-var FilePond = class extends React.Component {
+var FilePond = class extends React__default.default.Component {
   constructor(props) {
     super(props);
     this.allowFilesSync = true;
@@ -6869,13 +6875,13 @@ var FilePond = class extends React.Component {
       captureMethod,
       acceptedFileTypes
     } = this.props;
-    return createElement$2(
+    return React.createElement(
       "div",
       {
         className: "filepond--wrapper",
         ref: (element) => this._element = element
       },
-      createElement$2("input", {
+      React.createElement("input", {
         type: "file",
         name: name3,
         id,
@@ -17515,6 +17521,7 @@ var DEFAULT_COMPRESSION_OPTIONS = {
 var isImageType = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
   (t2) => type?.toLowerCase().includes(t2)
 );
+var isPreviewableImage3 = (file2) => file2.type === "external" || file2.provider === "external" || isImageType(file2.type);
 var getFileExtension = (filename) => {
   if (!filename) return "";
   const parts = filename.split(".");
@@ -17528,32 +17535,32 @@ var MediaTile = ({
   const ext = getFileExtension(file2.name);
   const displayName = file2.meta?.originalName || file2.name;
   const isReference = file2.type === "image/reference";
-  return /* @__PURE__ */ jsxs("div", { className: "tecof-media-tile", title: displayName, children: [
-    /* @__PURE__ */ jsxs("div", { className: "tecof-media-tile-preview", children: [
-      isReference ? /* @__PURE__ */ jsx("div", { className: "tecof-media-tile-ref", children: /* @__PURE__ */ jsx(Code, { size: 18 }) }) : isImageType(file2.type) ? /* @__PURE__ */ jsx(
-        TecofPicture,
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile", title: displayName, children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-preview", children: [
+      isReference ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-tile-ref", children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Code, { size: 18 }) }) : isPreviewableImage3(file2) ? /* @__PURE__ */ jsxRuntime.jsx(
+        chunkZSOIJLRO_js.TecofPicture,
         {
           data: file2,
           alt: displayName,
           size: "thumbnail",
           className: "tecof-media-tile-img"
         }
-      ) : /* @__PURE__ */ jsxs("div", { className: "tecof-media-tile-file", children: [
-        /* @__PURE__ */ jsx(FileIcon, { size: 20 }),
-        ext && /* @__PURE__ */ jsx("span", { className: "tecof-media-tile-ext", children: ext })
+      ) : /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-file", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(lucideReact.FileIcon, { size: 20 }),
+        ext && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-media-tile-ext", children: ext })
       ] }),
-      !readOnly && onRemove && /* @__PURE__ */ jsx(
+      !readOnly && onRemove && /* @__PURE__ */ jsxRuntime.jsx(
         "button",
         {
           type: "button",
           className: "tecof-media-tile-remove",
           onClick: onRemove,
           title: "Kald\u0131r",
-          children: /* @__PURE__ */ jsx(X, { size: 13 })
+          children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.X, { size: 13 })
         }
       )
     ] }),
-    /* @__PURE__ */ jsx("span", { className: "tecof-media-tile-caption", children: displayName })
+    /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-media-tile-caption", children: displayName })
   ] });
 };
 var FILEPOND_LABELS = {
@@ -17666,12 +17673,12 @@ var UploadFieldImpl = ({
   } else if (rawValue && typeof rawValue === "object") {
     value = [rawValue];
   }
-  const { apiUrl, secretKey } = useTecof();
-  const [filesForPond, setFilesForPond] = useState([]);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [refCode, setRefCode] = useState("{{ data. }}");
-  const sourceToIdRef = useRef(/* @__PURE__ */ new Map());
-  const compressFile = useCallback(async (file2) => {
+  const { apiUrl, secretKey } = chunkZSOIJLRO_js.useTecof();
+  const [filesForPond, setFilesForPond] = React.useState([]);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [refCode, setRefCode] = React.useState("{{ data. }}");
+  const sourceToIdRef = React.useRef(/* @__PURE__ */ new Map());
+  const compressFile = React.useCallback(async (file2) => {
     if (!imageCompressionEnabled) return file2;
     if (!file2.type?.startsWith("image/")) return file2;
     if (file2.type === "image/svg+xml" || file2.type === "image/gif") return file2;
@@ -17683,7 +17690,7 @@ var UploadFieldImpl = ({
       return file2;
     }
   }, [imageCompressionEnabled, imageCompressionOptions]);
-  const handlePondProcess = useCallback((error2, file2) => {
+  const handlePondProcess = React.useCallback((error2, file2) => {
     if (error2) return;
     try {
       const fileMeta = typeof file2.serverId === "string" ? JSON.parse(file2.serverId) : file2.serverId;
@@ -17699,7 +17706,7 @@ var UploadFieldImpl = ({
       console.error("FilePond upload parse error:", e3);
     }
   }, [value, onChange, allowMultiple]);
-  const handleRemove = useCallback((idx) => {
+  const handleRemove = React.useCallback((idx) => {
     const removedFile = value[idx];
     if (removedFile?._id) {
       sourceToIdRef.current.forEach((id, source) => {
@@ -17710,7 +17717,7 @@ var UploadFieldImpl = ({
     updated.splice(idx, 1);
     onChange(updated);
   }, [value, onChange]);
-  const handleAddRef = useCallback(() => {
+  const handleAddRef = React.useCallback(() => {
     if (!refCode.trim()) return;
     const refFile = {
       _id: `ref_${Date.now()}`,
@@ -17724,7 +17731,7 @@ var UploadFieldImpl = ({
     setRefCode("{{ data. }}");
     if (!allowMultiple) setDrawerOpen(false);
   }, [refCode, allowMultiple, value, onChange]);
-  const toggleGalleryFile = useCallback((file2) => {
+  const toggleGalleryFile = React.useCallback((file2) => {
     if (allowMultiple) {
       const exists = value.some((f2) => f2._id === file2._id);
       if (exists) {
@@ -17799,8 +17806,8 @@ var UploadFieldImpl = ({
   const uploadTab = {
     id: "upload",
     label: "Y\xFCkle",
-    icon: /* @__PURE__ */ jsx(Upload, { size: 14 }),
-    render: () => /* @__PURE__ */ jsx("div", { className: "tecof-media-upload-panel", children: /* @__PURE__ */ jsx(
+    icon: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Upload, { size: 14 }),
+    render: () => /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-upload-panel", children: /* @__PURE__ */ jsxRuntime.jsx(
       FilePond,
       {
         files: filesForPond,
@@ -17825,11 +17832,11 @@ var UploadFieldImpl = ({
   const referenceTab = {
     id: "reference",
     label: "Referans",
-    icon: /* @__PURE__ */ jsx(Code, { size: 14 }),
-    render: () => /* @__PURE__ */ jsxs("div", { className: "tecof-media-ref-panel", children: [
-      /* @__PURE__ */ jsx("p", { className: "tecof-media-ref-desc", children: "CMS koleksiyonundan dinamik bir g\xF6rsel de\u011Fi\u015Fkeni ba\u011Flay\u0131n." }),
-      /* @__PURE__ */ jsxs("div", { className: "tecof-upload-ref-row", children: [
-        /* @__PURE__ */ jsx(
+    icon: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Code, { size: 14 }),
+    render: () => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-ref-panel", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("p", { className: "tecof-media-ref-desc", children: "CMS koleksiyonundan dinamik bir g\xF6rsel de\u011Fi\u015Fkeni ba\u011Flay\u0131n." }),
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-ref-row", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(
           "input",
           {
             type: "text",
@@ -17845,13 +17852,13 @@ var UploadFieldImpl = ({
             }
           }
         ),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: handleAddRef, className: "tecof-upload-ref-add", children: "Ekle" })
+        /* @__PURE__ */ jsxRuntime.jsx("button", { type: "button", onClick: handleAddRef, className: "tecof-upload-ref-add", children: "Ekle" })
       ] })
     ] })
   };
-  return /* @__PURE__ */ jsxs("div", { className: "tecof-upload-container", children: [
-    /* @__PURE__ */ jsxs("div", { className: "tecof-media-grid", children: [
-      value.map((file2, idx) => /* @__PURE__ */ jsx(
+  return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-container", children: [
+    /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-grid", children: [
+      value.map((file2, idx) => /* @__PURE__ */ jsxRuntime.jsx(
         MediaTile,
         {
           file: file2,
@@ -17860,21 +17867,21 @@ var UploadFieldImpl = ({
         },
         file2._id || idx
       )),
-      !readOnly && canAddMore && /* @__PURE__ */ jsxs(
+      !readOnly && canAddMore && /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
         {
           type: "button",
           className: `tecof-media-add-tile${value.length === 0 ? " is-empty" : ""}`,
           onClick: () => setDrawerOpen(true),
           children: [
-            /* @__PURE__ */ jsx(ImagePlus, { size: value.length === 0 ? 22 : 18 }),
-            /* @__PURE__ */ jsx("span", { children: value.length === 0 ? "Medya ekle" : "Ekle" })
+            /* @__PURE__ */ jsxRuntime.jsx(lucideReact.ImagePlus, { size: value.length === 0 ? 22 : 18 }),
+            /* @__PURE__ */ jsxRuntime.jsx("span", { children: value.length === 0 ? "Medya ekle" : "Ekle" })
           ]
         }
       )
     ] }),
-    /* @__PURE__ */ jsx(
-      MediaDrawer,
+    /* @__PURE__ */ jsxRuntime.jsx(
+      chunkDPF4IKWT_js.MediaDrawer,
       {
         open: drawerOpen,
         onOpenChange: setDrawerOpen,
@@ -17971,6 +17978,6 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
    *)
 */
 
-export { UploadField_impl_default as default };
-//# sourceMappingURL=UploadField.impl-PPKSM2UJ.mjs.map
-//# sourceMappingURL=UploadField.impl-PPKSM2UJ.mjs.map
+module.exports = UploadField_impl_default;
+//# sourceMappingURL=UploadField.impl-WKWHXPK7.js.map
+//# sourceMappingURL=UploadField.impl-WKWHXPK7.js.map

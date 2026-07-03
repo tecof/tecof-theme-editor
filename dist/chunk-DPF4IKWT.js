@@ -1,6 +1,6 @@
 'use strict';
 
-var chunk6ME6QXY3_js = require('./chunk-6ME6QXY3.js');
+var chunkZSOIJLRO_js = require('./chunk-ZSOIJLRO.js');
 var react = require('react');
 var lucideReact = require('lucide-react');
 var jsxRuntime = require('react/jsx-runtime');
@@ -8,6 +8,7 @@ var jsxRuntime = require('react/jsx-runtime');
 var isImageType = (type) => ["png", "jpg", "jpeg", "webp", "gif", "svg", "avif", "bmp", "tiff", "heic", "image"].some(
   (t) => type?.toLowerCase().includes(t)
 );
+var isPreviewableImage = (file) => file.type === "external" || file.provider === "external" || isImageType(file.type);
 var MediaDrawer = ({
   open,
   onOpenChange,
@@ -18,7 +19,7 @@ var MediaDrawer = ({
   title = "Medya K\xFCt\xFCphanesi",
   extraTabs = []
 }) => {
-  const { apiClient } = chunk6ME6QXY3_js.useTecof();
+  const { apiClient } = chunkZSOIJLRO_js.useTecof();
   const [galleryFiles, setGalleryFiles] = react.useState([]);
   const [loading, setLoading] = react.useState(false);
   const [refreshKey, setRefreshKey] = react.useState(0);
@@ -43,7 +44,7 @@ var MediaDrawer = ({
   const filteredGallery = react.useMemo(() => {
     let files = galleryFiles;
     if (filterImages) {
-      files = files.filter((f) => isImageType(f.type));
+      files = files.filter(isPreviewableImage);
     }
     if (gallerySearch.trim()) {
       const q = gallerySearch.toLowerCase();
@@ -53,17 +54,17 @@ var MediaDrawer = ({
     }
     return files;
   }, [galleryFiles, filterImages, gallerySearch]);
-  return /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Root, { open, onOpenChange: (o) => {
+  return /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Root, { open, onOpenChange: (o) => {
     onOpenChange(o);
     if (!o) {
       setGallerySearch("");
       setActiveTab("library");
     }
-  }, children: /* @__PURE__ */ jsxRuntime.jsxs(chunk6ME6QXY3_js.Drawer.Portal, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
-    /* @__PURE__ */ jsxRuntime.jsxs(chunk6ME6QXY3_js.Drawer.Content, { className: "tecof-upload-drawer-content", children: [
-      /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Title, { className: "tecof-sr-only", children: title }),
-      /* @__PURE__ */ jsxRuntime.jsx(chunk6ME6QXY3_js.Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
+  }, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkZSOIJLRO_js.Drawer.Portal, { children: [
+    /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
+    /* @__PURE__ */ jsxRuntime.jsxs(chunkZSOIJLRO_js.Drawer.Content, { className: "tecof-upload-drawer-content", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Title, { className: "tecof-sr-only", children: title }),
+      /* @__PURE__ */ jsxRuntime.jsx(chunkZSOIJLRO_js.Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
       /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-drawer-handle" }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-inner", children: [
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header", children: [
@@ -160,8 +161,8 @@ var MediaDrawer = ({
                 onClick: () => handleSelect(file),
                 children: [
                   selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Check, { size: 12, strokeWidth: 3 }) }),
-                  isImageType(file.type) ? /* @__PURE__ */ jsxRuntime.jsx(
-                    chunk6ME6QXY3_js.TecofPicture,
+                  isPreviewableImage(file) ? /* @__PURE__ */ jsxRuntime.jsx(
+                    chunkZSOIJLRO_js.TecofPicture,
                     {
                       data: file,
                       alt: file.name,
@@ -182,5 +183,5 @@ var MediaDrawer = ({
 };
 
 exports.MediaDrawer = MediaDrawer;
-//# sourceMappingURL=chunk-HD6T7L6C.js.map
-//# sourceMappingURL=chunk-HD6T7L6C.js.map
+//# sourceMappingURL=chunk-DPF4IKWT.js.map
+//# sourceMappingURL=chunk-DPF4IKWT.js.map

@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Copy, ClipboardPaste } from 'lucide-react';
+import {
+  Copy,
+  ClipboardPaste,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  Type,
+  Paintbrush,
+  Eraser,
+} from 'lucide-react';
 import {
   STYLE_CONTROLS,
   GROUP_LABELS,
@@ -14,6 +23,7 @@ import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { cloneStyles, isEmptyStyles } from './styleClipboard';
 import { ColorPicker } from './ColorPicker';
+import { SpacingBox, SPACING_BOX_IDS } from './SpacingBox';
 
 /** True when a style layer carries at least one set property. */
 const hasProps = (props?: StyleProps): boolean =>
@@ -82,7 +92,42 @@ const STATES: { key: 'base' | StateVariant; label: string }[] = [
   { key: 'active', label: 'Active' },
 ];
 
-const GROUP_ORDER: StyleGroup[] = ['layout', 'spacing', 'sizing', 'typography', 'background', 'border', 'effects'];
+/* ── Tabs: the 7 control groups mapped onto 3 top-level tabs ── */
+
+type StyleTabKey = 'layout' | 'text' | 'appearance';
+
+const TABS: {
+  key: StyleTabKey;
+  label: string;
+  Icon: typeof LayoutGrid;
+  groups: StyleGroup[];
+}[] = [
+  { key: 'layout', label: 'Düzen', Icon: LayoutGrid, groups: ['layout', 'spacing', 'sizing'] },
+  { key: 'text', label: 'Metin', Icon: Type, groups: ['typography'] },
+  { key: 'appearance', label: 'Görünüm', Icon: Paintbrush, groups: ['background', 'border', 'effects'] },
+];
+
+/**
+ * Panel UI state (active tab + which accordion groups are open), kept at
+ * module level so it survives node switches within a session — selecting
+ * another node keeps you on the tab you were working in.
+ */
+const panelUi: { tab: StyleTabKey; open: Record<StyleGroup, boolean> } = {
+  tab: 'layout',
+  open: {
+    layout: true,
+    spacing: true,
+    sizing: false,
+    typography: true,
+    background: true,
+    border: true,
+    effects: false,
+  },
+};
+
+/** Human-readable value for chips: option label, else the raw custom value. */
+const valueLabel = (control: StyleControl, value: string): string =>
+  control.options.find((o) => o.value === value)?.label ?? arbitraryRaw(value);
 
 export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
   const styles: NodeStyles = value || {};
@@ -166,10 +211,49 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
     }
   };
 
-  const grouped = GROUP_ORDER.map((group) => ({
-    group,
-    controls: STYLE_CONTROLS.filter((c) => c.group === group),
-  })).filter((g) => g.controls.length > 0);
+  /** Wipes every value of the ACTIVE layer only (other layers untouched). */
+  const clearLayer = () => {
+    if (state === 'base') {
+      onChange({ ...styles, [bp]: {} });
+    } else {
+      onChange({ ...styles, states: { ...styles.states, [stateKey]: {} } });
+    }
+  };
+
+  /* ── Tab + accordion UI state (module-persisted) ── */
+  const [tab, setTabState] = useState<StyleTabKey>(panelUi.tab);
+  const [openGroups, setOpenGroups] = useState(panelUi.open);
+
+  const setTab = (next: StyleTabKey) => {
+    panelUi.tab = next;
+    setTabState(next);
+  };
+  const toggleGroup = (group: StyleGroup) => {
+    setOpenGroups((prev) => {
+      const next = { ...prev, [group]: !prev[group] };
+      panelUi.open = next;
+      return next;
+    });
+  };
+
+  /** Chip click: jump to the tab + group that owns the control. */
+  const jumpToControl = (control: StyleControl) => {
+    const target = TABS.find((t) => t.groups.includes(control.group));
+    if (!target) return;
+    setTab(target.key);
+    setOpenGroups((prev) => {
+      const next = { ...prev, [control.group]: true };
+      panelUi.open = next;
+      return next;
+    });
+  };
+
+  /** Controls with an explicit value in the ACTIVE layer (chips + badges). */
+  const activeControls = STYLE_CONTROLS.filter((c) => layer[c.id]);
+  const groupSetCount = (group: StyleGroup) =>
+    activeControls.filter((c) => c.group === group).length;
+
+  const activeTab = TABS.find((t) => t.key === tab) ?? TABS[0];
 
   return (
     <div className="tecof-style-editor">
@@ -241,23 +325,113 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
         </div>
       </div>
 
-      {/* Control groups */}
-      {grouped.map(({ group, controls }) => (
-        <div key={group} className="tecof-style-group">
-          <div className="tecof-style-group-title">{GROUP_LABELS[group]}</div>
-          {controls.map((control) => (
-            <ControlRow
-              // Keyed by layer so per-row local state (custom input drafts,
-              // picker open state) resets when switching breakpoint/state.
-              key={`${bp}:${state}:${control.id}`}
-              control={control}
-              value={layer[control.id] || ''}
-              inherited={inheritedLayer[control.id]}
-              onChange={(v) => setLayerValue(control.id, v)}
-            />
+      {/* Active layer summary: one removable chip per set property. */}
+      {activeControls.length > 0 && (
+        <div className="tecof-style-chips">
+          {activeControls.map((control) => (
+            <span key={control.id} className="tecof-style-chip">
+              <button
+                type="button"
+                className="tecof-style-chip-label"
+                title={`${control.label}: ${valueLabel(control, layer[control.id]!)} — kontrole git`}
+                onClick={() => jumpToControl(control)}
+              >
+                {control.label}: {valueLabel(control, layer[control.id]!)}
+              </button>
+              <button
+                type="button"
+                className="tecof-style-chip-x"
+                title="Bu stili kaldır"
+                aria-label={`${control.label} stilini kaldır`}
+                onClick={() => setLayerValue(control.id, '')}
+              >
+                ×
+              </button>
+            </span>
           ))}
+          <button
+            type="button"
+            className="tecof-style-chip-clear"
+            title="Bu katmandaki (kırılım + durum) tüm stilleri temizle"
+            onClick={clearLayer}
+          >
+            <Eraser size={12} />
+            Temizle
+          </button>
         </div>
-      ))}
+      )}
+
+      {/* Tab bar */}
+      <div className="tecof-style-tabs" role="tablist" aria-label="Stil kategorileri">
+        {TABS.map(({ key, label, Icon, groups }) => {
+          const hasOverride = groups.some((g) => groupSetCount(g) > 0);
+          return (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              className={`tecof-style-tab${tab === key ? ' is-active' : ''}`}
+              onClick={() => setTab(key)}
+            >
+              <Icon size={13} />
+              {label}
+              {hasOverride && <OverrideBadge title="Bu sekmede özelleştirme var" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Accordion groups of the active tab */}
+      {activeTab.groups.map((group) => {
+        const controls = STYLE_CONTROLS.filter(
+          (c) => c.group === group && !(group === 'spacing' && SPACING_BOX_IDS.has(c.id))
+        );
+        const count = groupSetCount(group);
+        const isOpen = openGroups[group];
+        return (
+          <section key={group} className="tecof-style-acc">
+            <button
+              type="button"
+              className="tecof-style-acc-head"
+              aria-expanded={isOpen}
+              onClick={() => toggleGroup(group)}
+            >
+              {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+              {GROUP_LABELS[group]}
+              {count > 0 && (
+                <span className="tecof-style-acc-count" title="Bu katmanda ayarlı stil sayısı">
+                  {count}
+                </span>
+              )}
+            </button>
+            {isOpen && (
+              <div className="tecof-style-acc-body">
+                {group === 'spacing' && (
+                  <SpacingBox
+                    // Keyed by layer so cell drafts reset when switching scope.
+                    key={`${bp}:${state}`}
+                    layer={layer}
+                    inherited={inheritedLayer}
+                    onSet={setLayerValue}
+                  />
+                )}
+                {controls.map((control) => (
+                  <ControlRow
+                    // Keyed by layer so per-row local state (custom input drafts,
+                    // picker open state) resets when switching breakpoint/state.
+                    key={`${bp}:${state}:${control.id}`}
+                    control={control}
+                    value={layer[control.id] || ''}
+                    inherited={inheritedLayer[control.id]}
+                    onChange={(v) => setLayerValue(control.id, v)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 };
@@ -317,7 +491,7 @@ const ControlRow = ({
       </span>
       <div className="tecof-style-control">
         {control.type === 'color' ? (
-          <ColorPicker value={value} onChange={onChange} />
+          <ColorPicker value={value} onChange={onChange} sections={control.colorSections} />
         ) : control.type === 'segment' ? (
           <div className="tecof-style-seg">
             {control.options.map((opt) => (
