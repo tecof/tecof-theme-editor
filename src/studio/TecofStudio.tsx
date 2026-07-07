@@ -33,6 +33,13 @@ export const TecofStudio = ({
   className,
 }: TecofEditorProps) => {
   const { apiClient } = useTecof();
+
+  // Flow the user's JWT into every API call (uploads, translate, shared
+  // components, …) — write endpoints require it on top of the secret key.
+  useEffect(() => {
+    apiClient.setAccessToken(accessToken);
+  }, [apiClient, accessToken]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');

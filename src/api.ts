@@ -13,12 +13,25 @@ export class TecofApiClient {
   private apiUrl: string;
   private secretKey: string;
   private customCdnUrl?: string;
+  private accessToken?: string;
 
-  constructor(apiUrl: string, secretKey: string, customCdnUrl?: string) {
+  constructor(apiUrl: string, secretKey: string, customCdnUrl?: string, accessToken?: string) {
     // Remove trailing slash
     this.apiUrl = apiUrl.replace(/\/+$/, '');
     this.secretKey = secretKey;
     this.customCdnUrl = customCdnUrl ? customCdnUrl.replace(/\/+$/, '') : undefined;
+    this.accessToken = accessToken;
+  }
+
+  /**
+   * Set the user's JWT for authenticated editor operations.
+   *
+   * The secret key is public (it ships in the site's JS bundle), so the backend
+   * requires a JWT on top of it for write endpoints. When set, the token is sent
+   * as `Authorization` on every request.
+   */
+  setAccessToken(token?: string): void {
+    this.accessToken = token;
   }
 
   private get headers(): Record<string, string> {
@@ -26,6 +39,7 @@ export class TecofApiClient {
       'x-secret-key': this.secretKey,
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      ...(this.accessToken && { Authorization: this.accessToken }),
     };
   }
 
@@ -143,6 +157,7 @@ export class TecofApiClient {
         headers: {
           'x-secret-key': this.secretKey,
           Accept: 'application/json',
+          ...(this.accessToken && { Authorization: this.accessToken }),
           // Do NOT set Content-Type — browser sets multipart boundary automatically
         },
         body: formData,
@@ -240,6 +255,7 @@ export class TecofApiClient {
           'x-secret-key': this.secretKey,
           Accept: 'image/png',
           'Content-Type': 'application/json',
+          ...(this.accessToken && { Authorization: this.accessToken }),
         },
         body: JSON.stringify({ domain, componentName }),
       });
