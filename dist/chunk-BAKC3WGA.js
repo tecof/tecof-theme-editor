@@ -27,7 +27,7 @@ var ReactDOM__namespace = /*#__PURE__*/_interopNamespace(ReactDOM);
 
 // src/api.ts
 var TecofApiClient = class {
-  constructor(apiUrl, secretKey, customCdnUrl) {
+  constructor(apiUrl, secretKey, customCdnUrl, accessToken) {
     /**
      * Get a component preview screenshot as a Blob URL.
      * Calls POST /api/store/component-preview with domain + componentName.
@@ -38,12 +38,24 @@ var TecofApiClient = class {
     this.apiUrl = apiUrl.replace(/\/+$/, "");
     this.secretKey = secretKey;
     this.customCdnUrl = customCdnUrl ? customCdnUrl.replace(/\/+$/, "") : void 0;
+    this.accessToken = accessToken;
+  }
+  /**
+   * Set the user's JWT for authenticated editor operations.
+   *
+   * The secret key is public (it ships in the site's JS bundle), so the backend
+   * requires a JWT on top of it for write endpoints. When set, the token is sent
+   * as `Authorization` on every request.
+   */
+  setAccessToken(token) {
+    this.accessToken = token;
   }
   get headers() {
     return {
       "x-secret-key": this.secretKey,
       Accept: "application/json",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      ...this.accessToken && { Authorization: this.accessToken }
     };
   }
   /**
@@ -142,7 +154,8 @@ var TecofApiClient = class {
         method: "POST",
         headers: {
           "x-secret-key": this.secretKey,
-          Accept: "application/json"
+          Accept: "application/json",
+          ...this.accessToken && { Authorization: this.accessToken }
           // Do NOT set Content-Type — browser sets multipart boundary automatically
         },
         body: formData
@@ -190,6 +203,42 @@ var TecofApiClient = class {
     }
   }
   /**
+   * Search stock photos (Pexels/Pixabay) via the backend, normalized response.
+   * Returns { data: StockPhoto[], provider, providers, page, hasMore }.
+   */
+  async searchStockMedia(query, opts = {}) {
+    try {
+      const params = new URLSearchParams({ q: query });
+      if (opts.provider) params.set("provider", opts.provider);
+      if (opts.page) params.set("page", String(opts.page));
+      if (opts.perPage) params.set("perPage", String(opts.perPage));
+      if (opts.orientation) params.set("orientation", opts.orientation);
+      const res = await fetch(`${this.apiUrl}/api/store/stock-media/search?${params.toString()}`, {
+        method: "GET",
+        headers: this.headers
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, data: [], message: error instanceof Error ? error.message : "Stock search failed" };
+    }
+  }
+  /**
+   * Import a stock photo: the backend downloads it and uploads it to the
+   * merchant's own storage, returning the resulting UploadedFile record.
+   */
+  async importStockMedia(item) {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/stock-media/import`, {
+        method: "POST",
+        headers: this.headers,
+        body: JSON.stringify(item)
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : "Stock import failed" };
+    }
+  }
+  /**
    * Translate text to multiple languages (for LanguageField)
    * Returns [{code, value}] for each locale
    */
@@ -219,7 +268,8 @@ var TecofApiClient = class {
         headers: {
           "x-secret-key": this.secretKey,
           Accept: "image/png",
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          ...this.accessToken && { Authorization: this.accessToken }
         },
         body: JSON.stringify({ domain, componentName })
       });
@@ -4002,5 +4052,5 @@ exports.TecofApiClient = TecofApiClient;
 exports.TecofPicture = TecofPicture;
 exports.TecofProvider = TecofProvider;
 exports.useTecof = useTecof;
-//# sourceMappingURL=chunk-ZSOIJLRO.js.map
-//# sourceMappingURL=chunk-ZSOIJLRO.js.map
+//# sourceMappingURL=chunk-BAKC3WGA.js.map
+//# sourceMappingURL=chunk-BAKC3WGA.js.map

@@ -427,7 +427,16 @@ declare class TecofApiClient {
     private apiUrl;
     private secretKey;
     private customCdnUrl?;
-    constructor(apiUrl: string, secretKey: string, customCdnUrl?: string);
+    private accessToken?;
+    constructor(apiUrl: string, secretKey: string, customCdnUrl?: string, accessToken?: string);
+    /**
+     * Set the user's JWT for authenticated editor operations.
+     *
+     * The secret key is public (it ships in the site's JS bundle), so the backend
+     * requires a JWT on top of it for write endpoints. When set, the token is sent
+     * as `Authorization` on every request.
+     */
+    setAccessToken(token?: string): void;
     private get headers();
     /**
      * Fetch a page by ID (for the editor)
@@ -465,6 +474,31 @@ declare class TecofApiClient {
      * Returns pages with: _id, slug, title, status, metaTitle
      */
     getPages(): Promise<ApiResponse<any[]>>;
+    /**
+     * Search stock photos (Pexels/Pixabay) via the backend, normalized response.
+     * Returns { data: StockPhoto[], provider, providers, page, hasMore }.
+     */
+    searchStockMedia(query: string, opts?: {
+        provider?: string;
+        page?: number;
+        perPage?: number;
+        orientation?: string;
+    }): Promise<ApiResponse<any[]> & {
+        provider?: string;
+        providers?: string[];
+        page?: number;
+        hasMore?: boolean;
+    }>;
+    /**
+     * Import a stock photo: the backend downloads it and uploads it to the
+     * merchant's own storage, returning the resulting UploadedFile record.
+     */
+    importStockMedia(item: {
+        provider: string;
+        downloadUrl: string;
+        id?: string;
+        alt?: string;
+    }): Promise<ApiResponse<any>>;
     /**
      * Translate text to multiple languages (for LanguageField)
      * Returns [{code, value}] for each locale

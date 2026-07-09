@@ -13,15 +13,17 @@
  *   />
  */
 
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { Drawer } from 'vaul';
 import {
   Image as ImageIcon,
+  Images,
   RefreshCcw,
   X,
   Search,
   Check,
   FileIcon,
+  Loader2,
 } from 'lucide-react';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
@@ -73,7 +75,161 @@ export interface MediaDrawerProps {
   title?: string;
   /** Extra tabs (e.g. upload / reference) rendered next to the library tab. */
   extraTabs?: MediaDrawerTab[];
+  /** Show the built-in "Stok" tab (Pexels/Pixabay search → import to storage). */
+  enableStock?: boolean;
 }
+
+/* ─── Stock media panel ─── */
+
+interface StockPhoto {
+  id: string;
+  provider: string;
+  thumbUrl: string;
+  previewUrl: string;
+  downloadUrl: string;
+  width: number;
+  height: number;
+  author: string;
+  alt: string;
+}
+
+const ORIENTATIONS = [
+  { value: 'all', label: 'Tümü' },
+  { value: 'landscape', label: 'Yatay' },
+  { value: 'portrait', label: 'Dikey' },
+  { value: 'square', label: 'Kare' },
+];
+
+const StockPanel = ({ onImported }: { onImported: (file: UploadedFile) => void }) => {
+  const { apiClient } = useTecof();
+
+  const [query, setQuery] = useState('');
+  const [orientation, setOrientation] = useState('all');
+  const [provider, setProvider] = useState<string | undefined>(undefined);
+  const [providers, setProviders] = useState<string[]>([]);
+  const [results, setResults] = useState<StockPhoto[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [importingId, setImportingId] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [noProvider, setNoProvider] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const runSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setResults([]); setSearched(false); return; }
+    setLoading(true);
+    setSearched(true);
+    const res: any = await apiClient.searchStockMedia(q.trim(), { provider, orientation, perPage: 30 });
+    setLoading(false);
+    if (res?.success) {
+      setResults(res.data || []);
+      setProviders(res.providers || []);
+      if (res.provider) setProvider(res.provider);
+      setNoProvider(res.note === 'no-provider-configured');
+    } else {
+      setResults([]);
+    }
+  }, [apiClient, provider, orientation]);
+
+  // Debounced search on query / filter change
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => runSearch(query), 450);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, orientation, provider, runSearch]);
+
+  const handleImport = async (photo: StockPhoto) => {
+    if (importingId) return;
+    setImportingId(photo.id);
+    const res = await apiClient.importStockMedia({ provider: photo.provider, downloadUrl: photo.downloadUrl, id: photo.id, alt: photo.alt });
+    setImportingId(null);
+    if (res?.success && res.data) {
+      onImported(res.data as UploadedFile);
+    }
+  };
+
+  return (
+    <div className="tecof-stock-panel">
+      {/* Search + filters */}
+      <div className="tecof-stock-controls">
+        <div className="tecof-upload-search-box tecof-stock-search">
+          <Search size={15} className="tecof-icon-muted" />
+          <input
+            type="text"
+            placeholder="Stok görsel ara… (örn. mimari, doğa)"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="tecof-upload-search-input"
+            autoFocus
+          />
+          {query && (
+            <button type="button" className="tecof-upload-action-btn" onClick={() => setQuery('')}>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        <select className="tecof-stock-select" value={orientation} onChange={(e) => setOrientation(e.target.value)} aria-label="Yön">
+          {ORIENTATIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {providers.length > 1 && (
+          <select className="tecof-stock-select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="Kaynak">
+            {providers.map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>)}
+          </select>
+        )}
+      </div>
+
+      {/* Results */}
+      {noProvider ? (
+        <div className="tecof-upload-gallery-empty">
+          <div className="tecof-upload-gallery-empty-icon"><Images size={24} className="tecof-icon-muted" /></div>
+          <p className="tecof-upload-empty-heading">Stok sağlayıcı yapılandırılmamış</p>
+          <p className="tecof-upload-empty-subheading">Yönetici Pexels/Pixabay API anahtarını eklemeli.</p>
+        </div>
+      ) : loading ? (
+        <div className="tecof-media-skeleton-grid" aria-busy="true">
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div className="tecof-media-skeleton-card" key={i}>
+              <span className="tecof-skeleton tecof-skeleton-block tecof-media-skeleton-thumb" />
+            </div>
+          ))}
+        </div>
+      ) : !searched ? (
+        <div className="tecof-upload-gallery-empty">
+          <div className="tecof-upload-gallery-empty-icon"><Images size={24} className="tecof-icon-muted" /></div>
+          <p className="tecof-upload-empty-heading">Milyonlarca ücretsiz görsel</p>
+          <p className="tecof-upload-empty-subheading">Aramak için bir şeyler yazın. Seçtiğiniz görsel kütüphanenize yüklenir.</p>
+        </div>
+      ) : results.length === 0 ? (
+        <div className="tecof-upload-gallery-empty">
+          <div className="tecof-upload-gallery-empty-icon"><Search size={24} className="tecof-icon-muted" /></div>
+          <p className="tecof-upload-empty-heading">Sonuç bulunamadı</p>
+          <p className="tecof-upload-empty-subheading">Farklı bir arama terimi deneyin</p>
+        </div>
+      ) : (
+        <div className="tecof-upload-gallery-grid">
+          {results.map((photo) => (
+            <div
+              key={`${photo.provider}-${photo.id}`}
+              className="tecof-upload-gallery-item tecof-stock-item"
+              onClick={() => handleImport(photo)}
+              title={photo.alt}
+            >
+              <div className="tecof-upload-gallery-thumb">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photo.thumbUrl} alt={photo.alt} loading="lazy" />
+                {importingId === photo.id && (
+                  <div className="tecof-stock-importing">
+                    <Loader2 size={20} className="tecof-upload-spin" />
+                  </div>
+                )}
+              </div>
+              <p className="tecof-upload-gallery-file-name">{photo.author || photo.provider}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ─── Component ─── */
 
@@ -86,6 +242,7 @@ export const MediaDrawer = ({
   filterImages = false,
   title = 'Medya Kütüphanesi',
   extraTabs = [],
+  enableStock = false,
 }: MediaDrawerProps) => {
   const { apiClient } = useTecof();
 
@@ -173,8 +330,8 @@ export const MediaDrawer = ({
               </div>
             </div>
 
-            {/* Tabs (only when extra tabs are provided) */}
-            {extraTabs.length > 0 && (
+            {/* Tabs (when extra tabs or stock search are provided) */}
+            {(extraTabs.length > 0 || enableStock) && (
               <div className="tecof-media-tabs" role="tablist">
                 <button
                   type="button"
@@ -185,6 +342,17 @@ export const MediaDrawer = ({
                 >
                   <ImageIcon size={14} /> Kütüphane
                 </button>
+                {enableStock && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'stock'}
+                    className={`tecof-media-tab${activeTab === 'stock' ? ' is-active' : ''}`}
+                    onClick={() => setActiveTab('stock')}
+                  >
+                    <Images size={14} /> Stok
+                  </button>
+                )}
                 {extraTabs.map((tab) => (
                   <button
                     key={tab.id}
@@ -201,7 +369,11 @@ export const MediaDrawer = ({
               </div>
             )}
 
-            {activeTab !== 'library' ? (
+            {activeTab === 'stock' ? (
+              <div className="tecof-media-tab-panel">
+                <StockPanel onImported={handleSelect} />
+              </div>
+            ) : activeTab !== 'library' ? (
               <div className="tecof-media-tab-panel">
                 {extraTabs.find((t) => t.id === activeTab)?.render()}
               </div>

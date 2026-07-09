@@ -1,4 +1,4 @@
-import { useTecof } from './chunk-HKP3NVYI.mjs';
+import { useTecof } from './chunk-3NSPTYA2.mjs';
 import { createContext, useState, useMemo, useEffect, useContext, Component, useRef, useCallback } from 'react';
 import { jsx, jsxs } from 'react/jsx-runtime';
 import { Copy, Loader2, Languages } from 'lucide-react';
@@ -409,5 +409,5 @@ var createLanguageField = (options = {}) => {
 };
 
 export { FieldErrorBoundary, FieldLabel, FieldLoading, LanguageField, LanguageProvider, LanguageTabBar, createLanguageField, useActiveLanguage, useLanguages };
-//# sourceMappingURL=chunk-QXKPBDJB.mjs.map
-//# sourceMappingURL=chunk-QXKPBDJB.mjs.map
+//# sourceMappingURL=chunk-RCODUGQU.mjs.map
+//# sourceMappingURL=chunk-RCODUGQU.mjs.map

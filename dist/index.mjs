@@ -1,8 +1,8 @@
 export { UnderConstruction } from './chunk-FVWRKU3I.mjs';
-import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-QXKPBDJB.mjs';
-export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-QXKPBDJB.mjs';
-import { useTecof, Drawer } from './chunk-HKP3NVYI.mjs';
-export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-HKP3NVYI.mjs';
+import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-RCODUGQU.mjs';
+export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-RCODUGQU.mjs';
+import { useTecof, Drawer } from './chunk-3NSPTYA2.mjs';
+export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-3NSPTYA2.mjs';
 import React, { createContext, lazy, forwardRef, Suspense, useState, useMemo, useRef, useEffect, useCallback, useContext, useLayoutEffect, Component } from 'react';
 import { icons, Database, X, RotateCcw, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, Link, Search, ChevronRight, Plus, RefreshCw, ChevronDown, Link2, RefreshCcw, Check, Pipette, Monitor, Tablet, Smartphone, Eye, Undo2, Redo2, Save, Grid, Layers, EyeOff, LayoutTemplate, ChevronUp, Lock, CopyPlus, Copy, Scissors, ClipboardPaste, Trash2, Paintbrush, GripVertical, LayoutGrid, Bookmark, ArrowUp, ArrowDown, Type, Eraser, Layout, Box, Info, Braces, ChevronLeft } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -11595,7 +11595,7 @@ var LanguageSwitcher = () => {
     /* @__PURE__ */ jsx(ChevronDown, { size: 12, className: "tecof-lang-switcher-caret" })
   ] });
 };
-var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }) => {
+var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }) => {
   const viewport = useEditorStore((state) => state.viewport);
   const setViewport = useEditorStore((state) => state.setViewport);
   const pastCount = useEditorStore((state) => state.history.past.length);
@@ -11621,7 +11621,7 @@ var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }) => {
           children: /* @__PURE__ */ jsx(PanelLeft, { size: 16 })
         }
       ),
-      /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-title", children: [
+      !embedded && /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-title", children: [
         /* @__PURE__ */ jsx("span", { children: "Sayfa D\xFCzenleyici" }),
         saveStatus === "success" && /* @__PURE__ */ jsxs("span", { className: "tecof-topbar-saved", children: [
           /* @__PURE__ */ jsx(Check, { size: 12 }),
@@ -11705,14 +11705,16 @@ var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }) => {
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-group", children: [
       /* @__PURE__ */ jsx(LanguageSwitcher, {}),
-      /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-undoredo", children: [
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: undo, disabled: pastCount === 0, className: "tecof-icon-btn", title: "Geri Al", children: /* @__PURE__ */ jsx(Undo2, { size: 16 }) }),
-        /* @__PURE__ */ jsx("button", { type: "button", onClick: redo, disabled: futureCount === 0, className: "tecof-icon-btn", title: "Yinele", children: /* @__PURE__ */ jsx(Redo2, { size: 16 }) })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tecof-topbar-divider" }),
-      /* @__PURE__ */ jsxs("button", { type: "button", onClick: onSave, disabled: saving, className: "tecof-btn-primary", children: [
-        /* @__PURE__ */ jsx(Save, { size: 14 }),
-        saving ? "Kaydediliyor..." : "Taslak Kaydet"
+      !embedded && /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-undoredo", children: [
+          /* @__PURE__ */ jsx("button", { type: "button", onClick: undo, disabled: pastCount === 0, className: "tecof-icon-btn", title: "Geri Al", children: /* @__PURE__ */ jsx(Undo2, { size: 16 }) }),
+          /* @__PURE__ */ jsx("button", { type: "button", onClick: redo, disabled: futureCount === 0, className: "tecof-icon-btn", title: "Yinele", children: /* @__PURE__ */ jsx(Redo2, { size: 16 }) })
+        ] }),
+        /* @__PURE__ */ jsx("div", { className: "tecof-topbar-divider" }),
+        /* @__PURE__ */ jsxs("button", { type: "button", onClick: onSave, disabled: saving, className: "tecof-btn-primary", children: [
+          /* @__PURE__ */ jsx(Save, { size: 14 }),
+          saving ? "Kaydediliyor..." : "Taslak Kaydet"
+        ] })
       ] }),
       /* @__PURE__ */ jsx(
         "button",
@@ -12190,6 +12192,9 @@ var TecofStudio = ({
   className
 }) => {
   const { apiClient } = useTecof();
+  useEffect(() => {
+    apiClient.setAccessToken(accessToken);
+  }, [apiClient, accessToken]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
@@ -12247,6 +12252,42 @@ var TecofStudio = ({
       controller.abort();
     };
   }, [pageId, apiClient, setDocument]);
+  const highlightComponent = useCallback((componentType) => {
+    if (!componentType) return;
+    const doc = useEditorStore.getState().document;
+    const allNodes = [
+      ...doc.content || [],
+      ...Object.values(doc.zones || {}).flat()
+    ];
+    const node = allNodes.find((n) => n?.type === componentType);
+    if (!node?.props?.id) return;
+    const id = node.props.id;
+    useEditorStore.getState().selectNode(id);
+    requestAnimationFrame(() => {
+      const el = window.document.querySelector(`[data-tecof-id="${id}"]`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("tecof-ai-flash");
+      window.setTimeout(() => el.classList.remove("tecof-ai-flash"), 1800);
+    });
+  }, []);
+  const reloadDocument = useCallback(async (highlightType) => {
+    try {
+      const res = await apiClient.getPage(pageId);
+      const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
+      if (!rawData) return;
+      const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
+      setDocument(parsedDoc);
+      savedDocRef.current = useEditorStore.getState().document;
+      dirtyRef.current = false;
+      setDirty(false);
+      if (highlightType) {
+        window.setTimeout(() => highlightComponent(highlightType), 150);
+      }
+    } catch (err) {
+      console.error("Failed to reload document:", err);
+    }
+  }, [apiClient, pageId, config.migrations, setDocument, highlightComponent]);
   const isFirstRender = useRef(true);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -12349,6 +12390,12 @@ var TecofStudio = ({
         case "puck:redo":
           redo();
           break;
+        case "puck:refetch":
+          reloadDocument(e.data.highlightType);
+          break;
+        case "puck:highlight":
+          highlightComponent(e.data.componentType || e.data.type);
+          break;
         case "puck:viewport":
           if (e.data.width) {
             const width = e.data.width;
@@ -12365,7 +12412,7 @@ var TecofStudio = ({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [isEmbedded2, handleSaveDraft, undo, redo, setViewport]);
+  }, [isEmbedded2, handleSaveDraft, undo, redo, setViewport, reloadDocument, highlightComponent]);
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isInput = () => {
@@ -12485,7 +12532,7 @@ var TecofStudio = ({
     return /* @__PURE__ */ jsx(StudioSkeleton, { className });
   }
   return /* @__PURE__ */ jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsx(LanguageProvider, { children: /* @__PURE__ */ jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
-    /* @__PURE__ */ jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus, dirty, autoSave }),
+    /* @__PURE__ */ jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus, dirty, autoSave, embedded: isEmbedded2 }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace-container", children: [
       leftPanelOpen ? /* @__PURE__ */ jsx(LeftPanel, {}) : /* @__PURE__ */ jsx(PanelRail, { side: "left", onExpand: toggleLeftPanel }),
       /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace", children: [
@@ -12656,7 +12703,7 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     /* @__PURE__ */ jsx("div", { className, children: contentWithLayout })
   ] });
 };
-var EditorFieldImpl = lazy(() => import('./EditorField.impl-N4GHKIU7.mjs'));
+var EditorFieldImpl = lazy(() => import('./EditorField.impl-XGO6KCFQ.mjs'));
 var EditorField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12680,7 +12727,7 @@ var createEditorField = (options = {}) => {
     ) }) })
   };
 };
-var UploadFieldImpl = lazy(() => import('./UploadField.impl-3UHX7KEN.mjs'));
+var UploadFieldImpl = lazy(() => import('./UploadField.impl-ARV6K6ZK.mjs'));
 var UploadField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(UploadFieldImpl, { ...props }) });
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {

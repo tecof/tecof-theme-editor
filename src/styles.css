@@ -1174,7 +1174,12 @@
 
 .tecof-media-tab-panel,
 .tecof-media-upload-panel {
-  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 0;
 }
 
 .tecof-media-ref-panel {
@@ -1182,6 +1187,118 @@
   flex-direction: column;
   gap: 10px;
   padding: 8px 0;
+}
+
+/* ── AI güncelleme vurgusu (puck:highlight) ── */
+@keyframes tecof-ai-flash-pulse {
+  0% {
+    box-shadow: 0 0 0 4px rgba(182, 251, 32, 0.55), 0 0 24px rgba(182, 251, 32, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(182, 251, 32, 0.25), 0 0 12px rgba(182, 251, 32, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(182, 251, 32, 0), 0 0 0 rgba(182, 251, 32, 0);
+  }
+}
+
+.tecof-ai-flash {
+  animation: tecof-ai-flash-pulse 1.8s ease-out forwards;
+  border-radius: 6px;
+}
+
+/* ── Stok medya paneli ── */
+.tecof-stock-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.tecof-stock-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.tecof-stock-search {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.tecof-stock-select {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--tecof-radius-lg);
+  border: var(--tecof-line);
+  background: var(--tecof-bg);
+  color: var(--tecof-text);
+  font-size: 13px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.tecof-stock-select:focus {
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-stock-item {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tecof-stock-item .tecof-upload-gallery-thumb {
+  margin-bottom: 0;
+  border-radius: var(--tecof-radius-lg);
+}
+
+.tecof-stock-item .tecof-upload-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.tecof-stock-item:hover .tecof-upload-gallery-thumb img {
+  transform: scale(1.05);
+}
+
+.tecof-stock-item .tecof-upload-gallery-file-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 8px 6px;
+  margin: 0;
+  color: #fff;
+  text-align: left;
+  font-size: 10px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tecof-stock-item:hover .tecof-upload-gallery-file-name {
+  opacity: 1;
+}
+
+.tecof-stock-importing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  z-index: 3;
 }
 
 .tecof-media-ref-desc {
@@ -1343,10 +1460,13 @@
 
 .tecof-upload-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  grid-auto-rows: min-content;
+  align-content: start;
+  gap: 14px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   padding: 4px 4px 20px 4px;
 }
 

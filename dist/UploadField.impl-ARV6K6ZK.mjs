@@ -1,5 +1,5 @@
-import { MediaDrawer } from './chunk-RYPBE6TO.mjs';
-import { useTecof, TecofPicture } from './chunk-HKP3NVYI.mjs';
+import { MediaDrawer } from './chunk-KD6A2PDO.mjs';
+import { useTecof, TecofPicture } from './chunk-3NSPTYA2.mjs';
 import React, { createElement as createElement$2, useState, useRef, useCallback } from 'react';
 import { ImagePlus, Upload, Code, FileIcon, X } from 'lucide-react';
 import { jsxs, jsx } from 'react/jsx-runtime';
@@ -17884,6 +17884,7 @@ var UploadFieldImpl = ({
         allowMultiple,
         filterImages: acceptedTypes.length > 0 && acceptedTypes.every((t2) => t2.startsWith("image/")),
         title: "Medya",
+        enableStock: !readOnly,
         extraTabs: readOnly ? [] : [uploadTab, referenceTab]
       }
     )
@@ -17973,5 +17974,5 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
 */
 
 export { UploadField_impl_default as default };
-//# sourceMappingURL=UploadField.impl-3UHX7KEN.mjs.map
-//# sourceMappingURL=UploadField.impl-3UHX7KEN.mjs.map
+//# sourceMappingURL=UploadField.impl-ARV6K6ZK.mjs.map
+//# sourceMappingURL=UploadField.impl-ARV6K6ZK.mjs.map

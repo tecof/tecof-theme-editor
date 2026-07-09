@@ -1,7 +1,7 @@
 'use strict';
 
-var chunkDPF4IKWT_js = require('./chunk-DPF4IKWT.js');
-var chunkZSOIJLRO_js = require('./chunk-ZSOIJLRO.js');
+var chunk4WSV2IRL_js = require('./chunk-4WSV2IRL.js');
+var chunkBAKC3WGA_js = require('./chunk-BAKC3WGA.js');
 var React = require('react');
 var lucideReact = require('lucide-react');
 var jsxRuntime = require('react/jsx-runtime');
@@ -17538,7 +17538,7 @@ var MediaTile = ({
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile", title: displayName, children: [
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-media-tile-preview", children: [
       isReference ? /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-media-tile-ref", children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Code, { size: 18 }) }) : isPreviewableImage3(file2) ? /* @__PURE__ */ jsxRuntime.jsx(
-        chunkZSOIJLRO_js.TecofPicture,
+        chunkBAKC3WGA_js.TecofPicture,
         {
           data: file2,
           alt: displayName,
@@ -17673,7 +17673,7 @@ var UploadFieldImpl = ({
   } else if (rawValue && typeof rawValue === "object") {
     value = [rawValue];
   }
-  const { apiUrl, secretKey } = chunkZSOIJLRO_js.useTecof();
+  const { apiUrl, secretKey } = chunkBAKC3WGA_js.useTecof();
   const [filesForPond, setFilesForPond] = React.useState([]);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [refCode, setRefCode] = React.useState("{{ data. }}");
@@ -17881,7 +17881,7 @@ var UploadFieldImpl = ({
       )
     ] }),
     /* @__PURE__ */ jsxRuntime.jsx(
-      chunkDPF4IKWT_js.MediaDrawer,
+      chunk4WSV2IRL_js.MediaDrawer,
       {
         open: drawerOpen,
         onOpenChange: setDrawerOpen,
@@ -17890,6 +17890,7 @@ var UploadFieldImpl = ({
         allowMultiple,
         filterImages: acceptedTypes.length > 0 && acceptedTypes.every((t2) => t2.startsWith("image/")),
         title: "Medya",
+        enableStock: !readOnly,
         extraTabs: readOnly ? [] : [uploadTab, referenceTab]
       }
     )
@@ -17979,5 +17980,5 @@ filepond-plugin-image-edit/dist/filepond-plugin-image-edit.esm.js:
 */
 
 module.exports = UploadField_impl_default;
-//# sourceMappingURL=UploadField.impl-WKWHXPK7.js.map
-//# sourceMappingURL=UploadField.impl-WKWHXPK7.js.map
+//# sourceMappingURL=UploadField.impl-AA3UBARZ.js.map
+//# sourceMappingURL=UploadField.impl-AA3UBARZ.js.map

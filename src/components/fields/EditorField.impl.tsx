@@ -286,6 +286,7 @@ const TipTapInstance = ({
         onOpenChange={setMediaDrawerOpen}
         onSelect={handleImageSelect}
         filterImages
+        enableStock
         title="Resim Ekle"
       />
     </div>

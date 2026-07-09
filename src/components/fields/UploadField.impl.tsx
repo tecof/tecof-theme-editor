@@ -542,6 +542,7 @@ const UploadFieldImpl = ({
         allowMultiple={allowMultiple}
         filterImages={acceptedTypes.length > 0 && acceptedTypes.every(t => t.startsWith('image/'))}
         title="Medya"
+        enableStock={!readOnly}
         extraTabs={readOnly ? [] : [uploadTab, referenceTab]}
       />
     </div>

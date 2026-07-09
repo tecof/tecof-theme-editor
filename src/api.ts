@@ -208,6 +208,47 @@ export class TecofApiClient {
   }
 
   /**
+   * Search stock photos (Pexels/Pixabay) via the backend, normalized response.
+   * Returns { data: StockPhoto[], provider, providers, page, hasMore }.
+   */
+  async searchStockMedia(
+    query: string,
+    opts: { provider?: string; page?: number; perPage?: number; orientation?: string } = {}
+  ): Promise<ApiResponse<any[]> & { provider?: string; providers?: string[]; page?: number; hasMore?: boolean }> {
+    try {
+      const params = new URLSearchParams({ q: query });
+      if (opts.provider) params.set('provider', opts.provider);
+      if (opts.page) params.set('page', String(opts.page));
+      if (opts.perPage) params.set('perPage', String(opts.perPage));
+      if (opts.orientation) params.set('orientation', opts.orientation);
+      const res = await fetch(`${this.apiUrl}/api/store/stock-media/search?${params.toString()}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, data: [], message: error instanceof Error ? error.message : 'Stock search failed' };
+    }
+  }
+
+  /**
+   * Import a stock photo: the backend downloads it and uploads it to the
+   * merchant's own storage, returning the resulting UploadedFile record.
+   */
+  async importStockMedia(item: { provider: string; downloadUrl: string; id?: string; alt?: string }): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/stock-media/import`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(item),
+      });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: error instanceof Error ? error.message : 'Stock import failed' };
+    }
+  }
+
+  /**
    * Translate text to multiple languages (for LanguageField)
    * Returns [{code, value}] for each locale
    */

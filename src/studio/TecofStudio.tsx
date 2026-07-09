@@ -124,6 +124,56 @@ export const TecofStudio = ({
     };
   }, [pageId, apiClient, setDocument]);
 
+  // 1b-i. AI güncellemesi sonrası değişen bileşeni kanvasta vurgula:
+  // tipe göre ilk düğümü bul → seç → görünüme kaydır → kısa lime "flash".
+  const highlightComponent = useCallback((componentType?: string | null) => {
+    if (!componentType) return;
+    const doc = useEditorStore.getState().document;
+    const allNodes: any[] = [
+      ...(doc.content || []),
+      ...Object.values(doc.zones || {}).flat(),
+    ];
+    const node = allNodes.find((n) => n?.type === componentType);
+    if (!node?.props?.id) return;
+
+    const id = node.props.id;
+    useEditorStore.getState().selectNode(id);
+
+    // Render sonrası DOM'a eriş (seçim + reload state'inin oturması için)
+    requestAnimationFrame(() => {
+      const el = window.document.querySelector(`[data-tecof-id="${id}"]`) as HTMLElement | null;
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('tecof-ai-flash');
+      window.setTimeout(() => el.classList.remove('tecof-ai-flash'), 1800);
+    });
+  }, []);
+
+  // 1b. Soft re-fetch of the page document (no iframe reload). Used when the
+  // host's AI agent edits the draft server-side and wants the canvas to reflect
+  // it live, preserving the mounted editor (no flash / full reload). Content
+  // (Puck) changes use this; code-agent changes still need a full iframe reload
+  // because the theme's component bundle itself changed.
+  // `highlightType` verilirse reload sonrası o bileşen kanvasta vurgulanır.
+  const reloadDocument = useCallback(async (highlightType?: string | null) => {
+    try {
+      const res = await apiClient.getPage(pageId);
+      const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
+      if (!rawData) return;
+      const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
+      setDocument(parsedDoc);
+      savedDocRef.current = useEditorStore.getState().document;
+      dirtyRef.current = false;
+      setDirty(false);
+
+      if (highlightType) {
+        window.setTimeout(() => highlightComponent(highlightType), 150);
+      }
+    } catch (err) {
+      console.error('Failed to reload document:', err);
+    }
+  }, [apiClient, pageId, config.migrations, setDocument, highlightComponent]);
+
   // 2. Trigger onChange when document state changes in store.
   // Debounced (~300ms, trailing) so a burst of keystrokes coalesces into a
   // single onChange / `puck:changed`. The latest document is read from the ref
@@ -261,6 +311,14 @@ export const TecofStudio = ({
         case 'puck:redo':
           redo();
           break;
+        case 'puck:refetch':
+          // Host AI agent updated the draft server-side → refresh in place.
+          // Opsiyonel `highlightType` ile değişen bileşen kanvasta vurgulanır.
+          reloadDocument(e.data.highlightType);
+          break;
+        case 'puck:highlight':
+          highlightComponent(e.data.componentType || e.data.type);
+          break;
         case 'puck:viewport':
           if (e.data.width) {
             // Map pixel widths or percentage from host message to our local viewports
@@ -279,7 +337,7 @@ export const TecofStudio = ({
 
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [isEmbedded, handleSaveDraft, undo, redo, setViewport]);
+  }, [isEmbedded, handleSaveDraft, undo, redo, setViewport, reloadDocument, highlightComponent]);
 
   // 5. Global Keyboard Shortcuts
   useEffect(() => {
@@ -440,7 +498,7 @@ export const TecofStudio = ({
     <StudioContext.Provider value={studioContextValue}>
       <LanguageProvider>
         <div className={`tecof-studio-root ${className || ''}`.trim()}>
-          <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} dirty={dirty} autoSave={autoSave} />
+          <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} dirty={dirty} autoSave={autoSave} embedded={isEmbedded} />
 
           <div className="tecof-studio-workspace-container">
             {leftPanelOpen ? (

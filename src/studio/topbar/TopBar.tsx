@@ -16,6 +16,13 @@ interface TopBarProps {
   dirty?: boolean;
   /** Whether autosave is enabled (changes the unsaved hint copy). */
   autoSave?: boolean;
+  /**
+   * True when the editor runs inside the Tecof host wrapper (iframe). The host
+   * already renders the page title, save-draft, publish and undo/redo controls,
+   * so this bar hides those duplicates and keeps only canvas-specific controls
+   * (panel toggles, viewport, edit/preview, language).
+   */
+  embedded?: boolean;
 }
 
 /** Turkish display names for language codes (e.g. 'en' → 'İngilizce'). */
@@ -86,7 +93,7 @@ const LanguageSwitcher = () => {
   );
 };
 
-export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }: TopBarProps) => {
+export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }: TopBarProps) => {
   const viewport = useEditorStore((state) => state.viewport);
   const setViewport = useEditorStore((state) => state.setViewport);
 
@@ -115,23 +122,25 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }: TopBarPr
         >
           <PanelLeft size={16} />
         </button>
-        <div className="tecof-topbar-title">
-          <span>Sayfa Düzenleyici</span>
-          {saveStatus === 'success' && (
-            <span className="tecof-topbar-saved">
-              <Check size={12} /> Kaydedildi
-            </span>
-          )}
-          {dirty && !saving && saveStatus !== 'success' && (
-            <span
-              className="tecof-topbar-dirty"
-              title={autoSave ? 'Değişiklikler otomatik kaydedilecek' : 'Kaydedilmemiş değişiklikler var'}
-            >
-              <span className="tecof-topbar-dirty-dot" />
-              {autoSave ? 'Kaydedilecek…' : 'Kaydedilmedi'}
-            </span>
-          )}
-        </div>
+        {!embedded && (
+          <div className="tecof-topbar-title">
+            <span>Sayfa Düzenleyici</span>
+            {saveStatus === 'success' && (
+              <span className="tecof-topbar-saved">
+                <Check size={12} /> Kaydedildi
+              </span>
+            )}
+            {dirty && !saving && saveStatus !== 'success' && (
+              <span
+                className="tecof-topbar-dirty"
+                title={autoSave ? 'Değişiklikler otomatik kaydedilecek' : 'Kaydedilmemiş değişiklikler var'}
+              >
+                <span className="tecof-topbar-dirty-dot" />
+                {autoSave ? 'Kaydedilecek…' : 'Kaydedilmedi'}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Center: viewport + mode toggle */}
@@ -190,21 +199,26 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave }: TopBarPr
       <div className="tecof-topbar-group">
         <LanguageSwitcher />
 
-        <div className="tecof-topbar-undoredo">
-          <button type="button" onClick={undo} disabled={pastCount === 0} className="tecof-icon-btn" title="Geri Al">
-            <Undo2 size={16} />
-          </button>
-          <button type="button" onClick={redo} disabled={futureCount === 0} className="tecof-icon-btn" title="Yinele">
-            <Redo2 size={16} />
-          </button>
-        </div>
+        {/* Host wrapper (embedded) already provides undo/redo + save/publish */}
+        {!embedded && (
+          <>
+            <div className="tecof-topbar-undoredo">
+              <button type="button" onClick={undo} disabled={pastCount === 0} className="tecof-icon-btn" title="Geri Al">
+                <Undo2 size={16} />
+              </button>
+              <button type="button" onClick={redo} disabled={futureCount === 0} className="tecof-icon-btn" title="Yinele">
+                <Redo2 size={16} />
+              </button>
+            </div>
 
-        <div className="tecof-topbar-divider" />
+            <div className="tecof-topbar-divider" />
 
-        <button type="button" onClick={onSave} disabled={saving} className="tecof-btn-primary">
-          <Save size={14} />
-          {saving ? 'Kaydediliyor...' : 'Taslak Kaydet'}
-        </button>
+            <button type="button" onClick={onSave} disabled={saving} className="tecof-btn-primary">
+              <Save size={14} />
+              {saving ? 'Kaydediliyor...' : 'Taslak Kaydet'}
+            </button>
+          </>
+        )}
 
         <button
           type="button"
