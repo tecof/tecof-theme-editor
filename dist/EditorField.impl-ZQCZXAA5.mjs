@@ -1,6 +1,6 @@
-import { useLanguages, useActiveLanguage, FieldLoading, LanguageTabBar } from './chunk-RCODUGQU.mjs';
-import { MediaDrawer } from './chunk-KD6A2PDO.mjs';
-import { useTecof } from './chunk-3NSPTYA2.mjs';
+import { useLanguages, useActiveLanguage, FieldLoading, LanguageTabBar } from './chunk-GIQR5Q5A.mjs';
+import { MediaDrawer } from './chunk-4ZH7CRVR.mjs';
+import { useTecof } from './chunk-JQGJZ4SL.mjs';
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { Node, mergeAttributes, Mark, markPasteRule, markInputRule, textblockTypeInputRule, wrappingInputRule, renderNestedMarkdownContent, Extension, getRenderedAttributes, parseIndentedBlocks, nodeInputRule, canInsertNode, isNodeSelection, ResizableNodeView, isNodeActive, isAtStartOfNode, isAtEndOfNode, combineTransactionSteps, getChangedRanges, findChildrenInRange, getMarksBetween, getAttributes, getNodeAtPosition, getNodeType } from '@tiptap/core';
@@ -6432,5 +6432,5 @@ var EditorFieldImpl = ({
 var EditorField_impl_default = EditorFieldImpl;
 
 export { EditorField_impl_default as default };
-//# sourceMappingURL=EditorField.impl-XGO6KCFQ.mjs.map
-//# sourceMappingURL=EditorField.impl-XGO6KCFQ.mjs.map
+//# sourceMappingURL=EditorField.impl-ZQCZXAA5.mjs.map
+//# sourceMappingURL=EditorField.impl-ZQCZXAA5.mjs.map

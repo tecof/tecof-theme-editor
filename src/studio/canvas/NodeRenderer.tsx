@@ -257,6 +257,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             data-tecof-type={node.type}
             data-tecof-index={index}
             data-tecof-zone={zoneKey || 'root'}
+            data-tecof-shared={node.props.sharedComponentId ? 'true' : undefined}
             draggable={!dragLocked}
             onDragStart={(e) => {
               // Dragging from inside an overlay portal must not move the node.

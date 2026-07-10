@@ -218,9 +218,12 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
           id: `saved:${item._id}`,
           name: item.name,
           typeText: components[item.type]?.label || item.type,
-          // Insert a copy of the saved/shared component: its real type with
-          // the saved props snapshot (fresh id downstream).
-          onActivate: () => onSelect(item.type, item.props),
+          // REFERANS olarak ekle: props snapshot'ı + sharedComponentId taşınır.
+          // Kayıt anında backend (deresolveSharedComponents) master'a yazar ve
+          // düğümü SharedComponentRef'e indirger; diğer sayfalar okuma anında
+          // (resolveSharedComponents) master'dan çözer → birinde düzenle,
+          // hepsinde güncellenir. Taze node id'si createNode'da EN SON atanır.
+          onActivate: () => onSelect(item.type, { ...item.props, sharedComponentId: item._id }),
           preview: <LiveBlockPreview config={config} type={item.type} props={item.props} mode="section" />,
         }));
       if (items.length > 0) {

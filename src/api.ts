@@ -52,9 +52,12 @@ export class TecofApiClient {
    *   an abort from a real failure and skip mutating stale state. Non-abort
    *   errors are still swallowed into an `{ success: false }` response.
    */
-  async getPage(pageId: string, signal?: AbortSignal): Promise<ApiResponse<PageApiData>> {
+  async getPage(pageId: string, signal?: AbortSignal, revisionId?: string | null): Promise<ApiResponse<PageApiData>> {
     try {
-      const res = await fetch(`${this.apiUrl}/api/store/editor/${pageId}`, {
+      // revisionId verilirse backend taslak yerine o revizyonun snapshot'ını döner
+      // (salt-okunur revizyon önizlemesi — TecofStudio ?revision= paramından geçirir)
+      const url = `${this.apiUrl}/api/store/editor/${pageId}${revisionId ? `?revision=${encodeURIComponent(revisionId)}` : ''}`;
+      const res = await fetch(url, {
         method: 'GET',
         headers: this.headers,
         signal,
@@ -340,7 +343,17 @@ export class TecofApiClient {
    */
   async getCmsCollectionItems(
     collectionSlug: string,
-    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' | 'custom'; locale?: string }
+    options?: {
+      page?: number;
+      limit?: number;
+      sort?: 'newest' | 'oldest' | 'custom';
+      locale?: string;
+      /** Gelişmiş data.* filtreleri — backend şema whitelist'iyle doğrular */
+      filters?: Array<{ field: string; op: string; value: any }>;
+      /** Koleksiyon alanına göre sıralama (shortcode) */
+      sortBy?: string;
+      sortDir?: 'asc' | 'desc';
+    }
   ): Promise<ApiResponse<any>> {
     try {
       const body: Record<string, any> = {
@@ -353,6 +366,18 @@ export class TecofApiClient {
       const sortValue = options?.sort || 'custom';
       if (sortValue !== 'custom') {
         body.sort = sortValue;
+      }
+
+      if (options?.filters?.length) {
+        // Değeri boş bırakılan satırlar henüz doldurulmamıştır — gönderme
+        const active = options.filters.filter(
+          (f) => f.field && f.op && f.value !== '' && f.value !== undefined && f.value !== null
+        );
+        if (active.length) body.filters = active;
+      }
+      if (options?.sortBy) {
+        body.sortBy = options.sortBy;
+        body.sortDir = options.sortDir || 'asc';
       }
 
       const res = await fetch(`${this.apiUrl}/api/store/cms/collections/${encodeURIComponent(collectionSlug)}/items`, {

@@ -73,6 +73,30 @@ export const TecofStudio = ({
 
   const isEmbedded = isEmbeddedHost();
 
+  // ── Revizyon önizleme modu ─────────────────────────────────────────────
+  // /editor/{pageId}?revision={revId} → taslak yerine o revizyonun snapshot'ı
+  // yüklenir, editör SALT OKUNUR olur (kaydetme engellenir). Admin'deki
+  // "Sayfa Geçmişi" drawer'ının "Önizle" butonu bu URL'i yeni sekmede açar.
+  const revisionPreviewId = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return new URLSearchParams(window.location.search).get('revision');
+    } catch {
+      return null;
+    }
+  }, []);
+  const [revisionMeta, setRevisionMeta] = useState<{
+    revisionNumber?: number;
+    kind?: string;
+    createDate?: string;
+  } | null>(null);
+  const setMode = useUiStore((state) => state.setMode);
+
+  // Önizlemede kanvas etkileşimini de kapat (Önizle moduna al)
+  useEffect(() => {
+    if (revisionPreviewId) setMode('preview');
+  }, [revisionPreviewId, setMode]);
+
   // Lock down the host postMessage target origin (defaults to '*' when unset).
   // Other host-messaging files (NodeRenderer.tsx, Frame.tsx) should adopt
   // ./bridge's postToHost so this configured origin applies consistently.
@@ -92,8 +116,12 @@ export const TecofStudio = ({
     const load = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.getPage(pageId, controller.signal);
+        const res = await apiClient.getPage(pageId, controller.signal, revisionPreviewId);
         if (cancelled) return;
+
+        // Backend revizyonu bulduysa meta döner; bulamadıysa normal taslak gelir
+        // (param yine de salt-okunur kilidi açık tutar — yanlışlıkla yazma olmasın)
+        setRevisionMeta(revisionPreviewId ? ((res.data as any)?.revisionPreview || {}) : null);
 
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
         // Upgrade old saved data to the current schema before it enters the store
@@ -122,7 +150,7 @@ export const TecofStudio = ({
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [pageId, apiClient, setDocument]);
+  }, [pageId, apiClient, setDocument, revisionPreviewId]);
 
   // 1b-i. AI güncellemesi sonrası değişen bileşeni kanvasta vurgula:
   // tipe göre ilk düğümü bul → seç → görünüme kaydır → kısa lime "flash".
@@ -211,6 +239,15 @@ export const TecofStudio = ({
 
   // 3. Save Draft Functionality
   const handleSaveDraft = useCallback(async () => {
+    // Revizyon önizlemesi SALT OKUNUR — taslağın eski snapshot'la ezilmesini engelle
+    if (revisionPreviewId) {
+      console.warn('[TecofStudio] Revizyon önizlemesinde kaydetme devre dışıdır.');
+      if (isEmbedded) {
+        postToHost('puck:saveError', { message: 'Revizyon önizlemesi salt okunurdur — kaydetmek için normal editörü kullanın.' });
+      }
+      return;
+    }
+
     const currentDoc = documentStateRef.current;
     const serialized = serializeDocument(currentDoc);
 
@@ -246,7 +283,7 @@ export const TecofStudio = ({
     } finally {
       setSaving(false);
     }
-  }, [pageId, apiClient, accessToken, onSave, isEmbedded]);
+  }, [pageId, apiClient, accessToken, onSave, isEmbedded, revisionPreviewId]);
 
   // 3b. Dirty detection + optional autosave.
   // Runs whenever the document reference changes. Dirty = live doc differs from
@@ -499,6 +536,22 @@ export const TecofStudio = ({
       <LanguageProvider>
         <div className={`tecof-studio-root ${className || ''}`.trim()}>
           <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} dirty={dirty} autoSave={autoSave} embedded={isEmbedded} />
+
+          {/* Revizyon önizleme bandı — salt okunur uyarısı */}
+          {revisionPreviewId && (
+            <div className="tecof-revision-preview-banner" role="status">
+              <span className="tecof-revision-preview-badge">SALT OKUNUR</span>
+              <span>
+                Revizyon önizlemesi
+                {revisionMeta?.revisionNumber ? ` — #${revisionMeta.revisionNumber}` : ''}
+                {revisionMeta?.kind === 'publish' ? ' (yayın)' : revisionMeta?.kind === 'draft-save' ? ' (taslak)' : ''}
+                {revisionMeta?.createDate ? ` · ${new Date(revisionMeta.createDate).toLocaleString('tr-TR')}` : ''}
+              </span>
+              <span className="tecof-revision-preview-hint">
+                Bu sürüme dönmek için paneldeki Sayfa Geçmişi&apos;nden &quot;Geri Yükle&quot;yi kullanın.
+              </span>
+            </div>
+          )}
 
           <div className="tecof-studio-workspace-container">
             {leftPanelOpen ? (

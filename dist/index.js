@@ -1,8 +1,8 @@
 'use strict';
 
 var chunkX52JFTUZ_js = require('./chunk-X52JFTUZ.js');
-var chunkCBUAAMOF_js = require('./chunk-CBUAAMOF.js');
-var chunkBAKC3WGA_js = require('./chunk-BAKC3WGA.js');
+var chunkA2KHM342_js = require('./chunk-A2KHM342.js');
+var chunkFMV4YLE6_js = require('./chunk-FMV4YLE6.js');
 var React = require('react');
 var lucideReact = require('lucide-react');
 var reactDom = require('react-dom');
@@ -3153,7 +3153,7 @@ var resolveMatch = (target, wrapper, node, text, defaultLang) => {
   return null;
 };
 var useInlineEdit = (node, locked) => {
-  const activeLanguage = chunkCBUAAMOF_js.useActiveLanguage()?.activeLanguage ?? null;
+  const activeLanguage = chunkA2KHM342_js.useActiveLanguage()?.activeLanguage ?? null;
   const onDoubleClick = React.useCallback(
     (e) => {
       if (locked) return;
@@ -7435,6 +7435,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
         "data-tecof-type": node.type,
         "data-tecof-index": index,
         "data-tecof-zone": zoneKey || "root",
+        "data-tecof-shared": node.props.sharedComponentId ? "true" : void 0,
         draggable: !dragLocked,
         onDragStart: (e) => {
           if (isInsideOverlayPortal(e.target)) {
@@ -7752,9 +7753,12 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config, fi
         id: `saved:${item._id}`,
         name: item.name,
         typeText: components[item.type]?.label || item.type,
-        // Insert a copy of the saved/shared component: its real type with
-        // the saved props snapshot (fresh id downstream).
-        onActivate: () => onSelect(item.type, item.props),
+        // REFERANS olarak ekle: props snapshot'ı + sharedComponentId taşınır.
+        // Kayıt anında backend (deresolveSharedComponents) master'a yazar ve
+        // düğümü SharedComponentRef'e indirger; diğer sayfalar okuma anında
+        // (resolveSharedComponents) master'dan çözer → birinde düzenle,
+        // hepsinde güncellenir. Taze node id'si createNode'da EN SON atanır.
+        onActivate: () => onSelect(item.type, { ...item.props, sharedComponentId: item._id }),
         preview: /* @__PURE__ */ jsxRuntime.jsx(LiveBlockPreview, { config, type: item.type, props: item.props, mode: "section" })
       }));
       if (items.length > 0) {
@@ -8834,6 +8838,12 @@ var SelectionOverlay = () => {
   const nodeDetails = selectedId ? findNodeById(documentState, selectedId) : null;
   const parentId = selectedId ? getParentId(documentState, selectedId) : null;
   const componentConfig = nodeDetails ? config?.components?.[nodeDetails.node.type] : void 0;
+  const isSharedNode = (id) => {
+    if (!id) return false;
+    const d = findNodeById(documentState, id);
+    return !!d?.node?.props?.sharedComponentId;
+  };
+  const selectedIsShared = !!nodeDetails?.node?.props?.sharedComponentId;
   const canMoveUp = nodeDetails ? nodeDetails.path.index > 0 : false;
   const canMoveDown = nodeDetails ? (() => {
     const { zoneKey, index } = nodeDetails.path;
@@ -8860,7 +8870,7 @@ var SelectionOverlay = () => {
           /* @__PURE__ */ jsxRuntime.jsx(
             "div",
             {
-              className: "tecof-outline is-hover",
+              className: `tecof-outline is-hover${isSharedNode(hoveredId) ? " is-shared" : ""}`,
               style: getOutlineStyle(hoveredCoords)
             }
           )
@@ -8868,7 +8878,7 @@ var SelectionOverlay = () => {
         selectionIdList.filter((id) => id !== selectedId && selectionCoords[id]).map((id) => /* @__PURE__ */ jsxRuntime.jsx(
           "div",
           {
-            className: "tecof-outline is-selected is-multi",
+            className: `tecof-outline is-selected is-multi${isSharedNode(id) ? " is-shared" : ""}`,
             style: getOutlineStyle(selectionCoords[id])
           },
           id
@@ -8876,7 +8886,7 @@ var SelectionOverlay = () => {
         selectedId && selectedCoords && nodeDetails && /* @__PURE__ */ jsxRuntime.jsxs(
           "div",
           {
-            className: "tecof-outline is-selected",
+            className: `tecof-outline is-selected${selectedIsShared ? " is-shared" : ""}`,
             style: getOutlineStyle(selectedCoords),
             children: [
               /* @__PURE__ */ jsxRuntime.jsx(
@@ -8941,6 +8951,7 @@ var Menu = ({ menu, onClose }) => {
   const removeNode2 = useEditorStore((s) => s.removeNode);
   const duplicateNode2 = useEditorStore((s) => s.duplicateNode);
   const insertNode2 = useEditorStore((s) => s.insertNode);
+  const updateProps2 = useEditorStore((s) => s.updateProps);
   const styleClipboard = useUiStore((s) => s.styleClipboard);
   const nodeClipboard = useUiStore((s) => s.nodeClipboard);
   const setNodeClipboard = useUiStore((s) => s.setNodeClipboard);
@@ -9078,6 +9089,10 @@ var Menu = ({ menu, onClose }) => {
       delete props.id;
       const res = await apiClient.createSharedComponent(name, node.type, props);
       if (res?.success) {
+        const masterId = res?.data?._id;
+        if (masterId) {
+          updateProps2(menu.nodeId, { sharedComponentId: String(masterId) });
+        }
         setSaveState("success");
         window.setTimeout(onClose, 1200);
       } else {
@@ -9198,7 +9213,21 @@ var Menu = ({ menu, onClose }) => {
             }
           ),
           /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-ctx-sep", role: "separator" }),
-          /* @__PURE__ */ jsxRuntime.jsx(
+          node.props.sharedComponentId ? (
+            // Ortak bağını kopar: sharedComponentId düşer → node bağımsız kopya
+            // olur, master ve diğer sayfalar etkilenmez.
+            /* @__PURE__ */ jsxRuntime.jsx(
+              MenuItem,
+              {
+                icon: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Bookmark, { size: 14 }),
+                label: "Ortak Ba\u011F\u0131n\u0131 Kopar (Kopyaya \xC7evir)",
+                onSelect: () => {
+                  updateProps2(menu.nodeId, { sharedComponentId: void 0 });
+                  onClose();
+                }
+              }
+            )
+          ) : /* @__PURE__ */ jsxRuntime.jsx(
             MenuItem,
             {
               icon: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Bookmark, { size: 14 }),
@@ -9337,7 +9366,7 @@ var BindingPopover = ({
   onInsert,
   onClose
 }) => {
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   const { floatingRef, style: floatingStyle } = useFloating({
     anchor,
     open: true,
@@ -9600,8 +9629,8 @@ var ExternalField = ({ field, name, value, onChange, readOnly }) => {
     onChange(field.mapProp ? field.mapProp(row) : row);
     setOpen(false);
   };
-  return /* @__PURE__ */ jsxRuntime.jsxs(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: field.label || name, children: [
-    /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: field.label || name, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-external", children: [
+  return /* @__PURE__ */ jsxRuntime.jsxs(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: field.label || name, children: [
+    /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: field.label || name, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-external", children: [
       /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
         {
@@ -9658,7 +9687,7 @@ var FieldRenderer = ({
   const label = definition.label || name;
   const type = definition.type;
   if (definition.render) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-custom", children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: definition.render({
+    return /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-custom", children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: definition.render({
       field: definition,
       name,
       id: `field-${name}`,
@@ -9670,7 +9699,7 @@ var FieldRenderer = ({
   switch (type) {
     case "text": {
       const current2 = stringValue(value, definition);
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "input",
           {
@@ -9687,7 +9716,7 @@ var FieldRenderer = ({
     }
     case "textarea": {
       const current2 = stringValue(value, definition);
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable is-textarea", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-bindable is-textarea", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "textarea",
           {
@@ -9704,7 +9733,7 @@ var FieldRenderer = ({
     }
     case "select": {
       const options = Array.isArray(definition.options) ? definition.options : [];
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-select-wrap", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-select-wrap", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "select",
           {
@@ -9721,7 +9750,7 @@ var FieldRenderer = ({
     }
     case "number": {
       const current2 = typeof value === "number" ? value : typeof definition.defaultValue === "number" ? definition.defaultValue : void 0;
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(
         "input",
         {
           id: `field-${name}`,
@@ -9747,7 +9776,7 @@ var FieldRenderer = ({
     case "boolean":
     case "toggle": {
       const checked = value === true || value === "true";
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
         {
           id: `field-${name}`,
@@ -9769,7 +9798,7 @@ var FieldRenderer = ({
       const max = typeof definition.max === "number" ? definition.max : 100;
       const step = typeof definition.step === "number" ? definition.step : 1;
       const current2 = typeof value === "number" ? value : typeof definition.defaultValue === "number" ? definition.defaultValue : min;
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-range", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-field-range", children: [
         /* @__PURE__ */ jsxRuntime.jsx(
           "input",
           {
@@ -9792,7 +9821,7 @@ var FieldRenderer = ({
     }
     case "radio": {
       const options = Array.isArray(definition.options) ? definition.options : [];
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-radio-group", children: options.map((opt) => /* @__PURE__ */ jsxRuntime.jsxs(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-radio-group", children: options.map((opt) => /* @__PURE__ */ jsxRuntime.jsxs(
         "label",
         {
           className: `tecof-field-radio${readOnly ? " is-readonly" : ""}`,
@@ -9878,7 +9907,7 @@ var FieldRenderer = ({
           return next;
         });
       };
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-array", children: [
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-array", children: [
         items.map((item, idx) => {
           const isExpanded = !!expandedIndices[idx];
           const itemLabel = getItemLabel(item, idx);
@@ -9976,7 +10005,7 @@ var FieldRenderer = ({
     case "object": {
       const objectFields = definition.objectFields || {};
       const objVal = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-      return /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-object", children: Object.entries(objectFields).map(([subFieldName, subFieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-field-object", children: Object.entries(objectFields).map(([subFieldName, subFieldDef]) => /* @__PURE__ */ jsxRuntime.jsx(
         FieldRenderer,
         {
           name: subFieldName,
@@ -11201,7 +11230,7 @@ var createColorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       ColorField,
       {
         field,
@@ -11565,7 +11594,7 @@ var langNameTr = (code) => {
   }
 };
 var LanguageSwitcher = () => {
-  const lang = chunkCBUAAMOF_js.useActiveLanguage();
+  const lang = chunkA2KHM342_js.useActiveLanguage();
   const document2 = useEditorStore((state) => state.document);
   const languages = lang?.languages;
   const coverage = React.useMemo(() => {
@@ -12195,7 +12224,7 @@ var TecofStudio = ({
   warnOnUnsavedChanges = true,
   className
 }) => {
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   React.useEffect(() => {
     apiClient.setAccessToken(accessToken);
   }, [apiClient, accessToken]);
@@ -12222,6 +12251,19 @@ var TecofStudio = ({
   savingRef.current = saving;
   const autoSaveTimerRef = React.useRef(null);
   const isEmbedded2 = isEmbedded();
+  const revisionPreviewId = React.useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return new URLSearchParams(window.location.search).get("revision");
+    } catch {
+      return null;
+    }
+  }, []);
+  const [revisionMeta, setRevisionMeta] = React.useState(null);
+  const setMode = useUiStore((state) => state.setMode);
+  React.useEffect(() => {
+    if (revisionPreviewId) setMode("preview");
+  }, [revisionPreviewId, setMode]);
   React.useEffect(() => {
     configureBridge(hostOrigin);
   }, [hostOrigin]);
@@ -12232,8 +12274,9 @@ var TecofStudio = ({
     const load = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.getPage(pageId, controller.signal);
+        const res = await apiClient.getPage(pageId, controller.signal, revisionPreviewId);
         if (cancelled) return;
+        setRevisionMeta(revisionPreviewId ? res.data?.revisionPreview || {} : null);
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
         const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
         setDocument(parsedDoc);
@@ -12255,7 +12298,7 @@ var TecofStudio = ({
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [pageId, apiClient, setDocument]);
+  }, [pageId, apiClient, setDocument, revisionPreviewId]);
   const highlightComponent = React.useCallback((componentType) => {
     if (!componentType) return;
     const doc = useEditorStore.getState().document;
@@ -12318,6 +12361,13 @@ var TecofStudio = ({
     };
   }, []);
   const handleSaveDraft = React.useCallback(async () => {
+    if (revisionPreviewId) {
+      console.warn("[TecofStudio] Revizyon \xF6nizlemesinde kaydetme devre d\u0131\u015F\u0131d\u0131r.");
+      if (isEmbedded2) {
+        postToHost("puck:saveError", { message: "Revizyon \xF6nizlemesi salt okunurdur \u2014 kaydetmek i\xE7in normal edit\xF6r\xFC kullan\u0131n." });
+      }
+      return;
+    }
     const currentDoc = documentStateRef.current;
     const serialized = serializeDocument(currentDoc);
     setSaving(true);
@@ -12348,7 +12398,7 @@ var TecofStudio = ({
     } finally {
       setSaving(false);
     }
-  }, [pageId, apiClient, accessToken, onSave, isEmbedded2]);
+  }, [pageId, apiClient, accessToken, onSave, isEmbedded2, revisionPreviewId]);
   React.useEffect(() => {
     if (loading) return;
     const isDirty = documentState !== savedDocRef.current;
@@ -12535,8 +12585,18 @@ var TecofStudio = ({
   if (loading) {
     return /* @__PURE__ */ jsxRuntime.jsx(StudioSkeleton, { className });
   }
-  return /* @__PURE__ */ jsxRuntime.jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.LanguageProvider, { children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
+  return /* @__PURE__ */ jsxRuntime.jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.LanguageProvider, { children: /* @__PURE__ */ jsxRuntime.jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsxRuntime.jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus, dirty, autoSave, embedded: isEmbedded2 }),
+    revisionPreviewId && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-revision-preview-banner", role: "status", children: [
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-revision-preview-badge", children: "SALT OKUNUR" }),
+      /* @__PURE__ */ jsxRuntime.jsxs("span", { children: [
+        "Revizyon \xF6nizlemesi",
+        revisionMeta?.revisionNumber ? ` \u2014 #${revisionMeta.revisionNumber}` : "",
+        revisionMeta?.kind === "publish" ? " (yay\u0131n)" : revisionMeta?.kind === "draft-save" ? " (taslak)" : "",
+        revisionMeta?.createDate ? ` \xB7 ${new Date(revisionMeta.createDate).toLocaleString("tr-TR")}` : ""
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-revision-preview-hint", children: `Bu s\xFCr\xFCme d\xF6nmek i\xE7in paneldeki Sayfa Ge\xE7mi\u015Fi'nden "Geri Y\xFCkle"yi kullan\u0131n.` })
+    ] }),
     /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-studio-workspace-container", children: [
       leftPanelOpen ? /* @__PURE__ */ jsxRuntime.jsx(LeftPanel, {}) : /* @__PURE__ */ jsxRuntime.jsx(PanelRail, { side: "left", onExpand: toggleLeftPanel }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-studio-workspace", children: [
@@ -12707,8 +12767,8 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     /* @__PURE__ */ jsxRuntime.jsx("div", { className, children: contentWithLayout })
   ] });
 };
-var EditorFieldImpl = React.lazy(() => import('./EditorField.impl-FMXAIRCL.js'));
-var EditorField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(EditorFieldImpl, { ...props }) });
+var EditorFieldImpl = React.lazy(() => import('./EditorField.impl-MFEVK4DO.js'));
+var EditorField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
   return {
@@ -12717,7 +12777,7 @@ var createEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       EditorField,
       {
         field,
@@ -12731,8 +12791,8 @@ var createEditorField = (options = {}) => {
     ) }) })
   };
 };
-var UploadFieldImpl = React.lazy(() => import('./UploadField.impl-AA3UBARZ.js'));
-var UploadField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(UploadFieldImpl, { ...props }) });
+var UploadFieldImpl = React.lazy(() => import('./UploadField.impl-DMGFGNVC.js'));
+var UploadField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(UploadFieldImpl, { ...props }) });
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12742,7 +12802,7 @@ var createUploadField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       UploadField,
       {
         field,
@@ -12757,7 +12817,7 @@ var createUploadField = (options = {}) => {
   };
 };
 var CodeEditorFieldImpl = React.lazy(() => import('./CodeEditorField.impl-4Y5UBX4Q.js'));
-var CodeEditorField = React.forwardRef((props, ref) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(CodeEditorFieldImpl, { ref, ...props }) }));
+var CodeEditorField = React.forwardRef((props, ref) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(CodeEditorFieldImpl, { ref, ...props }) }));
 CodeEditorField.displayName = "CodeEditorField";
 var createCodeEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12767,7 +12827,7 @@ var createCodeEditorField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       CodeEditorField,
       {
         field,
@@ -12788,15 +12848,15 @@ var LinkField = ({
   showTarget = true,
   placeholder = "https://..."
 }) => {
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   const {
     merchantInfo,
     loading: langLoading,
     error: langError,
     activeTab: localActiveTab,
     setActiveTab: localSetActiveTab
-  } = chunkCBUAAMOF_js.useLanguages();
-  const globalLang = chunkCBUAAMOF_js.useActiveLanguage();
+  } = chunkA2KHM342_js.useLanguages();
+  const globalLang = chunkA2KHM342_js.useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const [drawerOpen, setDrawerOpen] = React.useState(false);
@@ -12887,7 +12947,7 @@ var LinkField = ({
   const hasValue = activeValue && activeValue.url && activeValue.url !== "";
   return /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-container", children: [
     !globalLang && merchantInfo && merchantInfo.languages.length > 1 && /* @__PURE__ */ jsxRuntime.jsx(
-      chunkCBUAAMOF_js.LanguageTabBar,
+      chunkA2KHM342_js.LanguageTabBar,
       {
         languages: merchantInfo.languages,
         defaultLanguage: merchantInfo.defaultLanguage,
@@ -12895,7 +12955,7 @@ var LinkField = ({
         onTabChange: setActiveTab
       }
     ),
-    langLoading && /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLoading, {}),
+    langLoading && /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLoading, {}),
     hasValue && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-box", children: [
       /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-link-value-icon", children: activeValue.type === "page" ? /* @__PURE__ */ jsxRuntime.jsx(lucideReact.FileText, { size: 16 }) : /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Globe, { size: 16 }) }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-value-info", children: [
@@ -12966,11 +13026,11 @@ var LinkField = ({
         )
       ] })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkBAKC3WGA_js.Drawer.Portal, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Overlay, { className: "tecof-link-drawer-overlay" }),
-      /* @__PURE__ */ jsxRuntime.jsxs(chunkBAKC3WGA_js.Drawer.Content, { className: "tecof-link-drawer-content", children: [
-        /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Title, { className: "tecof-sr-only", children: "Ba\u011Flant\u0131 Sayfas\u0131 Se\xE7ici" }),
-        /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Description, { className: "tecof-sr-only", children: "Sayfa listesinden se\xE7im yap\u0131n veya arama yap\u0131n" }),
+    /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Root, { open: drawerOpen, onOpenChange: setDrawerOpen, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkFMV4YLE6_js.Drawer.Portal, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Overlay, { className: "tecof-link-drawer-overlay" }),
+      /* @__PURE__ */ jsxRuntime.jsxs(chunkFMV4YLE6_js.Drawer.Content, { className: "tecof-link-drawer-content", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Title, { className: "tecof-sr-only", children: "Ba\u011Flant\u0131 Sayfas\u0131 Se\xE7ici" }),
+        /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Description, { className: "tecof-sr-only", children: "Sayfa listesinden se\xE7im yap\u0131n veya arama yap\u0131n" }),
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-link-drawer-header", children: [
           /* @__PURE__ */ jsxRuntime.jsx("h2", { className: "tecof-link-drawer-title", children: "Sayfa Se\xE7" }),
           /* @__PURE__ */ jsxRuntime.jsx("button", { className: "tecof-link-drawer-close-btn", onClick: () => setDrawerOpen(false), children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.X, { size: 16 }) })
@@ -13029,7 +13089,7 @@ var createLinkField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       LinkField,
       {
         field,
@@ -13331,7 +13391,7 @@ var createRepeaterField = (options) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       RepeaterField,
       {
         field,
@@ -13354,7 +13414,7 @@ var CmsCollectionField = ({
   showSort = true,
   slots
 }) => {
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   const [collections, setCollections] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
@@ -13434,6 +13494,24 @@ var CmsCollectionField = ({
         [slotKey]: fieldShortcode
       }
     });
+  }, [value]);
+  const handleAddFilter = React.useCallback(() => {
+    if (!value) return;
+    const firstField = collectionFields[0]?.shortcode || "";
+    onChangeRef.current({
+      ...value,
+      filters: [...value.filters || [], { field: firstField, op: "contains", value: "" }]
+    });
+  }, [value, collectionFields]);
+  const handleFilterChange = React.useCallback((index, patch) => {
+    if (!value) return;
+    const next = [...value.filters || []];
+    next[index] = { ...next[index], ...patch };
+    onChangeRef.current({ ...value, filters: next });
+  }, [value]);
+  const handleRemoveFilter = React.useCallback((index) => {
+    if (!value) return;
+    onChangeRef.current({ ...value, filters: (value.filters || []).filter((_, i) => i !== index) });
   }, [value]);
   const filteredCollections = React.useMemo(() => {
     if (!searchQuery.trim()) return collections;
@@ -13582,6 +13660,79 @@ var CmsCollectionField = ({
         ] })
       ] })
     ] }),
+    value?.collectionSlug && collectionFields.length > 0 && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-cms-col-mapping", children: [
+      /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-cms-col-mapping-header", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Search, { size: 12 }),
+        /* @__PURE__ */ jsxRuntime.jsx("span", { children: "Filtreler" })
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-cms-col-mapping-rows", children: (value.filters || []).map((f, i) => /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-cms-col-filter-row", children: [
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "select",
+          {
+            className: "tecof-cms-col-mapping-select",
+            value: f.field,
+            onChange: (e) => handleFilterChange(i, { field: e.target.value }),
+            disabled: readOnly,
+            children: collectionFields.map((cf) => /* @__PURE__ */ jsxRuntime.jsxs("option", { value: cf.shortcode, children: [
+              cf.name,
+              " (",
+              cf.shortcode,
+              ")"
+            ] }, cf.shortcode))
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsxs(
+          "select",
+          {
+            className: "tecof-cms-col-mapping-select tecof-cms-col-filter-op",
+            value: f.op,
+            onChange: (e) => handleFilterChange(i, { op: e.target.value }),
+            disabled: readOnly,
+            children: [
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "contains", children: "i\xE7erir" }),
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "eq", children: "e\u015Fittir" }),
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "ne", children: "e\u015Fit de\u011Fil" }),
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "gt", children: "b\xFCy\xFCkt\xFCr" }),
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "gte", children: "b\xFCy\xFCk e\u015Fit" }),
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "lt", children: "k\xFC\xE7\xFCkt\xFCr" }),
+              /* @__PURE__ */ jsxRuntime.jsx("option", { value: "lte", children: "k\xFC\xE7\xFCk e\u015Fit" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "input",
+          {
+            type: "text",
+            className: "tecof-cms-col-setting-input tecof-cms-col-filter-value",
+            value: f.value,
+            placeholder: "De\u011Fer",
+            onChange: (e) => handleFilterChange(i, { value: e.target.value }),
+            disabled: readOnly
+          }
+        ),
+        /* @__PURE__ */ jsxRuntime.jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-cms-col-clear",
+            onClick: () => handleRemoveFilter(i),
+            title: "Filtreyi kald\u0131r",
+            disabled: readOnly,
+            children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.X, { size: 12 })
+          }
+        )
+      ] }, i)) }),
+      /* @__PURE__ */ jsxRuntime.jsx(
+        "button",
+        {
+          type: "button",
+          className: "tecof-cms-col-retry",
+          onClick: handleAddFilter,
+          disabled: readOnly,
+          children: "+ Filtre Ekle"
+        }
+      )
+    ] }),
     value?.collectionSlug && hasSlots && /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-cms-col-mapping", children: [
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-cms-col-mapping-header", children: [
         /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Link2, { size: 12 }),
@@ -13632,7 +13783,7 @@ var createCmsCollectionField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       CmsCollectionField,
       {
         field,
@@ -13784,7 +13935,7 @@ var createIconField = (options = {}) => {
     label,
     labelIcon,
     visible,
-    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkCBUAAMOF_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
+    render: ({ value, onChange, readOnly, field, name, id }) => /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLabel, { label: label || "", icon: labelIcon, readOnly, children: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldErrorBoundary, { fieldName: name, children: /* @__PURE__ */ jsxRuntime.jsx(
       IconField,
       {
         field,
@@ -13804,31 +13955,31 @@ Object.defineProperty(exports, "UnderConstruction", {
 });
 Object.defineProperty(exports, "FieldErrorBoundary", {
   enumerable: true,
-  get: function () { return chunkCBUAAMOF_js.FieldErrorBoundary; }
+  get: function () { return chunkA2KHM342_js.FieldErrorBoundary; }
 });
 Object.defineProperty(exports, "LanguageField", {
   enumerable: true,
-  get: function () { return chunkCBUAAMOF_js.LanguageField; }
+  get: function () { return chunkA2KHM342_js.LanguageField; }
 });
 Object.defineProperty(exports, "createLanguageField", {
   enumerable: true,
-  get: function () { return chunkCBUAAMOF_js.createLanguageField; }
+  get: function () { return chunkA2KHM342_js.createLanguageField; }
 });
 Object.defineProperty(exports, "TecofApiClient", {
   enumerable: true,
-  get: function () { return chunkBAKC3WGA_js.TecofApiClient; }
+  get: function () { return chunkFMV4YLE6_js.TecofApiClient; }
 });
 Object.defineProperty(exports, "TecofPicture", {
   enumerable: true,
-  get: function () { return chunkBAKC3WGA_js.TecofPicture; }
+  get: function () { return chunkFMV4YLE6_js.TecofPicture; }
 });
 Object.defineProperty(exports, "TecofProvider", {
   enumerable: true,
-  get: function () { return chunkBAKC3WGA_js.TecofProvider; }
+  get: function () { return chunkFMV4YLE6_js.TecofProvider; }
 });
 Object.defineProperty(exports, "useTecof", {
   enumerable: true,
-  get: function () { return chunkBAKC3WGA_js.useTecof; }
+  get: function () { return chunkFMV4YLE6_js.useTecof; }
 });
 exports.CmsCollectionField = CmsCollectionField;
 exports.CodeEditorField = CodeEditorField;

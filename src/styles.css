@@ -2634,6 +2634,74 @@
   box-shadow: var(--tecof-focus-ring);
 }
 
+/* ── Revizyon önizleme bandı (salt okunur) ── */
+.tecof-revision-preview-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: #fffbeb;
+  border-bottom: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.tecof-revision-preview-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.tecof-revision-preview-hint {
+  margin-left: auto;
+  color: #b45309;
+  opacity: 0.8;
+  font-size: 11px;
+}
+
+/* ── Gelişmiş filtre satırları (CmsCollectionField) ── */
+.tecof-cms-col-filter-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.tecof-cms-col-filter-row .tecof-cms-col-mapping-select {
+  grid-column: 1 / -1;
+}
+
+.tecof-cms-col-filter-row .tecof-cms-col-filter-op {
+  grid-column: 1 / 2;
+}
+
+.tecof-cms-col-filter-row .tecof-cms-col-clear {
+  grid-column: 2 / 3;
+  position: static;
+  flex-shrink: 0;
+}
+
+.tecof-cms-col-filter-value {
+  grid-column: 1 / -1;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.tecof-cms-col-filter-row + .tecof-cms-col-filter-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--tecof-border, rgba(0, 0, 0, 0.08));
+}
+
 .tecof-cms-col-sort-btns {
   display: flex;
   gap: 2px;
@@ -3817,6 +3885,39 @@
   background: rgba(116, 181, 0, 0.08);
 }
 .tecof-outline.is-selected { border: 2px solid var(--tecof-accent); }
+
+/* ── Ortak (shared) bileşen — MOR kimlik ──
+   sharedComponentId taşıyan node'lar: hover/seçimde mor outline + seçimde
+   "Ortak Bileşen" rozeti. Buradaki düzenleme master'a yazılır ve bu bileşeni
+   kullanan TÜM sayfalara yayılır — mor renk bu gücün uyarısıdır. */
+.tecof-outline.is-hover.is-shared {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+.tecof-outline.is-selected.is-shared { border-color: #8b5cf6; }
+.tecof-outline.is-selected.is-multi.is-shared { border-color: #8b5cf6; }
+
+.tecof-outline.is-selected.is-shared::before {
+  content: "Ortak Bileşen";
+  position: absolute;
+  bottom: -22px;
+  left: -2px;
+  padding: 2px 8px;
+  background: #8b5cf6;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 0 0 6px 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin */
+.tecof-studio-root .tecof-node-wrapper[data-tecof-shared="true"] {
+  outline: 1px dashed rgba(139, 92, 246, 0.55);
+  outline-offset: -1px;
+}
 
 .tecof-toolbar {
   position: absolute;

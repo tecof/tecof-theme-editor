@@ -1,6 +1,6 @@
 'use strict';
 
-var chunkBAKC3WGA_js = require('./chunk-BAKC3WGA.js');
+var chunkFMV4YLE6_js = require('./chunk-FMV4YLE6.js');
 var react = require('react');
 var jsxRuntime = require('react/jsx-runtime');
 var lucideReact = require('lucide-react');
@@ -8,7 +8,7 @@ var lucideReact = require('lucide-react');
 var merchantInfoCache = /* @__PURE__ */ new Map();
 var CACHE_TTL = 5 * 60 * 1e3;
 function useLanguages() {
-  const { apiClient, secretKey, apiUrl } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient, secretKey, apiUrl } = chunkFMV4YLE6_js.useTecof();
   const [merchantInfo, setMerchantInfo] = react.useState(null);
   const [loading, setLoading] = react.useState(true);
   const [error, setError] = react.useState(null);
@@ -242,7 +242,7 @@ var LanguageField = ({
   const globalLang = useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   const [translating, setTranslating] = react.useState(false);
   const [statusMsg, setStatusMsg] = react.useState(null);
   const values = react.useMemo(() => {
@@ -419,5 +419,5 @@ exports.LanguageTabBar = LanguageTabBar;
 exports.createLanguageField = createLanguageField;
 exports.useActiveLanguage = useActiveLanguage;
 exports.useLanguages = useLanguages;
-//# sourceMappingURL=chunk-CBUAAMOF.js.map
-//# sourceMappingURL=chunk-CBUAAMOF.js.map
+//# sourceMappingURL=chunk-A2KHM342.js.map
+//# sourceMappingURL=chunk-A2KHM342.js.map

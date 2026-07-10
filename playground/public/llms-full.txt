@@ -2,7 +2,7 @@
 
 > Bu dosya @tecof/theme-editor için AI odaklı rehberi ve repository teknik belgelerini tek bir Markdown bağlamında birleştirir.
 
-- Sürüm: 0.0.45
+- Sürüm: 0.0.57
 - Dil: Türkçe
 - Kaynak önceliği: AI_GUIDE.md → README.md → docs/TAILWIND.md → ARCHITECTURE.md
 - Çelişki halinde kod ve exported TypeScript tipleri son doğruluk kaynağıdır.

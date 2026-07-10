@@ -447,7 +447,7 @@ declare class TecofApiClient {
      *   an abort from a real failure and skip mutating stale state. Non-abort
      *   errors are still swallowed into an `{ success: false }` response.
      */
-    getPage(pageId: string, signal?: AbortSignal): Promise<ApiResponse<PageApiData>>;
+    getPage(pageId: string, signal?: AbortSignal, revisionId?: string | null): Promise<ApiResponse<PageApiData>>;
     /**
      * Save a page by ID
      */
@@ -529,6 +529,15 @@ declare class TecofApiClient {
         limit?: number;
         sort?: 'newest' | 'oldest' | 'custom';
         locale?: string;
+        /** Gelişmiş data.* filtreleri — backend şema whitelist'iyle doğrular */
+        filters?: Array<{
+            field: string;
+            op: string;
+            value: any;
+        }>;
+        /** Koleksiyon alanına göre sıralama (shortcode) */
+        sortBy?: string;
+        sortDir?: 'asc' | 'desc';
     }): Promise<ApiResponse<any>>;
     /**
      * Fetch all global/shared components for the merchant/theme.
@@ -947,6 +956,13 @@ interface CmsSlotDefinition {
     /** Optional: filter to specific CMS field types */
     fieldTypes?: string[];
 }
+/** Gelişmiş filtre satırı — backend storeGetItems `filters` sözleşmesiyle birebir.
+ *  Alan, koleksiyon şemasındaki bir shortcode olmalı (backend whitelist'ler). */
+interface CmsCollectionFilter {
+    field: string;
+    op: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'in';
+    value: string;
+}
 interface CmsCollectionFieldValue {
     /** Selected collection slug */
     collectionSlug: string;
@@ -958,6 +974,8 @@ interface CmsCollectionFieldValue {
     sort?: 'newest' | 'oldest' | 'custom';
     /** Field mapping: slotKey → CMS field shortcode */
     fieldMap?: Record<string, string>;
+    /** Gelişmiş data.* filtreleri (ör. kategori = "mimari") */
+    filters?: CmsCollectionFilter[];
 }
 interface CmsCollectionFieldProps {
     field: any;

@@ -64,6 +64,7 @@ const Menu = ({ menu, onClose }: MenuProps) => {
   const removeNode = useEditorStore((s) => s.removeNode);
   const duplicateNode = useEditorStore((s) => s.duplicateNode);
   const insertNode = useEditorStore((s) => s.insertNode);
+  const updateProps = useEditorStore((s) => s.updateProps);
   const styleClipboard = useUiStore((s) => s.styleClipboard);
   const nodeClipboard = useUiStore((s) => s.nodeClipboard);
   const setNodeClipboard = useUiStore((s) => s.setNodeClipboard);
@@ -243,6 +244,13 @@ const Menu = ({ menu, onClose }: MenuProps) => {
       delete props.id;
       const res = await apiClient.createSharedComponent(name, node.type, props);
       if (res?.success) {
+        // Kaynak node'u da master'a BAĞLA: sharedComponentId yazılır, böylece
+        // bu sayfa kaydedildiğinde backend onu referansa çevirir ve bu node'da
+        // yapılan düzenlemeler tüm kullanımlara yayılır.
+        const masterId = (res as any)?.data?._id;
+        if (masterId) {
+          updateProps(menu.nodeId, { sharedComponentId: String(masterId) });
+        }
         setSaveState('success');
         window.setTimeout(onClose, 1200);
       } else {
@@ -355,12 +363,25 @@ const Menu = ({ menu, onClose }: MenuProps) => {
             onSelect={handlePasteStyles}
           />
           <div className="tecof-ctx-sep" role="separator" />
-          <MenuItem
-            icon={<Bookmark size={14} />}
-            label="Ortak Bileşen Olarak Kaydet"
-            disabled={!apiClient}
-            onSelect={() => setSavePanelOpen(true)}
-          />
+          {node.props.sharedComponentId ? (
+            // Ortak bağını kopar: sharedComponentId düşer → node bağımsız kopya
+            // olur, master ve diğer sayfalar etkilenmez.
+            <MenuItem
+              icon={<Bookmark size={14} />}
+              label="Ortak Bağını Kopar (Kopyaya Çevir)"
+              onSelect={() => {
+                updateProps(menu.nodeId, { sharedComponentId: undefined });
+                onClose();
+              }}
+            />
+          ) : (
+            <MenuItem
+              icon={<Bookmark size={14} />}
+              label="Ortak Bileşen Olarak Kaydet"
+              disabled={!apiClient}
+              onSelect={() => setSavePanelOpen(true)}
+            />
+          )}
           <div className="tecof-ctx-sep" role="separator" />
           <MenuItem
             icon={<Trash2 size={14} />}

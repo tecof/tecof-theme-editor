@@ -1,6 +1,6 @@
 'use strict';
 
-var chunkBAKC3WGA_js = require('./chunk-BAKC3WGA.js');
+var chunkFMV4YLE6_js = require('./chunk-FMV4YLE6.js');
 var react = require('react');
 var lucideReact = require('lucide-react');
 var jsxRuntime = require('react/jsx-runtime');
@@ -16,7 +16,7 @@ var ORIENTATIONS = [
   { value: "square", label: "Kare" }
 ];
 var StockPanel = ({ onImported }) => {
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   const [query, setQuery] = react.useState("");
   const [orientation, setOrientation] = react.useState("all");
   const [provider, setProvider] = react.useState(void 0);
@@ -123,7 +123,7 @@ var MediaDrawer = ({
   extraTabs = [],
   enableStock = false
 }) => {
-  const { apiClient } = chunkBAKC3WGA_js.useTecof();
+  const { apiClient } = chunkFMV4YLE6_js.useTecof();
   const [galleryFiles, setGalleryFiles] = react.useState([]);
   const [loading, setLoading] = react.useState(false);
   const [refreshKey, setRefreshKey] = react.useState(0);
@@ -158,17 +158,17 @@ var MediaDrawer = ({
     }
     return files;
   }, [galleryFiles, filterImages, gallerySearch]);
-  return /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Root, { open, onOpenChange: (o) => {
+  return /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Root, { open, onOpenChange: (o) => {
     onOpenChange(o);
     if (!o) {
       setGallerySearch("");
       setActiveTab("library");
     }
-  }, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkBAKC3WGA_js.Drawer.Portal, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
-    /* @__PURE__ */ jsxRuntime.jsxs(chunkBAKC3WGA_js.Drawer.Content, { className: "tecof-upload-drawer-content", children: [
-      /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Title, { className: "tecof-sr-only", children: title }),
-      /* @__PURE__ */ jsxRuntime.jsx(chunkBAKC3WGA_js.Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
+  }, children: /* @__PURE__ */ jsxRuntime.jsxs(chunkFMV4YLE6_js.Drawer.Portal, { children: [
+    /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Overlay, { className: "tecof-upload-drawer-overlay" }),
+    /* @__PURE__ */ jsxRuntime.jsxs(chunkFMV4YLE6_js.Drawer.Content, { className: "tecof-upload-drawer-content", children: [
+      /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Title, { className: "tecof-sr-only", children: title }),
+      /* @__PURE__ */ jsxRuntime.jsx(chunkFMV4YLE6_js.Drawer.Description, { className: "tecof-sr-only", children: "Sunucudaki dosyalardan birini se\xE7in" }),
       /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-drawer-handle" }),
       /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-inner", children: [
         /* @__PURE__ */ jsxRuntime.jsxs("div", { className: "tecof-upload-drawer-header", children: [
@@ -280,7 +280,7 @@ var MediaDrawer = ({
                 children: [
                   selected && /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-upload-gallery-check", children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.Check, { size: 12, strokeWidth: 3 }) }),
                   isPreviewableImage(file) ? /* @__PURE__ */ jsxRuntime.jsx(
-                    chunkBAKC3WGA_js.TecofPicture,
+                    chunkFMV4YLE6_js.TecofPicture,
                     {
                       data: file,
                       alt: file.name,
@@ -301,5 +301,5 @@ var MediaDrawer = ({
 };
 
 exports.MediaDrawer = MediaDrawer;
-//# sourceMappingURL=chunk-4WSV2IRL.js.map
-//# sourceMappingURL=chunk-4WSV2IRL.js.map
+//# sourceMappingURL=chunk-YGQGNINS.js.map
+//# sourceMappingURL=chunk-YGQGNINS.js.map

@@ -8,6 +8,9 @@ const outputDirectory = path.join(root, 'playground/public');
 const markdownDirectory = path.join(outputDirectory, 'ai');
 const baseUrl = process.env.TECOF_DOCS_URL?.replace(/\/+$/, '') ?? '';
 
+const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const version = pkg.version;
+
 const pageLinks = [
   ['Genel bakış', 'giris', 'Paketin amacı, temel kavramlar ve mimari yaklaşım.'],
   ['Kurulum', 'kurulum', 'Gereksinimler, paket kurulumu, CSS ve provider yapılandırması.'],
@@ -65,7 +68,7 @@ const llmsIndex = `# Tecof Theme Editor
 
 > React tabanlı Tecof görsel sayfa editörü, yayın renderer'ı, API istemcisi ve gelişmiş içerik alanları için Türkçe geliştirici dokümantasyonu.
 
-Belgelenen paket: \`@tecof/theme-editor@0.0.45\`.
+Belgelenen paket: \`@tecof/theme-editor@${version}\`.
 Editör ve public renderer aynı \`StudioConfig\` nesnesini kullanmalıdır.
 Bilinmeyen API'ler varsayılmamalı; tam bağlam için önce AI rehberi veya ilgili referans okunmalıdır.
 
@@ -123,7 +126,7 @@ const llmsFull = `# Tecof Theme Editor — Tam AI Bağlamı
 
 > Bu dosya @tecof/theme-editor için AI odaklı rehberi ve repository teknik belgelerini tek bir Markdown bağlamında birleştirir.
 
-- Sürüm: 0.0.45
+- Sürüm: ${version}
 - Dil: Türkçe
 - Kaynak önceliği: AI_GUIDE.md → README.md → docs/TAILWIND.md → ARCHITECTURE.md
 - Çelişki halinde kod ve exported TypeScript tipleri son doğruluk kaynağıdır.
@@ -132,7 +135,7 @@ ${fullParts.join('')}
 
 const mcpManifest = {
   name: 'tecof-theme-editor-docs',
-  version: '0.0.45',
+  version: version,
   documents: sourceDocs,
 };
 

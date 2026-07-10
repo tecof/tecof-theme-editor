@@ -22,6 +22,14 @@ export interface CmsSlotDefinition {
   fieldTypes?: string[];
 }
 
+/** Gelişmiş filtre satırı — backend storeGetItems `filters` sözleşmesiyle birebir.
+ *  Alan, koleksiyon şemasındaki bir shortcode olmalı (backend whitelist'ler). */
+export interface CmsCollectionFilter {
+  field: string;
+  op: 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'in';
+  value: string;
+}
+
 export interface CmsCollectionFieldValue {
   /** Selected collection slug */
   collectionSlug: string;
@@ -33,6 +41,8 @@ export interface CmsCollectionFieldValue {
   sort?: 'newest' | 'oldest' | 'custom';
   /** Field mapping: slotKey → CMS field shortcode */
   fieldMap?: Record<string, string>;
+  /** Gelişmiş data.* filtreleri (ör. kategori = "mimari") */
+  filters?: CmsCollectionFilter[];
 }
 
 export interface CmsCollectionFieldProps {
@@ -191,6 +201,28 @@ export const CmsCollectionField = ({
     });
   }, [value]);
 
+  /* ── Gelişmiş filtre satırları ── */
+  const handleAddFilter = useCallback(() => {
+    if (!value) return;
+    const firstField = collectionFields[0]?.shortcode || '';
+    onChangeRef.current({
+      ...value,
+      filters: [...(value.filters || []), { field: firstField, op: 'contains', value: '' }],
+    });
+  }, [value, collectionFields]);
+
+  const handleFilterChange = useCallback((index: number, patch: Partial<CmsCollectionFilter>) => {
+    if (!value) return;
+    const next = [...(value.filters || [])];
+    next[index] = { ...next[index], ...patch };
+    onChangeRef.current({ ...value, filters: next });
+  }, [value]);
+
+  const handleRemoveFilter = useCallback((index: number) => {
+    if (!value) return;
+    onChangeRef.current({ ...value, filters: (value.filters || []).filter((_, i) => i !== index) });
+  }, [value]);
+
   /* ── Filtered Collections ── */
   const filteredCollections = useMemo(() => {
     if (!searchQuery.trim()) return collections;
@@ -347,6 +379,71 @@ export const CmsCollectionField = ({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Gelişmiş Filtreler — data.* alanlarına göre (backend whitelist'li) */}
+      {value?.collectionSlug && collectionFields.length > 0 && (
+        <div className="tecof-cms-col-mapping">
+          <div className="tecof-cms-col-mapping-header">
+            <Search size={12} />
+            <span>Filtreler</span>
+          </div>
+          <div className="tecof-cms-col-mapping-rows">
+            {(value.filters || []).map((f, i) => (
+              <div key={i} className="tecof-cms-col-filter-row">
+                <select
+                  className="tecof-cms-col-mapping-select"
+                  value={f.field}
+                  onChange={(e) => handleFilterChange(i, { field: e.target.value })}
+                  disabled={readOnly}
+                >
+                  {collectionFields.map((cf) => (
+                    <option key={cf.shortcode} value={cf.shortcode}>{cf.name} ({cf.shortcode})</option>
+                  ))}
+                </select>
+                <select
+                  className="tecof-cms-col-mapping-select tecof-cms-col-filter-op"
+                  value={f.op}
+                  onChange={(e) => handleFilterChange(i, { op: e.target.value as CmsCollectionFilter['op'] })}
+                  disabled={readOnly}
+                >
+                  <option value="contains">içerir</option>
+                  <option value="eq">eşittir</option>
+                  <option value="ne">eşit değil</option>
+                  <option value="gt">büyüktür</option>
+                  <option value="gte">büyük eşit</option>
+                  <option value="lt">küçüktür</option>
+                  <option value="lte">küçük eşit</option>
+                </select>
+                <input
+                  type="text"
+                  className="tecof-cms-col-setting-input tecof-cms-col-filter-value"
+                  value={f.value}
+                  placeholder="Değer"
+                  onChange={(e) => handleFilterChange(i, { value: e.target.value })}
+                  disabled={readOnly}
+                />
+                <button
+                  type="button"
+                  className="tecof-cms-col-clear"
+                  onClick={() => handleRemoveFilter(i)}
+                  title="Filtreyi kaldır"
+                  disabled={readOnly}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="tecof-cms-col-retry"
+            onClick={handleAddFilter}
+            disabled={readOnly}
+          >
+            + Filtre Ekle
+          </button>
         </div>
       )}
 

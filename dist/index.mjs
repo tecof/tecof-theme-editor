@@ -1,8 +1,8 @@
 export { UnderConstruction } from './chunk-FVWRKU3I.mjs';
-import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-RCODUGQU.mjs';
-export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-RCODUGQU.mjs';
-import { useTecof, Drawer } from './chunk-3NSPTYA2.mjs';
-export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-3NSPTYA2.mjs';
+import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-GIQR5Q5A.mjs';
+export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-GIQR5Q5A.mjs';
+import { useTecof, Drawer } from './chunk-JQGJZ4SL.mjs';
+export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-JQGJZ4SL.mjs';
 import React, { createContext, lazy, forwardRef, Suspense, useState, useMemo, useRef, useEffect, useCallback, useContext, useLayoutEffect, Component } from 'react';
 import { icons, Database, X, RotateCcw, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, Link, Search, ChevronRight, Plus, RefreshCw, ChevronDown, Link2, RefreshCcw, Check, Pipette, Monitor, Tablet, Smartphone, Eye, Undo2, Redo2, Save, Grid, Layers, EyeOff, LayoutTemplate, ChevronUp, Lock, CopyPlus, Copy, Scissors, ClipboardPaste, Trash2, Paintbrush, GripVertical, LayoutGrid, Bookmark, ArrowUp, ArrowDown, Type, Eraser, Layout, Box, Info, Braces, ChevronLeft } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -7431,6 +7431,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
         "data-tecof-type": node.type,
         "data-tecof-index": index,
         "data-tecof-zone": zoneKey || "root",
+        "data-tecof-shared": node.props.sharedComponentId ? "true" : void 0,
         draggable: !dragLocked,
         onDragStart: (e) => {
           if (isInsideOverlayPortal(e.target)) {
@@ -7748,9 +7749,12 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config, fi
         id: `saved:${item._id}`,
         name: item.name,
         typeText: components[item.type]?.label || item.type,
-        // Insert a copy of the saved/shared component: its real type with
-        // the saved props snapshot (fresh id downstream).
-        onActivate: () => onSelect(item.type, item.props),
+        // REFERANS olarak ekle: props snapshot'ı + sharedComponentId taşınır.
+        // Kayıt anında backend (deresolveSharedComponents) master'a yazar ve
+        // düğümü SharedComponentRef'e indirger; diğer sayfalar okuma anında
+        // (resolveSharedComponents) master'dan çözer → birinde düzenle,
+        // hepsinde güncellenir. Taze node id'si createNode'da EN SON atanır.
+        onActivate: () => onSelect(item.type, { ...item.props, sharedComponentId: item._id }),
         preview: /* @__PURE__ */ jsx(LiveBlockPreview, { config, type: item.type, props: item.props, mode: "section" })
       }));
       if (items.length > 0) {
@@ -8830,6 +8834,12 @@ var SelectionOverlay = () => {
   const nodeDetails = selectedId ? findNodeById(documentState, selectedId) : null;
   const parentId = selectedId ? getParentId(documentState, selectedId) : null;
   const componentConfig = nodeDetails ? config?.components?.[nodeDetails.node.type] : void 0;
+  const isSharedNode = (id) => {
+    if (!id) return false;
+    const d = findNodeById(documentState, id);
+    return !!d?.node?.props?.sharedComponentId;
+  };
+  const selectedIsShared = !!nodeDetails?.node?.props?.sharedComponentId;
   const canMoveUp = nodeDetails ? nodeDetails.path.index > 0 : false;
   const canMoveDown = nodeDetails ? (() => {
     const { zoneKey, index } = nodeDetails.path;
@@ -8856,7 +8866,7 @@ var SelectionOverlay = () => {
           /* @__PURE__ */ jsx(
             "div",
             {
-              className: "tecof-outline is-hover",
+              className: `tecof-outline is-hover${isSharedNode(hoveredId) ? " is-shared" : ""}`,
               style: getOutlineStyle(hoveredCoords)
             }
           )
@@ -8864,7 +8874,7 @@ var SelectionOverlay = () => {
         selectionIdList.filter((id) => id !== selectedId && selectionCoords[id]).map((id) => /* @__PURE__ */ jsx(
           "div",
           {
-            className: "tecof-outline is-selected is-multi",
+            className: `tecof-outline is-selected is-multi${isSharedNode(id) ? " is-shared" : ""}`,
             style: getOutlineStyle(selectionCoords[id])
           },
           id
@@ -8872,7 +8882,7 @@ var SelectionOverlay = () => {
         selectedId && selectedCoords && nodeDetails && /* @__PURE__ */ jsxs(
           "div",
           {
-            className: "tecof-outline is-selected",
+            className: `tecof-outline is-selected${selectedIsShared ? " is-shared" : ""}`,
             style: getOutlineStyle(selectedCoords),
             children: [
               /* @__PURE__ */ jsx(
@@ -8937,6 +8947,7 @@ var Menu = ({ menu, onClose }) => {
   const removeNode2 = useEditorStore((s) => s.removeNode);
   const duplicateNode2 = useEditorStore((s) => s.duplicateNode);
   const insertNode2 = useEditorStore((s) => s.insertNode);
+  const updateProps2 = useEditorStore((s) => s.updateProps);
   const styleClipboard = useUiStore((s) => s.styleClipboard);
   const nodeClipboard = useUiStore((s) => s.nodeClipboard);
   const setNodeClipboard = useUiStore((s) => s.setNodeClipboard);
@@ -9074,6 +9085,10 @@ var Menu = ({ menu, onClose }) => {
       delete props.id;
       const res = await apiClient.createSharedComponent(name, node.type, props);
       if (res?.success) {
+        const masterId = res?.data?._id;
+        if (masterId) {
+          updateProps2(menu.nodeId, { sharedComponentId: String(masterId) });
+        }
         setSaveState("success");
         window.setTimeout(onClose, 1200);
       } else {
@@ -9194,7 +9209,21 @@ var Menu = ({ menu, onClose }) => {
             }
           ),
           /* @__PURE__ */ jsx("div", { className: "tecof-ctx-sep", role: "separator" }),
-          /* @__PURE__ */ jsx(
+          node.props.sharedComponentId ? (
+            // Ortak bağını kopar: sharedComponentId düşer → node bağımsız kopya
+            // olur, master ve diğer sayfalar etkilenmez.
+            /* @__PURE__ */ jsx(
+              MenuItem,
+              {
+                icon: /* @__PURE__ */ jsx(Bookmark, { size: 14 }),
+                label: "Ortak Ba\u011F\u0131n\u0131 Kopar (Kopyaya \xC7evir)",
+                onSelect: () => {
+                  updateProps2(menu.nodeId, { sharedComponentId: void 0 });
+                  onClose();
+                }
+              }
+            )
+          ) : /* @__PURE__ */ jsx(
             MenuItem,
             {
               icon: /* @__PURE__ */ jsx(Bookmark, { size: 14 }),
@@ -12218,6 +12247,19 @@ var TecofStudio = ({
   savingRef.current = saving;
   const autoSaveTimerRef = useRef(null);
   const isEmbedded2 = isEmbedded();
+  const revisionPreviewId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return new URLSearchParams(window.location.search).get("revision");
+    } catch {
+      return null;
+    }
+  }, []);
+  const [revisionMeta, setRevisionMeta] = useState(null);
+  const setMode = useUiStore((state) => state.setMode);
+  useEffect(() => {
+    if (revisionPreviewId) setMode("preview");
+  }, [revisionPreviewId, setMode]);
   useEffect(() => {
     configureBridge(hostOrigin);
   }, [hostOrigin]);
@@ -12228,8 +12270,9 @@ var TecofStudio = ({
     const load = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.getPage(pageId, controller.signal);
+        const res = await apiClient.getPage(pageId, controller.signal, revisionPreviewId);
         if (cancelled) return;
+        setRevisionMeta(revisionPreviewId ? res.data?.revisionPreview || {} : null);
         const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
         const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
         setDocument(parsedDoc);
@@ -12251,7 +12294,7 @@ var TecofStudio = ({
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [pageId, apiClient, setDocument]);
+  }, [pageId, apiClient, setDocument, revisionPreviewId]);
   const highlightComponent = useCallback((componentType) => {
     if (!componentType) return;
     const doc = useEditorStore.getState().document;
@@ -12314,6 +12357,13 @@ var TecofStudio = ({
     };
   }, []);
   const handleSaveDraft = useCallback(async () => {
+    if (revisionPreviewId) {
+      console.warn("[TecofStudio] Revizyon \xF6nizlemesinde kaydetme devre d\u0131\u015F\u0131d\u0131r.");
+      if (isEmbedded2) {
+        postToHost("puck:saveError", { message: "Revizyon \xF6nizlemesi salt okunurdur \u2014 kaydetmek i\xE7in normal edit\xF6r\xFC kullan\u0131n." });
+      }
+      return;
+    }
     const currentDoc = documentStateRef.current;
     const serialized = serializeDocument(currentDoc);
     setSaving(true);
@@ -12344,7 +12394,7 @@ var TecofStudio = ({
     } finally {
       setSaving(false);
     }
-  }, [pageId, apiClient, accessToken, onSave, isEmbedded2]);
+  }, [pageId, apiClient, accessToken, onSave, isEmbedded2, revisionPreviewId]);
   useEffect(() => {
     if (loading) return;
     const isDirty = documentState !== savedDocRef.current;
@@ -12533,6 +12583,16 @@ var TecofStudio = ({
   }
   return /* @__PURE__ */ jsx(StudioContext.Provider, { value: studioContextValue, children: /* @__PURE__ */ jsx(LanguageProvider, { children: /* @__PURE__ */ jsxs("div", { className: `tecof-studio-root ${className || ""}`.trim(), children: [
     /* @__PURE__ */ jsx(TopBar, { onSave: handleSaveDraft, saving, saveStatus, dirty, autoSave, embedded: isEmbedded2 }),
+    revisionPreviewId && /* @__PURE__ */ jsxs("div", { className: "tecof-revision-preview-banner", role: "status", children: [
+      /* @__PURE__ */ jsx("span", { className: "tecof-revision-preview-badge", children: "SALT OKUNUR" }),
+      /* @__PURE__ */ jsxs("span", { children: [
+        "Revizyon \xF6nizlemesi",
+        revisionMeta?.revisionNumber ? ` \u2014 #${revisionMeta.revisionNumber}` : "",
+        revisionMeta?.kind === "publish" ? " (yay\u0131n)" : revisionMeta?.kind === "draft-save" ? " (taslak)" : "",
+        revisionMeta?.createDate ? ` \xB7 ${new Date(revisionMeta.createDate).toLocaleString("tr-TR")}` : ""
+      ] }),
+      /* @__PURE__ */ jsx("span", { className: "tecof-revision-preview-hint", children: `Bu s\xFCr\xFCme d\xF6nmek i\xE7in paneldeki Sayfa Ge\xE7mi\u015Fi'nden "Geri Y\xFCkle"yi kullan\u0131n.` })
+    ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace-container", children: [
       leftPanelOpen ? /* @__PURE__ */ jsx(LeftPanel, {}) : /* @__PURE__ */ jsx(PanelRail, { side: "left", onExpand: toggleLeftPanel }),
       /* @__PURE__ */ jsxs("div", { className: "tecof-studio-workspace", children: [
@@ -12703,7 +12763,7 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     /* @__PURE__ */ jsx("div", { className, children: contentWithLayout })
   ] });
 };
-var EditorFieldImpl = lazy(() => import('./EditorField.impl-XGO6KCFQ.mjs'));
+var EditorFieldImpl = lazy(() => import('./EditorField.impl-ZQCZXAA5.mjs'));
 var EditorField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12727,7 +12787,7 @@ var createEditorField = (options = {}) => {
     ) }) })
   };
 };
-var UploadFieldImpl = lazy(() => import('./UploadField.impl-ARV6K6ZK.mjs'));
+var UploadFieldImpl = lazy(() => import('./UploadField.impl-QZRWFNPS.mjs'));
 var UploadField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(UploadFieldImpl, { ...props }) });
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {
@@ -13431,6 +13491,24 @@ var CmsCollectionField = ({
       }
     });
   }, [value]);
+  const handleAddFilter = useCallback(() => {
+    if (!value) return;
+    const firstField = collectionFields[0]?.shortcode || "";
+    onChangeRef.current({
+      ...value,
+      filters: [...value.filters || [], { field: firstField, op: "contains", value: "" }]
+    });
+  }, [value, collectionFields]);
+  const handleFilterChange = useCallback((index, patch) => {
+    if (!value) return;
+    const next = [...value.filters || []];
+    next[index] = { ...next[index], ...patch };
+    onChangeRef.current({ ...value, filters: next });
+  }, [value]);
+  const handleRemoveFilter = useCallback((index) => {
+    if (!value) return;
+    onChangeRef.current({ ...value, filters: (value.filters || []).filter((_, i) => i !== index) });
+  }, [value]);
   const filteredCollections = useMemo(() => {
     if (!searchQuery.trim()) return collections;
     const q = searchQuery.toLowerCase();
@@ -13577,6 +13655,79 @@ var CmsCollectionField = ({
           )
         ] })
       ] })
+    ] }),
+    value?.collectionSlug && collectionFields.length > 0 && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping", children: [
+      /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping-header", children: [
+        /* @__PURE__ */ jsx(Search, { size: 12 }),
+        /* @__PURE__ */ jsx("span", { children: "Filtreler" })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tecof-cms-col-mapping-rows", children: (value.filters || []).map((f, i) => /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-filter-row", children: [
+        /* @__PURE__ */ jsx(
+          "select",
+          {
+            className: "tecof-cms-col-mapping-select",
+            value: f.field,
+            onChange: (e) => handleFilterChange(i, { field: e.target.value }),
+            disabled: readOnly,
+            children: collectionFields.map((cf) => /* @__PURE__ */ jsxs("option", { value: cf.shortcode, children: [
+              cf.name,
+              " (",
+              cf.shortcode,
+              ")"
+            ] }, cf.shortcode))
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "select",
+          {
+            className: "tecof-cms-col-mapping-select tecof-cms-col-filter-op",
+            value: f.op,
+            onChange: (e) => handleFilterChange(i, { op: e.target.value }),
+            disabled: readOnly,
+            children: [
+              /* @__PURE__ */ jsx("option", { value: "contains", children: "i\xE7erir" }),
+              /* @__PURE__ */ jsx("option", { value: "eq", children: "e\u015Fittir" }),
+              /* @__PURE__ */ jsx("option", { value: "ne", children: "e\u015Fit de\u011Fil" }),
+              /* @__PURE__ */ jsx("option", { value: "gt", children: "b\xFCy\xFCkt\xFCr" }),
+              /* @__PURE__ */ jsx("option", { value: "gte", children: "b\xFCy\xFCk e\u015Fit" }),
+              /* @__PURE__ */ jsx("option", { value: "lt", children: "k\xFC\xE7\xFCkt\xFCr" }),
+              /* @__PURE__ */ jsx("option", { value: "lte", children: "k\xFC\xE7\xFCk e\u015Fit" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "text",
+            className: "tecof-cms-col-setting-input tecof-cms-col-filter-value",
+            value: f.value,
+            placeholder: "De\u011Fer",
+            onChange: (e) => handleFilterChange(i, { value: e.target.value }),
+            disabled: readOnly
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-cms-col-clear",
+            onClick: () => handleRemoveFilter(i),
+            title: "Filtreyi kald\u0131r",
+            disabled: readOnly,
+            children: /* @__PURE__ */ jsx(X, { size: 12 })
+          }
+        )
+      ] }, i)) }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          className: "tecof-cms-col-retry",
+          onClick: handleAddFilter,
+          disabled: readOnly,
+          children: "+ Filtre Ekle"
+        }
+      )
     ] }),
     value?.collectionSlug && hasSlots && /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping", children: [
       /* @__PURE__ */ jsxs("div", { className: "tecof-cms-col-mapping-header", children: [

@@ -1,29 +1,8 @@
-'use strict';
-
-var React__default = require('react');
-var jsxRuntime = require('react/jsx-runtime');
-var ReactDOM = require('react-dom');
-
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
-      }
-    });
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-
-var React__default__namespace = /*#__PURE__*/_interopNamespace(React__default);
-var ReactDOM__namespace = /*#__PURE__*/_interopNamespace(ReactDOM);
+import * as React__default from 'react';
+import React__default__default, { createContext, memo, useState, useContext, useMemo, useLayoutEffect, useEffect } from 'react';
+import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
+import * as ReactDOM from 'react-dom';
+import ReactDOM__default from 'react-dom';
 
 // src/api.ts
 var TecofApiClient = class {
@@ -67,9 +46,10 @@ var TecofApiClient = class {
    *   an abort from a real failure and skip mutating stale state. Non-abort
    *   errors are still swallowed into an `{ success: false }` response.
    */
-  async getPage(pageId, signal) {
+  async getPage(pageId, signal, revisionId) {
     try {
-      const res = await fetch(`${this.apiUrl}/api/store/editor/${pageId}`, {
+      const url = `${this.apiUrl}/api/store/editor/${pageId}${revisionId ? `?revision=${encodeURIComponent(revisionId)}` : ""}`;
+      const res = await fetch(url, {
         method: "GET",
         headers: this.headers,
         signal
@@ -316,6 +296,16 @@ var TecofApiClient = class {
       if (sortValue !== "custom") {
         body.sort = sortValue;
       }
+      if (options?.filters?.length) {
+        const active = options.filters.filter(
+          (f) => f.field && f.op && f.value !== "" && f.value !== void 0 && f.value !== null
+        );
+        if (active.length) body.filters = active;
+      }
+      if (options?.sortBy) {
+        body.sortBy = options.sortBy;
+        body.sortDir = options.sortDir || "asc";
+      }
       const res = await fetch(`${this.apiUrl}/api/store/cms/collections/${encodeURIComponent(collectionSlug)}/items`, {
         method: "POST",
         headers: this.headers,
@@ -387,9 +377,9 @@ var TecofApiClient = class {
     return this.customCdnUrl || this.apiUrl;
   }
 };
-var TecofContext = React__default.createContext(null);
+var TecofContext = createContext(null);
 var TecofProvider = ({ apiUrl, secretKey, cdnUrl, children }) => {
-  const value = React__default.useMemo(
+  const value = useMemo(
     () => ({
       apiClient: new TecofApiClient(apiUrl, secretKey, cdnUrl),
       secretKey,
@@ -398,10 +388,10 @@ var TecofProvider = ({ apiUrl, secretKey, cdnUrl, children }) => {
     }),
     [apiUrl, secretKey, cdnUrl]
   );
-  return /* @__PURE__ */ jsxRuntime.jsx(TecofContext.Provider, { value, children });
+  return /* @__PURE__ */ jsx(TecofContext.Provider, { value, children });
 };
 function useTecof() {
-  const ctx = React__default.useContext(TecofContext);
+  const ctx = useContext(TecofContext);
   if (!ctx) {
     throw new Error("useTecof must be used within a <TecofProvider>");
   }
@@ -450,7 +440,7 @@ var getSizes = (size) => {
   }
 };
 var DEFAULT_BLUR_DATA_URL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmM2Y0ZjYiLz48L3N2Zz4=";
-var TecofPicture = React__default.memo(({
+var TecofPicture = memo(({
   data,
   alt = null,
   size = "full",
@@ -471,7 +461,7 @@ var TecofPicture = React__default.memo(({
 }) => {
   const { apiClient } = useTecof();
   const cdnUrl = apiClient.cdnUrl;
-  const [loadedUrl, setLoadedUrl] = React__default.useState(null);
+  const [loadedUrl, setLoadedUrl] = useState(null);
   if (!data) return null;
   if (data.type === "image/reference") return null;
   const isExternal = data.type === "external" || data.provider === "external";
@@ -485,7 +475,7 @@ var TecofPicture = React__default.memo(({
   const imgWidth = width || data?.meta?.width || 500;
   const imgHeight = height || data?.meta?.height || 500;
   const sizes = getSizes(size);
-  const renderVideo = () => /* @__PURE__ */ jsxRuntime.jsx(
+  const renderVideo = () => /* @__PURE__ */ jsx(
     "video",
     {
       src: fileURL,
@@ -512,7 +502,7 @@ var TecofPicture = React__default.memo(({
       onLoad: () => setLoadedUrl(fileURL)
     };
     if (ImageComponent) {
-      return /* @__PURE__ */ jsxRuntime.jsx(
+      return /* @__PURE__ */ jsx(
         ImageComponent,
         {
           ...commonProps,
@@ -523,7 +513,7 @@ var TecofPicture = React__default.memo(({
         }
       );
     }
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsx(
       "img",
       {
         ...commonProps,
@@ -536,21 +526,21 @@ var TecofPicture = React__default.memo(({
   const showBlur = usePlaceholder && isImageType && loadedUrl !== fileURL;
   const containerStyle = showBlur ? { ...style, backgroundImage: `url("${blurDataURL}")`, backgroundSize: "cover" } : style;
   if (fancybox && (isImageType || isVideoType)) {
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsx(
       "a",
       {
         "data-fancybox": fancyboxName,
         href: originalURL || fileURL,
         className: "tecof-picture-link",
-        children: /* @__PURE__ */ jsxRuntime.jsx("div", { style: containerStyle, className: containerClassName, children: isVideoType ? renderVideo() : renderImg() })
+        children: /* @__PURE__ */ jsx("div", { style: containerStyle, className: containerClassName, children: isVideoType ? renderVideo() : renderImg() })
       }
     );
   }
   if (isVideoType) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { style, className: containerClassName, children: renderVideo() });
+    return /* @__PURE__ */ jsx("div", { style, className: containerClassName, children: renderVideo() });
   }
   if (isImageType) {
-    return /* @__PURE__ */ jsxRuntime.jsx("div", { style: containerStyle, className: containerClassName, children: renderImg() });
+    return /* @__PURE__ */ jsx("div", { style: containerStyle, className: containerClassName, children: renderImg() });
   }
   return null;
 });
@@ -595,18 +585,18 @@ function composeRefs(...refs) {
   };
 }
 function useComposedRefs(...refs) {
-  return React__default__namespace.useCallback(composeRefs(...refs), refs);
+  return React__default.useCallback(composeRefs(...refs), refs);
 }
 function createContext22(rootComponentName, defaultContext) {
-  const Context = React__default__namespace.createContext(defaultContext);
+  const Context = React__default.createContext(defaultContext);
   const Provider = (props) => {
     const { children, ...context } = props;
-    const value = React__default__namespace.useMemo(() => context, Object.values(context));
-    return /* @__PURE__ */ jsxRuntime.jsx(Context.Provider, { value, children });
+    const value = React__default.useMemo(() => context, Object.values(context));
+    return /* @__PURE__ */ jsx(Context.Provider, { value, children });
   };
   Provider.displayName = rootComponentName + "Provider";
   function useContext22(consumerName) {
-    const context = React__default__namespace.useContext(Context);
+    const context = React__default.useContext(Context);
     if (context) return context;
     if (defaultContext !== void 0) return defaultContext;
     throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
@@ -616,19 +606,19 @@ function createContext22(rootComponentName, defaultContext) {
 function createContextScope(scopeName, createContextScopeDeps = []) {
   let defaultContexts = [];
   function createContext32(rootComponentName, defaultContext) {
-    const BaseContext = React__default__namespace.createContext(defaultContext);
+    const BaseContext = React__default.createContext(defaultContext);
     const index = defaultContexts.length;
     defaultContexts = [...defaultContexts, defaultContext];
     const Provider = (props) => {
       const { scope, children, ...context } = props;
       const Context = scope?.[scopeName]?.[index] || BaseContext;
-      const value = React__default__namespace.useMemo(() => context, Object.values(context));
-      return /* @__PURE__ */ jsxRuntime.jsx(Context.Provider, { value, children });
+      const value = React__default.useMemo(() => context, Object.values(context));
+      return /* @__PURE__ */ jsx(Context.Provider, { value, children });
     };
     Provider.displayName = rootComponentName + "Provider";
     function useContext22(consumerName, scope) {
       const Context = scope?.[scopeName]?.[index] || BaseContext;
-      const context = React__default__namespace.useContext(Context);
+      const context = React__default.useContext(Context);
       if (context) return context;
       if (defaultContext !== void 0) return defaultContext;
       throw new Error(`\`${consumerName}\` must be used within \`${rootComponentName}\``);
@@ -637,11 +627,11 @@ function createContextScope(scopeName, createContextScopeDeps = []) {
   }
   const createScope = () => {
     const scopeContexts = defaultContexts.map((defaultContext) => {
-      return React__default__namespace.createContext(defaultContext);
+      return React__default.createContext(defaultContext);
     });
     return function useScope(scope) {
       const contexts = scope?.[scopeName] || scopeContexts;
-      return React__default__namespace.useMemo(
+      return React__default.useMemo(
         () => ({ [`__scope${scopeName}`]: { ...scope, [scopeName]: contexts } }),
         [scope, contexts]
       );
@@ -664,26 +654,26 @@ function composeContextScopes(...scopes) {
         const currentScope = scopeProps[`__scope${scopeName}`];
         return { ...nextScopes2, ...currentScope };
       }, {});
-      return React__default__namespace.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
+      return React__default.useMemo(() => ({ [`__scope${baseScope.scopeName}`]: nextScopes }), [nextScopes]);
     };
   };
   createScope.scopeName = baseScope.scopeName;
   return createScope;
 }
-var useLayoutEffect2 = globalThis?.document ? React__default__namespace.useLayoutEffect : () => {
+var useLayoutEffect2 = globalThis?.document ? React__default.useLayoutEffect : () => {
 };
 
 // node_modules/@radix-ui/react-id/dist/index.mjs
-var useReactId = React__default__namespace[" useId ".trim().toString()] || (() => void 0);
+var useReactId = React__default[" useId ".trim().toString()] || (() => void 0);
 var count = 0;
 function useId(deterministicId) {
-  const [id, setId] = React__default__namespace.useState(useReactId());
+  const [id, setId] = React__default.useState(useReactId());
   useLayoutEffect2(() => {
     setId((reactId) => reactId ?? String(count++));
   }, [deterministicId]);
   return deterministicId || (id ? `radix-${id}` : "");
 }
-var useInsertionEffect = React__default__namespace[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
+var useInsertionEffect = React__default[" useInsertionEffect ".trim().toString()] || useLayoutEffect2;
 function useControllableState({
   prop,
   defaultProp,
@@ -698,8 +688,8 @@ function useControllableState({
   const isControlled = prop !== void 0;
   const value = isControlled ? prop : uncontrolledProp;
   {
-    const isControlledRef = React__default__namespace.useRef(prop !== void 0);
-    React__default__namespace.useEffect(() => {
+    const isControlledRef = React__default.useRef(prop !== void 0);
+    React__default.useEffect(() => {
       const wasControlled = isControlledRef.current;
       if (wasControlled !== isControlled) {
         const from = wasControlled ? "controlled" : "uncontrolled";
@@ -711,7 +701,7 @@ function useControllableState({
       isControlledRef.current = isControlled;
     }, [isControlled, caller]);
   }
-  const setValue = React__default__namespace.useCallback(
+  const setValue = React__default.useCallback(
     (nextValue) => {
       if (isControlled) {
         const value2 = isFunction(nextValue) ? nextValue(prop) : nextValue;
@@ -730,13 +720,13 @@ function useUncontrolledState({
   defaultProp,
   onChange
 }) {
-  const [value, setValue] = React__default__namespace.useState(defaultProp);
-  const prevValueRef = React__default__namespace.useRef(value);
-  const onChangeRef = React__default__namespace.useRef(onChange);
+  const [value, setValue] = React__default.useState(defaultProp);
+  const prevValueRef = React__default.useRef(value);
+  const onChangeRef = React__default.useRef(onChange);
   useInsertionEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     if (prevValueRef.current !== value) {
       onChangeRef.current?.(value);
       prevValueRef.current = value;
@@ -750,47 +740,47 @@ function isFunction(value) {
 // @__NO_SIDE_EFFECTS__
 function createSlot(ownerName) {
   const SlotClone = /* @__PURE__ */ createSlotClone(ownerName);
-  const Slot2 = React__default__namespace.forwardRef((props, forwardedRef) => {
+  const Slot2 = React__default.forwardRef((props, forwardedRef) => {
     const { children, ...slotProps } = props;
-    const childrenArray = React__default__namespace.Children.toArray(children);
+    const childrenArray = React__default.Children.toArray(children);
     const slottable = childrenArray.find(isSlottable);
     if (slottable) {
       const newElement = slottable.props.children;
       const newChildren = childrenArray.map((child) => {
         if (child === slottable) {
-          if (React__default__namespace.Children.count(newElement) > 1) return React__default__namespace.Children.only(null);
-          return React__default__namespace.isValidElement(newElement) ? newElement.props.children : null;
+          if (React__default.Children.count(newElement) > 1) return React__default.Children.only(null);
+          return React__default.isValidElement(newElement) ? newElement.props.children : null;
         } else {
           return child;
         }
       });
-      return /* @__PURE__ */ jsxRuntime.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: React__default__namespace.isValidElement(newElement) ? React__default__namespace.cloneElement(newElement, void 0, newChildren) : null });
+      return /* @__PURE__ */ jsx(SlotClone, { ...slotProps, ref: forwardedRef, children: React__default.isValidElement(newElement) ? React__default.cloneElement(newElement, void 0, newChildren) : null });
     }
-    return /* @__PURE__ */ jsxRuntime.jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
+    return /* @__PURE__ */ jsx(SlotClone, { ...slotProps, ref: forwardedRef, children });
   });
   Slot2.displayName = `${ownerName}.Slot`;
   return Slot2;
 }
 // @__NO_SIDE_EFFECTS__
 function createSlotClone(ownerName) {
-  const SlotClone = React__default__namespace.forwardRef((props, forwardedRef) => {
+  const SlotClone = React__default.forwardRef((props, forwardedRef) => {
     const { children, ...slotProps } = props;
-    if (React__default__namespace.isValidElement(children)) {
+    if (React__default.isValidElement(children)) {
       const childrenRef = getElementRef(children);
       const props2 = mergeProps(slotProps, children.props);
-      if (children.type !== React__default__namespace.Fragment) {
+      if (children.type !== React__default.Fragment) {
         props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
       }
-      return React__default__namespace.cloneElement(children, props2);
+      return React__default.cloneElement(children, props2);
     }
-    return React__default__namespace.Children.count(children) > 1 ? React__default__namespace.Children.only(null) : null;
+    return React__default.Children.count(children) > 1 ? React__default.Children.only(null) : null;
   });
   SlotClone.displayName = `${ownerName}.SlotClone`;
   return SlotClone;
 }
 var SLOTTABLE_IDENTIFIER = /* @__PURE__ */ Symbol("radix.slottable");
 function isSlottable(child) {
-  return React__default__namespace.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+  return React__default.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
 }
 function mergeProps(slotProps, childProps) {
   const overrideProps = { ...childProps };
@@ -850,30 +840,30 @@ var NODES = [
 ];
 var Primitive = NODES.reduce((primitive, node) => {
   const Slot2 = createSlot(`Primitive.${node}`);
-  const Node2 = React__default__namespace.forwardRef((props, forwardedRef) => {
+  const Node2 = React__default.forwardRef((props, forwardedRef) => {
     const { asChild, ...primitiveProps } = props;
     const Comp = asChild ? Slot2 : node;
     if (typeof window !== "undefined") {
       window[/* @__PURE__ */ Symbol.for("radix-ui")] = true;
     }
-    return /* @__PURE__ */ jsxRuntime.jsx(Comp, { ...primitiveProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsx(Comp, { ...primitiveProps, ref: forwardedRef });
   });
   Node2.displayName = `Primitive.${node}`;
   return { ...primitive, [node]: Node2 };
 }, {});
 function dispatchDiscreteCustomEvent(target, event) {
-  if (target) ReactDOM__namespace.flushSync(() => target.dispatchEvent(event));
+  if (target) ReactDOM.flushSync(() => target.dispatchEvent(event));
 }
 function useCallbackRef(callback) {
-  const callbackRef = React__default__namespace.useRef(callback);
-  React__default__namespace.useEffect(() => {
+  const callbackRef = React__default.useRef(callback);
+  React__default.useEffect(() => {
     callbackRef.current = callback;
   });
-  return React__default__namespace.useMemo(() => (...args) => callbackRef.current?.(...args), []);
+  return React__default.useMemo(() => (...args) => callbackRef.current?.(...args), []);
 }
 function useEscapeKeydown(onEscapeKeyDownProp, ownerDocument = globalThis?.document) {
   const onEscapeKeyDown = useCallbackRef(onEscapeKeyDownProp);
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         onEscapeKeyDown(event);
@@ -888,12 +878,12 @@ var CONTEXT_UPDATE = "dismissableLayer.update";
 var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
 var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
 var originalBodyPointerEvents;
-var DismissableLayerContext = React__default__namespace.createContext({
+var DismissableLayerContext = React__default.createContext({
   layers: /* @__PURE__ */ new Set(),
   layersWithOutsidePointerEventsDisabled: /* @__PURE__ */ new Set(),
   branches: /* @__PURE__ */ new Set()
 });
-var DismissableLayer = React__default__namespace.forwardRef(
+var DismissableLayer = React__default.forwardRef(
   (props, forwardedRef) => {
     const {
       disableOutsidePointerEvents = false,
@@ -904,10 +894,10 @@ var DismissableLayer = React__default__namespace.forwardRef(
       onDismiss,
       ...layerProps
     } = props;
-    const context = React__default__namespace.useContext(DismissableLayerContext);
-    const [node, setNode] = React__default__namespace.useState(null);
+    const context = React__default.useContext(DismissableLayerContext);
+    const [node, setNode] = React__default.useState(null);
     const ownerDocument = node?.ownerDocument ?? globalThis?.document;
-    const [, force] = React__default__namespace.useState({});
+    const [, force] = React__default.useState({});
     const composedRefs = useComposedRefs(forwardedRef, (node2) => setNode(node2));
     const layers = Array.from(context.layers);
     const [highestLayerWithOutsidePointerEventsDisabled] = [...context.layersWithOutsidePointerEventsDisabled].slice(-1);
@@ -940,7 +930,7 @@ var DismissableLayer = React__default__namespace.forwardRef(
         onDismiss();
       }
     }, ownerDocument);
-    React__default__namespace.useEffect(() => {
+    React__default.useEffect(() => {
       if (!node) return;
       if (disableOutsidePointerEvents) {
         if (context.layersWithOutsidePointerEventsDisabled.size === 0) {
@@ -957,7 +947,7 @@ var DismissableLayer = React__default__namespace.forwardRef(
         }
       };
     }, [node, ownerDocument, disableOutsidePointerEvents, context]);
-    React__default__namespace.useEffect(() => {
+    React__default.useEffect(() => {
       return () => {
         if (!node) return;
         context.layers.delete(node);
@@ -965,12 +955,12 @@ var DismissableLayer = React__default__namespace.forwardRef(
         dispatchUpdate();
       };
     }, [node, context]);
-    React__default__namespace.useEffect(() => {
+    React__default.useEffect(() => {
       const handleUpdate = () => force({});
       document.addEventListener(CONTEXT_UPDATE, handleUpdate);
       return () => document.removeEventListener(CONTEXT_UPDATE, handleUpdate);
     }, []);
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsx(
       Primitive.div,
       {
         ...layerProps,
@@ -991,11 +981,11 @@ var DismissableLayer = React__default__namespace.forwardRef(
 );
 DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
 var BRANCH_NAME = "DismissableLayerBranch";
-var DismissableLayerBranch = React__default__namespace.forwardRef((props, forwardedRef) => {
-  const context = React__default__namespace.useContext(DismissableLayerContext);
-  const ref = React__default__namespace.useRef(null);
+var DismissableLayerBranch = React__default.forwardRef((props, forwardedRef) => {
+  const context = React__default.useContext(DismissableLayerContext);
+  const ref = React__default.useRef(null);
   const composedRefs = useComposedRefs(forwardedRef, ref);
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     const node = ref.current;
     if (node) {
       context.branches.add(node);
@@ -1004,15 +994,15 @@ var DismissableLayerBranch = React__default__namespace.forwardRef((props, forwar
       };
     }
   }, [context.branches]);
-  return /* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { ...props, ref: composedRefs });
+  return /* @__PURE__ */ jsx(Primitive.div, { ...props, ref: composedRefs });
 });
 DismissableLayerBranch.displayName = BRANCH_NAME;
 function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?.document) {
   const handlePointerDownOutside = useCallbackRef(onPointerDownOutside);
-  const isPointerInsideReactTreeRef = React__default__namespace.useRef(false);
-  const handleClickRef = React__default__namespace.useRef(() => {
+  const isPointerInsideReactTreeRef = React__default.useRef(false);
+  const handleClickRef = React__default.useRef(() => {
   });
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     const handlePointerDown = (event) => {
       if (event.target && !isPointerInsideReactTreeRef.current) {
         let handleAndDispatchPointerDownOutsideEvent2 = function() {
@@ -1052,8 +1042,8 @@ function usePointerDownOutside(onPointerDownOutside, ownerDocument = globalThis?
 }
 function useFocusOutside(onFocusOutside, ownerDocument = globalThis?.document) {
   const handleFocusOutside = useCallbackRef(onFocusOutside);
-  const isFocusInsideReactTreeRef = React__default__namespace.useRef(false);
-  React__default__namespace.useEffect(() => {
+  const isFocusInsideReactTreeRef = React__default.useRef(false);
+  React__default.useEffect(() => {
     const handleFocus = (event) => {
       if (event.target && !isFocusInsideReactTreeRef.current) {
         const eventDetail = { originalEvent: event };
@@ -1088,7 +1078,7 @@ var AUTOFOCUS_ON_MOUNT = "focusScope.autoFocusOnMount";
 var AUTOFOCUS_ON_UNMOUNT = "focusScope.autoFocusOnUnmount";
 var EVENT_OPTIONS = { bubbles: false, cancelable: true };
 var FOCUS_SCOPE_NAME = "FocusScope";
-var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
+var FocusScope = React__default.forwardRef((props, forwardedRef) => {
   const {
     loop = false,
     trapped = false,
@@ -1096,12 +1086,12 @@ var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
     onUnmountAutoFocus: onUnmountAutoFocusProp,
     ...scopeProps
   } = props;
-  const [container, setContainer] = React__default__namespace.useState(null);
+  const [container, setContainer] = React__default.useState(null);
   const onMountAutoFocus = useCallbackRef(onMountAutoFocusProp);
   const onUnmountAutoFocus = useCallbackRef(onUnmountAutoFocusProp);
-  const lastFocusedElementRef = React__default__namespace.useRef(null);
+  const lastFocusedElementRef = React__default.useRef(null);
   const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
-  const focusScope = React__default__namespace.useRef({
+  const focusScope = React__default.useRef({
     paused: false,
     pause() {
       this.paused = true;
@@ -1110,7 +1100,7 @@ var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
       this.paused = false;
     }
   }).current;
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     if (trapped) {
       let handleFocusIn2 = function(event) {
         if (focusScope.paused || !container) return;
@@ -1145,7 +1135,7 @@ var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
       };
     }
   }, [trapped, container, focusScope.paused]);
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     if (container) {
       focusScopesStack.add(focusScope);
       const previouslyFocusedElement = document.activeElement;
@@ -1176,7 +1166,7 @@ var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
       };
     }
   }, [container, onMountAutoFocus, onUnmountAutoFocus, focusScope]);
-  const handleKeyDown = React__default__namespace.useCallback(
+  const handleKeyDown = React__default.useCallback(
     (event) => {
       if (!loop && !trapped) return;
       if (focusScope.paused) return;
@@ -1201,7 +1191,7 @@ var FocusScope = React__default__namespace.forwardRef((props, forwardedRef) => {
     },
     [loop, trapped, focusScope.paused]
   );
-  return /* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
+  return /* @__PURE__ */ jsx(Primitive.div, { tabIndex: -1, ...scopeProps, ref: composedRefs, onKeyDown: handleKeyDown });
 });
 FocusScope.displayName = FOCUS_SCOPE_NAME;
 function focusFirst(candidates, { select = false } = {}) {
@@ -1284,16 +1274,16 @@ function removeLinks(items) {
   return items.filter((item) => item.tagName !== "A");
 }
 var PORTAL_NAME = "Portal";
-var Portal = React__default__namespace.forwardRef((props, forwardedRef) => {
+var Portal = React__default.forwardRef((props, forwardedRef) => {
   const { container: containerProp, ...portalProps } = props;
-  const [mounted, setMounted] = React__default__namespace.useState(false);
+  const [mounted, setMounted] = React__default.useState(false);
   useLayoutEffect2(() => setMounted(true), []);
   const container = containerProp || mounted && globalThis?.document?.body;
-  return container ? ReactDOM__namespace.default.createPortal(/* @__PURE__ */ jsxRuntime.jsx(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
+  return container ? ReactDOM__default.createPortal(/* @__PURE__ */ jsx(Primitive.div, { ...portalProps, ref: forwardedRef }), container) : null;
 });
 Portal.displayName = PORTAL_NAME;
 function useStateMachine(initialState, machine) {
-  return React__default__namespace.useReducer((state, event) => {
+  return React__default.useReducer((state, event) => {
     const nextState = machine[state][event];
     return nextState ?? state;
   }, initialState);
@@ -1301,17 +1291,17 @@ function useStateMachine(initialState, machine) {
 var Presence = (props) => {
   const { present, children } = props;
   const presence = usePresence(present);
-  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React__default__namespace.Children.only(children);
+  const child = typeof children === "function" ? children({ present: presence.isPresent }) : React__default.Children.only(children);
   const ref = useComposedRefs(presence.ref, getElementRef2(child));
   const forceMount = typeof children === "function";
-  return forceMount || presence.isPresent ? React__default__namespace.cloneElement(child, { ref }) : null;
+  return forceMount || presence.isPresent ? React__default.cloneElement(child, { ref }) : null;
 };
 Presence.displayName = "Presence";
 function usePresence(present) {
-  const [node, setNode] = React__default__namespace.useState();
-  const stylesRef = React__default__namespace.useRef(null);
-  const prevPresentRef = React__default__namespace.useRef(present);
-  const prevAnimationNameRef = React__default__namespace.useRef("none");
+  const [node, setNode] = React__default.useState();
+  const stylesRef = React__default.useRef(null);
+  const prevPresentRef = React__default.useRef(present);
+  const prevAnimationNameRef = React__default.useRef("none");
   const initialState = present ? "mounted" : "unmounted";
   const [state, send] = useStateMachine(initialState, {
     mounted: {
@@ -1326,7 +1316,7 @@ function usePresence(present) {
       MOUNT: "mounted"
     }
   });
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     const currentAnimationName = getAnimationName(stylesRef.current);
     prevAnimationNameRef.current = state === "mounted" ? currentAnimationName : "none";
   }, [state]);
@@ -1392,7 +1382,7 @@ function usePresence(present) {
   }, [node, send]);
   return {
     isPresent: ["mounted", "unmountSuspended"].includes(state),
-    ref: React__default__namespace.useCallback((node2) => {
+    ref: React__default.useCallback((node2) => {
       stylesRef.current = node2 ? getComputedStyle(node2) : null;
       setNode(node2);
     }, [])
@@ -1416,7 +1406,7 @@ function getElementRef2(element) {
 }
 var count2 = 0;
 function useFocusGuards() {
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     const edgeGuards = document.querySelectorAll("[data-radix-focus-guard]");
     document.body.insertAdjacentElement("afterbegin", edgeGuards[0] ?? createFocusGuard());
     document.body.insertAdjacentElement("beforeend", edgeGuards[1] ?? createFocusGuard());
@@ -1488,7 +1478,7 @@ function assignRef(ref, value) {
   return ref;
 }
 function useCallbackRef2(initialValue, callback) {
-  var ref = React__default.useState(function() {
+  var ref = useState(function() {
     return {
       // value
       value: initialValue,
@@ -1512,7 +1502,7 @@ function useCallbackRef2(initialValue, callback) {
   ref.callback = callback;
   return ref.facade;
 }
-var useIsomorphicLayoutEffect = typeof window !== "undefined" ? React__default__namespace.useLayoutEffect : React__default__namespace.useEffect;
+var useIsomorphicLayoutEffect = typeof window !== "undefined" ? React__default.useLayoutEffect : React__default.useEffect;
 var currentValues = /* @__PURE__ */ new WeakMap();
 function useMergeRefs(refs, defaultValue) {
   var callbackRef = useCallbackRef2(null, function(newValue) {
@@ -1636,7 +1626,7 @@ var SideCar = function(_a) {
   if (!Target) {
     throw new Error("Sidecar medium not found");
   }
-  return React__default__namespace.createElement(Target, __assign({}, rest));
+  return React__default.createElement(Target, __assign({}, rest));
 };
 SideCar.isSideCarExport = true;
 function exportSidecar(medium, exported) {
@@ -1651,9 +1641,9 @@ var effectCar = createSidecarMedium();
 var nothing = function() {
   return;
 };
-var RemoveScroll = React__default__namespace.forwardRef(function(props, parentRef) {
-  var ref = React__default__namespace.useRef(null);
-  var _a = React__default__namespace.useState({
+var RemoveScroll = React__default.forwardRef(function(props, parentRef) {
+  var ref = React__default.useRef(null);
+  var _a = React__default.useState({
     onScrollCapture: nothing,
     onWheelCapture: nothing,
     onTouchMoveCapture: nothing
@@ -1662,11 +1652,11 @@ var RemoveScroll = React__default__namespace.forwardRef(function(props, parentRe
   var SideCar2 = sideCar;
   var containerRef = useMergeRefs([ref, parentRef]);
   var containerProps = __assign(__assign({}, rest), callbacks);
-  return React__default__namespace.createElement(
-    React__default__namespace.Fragment,
+  return React__default.createElement(
+    React__default.Fragment,
     null,
-    enabled && React__default__namespace.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
-    forwardProps ? React__default__namespace.cloneElement(React__default__namespace.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : React__default__namespace.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
+    enabled && React__default.createElement(SideCar2, { sideCar: effectCar, removeScrollBar, shards, noRelative, noIsolation, inert, setCallbacks, allowPinchZoom: !!allowPinchZoom, lockRef: ref, gapMode }),
+    forwardProps ? React__default.cloneElement(React__default.Children.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : React__default.createElement(Container, __assign({}, containerProps, { className, ref: containerRef }), children)
   );
 });
 RemoveScroll.defaultProps = {
@@ -1735,7 +1725,7 @@ var stylesheetSingleton = function() {
 var styleHookSingleton = function() {
   var sheet = stylesheetSingleton();
   return function(styles, isDynamic) {
-    React__default__namespace.useEffect(function() {
+    React__default.useEffect(function() {
       sheet.add(styles);
       return function() {
         sheet.remove();
@@ -1809,7 +1799,7 @@ var getCurrentUseCounter = function() {
   return isFinite(counter) ? counter : 0;
 };
 var useLockAttribute = function() {
-  React__default__namespace.useEffect(function() {
+  React__default.useEffect(function() {
     document.body.setAttribute(lockAttribute, (getCurrentUseCounter() + 1).toString());
     return function() {
       var newCounter = getCurrentUseCounter() - 1;
@@ -1824,10 +1814,10 @@ var useLockAttribute = function() {
 var RemoveScrollBar = function(_a) {
   var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
   useLockAttribute();
-  var gap = React__default__namespace.useMemo(function() {
+  var gap = React__default.useMemo(function() {
     return getGapWidth(gapMode);
   }, [gapMode]);
-  return React__default__namespace.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
+  return React__default.createElement(Style, { styles: getStyles(gap, !noRelative, gapMode, !noImportant ? "!important" : "") });
 };
 
 // node_modules/react-remove-scroll/dist/es2015/aggresiveCapture.js
@@ -1968,16 +1958,16 @@ var generateStyle = function(id) {
 var idCounter = 0;
 var lockStack = [];
 function RemoveScrollSideCar(props) {
-  var shouldPreventQueue = React__default__namespace.useRef([]);
-  var touchStartRef = React__default__namespace.useRef([0, 0]);
-  var activeAxis = React__default__namespace.useRef();
-  var id = React__default__namespace.useState(idCounter++)[0];
-  var Style2 = React__default__namespace.useState(styleSingleton)[0];
-  var lastProps = React__default__namespace.useRef(props);
-  React__default__namespace.useEffect(function() {
+  var shouldPreventQueue = React__default.useRef([]);
+  var touchStartRef = React__default.useRef([0, 0]);
+  var activeAxis = React__default.useRef();
+  var id = React__default.useState(idCounter++)[0];
+  var Style2 = React__default.useState(styleSingleton)[0];
+  var lastProps = React__default.useRef(props);
+  React__default.useEffect(function() {
     lastProps.current = props;
   }, [props]);
-  React__default__namespace.useEffect(function() {
+  React__default.useEffect(function() {
     if (props.inert) {
       document.body.classList.add("block-interactivity-".concat(id));
       var allow_1 = __spreadArray([props.lockRef.current], (props.shards || []).map(extractRef)).filter(Boolean);
@@ -1993,7 +1983,7 @@ function RemoveScrollSideCar(props) {
     }
     return;
   }, [props.inert, props.lockRef.current, props.shards]);
-  var shouldCancelEvent = React__default__namespace.useCallback(function(event, parent) {
+  var shouldCancelEvent = React__default.useCallback(function(event, parent) {
     if ("touches" in event && event.touches.length === 2 || event.type === "wheel" && event.ctrlKey) {
       return !lastProps.current.allowPinchZoom;
     }
@@ -2035,7 +2025,7 @@ function RemoveScrollSideCar(props) {
     var cancelingAxis = activeAxis.current || currentAxis;
     return handleScroll(cancelingAxis, parent, event, cancelingAxis === "h" ? deltaX : deltaY);
   }, []);
-  var shouldPrevent = React__default__namespace.useCallback(function(_event) {
+  var shouldPrevent = React__default.useCallback(function(_event) {
     var event = _event;
     if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
       return;
@@ -2062,7 +2052,7 @@ function RemoveScrollSideCar(props) {
       }
     }
   }, []);
-  var shouldCancel = React__default__namespace.useCallback(function(name, delta, target, should) {
+  var shouldCancel = React__default.useCallback(function(name, delta, target, should) {
     var event = { name, delta, target, should, shadowParent: getOutermostShadowParent(target) };
     shouldPreventQueue.current.push(event);
     setTimeout(function() {
@@ -2071,17 +2061,17 @@ function RemoveScrollSideCar(props) {
       });
     }, 1);
   }, []);
-  var scrollTouchStart = React__default__namespace.useCallback(function(event) {
+  var scrollTouchStart = React__default.useCallback(function(event) {
     touchStartRef.current = getTouchXY(event);
     activeAxis.current = void 0;
   }, []);
-  var scrollWheel = React__default__namespace.useCallback(function(event) {
+  var scrollWheel = React__default.useCallback(function(event) {
     shouldCancel(event.type, getDeltaXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
   }, []);
-  var scrollTouchMove = React__default__namespace.useCallback(function(event) {
+  var scrollTouchMove = React__default.useCallback(function(event) {
     shouldCancel(event.type, getTouchXY(event), event.target, shouldCancelEvent(event, props.lockRef.current));
   }, []);
-  React__default__namespace.useEffect(function() {
+  React__default.useEffect(function() {
     lockStack.push(Style2);
     props.setCallbacks({
       onScrollCapture: scrollWheel,
@@ -2101,11 +2091,11 @@ function RemoveScrollSideCar(props) {
     };
   }, []);
   var removeScrollBar = props.removeScrollBar, inert = props.inert;
-  return React__default__namespace.createElement(
-    React__default__namespace.Fragment,
+  return React__default.createElement(
+    React__default.Fragment,
     null,
-    inert ? React__default__namespace.createElement(Style2, { styles: generateStyle(id) }) : null,
-    removeScrollBar ? React__default__namespace.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
+    inert ? React__default.createElement(Style2, { styles: generateStyle(id) }) : null,
+    removeScrollBar ? React__default.createElement(RemoveScrollBar, { noRelative: props.noRelative, gapMode: props.gapMode }) : null
   );
 }
 function getOutermostShadowParent(node) {
@@ -2124,8 +2114,8 @@ function getOutermostShadowParent(node) {
 var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
 
 // node_modules/react-remove-scroll/dist/es2015/Combination.js
-var ReactRemoveScroll = React__default__namespace.forwardRef(function(props, ref) {
-  return React__default__namespace.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: sidecar_default }));
+var ReactRemoveScroll = React__default.forwardRef(function(props, ref) {
+  return React__default.createElement(RemoveScroll, __assign({}, props, { ref, sideCar: sidecar_default }));
 });
 ReactRemoveScroll.classNames = RemoveScroll.classNames;
 var Combination_default = ReactRemoveScroll;
@@ -2262,15 +2252,15 @@ var Dialog = (props) => {
     onOpenChange,
     modal = true
   } = props;
-  const triggerRef = React__default__namespace.useRef(null);
-  const contentRef = React__default__namespace.useRef(null);
+  const triggerRef = React__default.useRef(null);
+  const contentRef = React__default.useRef(null);
   const [open, setOpen] = useControllableState({
     prop: openProp,
     defaultProp: defaultOpen ?? false,
     onChange: onOpenChange,
     caller: DIALOG_NAME
   });
-  return /* @__PURE__ */ jsxRuntime.jsx(
+  return /* @__PURE__ */ jsx(
     DialogProvider,
     {
       scope: __scopeDialog,
@@ -2281,7 +2271,7 @@ var Dialog = (props) => {
       descriptionId: useId(),
       open,
       onOpenChange: setOpen,
-      onOpenToggle: React__default__namespace.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+      onOpenToggle: React__default.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
       modal,
       children
     }
@@ -2289,12 +2279,12 @@ var Dialog = (props) => {
 };
 Dialog.displayName = DIALOG_NAME;
 var TRIGGER_NAME = "DialogTrigger";
-var DialogTrigger = React__default__namespace.forwardRef(
+var DialogTrigger = React__default.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...triggerProps } = props;
     const context = useDialogContext(TRIGGER_NAME, __scopeDialog);
     const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsx(
       Primitive.button,
       {
         type: "button",
@@ -2317,28 +2307,28 @@ var [PortalProvider, usePortalContext] = createDialogContext(PORTAL_NAME2, {
 var DialogPortal = (props) => {
   const { __scopeDialog, forceMount, children, container } = props;
   const context = useDialogContext(PORTAL_NAME2, __scopeDialog);
-  return /* @__PURE__ */ jsxRuntime.jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: React__default__namespace.Children.map(children, (child) => /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntime.jsx(Portal, { asChild: true, container, children: child }) })) });
+  return /* @__PURE__ */ jsx(PortalProvider, { scope: __scopeDialog, forceMount, children: React__default.Children.map(children, (child) => /* @__PURE__ */ jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsx(Portal, { asChild: true, container, children: child }) })) });
 };
 DialogPortal.displayName = PORTAL_NAME2;
 var OVERLAY_NAME = "DialogOverlay";
-var DialogOverlay = React__default__namespace.forwardRef(
+var DialogOverlay = React__default.forwardRef(
   (props, forwardedRef) => {
     const portalContext = usePortalContext(OVERLAY_NAME, props.__scopeDialog);
     const { forceMount = portalContext.forceMount, ...overlayProps } = props;
     const context = useDialogContext(OVERLAY_NAME, props.__scopeDialog);
-    return context.modal ? /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsxRuntime.jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
+    return context.modal ? /* @__PURE__ */ jsx(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ jsx(DialogOverlayImpl, { ...overlayProps, ref: forwardedRef }) }) : null;
   }
 );
 DialogOverlay.displayName = OVERLAY_NAME;
 var Slot = createSlot("DialogOverlay.RemoveScroll");
-var DialogOverlayImpl = React__default__namespace.forwardRef(
+var DialogOverlayImpl = React__default.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...overlayProps } = props;
     const context = useDialogContext(OVERLAY_NAME, __scopeDialog);
     return (
       // Make sure `Content` is scrollable even when it doesn't live inside `RemoveScroll`
       // ie. when `Overlay` and `Content` are siblings
-      /* @__PURE__ */ jsxRuntime.jsx(Combination_default, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntime.jsx(
+      /* @__PURE__ */ jsx(Combination_default, { as: Slot, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsx(
         Primitive.div,
         {
           "data-state": getState(context.open),
@@ -2351,25 +2341,25 @@ var DialogOverlayImpl = React__default__namespace.forwardRef(
   }
 );
 var CONTENT_NAME = "DialogContent";
-var DialogContent = React__default__namespace.forwardRef(
+var DialogContent = React__default.forwardRef(
   (props, forwardedRef) => {
     const portalContext = usePortalContext(CONTENT_NAME, props.__scopeDialog);
     const { forceMount = portalContext.forceMount, ...contentProps } = props;
     const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsxRuntime.jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsxRuntime.jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
+    return /* @__PURE__ */ jsx(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ jsx(DialogContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ jsx(DialogContentNonModal, { ...contentProps, ref: forwardedRef }) });
   }
 );
 DialogContent.displayName = CONTENT_NAME;
-var DialogContentModal = React__default__namespace.forwardRef(
+var DialogContentModal = React__default.forwardRef(
   (props, forwardedRef) => {
     const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    const contentRef = React__default__namespace.useRef(null);
+    const contentRef = React__default.useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, context.contentRef, contentRef);
-    React__default__namespace.useEffect(() => {
+    React__default.useEffect(() => {
       const content = contentRef.current;
       if (content) return hideOthers(content);
     }, []);
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsx(
       DialogContentImpl,
       {
         ...props,
@@ -2394,12 +2384,12 @@ var DialogContentModal = React__default__namespace.forwardRef(
     );
   }
 );
-var DialogContentNonModal = React__default__namespace.forwardRef(
+var DialogContentNonModal = React__default.forwardRef(
   (props, forwardedRef) => {
     const context = useDialogContext(CONTENT_NAME, props.__scopeDialog);
-    const hasInteractedOutsideRef = React__default__namespace.useRef(false);
-    const hasPointerDownOutsideRef = React__default__namespace.useRef(false);
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    const hasInteractedOutsideRef = React__default.useRef(false);
+    const hasPointerDownOutsideRef = React__default.useRef(false);
+    return /* @__PURE__ */ jsx(
       DialogContentImpl,
       {
         ...props,
@@ -2434,15 +2424,15 @@ var DialogContentNonModal = React__default__namespace.forwardRef(
     );
   }
 );
-var DialogContentImpl = React__default__namespace.forwardRef(
+var DialogContentImpl = React__default.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, trapFocus, onOpenAutoFocus, onCloseAutoFocus, ...contentProps } = props;
     const context = useDialogContext(CONTENT_NAME, __scopeDialog);
-    const contentRef = React__default__namespace.useRef(null);
+    const contentRef = React__default.useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, contentRef);
     useFocusGuards();
-    return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx(
         FocusScope,
         {
           asChild: true,
@@ -2450,7 +2440,7 @@ var DialogContentImpl = React__default__namespace.forwardRef(
           trapped: trapFocus,
           onMountAutoFocus: onOpenAutoFocus,
           onUnmountAutoFocus: onCloseAutoFocus,
-          children: /* @__PURE__ */ jsxRuntime.jsx(
+          children: /* @__PURE__ */ jsx(
             DismissableLayer,
             {
               role: "dialog",
@@ -2465,37 +2455,37 @@ var DialogContentImpl = React__default__namespace.forwardRef(
           )
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-        /* @__PURE__ */ jsxRuntime.jsx(TitleWarning, { titleId: context.titleId }),
-        /* @__PURE__ */ jsxRuntime.jsx(DescriptionWarning, { contentRef, descriptionId: context.descriptionId })
+      /* @__PURE__ */ jsxs(Fragment, { children: [
+        /* @__PURE__ */ jsx(TitleWarning, { titleId: context.titleId }),
+        /* @__PURE__ */ jsx(DescriptionWarning, { contentRef, descriptionId: context.descriptionId })
       ] })
     ] });
   }
 );
 var TITLE_NAME = "DialogTitle";
-var DialogTitle = React__default__namespace.forwardRef(
+var DialogTitle = React__default.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...titleProps } = props;
     const context = useDialogContext(TITLE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsx(Primitive.h2, { id: context.titleId, ...titleProps, ref: forwardedRef });
   }
 );
 DialogTitle.displayName = TITLE_NAME;
 var DESCRIPTION_NAME = "DialogDescription";
-var DialogDescription = React__default__namespace.forwardRef(
+var DialogDescription = React__default.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...descriptionProps } = props;
     const context = useDialogContext(DESCRIPTION_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
+    return /* @__PURE__ */ jsx(Primitive.p, { id: context.descriptionId, ...descriptionProps, ref: forwardedRef });
   }
 );
 DialogDescription.displayName = DESCRIPTION_NAME;
 var CLOSE_NAME = "DialogClose";
-var DialogClose = React__default__namespace.forwardRef(
+var DialogClose = React__default.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...closeProps } = props;
     const context = useDialogContext(CLOSE_NAME, __scopeDialog);
-    return /* @__PURE__ */ jsxRuntime.jsx(
+    return /* @__PURE__ */ jsx(
       Primitive.button,
       {
         type: "button",
@@ -2523,7 +2513,7 @@ var TitleWarning = ({ titleId }) => {
 If you want to hide the \`${titleWarningContext.titleName}\`, you can wrap it with our VisuallyHidden component.
 
 For more information, see https://radix-ui.com/primitives/docs/components/${titleWarningContext.docsSlug}`;
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     if (titleId) {
       const hasTitle = document.getElementById(titleId);
       if (!hasTitle) console.error(MESSAGE);
@@ -2535,7 +2525,7 @@ var DESCRIPTION_WARNING_NAME = "DialogDescriptionWarning";
 var DescriptionWarning = ({ contentRef, descriptionId }) => {
   const descriptionWarningContext = useWarningContext(DESCRIPTION_WARNING_NAME);
   const MESSAGE = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${descriptionWarningContext.contentName}}.`;
-  React__default__namespace.useEffect(() => {
+  React__default.useEffect(() => {
     const describedById = contentRef.current?.getAttribute("aria-describedby");
     if (descriptionId && describedById) {
       const hasDescription = document.getElementById(descriptionId);
@@ -2560,7 +2550,7 @@ function __insertCSS(code) {
   head.appendChild(style);
   style.styleSheet ? style.styleSheet.cssText = code : style.appendChild(document.createTextNode(code));
 }
-var DrawerContext = React__default__namespace.default.createContext({
+var DrawerContext = React__default__default.createContext({
   drawerRef: {
     current: null
   },
@@ -2609,7 +2599,7 @@ var DrawerContext = React__default__namespace.default.createContext({
   autoFocus: false
 });
 var useDrawerContext = () => {
-  const context = React__default__namespace.default.useContext(DrawerContext);
+  const context = React__default__default.useContext(DrawerContext);
   if (!context) {
     throw new Error("useDrawerContext must be used within a Drawer.Root");
   }
@@ -2641,7 +2631,7 @@ function testPlatform(re) {
   return typeof window !== "undefined" && window.navigator != null ? re.test(window.navigator.platform) : void 0;
 }
 var KEYBOARD_BUFFER = 24;
-var useIsomorphicLayoutEffect2 = typeof window !== "undefined" ? React__default.useLayoutEffect : React__default.useEffect;
+var useIsomorphicLayoutEffect2 = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 function chain$1(...callbacks) {
   return (...args) => {
     for (let callback of callbacks) {
@@ -2823,7 +2813,7 @@ function composeRefs2(...refs) {
   return (node) => refs.forEach((ref) => setRef2(ref, node));
 }
 function useComposedRefs2(...refs) {
-  return React__default__namespace.useCallback(composeRefs2(...refs), refs);
+  return React__default.useCallback(composeRefs2(...refs), refs);
 }
 var cache = /* @__PURE__ */ new WeakMap();
 function set(el, styles, ignoreCache = false) {
@@ -2916,18 +2906,18 @@ var NESTED_DISPLACEMENT = 16;
 var WINDOW_TOP_OFFSET = 26;
 var DRAG_CLASS = "vaul-dragging";
 function useCallbackRef3(callback) {
-  const callbackRef = React__default__namespace.default.useRef(callback);
-  React__default__namespace.default.useEffect(() => {
+  const callbackRef = React__default__default.useRef(callback);
+  React__default__default.useEffect(() => {
     callbackRef.current = callback;
   });
-  return React__default__namespace.default.useMemo(() => (...args) => callbackRef.current == null ? void 0 : callbackRef.current.call(callbackRef, ...args), []);
+  return React__default__default.useMemo(() => (...args) => callbackRef.current == null ? void 0 : callbackRef.current.call(callbackRef, ...args), []);
 }
 function useUncontrolledState2({ defaultProp, onChange }) {
-  const uncontrolledState = React__default__namespace.default.useState(defaultProp);
+  const uncontrolledState = React__default__default.useState(defaultProp);
   const [value] = uncontrolledState;
-  const prevValueRef = React__default__namespace.default.useRef(value);
+  const prevValueRef = React__default__default.useRef(value);
   const handleChange = useCallbackRef3(onChange);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (prevValueRef.current !== value) {
       handleChange(value);
       prevValueRef.current = value;
@@ -2948,7 +2938,7 @@ function useControllableState2({ prop, defaultProp, onChange = () => {
   const isControlled = prop !== void 0;
   const value = isControlled ? prop : uncontrolledProp;
   const handleChange = useCallbackRef3(onChange);
-  const setValue = React__default__namespace.default.useCallback((nextValue) => {
+  const setValue = React__default__default.useCallback((nextValue) => {
     if (isControlled) {
       const setter = nextValue;
       const value2 = typeof nextValue === "function" ? setter(prop) : nextValue;
@@ -2973,11 +2963,11 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     defaultProp: snapPoints == null ? void 0 : snapPoints[0],
     onChange: setActiveSnapPointProp
   });
-  const [windowDimensions, setWindowDimensions] = React__default__namespace.default.useState(typeof window !== "undefined" ? {
+  const [windowDimensions, setWindowDimensions] = React__default__default.useState(typeof window !== "undefined" ? {
     innerWidth: window.innerWidth,
     innerHeight: window.innerHeight
   } : void 0);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     function onResize() {
       setWindowDimensions({
         innerWidth: window.innerWidth,
@@ -2987,11 +2977,11 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  const isLastSnapPoint = React__default__namespace.default.useMemo(() => activeSnapPoint === (snapPoints == null ? void 0 : snapPoints[snapPoints.length - 1]) || null, [
+  const isLastSnapPoint = React__default__default.useMemo(() => activeSnapPoint === (snapPoints == null ? void 0 : snapPoints[snapPoints.length - 1]) || null, [
     snapPoints,
     activeSnapPoint
   ]);
-  const activeSnapPointIndex = React__default__namespace.default.useMemo(() => {
+  const activeSnapPointIndex = React__default__default.useMemo(() => {
     var _snapPoints_findIndex;
     return (_snapPoints_findIndex = snapPoints == null ? void 0 : snapPoints.findIndex((snapPoint) => snapPoint === activeSnapPoint)) != null ? _snapPoints_findIndex : null;
   }, [
@@ -2999,7 +2989,7 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     activeSnapPoint
   ]);
   const shouldFade = snapPoints && snapPoints.length > 0 && (fadeFromIndex || fadeFromIndex === 0) && !Number.isNaN(fadeFromIndex) && snapPoints[fadeFromIndex] === activeSnapPoint || !snapPoints;
-  const snapPointsOffset = React__default__namespace.default.useMemo(() => {
+  const snapPointsOffset = React__default__default.useMemo(() => {
     const containerSize = container ? {
       width: container.getBoundingClientRect().width,
       height: container.getBoundingClientRect().height
@@ -3035,11 +3025,11 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     windowDimensions,
     container
   ]);
-  const activeSnapPointOffset = React__default__namespace.default.useMemo(() => activeSnapPointIndex !== null ? snapPointsOffset == null ? void 0 : snapPointsOffset[activeSnapPointIndex] : null, [
+  const activeSnapPointOffset = React__default__default.useMemo(() => activeSnapPointIndex !== null ? snapPointsOffset == null ? void 0 : snapPointsOffset[activeSnapPointIndex] : null, [
     snapPointsOffset,
     activeSnapPointIndex
   ]);
-  const snapToPoint = React__default__namespace.default.useCallback((dimension) => {
+  const snapToPoint = React__default__default.useCallback((dimension) => {
     var _snapPointsOffset_findIndex;
     const newSnapPointIndex = (_snapPointsOffset_findIndex = snapPointsOffset == null ? void 0 : snapPointsOffset.findIndex((snapPointDim) => snapPointDim === dimension)) != null ? _snapPointsOffset_findIndex : null;
     onSnapPointChange(newSnapPointIndex);
@@ -3067,7 +3057,7 @@ function useSnapPoints({ activeSnapPointProp, setActiveSnapPointProp, snapPoints
     overlayRef,
     setActiveSnapPoint
   ]);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (activeSnapPoint || activeSnapPointProp) {
       var _snapPoints_findIndex;
       const newIndex = (_snapPoints_findIndex = snapPoints == null ? void 0 : snapPoints.findIndex((snapPoint) => snapPoint === activeSnapPointProp || snapPoint === activeSnapPoint)) != null ? _snapPoints_findIndex : -1;
@@ -3169,12 +3159,12 @@ var noop = () => () => {
 };
 function useScaleBackground() {
   const { direction, isOpen, shouldScaleBackground, setBackgroundColorOnScale, noBodyStyles } = useDrawerContext();
-  const timeoutIdRef = React__default__namespace.default.useRef(null);
-  const initialBackgroundColor = React__default.useMemo(() => document.body.style.backgroundColor, []);
+  const timeoutIdRef = React__default__default.useRef(null);
+  const initialBackgroundColor = useMemo(() => document.body.style.backgroundColor, []);
   function getScale() {
     return (window.innerWidth - WINDOW_TOP_OFFSET) / window.innerWidth;
   }
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (isOpen && shouldScaleBackground) {
       if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
       const wrapper = document.querySelector("[data-vaul-drawer-wrapper]") || document.querySelector("[vaul-drawer-wrapper]");
@@ -3215,9 +3205,9 @@ function useScaleBackground() {
 }
 var previousBodyPosition = null;
 function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollRestoration, noBodyStyles }) {
-  const [activeUrl, setActiveUrl] = React__default__namespace.default.useState(() => typeof window !== "undefined" ? window.location.href : "");
-  const scrollPos = React__default__namespace.default.useRef(0);
-  const setPositionFixed = React__default__namespace.default.useCallback(() => {
+  const [activeUrl, setActiveUrl] = React__default__default.useState(() => typeof window !== "undefined" ? window.location.href : "");
+  const scrollPos = React__default__default.useRef(0);
+  const setPositionFixed = React__default__default.useCallback(() => {
     if (!isSafari()) return;
     if (previousBodyPosition === null && isOpen && !noBodyStyles) {
       previousBodyPosition = {
@@ -3245,7 +3235,7 @@ function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollR
   }, [
     isOpen
   ]);
-  const restorePositionSetting = React__default__namespace.default.useCallback(() => {
+  const restorePositionSetting = React__default__default.useCallback(() => {
     if (!isSafari()) return;
     if (previousBodyPosition !== null && !noBodyStyles) {
       const y = -parseInt(document.body.style.top, 10);
@@ -3263,7 +3253,7 @@ function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollR
   }, [
     activeUrl
   ]);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     function onScroll() {
       scrollPos.current = window.scrollY;
     }
@@ -3273,7 +3263,7 @@ function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollR
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (!modal) return;
     return () => {
       if (typeof document === "undefined") return;
@@ -3285,7 +3275,7 @@ function usePositionFixed({ isOpen, modal, nested, hasBeenOpened, preventScrollR
     modal,
     restorePositionSetting
   ]);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (nested || !hasBeenOpened) return;
     if (isOpen) {
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
@@ -3336,25 +3326,25 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       }
     }
   });
-  const [hasBeenOpened, setHasBeenOpened] = React__default__namespace.default.useState(false);
-  const [isDragging, setIsDragging] = React__default__namespace.default.useState(false);
-  const [justReleased, setJustReleased] = React__default__namespace.default.useState(false);
-  const overlayRef = React__default__namespace.default.useRef(null);
-  const openTime = React__default__namespace.default.useRef(null);
-  const dragStartTime = React__default__namespace.default.useRef(null);
-  const dragEndTime = React__default__namespace.default.useRef(null);
-  const lastTimeDragPrevented = React__default__namespace.default.useRef(null);
-  const isAllowedToDrag = React__default__namespace.default.useRef(false);
-  const nestedOpenChangeTimer = React__default__namespace.default.useRef(null);
-  const pointerStart = React__default__namespace.default.useRef(0);
-  const keyboardIsOpen = React__default__namespace.default.useRef(false);
-  const shouldAnimate = React__default__namespace.default.useRef(!defaultOpen);
-  const previousDiffFromInitial = React__default__namespace.default.useRef(0);
-  const drawerRef = React__default__namespace.default.useRef(null);
-  const drawerHeightRef = React__default__namespace.default.useRef(((_drawerRef_current = drawerRef.current) == null ? void 0 : _drawerRef_current.getBoundingClientRect().height) || 0);
-  const drawerWidthRef = React__default__namespace.default.useRef(((_drawerRef_current1 = drawerRef.current) == null ? void 0 : _drawerRef_current1.getBoundingClientRect().width) || 0);
-  const initialDrawerHeight = React__default__namespace.default.useRef(0);
-  const onSnapPointChange = React__default__namespace.default.useCallback((activeSnapPointIndex2) => {
+  const [hasBeenOpened, setHasBeenOpened] = React__default__default.useState(false);
+  const [isDragging, setIsDragging] = React__default__default.useState(false);
+  const [justReleased, setJustReleased] = React__default__default.useState(false);
+  const overlayRef = React__default__default.useRef(null);
+  const openTime = React__default__default.useRef(null);
+  const dragStartTime = React__default__default.useRef(null);
+  const dragEndTime = React__default__default.useRef(null);
+  const lastTimeDragPrevented = React__default__default.useRef(null);
+  const isAllowedToDrag = React__default__default.useRef(false);
+  const nestedOpenChangeTimer = React__default__default.useRef(null);
+  const pointerStart = React__default__default.useRef(0);
+  const keyboardIsOpen = React__default__default.useRef(false);
+  const shouldAnimate = React__default__default.useRef(!defaultOpen);
+  const previousDiffFromInitial = React__default__default.useRef(0);
+  const drawerRef = React__default__default.useRef(null);
+  const drawerHeightRef = React__default__default.useRef(((_drawerRef_current = drawerRef.current) == null ? void 0 : _drawerRef_current.getBoundingClientRect().height) || 0);
+  const drawerWidthRef = React__default__default.useRef(((_drawerRef_current1 = drawerRef.current) == null ? void 0 : _drawerRef_current1.getBoundingClientRect().width) || 0);
+  const initialDrawerHeight = React__default__default.useRef(0);
+  const onSnapPointChange = React__default__default.useCallback((activeSnapPointIndex2) => {
     if (snapPoints && activeSnapPointIndex2 === snapPointsOffset.length - 1) openTime.current = /* @__PURE__ */ new Date();
   }, []);
   const { activeSnapPoint, activeSnapPointIndex, setActiveSnapPoint, onRelease: onReleaseSnapPoints, snapPointsOffset, onDrag: onDragSnapPoints, shouldFade, getPercentageDragged: getSnapPointsPercentageDragged } = useSnapPoints({
@@ -3516,12 +3506,12 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       }
     }
   }
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     window.requestAnimationFrame(() => {
       shouldAnimate.current = true;
     });
   }, []);
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     var _window_visualViewport;
     function onVisualViewportChange() {
       if (!drawerRef.current || !repositionInputs) return;
@@ -3676,7 +3666,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
     onReleaseProp == null ? void 0 : onReleaseProp(event, true);
     resetDrawer();
   }
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (isOpen) {
       set(document.documentElement, {
         scrollBehavior: "auto"
@@ -3730,7 +3720,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       });
     }
   }
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (!modal) {
       window.requestAnimationFrame(() => {
         document.body.style.pointerEvents = "auto";
@@ -3739,7 +3729,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
   }, [
     modal
   ]);
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Root, {
+  return /* @__PURE__ */ React__default__default.createElement(Root, {
     defaultOpen,
     onOpenChange: (open) => {
       if (!dismissible && !open) return;
@@ -3751,7 +3741,7 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
       setIsOpen(open);
     },
     open: isOpen
-  }, /* @__PURE__ */ React__default__namespace.default.createElement(DrawerContext.Provider, {
+  }, /* @__PURE__ */ React__default__default.createElement(DrawerContext.Provider, {
     value: {
       activeSnapPoint,
       snapPoints,
@@ -3785,17 +3775,17 @@ function Root2({ open: openProp, onOpenChange, children, onDrag: onDragProp, onR
     }
   }, children));
 }
-var Overlay2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ ...rest }, ref) {
+var Overlay2 = /* @__PURE__ */ React__default__default.forwardRef(function({ ...rest }, ref) {
   const { overlayRef, snapPoints, onRelease, shouldFade, isOpen, modal, shouldAnimate } = useDrawerContext();
   const composedRef = useComposedRefs2(ref, overlayRef);
   const hasSnapPoints = snapPoints && snapPoints.length > 0;
   if (!modal) {
     return null;
   }
-  const onMouseUp = React__default__namespace.default.useCallback((event) => onRelease(event), [
+  const onMouseUp = React__default__default.useCallback((event) => onRelease(event), [
     onRelease
   ]);
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Overlay, {
+  return /* @__PURE__ */ React__default__default.createElement(Overlay, {
     onMouseUp,
     ref: composedRef,
     "data-vaul-overlay": "",
@@ -3806,13 +3796,13 @@ var Overlay2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(func
   });
 });
 Overlay2.displayName = "Drawer.Overlay";
-var Content2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ onPointerDownOutside, style, onOpenAutoFocus, ...rest }, ref) {
+var Content2 = /* @__PURE__ */ React__default__default.forwardRef(function({ onPointerDownOutside, style, onOpenAutoFocus, ...rest }, ref) {
   const { drawerRef, onPress, onRelease, onDrag, keyboardIsOpen, snapPointsOffset, activeSnapPointIndex, modal, isOpen, direction, snapPoints, container, handleOnly, shouldAnimate, autoFocus } = useDrawerContext();
-  const [delayedSnapPoints, setDelayedSnapPoints] = React__default__namespace.default.useState(false);
+  const [delayedSnapPoints, setDelayedSnapPoints] = React__default__default.useState(false);
   const composedRef = useComposedRefs2(ref, drawerRef);
-  const pointerStartRef = React__default__namespace.default.useRef(null);
-  const lastKnownPointerEventRef = React__default__namespace.default.useRef(null);
-  const wasBeyondThePointRef = React__default__namespace.default.useRef(false);
+  const pointerStartRef = React__default__default.useRef(null);
+  const lastKnownPointerEventRef = React__default__default.useRef(null);
+  const wasBeyondThePointRef = React__default__default.useRef(false);
   const hasSnapPoints = snapPoints && snapPoints.length > 0;
   useScaleBackground();
   const isDeltaInDirection = (delta, direction2, threshold = 0) => {
@@ -3838,7 +3828,7 @@ var Content2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(func
     wasBeyondThePointRef.current = true;
     return true;
   };
-  React__default__namespace.default.useEffect(() => {
+  React__default__default.useEffect(() => {
     if (hasSnapPoints) {
       window.requestAnimationFrame(() => {
         setDelayedSnapPoints(true);
@@ -3850,7 +3840,7 @@ var Content2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(func
     wasBeyondThePointRef.current = false;
     onRelease(event);
   }
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Content, {
+  return /* @__PURE__ */ React__default__default.createElement(Content, {
     "data-vaul-drawer-direction": direction,
     "data-vaul-drawer": "",
     "data-vaul-delayed-snap-points": delayedSnapPoints ? "true" : "false",
@@ -3933,10 +3923,10 @@ var Content2 = /* @__PURE__ */ React__default__namespace.default.forwardRef(func
 Content2.displayName = "Drawer.Content";
 var LONG_HANDLE_PRESS_TIMEOUT = 250;
 var DOUBLE_TAP_TIMEOUT = 120;
-var Handle = /* @__PURE__ */ React__default__namespace.default.forwardRef(function({ preventCycle = false, children, ...rest }, ref) {
+var Handle = /* @__PURE__ */ React__default__default.forwardRef(function({ preventCycle = false, children, ...rest }, ref) {
   const { closeDrawer, isDragging, snapPoints, activeSnapPoint, setActiveSnapPoint, dismissible, handleOnly, isOpen, onPress, onDrag } = useDrawerContext();
-  const closeTimeoutIdRef = React__default__namespace.default.useRef(null);
-  const shouldCancelInteractionRef = React__default__namespace.default.useRef(false);
+  const closeTimeoutIdRef = React__default__default.useRef(null);
+  const shouldCancelInteractionRef = React__default__default.useRef(false);
   function handleStartCycle() {
     if (shouldCancelInteractionRef.current) {
       handleCancelInteraction();
@@ -3979,7 +3969,7 @@ var Handle = /* @__PURE__ */ React__default__namespace.default.forwardRef(functi
     }
     shouldCancelInteractionRef.current = false;
   }
-  return /* @__PURE__ */ React__default__namespace.default.createElement("div", {
+  return /* @__PURE__ */ React__default__default.createElement("div", {
     onClick: handleStartCycle,
     onPointerCancel: handleCancelInteraction,
     onPointerDown: (e) => {
@@ -3995,7 +3985,7 @@ var Handle = /* @__PURE__ */ React__default__namespace.default.forwardRef(functi
     "data-vaul-handle": "",
     "aria-hidden": "true",
     ...rest
-  }, /* @__PURE__ */ React__default__namespace.default.createElement("span", {
+  }, /* @__PURE__ */ React__default__default.createElement("span", {
     "data-vaul-handle-hitarea": "",
     "aria-hidden": "true"
   }, children));
@@ -4006,7 +3996,7 @@ function NestedRoot({ onDrag, onOpenChange, open: nestedIsOpen, ...rest }) {
   if (!onNestedDrag) {
     throw new Error("Drawer.NestedRoot must be placed in another drawer");
   }
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Root2, {
+  return /* @__PURE__ */ React__default__default.createElement(Root2, {
     nested: true,
     open: nestedIsOpen,
     onClose: () => {
@@ -4029,7 +4019,7 @@ function NestedRoot({ onDrag, onOpenChange, open: nestedIsOpen, ...rest }) {
 function Portal3(props) {
   const context = useDrawerContext();
   const { container = context.container, ...portalProps } = props;
-  return /* @__PURE__ */ React__default__namespace.default.createElement(Portal2, {
+  return /* @__PURE__ */ React__default__default.createElement(Portal2, {
     container,
     ...portalProps
   });
@@ -4047,10 +4037,6 @@ var Drawer = {
   Description
 };
 
-exports.Drawer = Drawer;
-exports.TecofApiClient = TecofApiClient;
-exports.TecofPicture = TecofPicture;
-exports.TecofProvider = TecofProvider;
-exports.useTecof = useTecof;
-//# sourceMappingURL=chunk-BAKC3WGA.js.map
-//# sourceMappingURL=chunk-BAKC3WGA.js.map
+export { Drawer, TecofApiClient, TecofPicture, TecofProvider, useTecof };
+//# sourceMappingURL=chunk-JQGJZ4SL.mjs.map
+//# sourceMappingURL=chunk-JQGJZ4SL.mjs.map
