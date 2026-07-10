@@ -97,7 +97,8 @@ export const Inspector = () => {
             type="button"
             role="tab"
             aria-selected={tab === 'content'}
-            className={`tecof-inspector-tab${tab === 'content' ? ' is-active' : ''}`}
+            className={`tecof-inspector-tab tecof-tip${tab === 'content' ? ' is-active' : ''}`}
+            data-tip="Bileşenin metin, görsel ve bağlantı alanları"
             onClick={() => setTab('content')}
           >
             İçerik
@@ -106,7 +107,8 @@ export const Inspector = () => {
             type="button"
             role="tab"
             aria-selected={tab === 'style'}
-            className={`tecof-inspector-tab${tab === 'style' ? ' is-active' : ''}`}
+            className={`tecof-inspector-tab tecof-tip${tab === 'style' ? ' is-active' : ''}`}
+            data-tip="Boşluk, renk, yazı ve görünüm ayarları"
             onClick={() => setTab('style')}
           >
             Stil
@@ -171,7 +173,8 @@ export const Inspector = () => {
           type="button"
           role="tab"
           aria-selected={rootTab === 'page'}
-          className={`tecof-inspector-tab${rootTab === 'page' ? ' is-active' : ''}`}
+          className={`tecof-inspector-tab tecof-tip${rootTab === 'page' ? ' is-active' : ''}`}
+          data-tip="Yalnız bu sayfaya özel ayarlar"
           onClick={() => setRootTab('page')}
         >
           Sayfa
@@ -180,7 +183,8 @@ export const Inspector = () => {
           type="button"
           role="tab"
           aria-selected={rootTab === 'theme'}
-          className={`tecof-inspector-tab${rootTab === 'theme' ? ' is-active' : ''}`}
+          className={`tecof-inspector-tab tecof-tip${rootTab === 'theme' ? ' is-active' : ''}`}
+          data-tip="Tüm sitede geçerli renk ve yazı tipi ayarları"
           onClick={() => setRootTab('theme')}
         >
           Tema

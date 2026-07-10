@@ -4,6 +4,7 @@ import {
   ClipboardPaste,
   ChevronDown,
   ChevronRight,
+  HelpCircle,
   LayoutGrid,
   Type,
   Paintbrush,
@@ -101,26 +102,40 @@ const TABS: {
   label: string;
   Icon: typeof LayoutGrid;
   groups: StyleGroup[];
+  tip: string;
 }[] = [
-  { key: 'layout', label: 'Düzen', Icon: LayoutGrid, groups: ['layout', 'spacing', 'sizing'] },
-  { key: 'text', label: 'Metin', Icon: Type, groups: ['typography'] },
-  { key: 'appearance', label: 'Görünüm', Icon: Paintbrush, groups: ['background', 'border', 'effects'] },
+  { key: 'layout', label: 'Düzen', Icon: LayoutGrid, groups: ['layout', 'spacing', 'sizing'], tip: 'Yerleşim, boşluklar ve boyut ayarları' },
+  { key: 'text', label: 'Metin', Icon: Type, groups: ['typography'], tip: 'Yazı boyutu, kalınlığı ve hizalama' },
+  { key: 'appearance', label: 'Görünüm', Icon: Paintbrush, groups: ['background', 'border', 'effects'], tip: 'Arka plan, kenarlık ve gölge efektleri' },
 ];
+
+/** Hover'da gösterilen kısa grup açıklamaları — kullanıcı grubun ne işe
+ *  yaradığını açmadan görebilsin. */
+const GROUP_TIPS: Record<StyleGroup, string> = {
+  layout: 'Öğelerin dizilimi: yan yana / alt alta akış, hizalama ve aralık',
+  spacing: 'İç boşluk (padding) ve dış boşluk (margin) — öğenin çevresiyle mesafesi',
+  sizing: 'Genişlik ve yükseklik sınırları',
+  typography: 'Yazı tipi boyutu, kalınlığı, hizası ve satır aralığı',
+  background: 'Arka plan rengi',
+  border: 'Kenarlık rengi, kalınlığı ve köşe yuvarlaklığı',
+  effects: 'Gölge, saydamlık ve geçiş efektleri',
+};
 
 /**
  * Panel UI state (active tab + which accordion groups are open), kept at
  * module level so it survives node switches within a session — selecting
- * another node keeps you on the tab you were working in.
+ * another node keeps you on the tab you were working in. Groups all start
+ * CLOSED so the panel opens compact; the user expands what they need.
  */
 const panelUi: { tab: StyleTabKey; open: Record<StyleGroup, boolean> } = {
   tab: 'layout',
   open: {
-    layout: true,
-    spacing: true,
+    layout: false,
+    spacing: false,
     sizing: false,
-    typography: true,
-    background: true,
-    border: true,
+    typography: false,
+    background: false,
+    border: false,
     effects: false,
   },
 };
@@ -363,7 +378,7 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
 
       {/* Tab bar */}
       <div className="tecof-style-tabs" role="tablist" aria-label="Stil kategorileri">
-        {TABS.map(({ key, label, Icon, groups }) => {
+        {TABS.map(({ key, label, Icon, groups, tip }) => {
           const hasOverride = groups.some((g) => groupSetCount(g) > 0);
           return (
             <button
@@ -371,7 +386,8 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
               type="button"
               role="tab"
               aria-selected={tab === key}
-              className={`tecof-style-tab${tab === key ? ' is-active' : ''}`}
+              className={`tecof-style-tab tecof-tip${tab === key ? ' is-active' : ''}`}
+              data-tip={tip}
               onClick={() => setTab(key)}
             >
               <Icon size={13} />
@@ -399,6 +415,13 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
             >
               {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
               {GROUP_LABELS[group]}
+              <span
+                className="tecof-style-acc-info tecof-tip"
+                data-tip={GROUP_TIPS[group]}
+                aria-label={GROUP_TIPS[group]}
+              >
+                <HelpCircle size={11} aria-hidden="true" />
+              </span>
               {count > 0 && (
                 <span className="tecof-style-acc-count" title="Bu katmanda ayarlı stil sayısı">
                   {count}

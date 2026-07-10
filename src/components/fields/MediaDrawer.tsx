@@ -106,7 +106,6 @@ const StockPanel = ({ onImported }: { onImported: (file: UploadedFile) => void }
   const [query, setQuery] = useState('');
   const [orientation, setOrientation] = useState('all');
   const [provider, setProvider] = useState<string | undefined>(undefined);
-  const [providers, setProviders] = useState<string[]>([]);
   const [results, setResults] = useState<StockPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [importingId, setImportingId] = useState<string | null>(null);
@@ -122,7 +121,6 @@ const StockPanel = ({ onImported }: { onImported: (file: UploadedFile) => void }
     setLoading(false);
     if (res?.success) {
       setResults(res.data || []);
-      setProviders(res.providers || []);
       if (res.provider) setProvider(res.provider);
       setNoProvider(res.note === 'no-provider-configured');
     } else {
@@ -167,22 +165,19 @@ const StockPanel = ({ onImported }: { onImported: (file: UploadedFile) => void }
             </button>
           )}
         </div>
+        {/* Sağlayıcı seçici bilinçli yok: marka adı (Pexels/Pixabay) kullanıcıya
+            gösterilmez, arama backend'in varsayılan sağlayıcısıyla yapılır. */}
         <select className="tecof-stock-select" value={orientation} onChange={(e) => setOrientation(e.target.value)} aria-label="Yön">
           {ORIENTATIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        {providers.length > 1 && (
-          <select className="tecof-stock-select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="Kaynak">
-            {providers.map((p) => <option key={p} value={p}>{p[0].toUpperCase() + p.slice(1)}</option>)}
-          </select>
-        )}
       </div>
 
       {/* Results */}
       {noProvider ? (
         <div className="tecof-upload-gallery-empty">
           <div className="tecof-upload-gallery-empty-icon"><Images size={24} className="tecof-icon-muted" /></div>
-          <p className="tecof-upload-empty-heading">Stok sağlayıcı yapılandırılmamış</p>
-          <p className="tecof-upload-empty-subheading">Yönetici Pexels/Pixabay API anahtarını eklemeli.</p>
+          <p className="tecof-upload-empty-heading">Stok görsel servisi henüz aktif değil</p>
+          <p className="tecof-upload-empty-subheading">Bu özellik yakında kullanıma açılacak.</p>
         </div>
       ) : loading ? (
         <div className="tecof-media-skeleton-grid" aria-busy="true">
