@@ -10428,19 +10428,28 @@ var STATES = [
   { key: "active", label: "Active" }
 ];
 var TABS = [
-  { key: "layout", label: "D\xFCzen", Icon: lucideReact.LayoutGrid, groups: ["layout", "spacing", "sizing"] },
-  { key: "text", label: "Metin", Icon: lucideReact.Type, groups: ["typography"] },
-  { key: "appearance", label: "G\xF6r\xFCn\xFCm", Icon: lucideReact.Paintbrush, groups: ["background", "border", "effects"] }
+  { key: "layout", label: "D\xFCzen", Icon: lucideReact.LayoutGrid, groups: ["layout", "spacing", "sizing"], tip: "Yerle\u015Fim, bo\u015Fluklar ve boyut ayarlar\u0131" },
+  { key: "text", label: "Metin", Icon: lucideReact.Type, groups: ["typography"], tip: "Yaz\u0131 boyutu, kal\u0131nl\u0131\u011F\u0131 ve hizalama" },
+  { key: "appearance", label: "G\xF6r\xFCn\xFCm", Icon: lucideReact.Paintbrush, groups: ["background", "border", "effects"], tip: "Arka plan, kenarl\u0131k ve g\xF6lge efektleri" }
 ];
+var GROUP_TIPS = {
+  layout: "\xD6\u011Felerin dizilimi: yan yana / alt alta ak\u0131\u015F, hizalama ve aral\u0131k",
+  spacing: "\u0130\xE7 bo\u015Fluk (padding) ve d\u0131\u015F bo\u015Fluk (margin) \u2014 \xF6\u011Fenin \xE7evresiyle mesafesi",
+  sizing: "Geni\u015Flik ve y\xFCkseklik s\u0131n\u0131rlar\u0131",
+  typography: "Yaz\u0131 tipi boyutu, kal\u0131nl\u0131\u011F\u0131, hizas\u0131 ve sat\u0131r aral\u0131\u011F\u0131",
+  background: "Arka plan rengi",
+  border: "Kenarl\u0131k rengi, kal\u0131nl\u0131\u011F\u0131 ve k\xF6\u015Fe yuvarlakl\u0131\u011F\u0131",
+  effects: "G\xF6lge, saydaml\u0131k ve ge\xE7i\u015F efektleri"
+};
 var panelUi = {
   tab: "layout",
   open: {
-    layout: true,
-    spacing: true,
+    layout: false,
+    spacing: false,
     sizing: false,
-    typography: true,
-    background: true,
-    border: true,
+    typography: false,
+    background: false,
+    border: false,
     effects: false
   }
 };
@@ -10627,7 +10636,7 @@ var StyleEditor = ({ value, onChange }) => {
         }
       )
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-tabs", role: "tablist", "aria-label": "Stil kategorileri", children: TABS.map(({ key, label, Icon, groups }) => {
+    /* @__PURE__ */ jsxRuntime.jsx("div", { className: "tecof-style-tabs", role: "tablist", "aria-label": "Stil kategorileri", children: TABS.map(({ key, label, Icon, groups, tip }) => {
       const hasOverride = groups.some((g) => groupSetCount(g) > 0);
       return /* @__PURE__ */ jsxRuntime.jsxs(
         "button",
@@ -10635,7 +10644,8 @@ var StyleEditor = ({ value, onChange }) => {
           type: "button",
           role: "tab",
           "aria-selected": tab === key,
-          className: `tecof-style-tab${tab === key ? " is-active" : ""}`,
+          className: `tecof-style-tab tecof-tip${tab === key ? " is-active" : ""}`,
+          "data-tip": tip,
           onClick: () => setTab(key),
           children: [
             /* @__PURE__ */ jsxRuntime.jsx(Icon, { size: 13 }),
@@ -10663,6 +10673,15 @@ var StyleEditor = ({ value, onChange }) => {
             children: [
               isOpen ? /* @__PURE__ */ jsxRuntime.jsx(lucideReact.ChevronDown, { size: 13 }) : /* @__PURE__ */ jsxRuntime.jsx(lucideReact.ChevronRight, { size: 13 }),
               GROUP_LABELS[group],
+              /* @__PURE__ */ jsxRuntime.jsx(
+                "span",
+                {
+                  className: "tecof-style-acc-info tecof-tip",
+                  "data-tip": GROUP_TIPS[group],
+                  "aria-label": GROUP_TIPS[group],
+                  children: /* @__PURE__ */ jsxRuntime.jsx(lucideReact.HelpCircle, { size: 11, "aria-hidden": "true" })
+                }
+              ),
               count > 0 && /* @__PURE__ */ jsxRuntime.jsx("span", { className: "tecof-style-acc-count", title: "Bu katmanda ayarl\u0131 stil say\u0131s\u0131", children: count })
             ]
           }
@@ -11402,7 +11421,8 @@ var Inspector = () => {
             type: "button",
             role: "tab",
             "aria-selected": tab === "content",
-            className: `tecof-inspector-tab${tab === "content" ? " is-active" : ""}`,
+            className: `tecof-inspector-tab tecof-tip${tab === "content" ? " is-active" : ""}`,
+            "data-tip": "Bile\u015Fenin metin, g\xF6rsel ve ba\u011Flant\u0131 alanlar\u0131",
             onClick: () => setTab("content"),
             children: "\u0130\xE7erik"
           }
@@ -11413,7 +11433,8 @@ var Inspector = () => {
             type: "button",
             role: "tab",
             "aria-selected": tab === "style",
-            className: `tecof-inspector-tab${tab === "style" ? " is-active" : ""}`,
+            className: `tecof-inspector-tab tecof-tip${tab === "style" ? " is-active" : ""}`,
+            "data-tip": "Bo\u015Fluk, renk, yaz\u0131 ve g\xF6r\xFCn\xFCm ayarlar\u0131",
             onClick: () => setTab("style"),
             children: "Stil"
           }
@@ -11458,7 +11479,8 @@ var Inspector = () => {
           type: "button",
           role: "tab",
           "aria-selected": rootTab === "page",
-          className: `tecof-inspector-tab${rootTab === "page" ? " is-active" : ""}`,
+          className: `tecof-inspector-tab tecof-tip${rootTab === "page" ? " is-active" : ""}`,
+          "data-tip": "Yaln\u0131z bu sayfaya \xF6zel ayarlar",
           onClick: () => setRootTab("page"),
           children: "Sayfa"
         }
@@ -11469,7 +11491,8 @@ var Inspector = () => {
           type: "button",
           role: "tab",
           "aria-selected": rootTab === "theme",
-          className: `tecof-inspector-tab${rootTab === "theme" ? " is-active" : ""}`,
+          className: `tecof-inspector-tab tecof-tip${rootTab === "theme" ? " is-active" : ""}`,
+          "data-tip": "T\xFCm sitede ge\xE7erli renk ve yaz\u0131 tipi ayarlar\u0131",
           onClick: () => setRootTab("theme"),
           children: "Tema"
         }
@@ -12767,7 +12790,7 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     /* @__PURE__ */ jsxRuntime.jsx("div", { className, children: contentWithLayout })
   ] });
 };
-var EditorFieldImpl = React.lazy(() => import('./EditorField.impl-MFEVK4DO.js'));
+var EditorFieldImpl = React.lazy(() => import('./EditorField.impl-YQQ5DZDM.js'));
 var EditorField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -12791,7 +12814,7 @@ var createEditorField = (options = {}) => {
     ) }) })
   };
 };
-var UploadFieldImpl = React.lazy(() => import('./UploadField.impl-DMGFGNVC.js'));
+var UploadFieldImpl = React.lazy(() => import('./UploadField.impl-D3Y5YB5T.js'));
 var UploadField = (props) => /* @__PURE__ */ jsxRuntime.jsx(React.Suspense, { fallback: /* @__PURE__ */ jsxRuntime.jsx(chunkA2KHM342_js.FieldLoading, {}), children: /* @__PURE__ */ jsxRuntime.jsx(UploadFieldImpl, { ...props }) });
 UploadField.displayName = "UploadField";
 var createUploadField = (options = {}) => {

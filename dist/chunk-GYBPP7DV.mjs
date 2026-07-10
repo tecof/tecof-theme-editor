@@ -18,7 +18,6 @@ var StockPanel = ({ onImported }) => {
   const [query, setQuery] = useState("");
   const [orientation, setOrientation] = useState("all");
   const [provider, setProvider] = useState(void 0);
-  const [providers, setProviders] = useState([]);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [importingId, setImportingId] = useState(null);
@@ -37,7 +36,6 @@ var StockPanel = ({ onImported }) => {
     setLoading(false);
     if (res?.success) {
       setResults(res.data || []);
-      setProviders(res.providers || []);
       if (res.provider) setProvider(res.provider);
       setNoProvider(res.note === "no-provider-configured");
     } else {
@@ -77,13 +75,12 @@ var StockPanel = ({ onImported }) => {
         ),
         query && /* @__PURE__ */ jsx("button", { type: "button", className: "tecof-upload-action-btn", onClick: () => setQuery(""), children: /* @__PURE__ */ jsx(X, { size: 13 }) })
       ] }),
-      /* @__PURE__ */ jsx("select", { className: "tecof-stock-select", value: orientation, onChange: (e) => setOrientation(e.target.value), "aria-label": "Y\xF6n", children: ORIENTATIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.value, children: o.label }, o.value)) }),
-      providers.length > 1 && /* @__PURE__ */ jsx("select", { className: "tecof-stock-select", value: provider, onChange: (e) => setProvider(e.target.value), "aria-label": "Kaynak", children: providers.map((p) => /* @__PURE__ */ jsx("option", { value: p, children: p[0].toUpperCase() + p.slice(1) }, p)) })
+      /* @__PURE__ */ jsx("select", { className: "tecof-stock-select", value: orientation, onChange: (e) => setOrientation(e.target.value), "aria-label": "Y\xF6n", children: ORIENTATIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.value, children: o.label }, o.value)) })
     ] }),
     noProvider ? /* @__PURE__ */ jsxs("div", { className: "tecof-upload-gallery-empty", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsx(Images, { size: 24, className: "tecof-icon-muted" }) }),
-      /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-heading", children: "Stok sa\u011Flay\u0131c\u0131 yap\u0131land\u0131r\u0131lmam\u0131\u015F" }),
-      /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-subheading", children: "Y\xF6netici Pexels/Pixabay API anahtar\u0131n\u0131 eklemeli." })
+      /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-heading", children: "Stok g\xF6rsel servisi hen\xFCz aktif de\u011Fil" }),
+      /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-subheading", children: "Bu \xF6zellik yak\u0131nda kullan\u0131ma a\xE7\u0131lacak." })
     ] }) : loading ? /* @__PURE__ */ jsx("div", { className: "tecof-media-skeleton-grid", "aria-busy": "true", children: Array.from({ length: 9 }).map((_, i) => /* @__PURE__ */ jsx("div", { className: "tecof-media-skeleton-card", children: /* @__PURE__ */ jsx("span", { className: "tecof-skeleton tecof-skeleton-block tecof-media-skeleton-thumb" }) }, i)) }) : !searched ? /* @__PURE__ */ jsxs("div", { className: "tecof-upload-gallery-empty", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-upload-gallery-empty-icon", children: /* @__PURE__ */ jsx(Images, { size: 24, className: "tecof-icon-muted" }) }),
       /* @__PURE__ */ jsx("p", { className: "tecof-upload-empty-heading", children: "Milyonlarca \xFCcretsiz g\xF6rsel" }),
@@ -299,5 +296,5 @@ var MediaDrawer = ({
 };
 
 export { MediaDrawer };
-//# sourceMappingURL=chunk-4ZH7CRVR.mjs.map
-//# sourceMappingURL=chunk-4ZH7CRVR.mjs.map
+//# sourceMappingURL=chunk-GYBPP7DV.mjs.map
+//# sourceMappingURL=chunk-GYBPP7DV.mjs.map
