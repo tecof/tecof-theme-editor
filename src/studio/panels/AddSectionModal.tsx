@@ -234,17 +234,42 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     for (const cat of componentCategories) {
       if (!showAll && activeCategory !== cat.key) continue;
       const isElement = isElementCategory(cat.title);
-      const items = (typesByCategory[cat.key] || [])
-        .filter((type) => (components[type]?.label || type).toLowerCase().includes(query))
-        .map<DisplayItem>((type) => ({
-          id: `component:${type}`,
-          name: components[type]?.label || type,
-          typeText: type,
-          onActivate: () => onSelect(type),
-          preview: (
-            <LiveBlockPreview config={config} type={type} mode={isElement ? 'element' : 'section'} />
-          ),
-        }));
+      const items = (typesByCategory[cat.key] || []).flatMap<DisplayItem>((type) => {
+        const label = components[type]?.label || type;
+        const cards: DisplayItem[] = [];
+        if (label.toLowerCase().includes(query)) {
+          cards.push({
+            id: `component:${type}`,
+            name: label,
+            typeText: type,
+            onActivate: () => onSelect(type),
+            preview: (
+              <LiveBlockPreview config={config} type={type} mode={isElement ? 'element' : 'section'} />
+            ),
+          });
+        }
+        // Design-system variants: every named preset is its own card, previewed
+        // with ITS props and inserted via the same customProps path saved
+        // components use. `_variant` marks the active chip in the Inspector.
+        for (const [key, variant] of Object.entries(components[type]?.variants ?? {})) {
+          if (!variant?.label || !`${label} ${variant.label}`.toLowerCase().includes(query)) continue;
+          cards.push({
+            id: `component:${type}:${key}`,
+            name: `${label} · ${variant.label}`,
+            typeText: type,
+            onActivate: () => onSelect(type, { ...variant.props, _variant: key }),
+            preview: (
+              <LiveBlockPreview
+                config={config}
+                type={type}
+                props={variant.props}
+                mode={isElement ? 'element' : 'section'}
+              />
+            ),
+          });
+        }
+        return cards;
+      });
       if (items.length > 0) {
         groups.push({ key: cat.key, title: cat.title, isElement, items });
       }

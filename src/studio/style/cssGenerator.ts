@@ -196,6 +196,10 @@ const declarationsFor = (controlId: string, value: string): Declaration[] | null
       const v = FONT_SIZES[value];
       return v ? [['font-size', v[0]], ['line-height', v[1]]] : null;
     }
+    case 'fontFamily':
+      // Value is always an arbitrary var-token (`[var(--font-id)]`); `raw` is the
+      // `var(--font-id)` reference resolved by generateCSSVariables.
+      return raw ? [['font-family', raw]] : null;
     case 'fontWeight':
       return FONT_WEIGHTS[value] ? [['font-weight', FONT_WEIGHTS[value]]] : null;
     case 'align':

@@ -46,6 +46,23 @@ export interface ThemeSpacing {
   borderRadiusSm: number;
 }
 
+/* ─── Custom Font ─── */
+
+/**
+ * An uploaded/self-hosted font registered as an `@font-face`. `id` is a stable
+ * kebab-case slug (used in `--font-<id>` vars and per-node `font-[<id>]` tokens),
+ * `family` is the CSS font-family name, `src` the file URL.
+ */
+export interface CustomFont {
+  id: string;
+  family: string;
+  src: string;
+  weight?: number | string;
+  style?: 'normal' | 'italic';
+  /** `src url() format()` hint, e.g. `'woff2'`, `'truetype'`. */
+  format?: string;
+}
+
 /* ─── Theme Config ─── */
 
 export interface ThemeConfig {
@@ -53,6 +70,10 @@ export interface ThemeConfig {
   typography: ThemeTypography;
   spacing: ThemeSpacing;
   customTokens?: Record<string, string>;
+  /** Uploaded/self-hosted fonts, injected as `@font-face` in editor + publish. */
+  customFonts?: CustomFont[];
+  /** Builtin font ids in use — drives which Google Fonts links get loaded. */
+  fonts?: string[];
 }
 
 export interface DeepPartialThemeConfig {
@@ -62,6 +83,8 @@ export interface DeepPartialThemeConfig {
   };
   spacing?: Partial<ThemeSpacing>;
   customTokens?: Record<string, string>;
+  customFonts?: CustomFont[];
+  fonts?: string[];
 }
 
 /* ─── HSL ─── */
@@ -229,6 +252,14 @@ export interface ResolveContext {
  * Configuration for a single component registered in the studio. `render` is
  * the only required member; everything else is optional metadata or behavior.
  */
+/** One named prop preset of a component (see `ComponentConfig.variants`). */
+export interface ComponentVariant {
+  /** Display name of the variant (e.g. "Primary"). */
+  label: string;
+  /** Props merged over the node when the variant is inserted/applied. */
+  props: Record<string, any>;
+}
+
 export interface ComponentConfig {
   /** Display name in the component picker. */
   label?: string;
@@ -238,6 +269,22 @@ export interface ComponentConfig {
   fields?: Record<string, FieldConfig>;
   /** Default props applied when the component is inserted. */
   defaultProps?: Record<string, any>;
+  /**
+   * Named prop presets for this component (design-system variants — e.g. a
+   * Button's Primary/Ghost/Outline). Each variant shows as its own card in the
+   * "Bölüm Ekle" modal and as a switcher chip in the Inspector; applying one
+   * merges `props` over the node (plus a `_variant` marker for the active chip).
+   */
+  variants?: Record<string, ComponentVariant>;
+  /**
+   * Default children auto-created in each slot when the component is inserted, so
+   * a freshly-added component isn't a shell of empty slots (e.g. "Columns" →
+   * two "Column" children). Keyed by slot (field) name; each entry is a child
+   * type string or `{ type, props }`. Applied recursively (a default child gets
+   * its OWN `defaultChildren` too), guarded against type cycles. Skipped for a
+   * slot whose content is already provided via `defaultProps`.
+   */
+  defaultChildren?: Record<string, Array<string | { type: string; props?: Record<string, any> }>>;
   /** If true, removes the editor's div wrapper. The component must attach puck.dragRef to its root element. */
   inline?: boolean;
   /** Renders the component for a given set of props. */
@@ -251,6 +298,13 @@ export interface ComponentConfig {
   maxItems?: number;
   /** Component types that may contain this component as a child. */
   allowedParents?: string[];
+  /**
+   * Whether this component shows width/height resize handles when the editor's
+   * resize mode is on. Defaults to `true` (opt-out): set `false` for components
+   * that shouldn't be resized (e.g. full-width sections) — they keep the spacing
+   * handles instead.
+   */
+  resizable?: boolean;
   /* ─ Permissions (optional, permissive by default) ─ */
   /** Per-component permission overrides, merged OVER the global `permissions`. */
   permissions?: Partial<Permissions>;
@@ -353,6 +407,16 @@ export interface StudioConfig {
    * pages keep the theme's look while `--theme-*` variables stay defined.
    */
   theme?: DeepPartialThemeConfig;
+  /**
+   * AI assistant hookup (optional — no `ai` config, no AI UI). The LIBRARY owns
+   * prompt building (component catalog from this config) and response
+   * parsing/validation; the HOST owns the actual LLM call: `complete` receives
+   * a system prompt + user prompt and returns the model's raw text (which must
+   * contain the JSON section payload). Wire it to any provider.
+   */
+  ai?: {
+    complete: (req: { system: string; prompt: string }) => Promise<string>;
+  };
   /** Allow host-specific extra props without breaking typing. */
   [key: string]: any;
 }

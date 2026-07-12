@@ -156,10 +156,14 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   });
 
   const label = componentConfig?.label || node.type;
+  // Hidden nodes (Layers panel eye toggle) render faded + non-live in edit mode
+  // so the user can still reach them; in preview they're omitted entirely below.
+  const isHidden = !!node.props._hidden;
   const wrapperClassName = [
     'tecof-node-wrapper',
     locked ? 'is-readonly' : '',
     isDragging ? 'is-dragging' : '',
+    isHidden ? 'is-hidden' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -195,6 +199,10 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
       </div>
     );
   }
+
+  // In preview (the canvas behaves like the live site) hidden nodes disappear,
+  // matching TecofRender. In edit mode they render faded (via `is-hidden`).
+  if (isHidden && mode === 'preview') return null;
 
   const componentProps = {
     ...node.props,

@@ -599,6 +599,39 @@ components: {
 |--------|-----|---------|----------|
 | `inline` | `boolean` | `false` | Editör wrapper div'ini kaldırır; bileşen `puck.dragRef`'i kök elemanına eklemelidir |
 
+### Etkileşimli Kontroller — `puck.registerOverlayPortal`
+
+**Düzenleme modunda** canvas her tıklamayı editöre yönlendirir: tıklama node'u seçer, çift tıklama satır içi metin düzenlemeyi başlatır, sürükleme node'u taşır. Ayrıca link/buton/form'ların **native davranışı** (navigasyon, form submit) bilinçli olarak iptal edilir — böylece bir sekme başlığına tıklamak sizi düzenlediğiniz sayfadan başka bir adrese götürmez. (**Önizleme modunda** canvas canlı site gibi davranır; her şey normal çalışır.)
+
+Bileşeninizin kendi etkileşimli parçaları (sekme başlıkları, slider okları, akordeon toggle'ları) düzenleme modunda da çalışmalıysa, o elemanı `puck.registerOverlayPortal` ile işaretleyin. Bir React ref callback'i olarak tasarlanmıştır (`null`'a toleranslı):
+
+```tsx
+render: ({ puck, tabs }) => (
+  <div>
+    {tabs.map((tab, i) => (
+      <button
+        key={i}
+        ref={puck.registerOverlayPortal}   // bu buton edit-mode'da canlı kalır
+        onClick={() => setActive(i)}
+      >
+        {tab.title}
+      </button>
+    ))}
+    {/* ... */}
+  </div>
+)
+```
+
+Portal olarak işaretlenen eleman (ve tüm alt elemanları) editörün node handler'larından muaf tutulur: tıklama seçim yapmaz, çift tıklama düzenleme başlatmaz, sürükleme node'u taşımaz ve native davranışı iptal edilmez.
+
+> **Not:** JS ile yapılan yönlendirmeler (ör. `<button onClick={() => router.push(...)}>`) native olmadığı için bu koruma tarafından iptal *edilemez*. Bu tür bileşenler `puck.isEditing` / `editMode` prop'unu kontrol etmeli **veya** kontrolü overlay portal olarak işaretlemelidir.
+
+| `puck` alanı | Tip | Açıklama |
+|--------|-----|----------|
+| `registerOverlayPortal` | `(el: HTMLElement \| null) => () => void` | Elemanı edit-mode'da canlı bırakır; ref callback olarak kullanılabilir. Temizleyici bir fonksiyon döner |
+| `isEditing` | `boolean` | Editör düzenleme modunda mı (`editMode` prop'u ile aynı) |
+| `dragRef` | `(el: HTMLElement \| null) => void` | Yalnızca `inline` bileşenlerde: sürükleme tutamacı ref'i |
+
 ---
 
 ## API Client

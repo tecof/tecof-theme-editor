@@ -17,10 +17,36 @@ import Link from '@tiptap/extension-link';
 import Code from '@tiptap/extension-code';
 import CodeBlock from '@tiptap/extension-code-block';
 import Image from '@tiptap/extension-image';
+// Lucide toolbar icons. Names that collide with the TipTap extension imports
+// above (Bold/Italic/Underline/Code/Link/Image) are aliased with an `Icon` suffix.
+import {
+  Bold as BoldIcon,
+  Italic as ItalicIcon,
+  Underline as UnderlineIcon,
+  Strikethrough,
+  Code as CodeIcon,
+  Heading2,
+  Heading3,
+  Heading4,
+  List,
+  ListOrdered,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Quote,
+  SquareCode,
+  Minus,
+  Link as LinkIcon,
+  Image as ImageIcon,
+  RemoveFormatting,
+  Undo2,
+  Redo2,
+} from 'lucide-react';
 import { useLanguages } from './useLanguages';
 import { useActiveLanguage } from '../../studio/language/LanguageContext';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
 import { MediaDrawer } from './MediaDrawer';
+import { CmsBindingButton } from './CmsBindingButton';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import type { UploadedFile } from '../../types';
@@ -77,140 +103,125 @@ const ToolbarBtn = ({
 
 /* ─── Toolbar ─── */
 
-const EditorToolbar = ({ editor, onImageClick }: { editor: any; onImageClick?: () => void }) => {
+const ICON = 15;
+
+const EditorToolbar = ({
+  editor,
+  onImageClick,
+  showBinding,
+}: {
+  editor: any;
+  onImageClick?: () => void;
+  showBinding?: boolean;
+}) => {
   if (!editor) return null;
+
+  // Link: prefill the current href, empty string clears, Cancel is a no-op.
+  // extendMarkRange lets the user set/replace a link without first selecting the
+  // whole word.
+  const editLink = () => {
+    const prev = editor.getAttributes('link')?.href || '';
+    const url = window.prompt('Bağlantı URL:', prev);
+    if (url === null) return;
+    if (url.trim() === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url.trim(), target: '_blank' }).run();
+  };
 
   return (
     <div className="tecof-editor-toolbar">
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        isActive={editor.isActive('bold')}
-        title="Bold"
-      >
-        <strong>B</strong>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Kalın">
+        <BoldIcon size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        isActive={editor.isActive('italic')}
-        title="Italic"
-      >
-        <em>I</em>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="İtalik">
+        <ItalicIcon size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        isActive={editor.isActive('underline')}
-        title="Underline"
-      >
-        <span className="tecof-underline">U</span>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Altı çizili">
+        <UnderlineIcon size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-        isActive={editor.isActive('strike')}
-        title="Strikethrough"
-      >
-        <span className="tecof-line-through">S</span>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Üstü çizili">
+        <Strikethrough size={ICON} />
+      </ToolbarBtn>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Satır içi kod">
+        <CodeIcon size={ICON} />
       </ToolbarBtn>
 
       <div className="tecof-editor-divider" />
 
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        isActive={editor.isActive('heading', { level: 2 })}
-        title="Heading 2"
-      >
-        H2
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="Başlık 2">
+        <Heading2 size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        isActive={editor.isActive('heading', { level: 3 })}
-        title="Heading 3"
-      >
-        H3
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive('heading', { level: 3 })} title="Başlık 3">
+        <Heading3 size={ICON} />
+      </ToolbarBtn>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()} isActive={editor.isActive('heading', { level: 4 })} title="Başlık 4">
+        <Heading4 size={ICON} />
       </ToolbarBtn>
 
       <div className="tecof-editor-divider" />
 
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive('bulletList')}
-        title="Bullet List"
-      >
-        •
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Madde işaretli liste">
+        <List size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive('orderedList')}
-        title="Ordered List"
-      >
-        1.
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Sıralı liste">
+        <ListOrdered size={ICON} />
       </ToolbarBtn>
 
       <div className="tecof-editor-divider" />
 
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        isActive={editor.isActive({ textAlign: 'left' })}
-        title="Align Left"
-      >
-        ☰
+      <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} title="Sola hizala">
+        <AlignLeft size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        isActive={editor.isActive({ textAlign: 'center' })}
-        title="Align Center"
-      >
-        ☰
+      <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} title="Ortala">
+        <AlignCenter size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        isActive={editor.isActive({ textAlign: 'right' })}
-        title="Align Right"
-      >
-        ☰
+      <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} title="Sağa hizala">
+        <AlignRight size={ICON} />
       </ToolbarBtn>
 
       <div className="tecof-editor-divider" />
 
-      <ToolbarBtn
-        onClick={() => {
-          if (editor.isActive('link')) {
-            editor.chain().focus().unsetLink().run();
-          } else {
-            const url = window.prompt('URL:');
-            if (url) {
-              editor.chain().focus().setLink({ href: url, target: '_blank' }).run();
-            }
-          }
-        }}
-        isActive={editor.isActive('link')}
-        title="Link"
-      >
-        🔗
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Alıntı">
+        <Quote size={ICON} />
+      </ToolbarBtn>
+      <ToolbarBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} title="Kod bloğu">
+        <SquareCode size={ICON} />
+      </ToolbarBtn>
+      <ToolbarBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Yatay çizgi">
+        <Minus size={ICON} />
+      </ToolbarBtn>
+
+      <div className="tecof-editor-divider" />
+
+      <ToolbarBtn onClick={editLink} isActive={editor.isActive('link')} title="Bağlantı">
+        <LinkIcon size={ICON} />
       </ToolbarBtn>
       {onImageClick && (
-        <ToolbarBtn
-          onClick={onImageClick}
-          isActive={false}
-          title="Resim Ekle"
-        >
-          🖼️
+        <ToolbarBtn onClick={onImageClick} title="Görsel ekle">
+          <ImageIcon size={ICON} />
         </ToolbarBtn>
       )}
-      <ToolbarBtn
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive('blockquote')}
-        title="Blockquote"
-      >
-        ❝
-      </ToolbarBtn>
+      {showBinding && (
+        // Insert a `{{ data.field }}` CMS reference at the cursor; the component
+        // resolves it against `puck.metadata.cmsData` at render time — same
+        // convention as the bindable text field.
+        <CmsBindingButton
+          onInsert={(token) => editor.chain().focus().insertContent(token).run()}
+        />
+      )}
 
       <div className="tecof-editor-divider" />
 
-      <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} title="Undo">
-        ↩
+      <ToolbarBtn onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} title="Biçimi temizle">
+        <RemoveFormatting size={ICON} />
       </ToolbarBtn>
-      <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} title="Redo">
-        ↪
+      <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} title="Geri al">
+        <Undo2 size={ICON} />
+      </ToolbarBtn>
+      <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} title="Yinele">
+        <Redo2 size={ICON} />
       </ToolbarBtn>
     </div>
   );
@@ -223,11 +234,13 @@ const TipTapInstance = ({
   onUpdate,
   readOnly,
   cdnUrl,
+  showBinding,
 }: {
   content: string;
   onUpdate: (html: string) => void;
   readOnly?: boolean;
   cdnUrl: string;
+  showBinding?: boolean;
 }) => {
   const isMountedRef = useRef(false);
   const [mediaDrawerOpen, setMediaDrawerOpen] = useState(false);
@@ -277,6 +290,7 @@ const TipTapInstance = ({
       <EditorToolbar
         editor={editor}
         onImageClick={readOnly ? undefined : () => setMediaDrawerOpen(true)}
+        showBinding={!readOnly && showBinding}
       />
       <EditorContent editor={editor} />
 
@@ -304,6 +318,7 @@ const EditorFieldImpl = ({
   value,
   onChange,
   readOnly,
+  bindable,
 }: EditorFieldProps & EditorFieldOptions) => {
   const {
     merchantInfo,
@@ -315,7 +330,11 @@ const EditorFieldImpl = ({
   const globalLang = useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
-  const { cdnUrl } = useTecof();
+  const { cdnUrl, apiClient } = useTecof();
+
+  // CMS binding toolbar button: on by default, but only when the host actually
+  // has an API client (there'd be no collections to bind to otherwise).
+  const showBinding = bindable !== false && !!apiClient;
 
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
@@ -374,6 +393,7 @@ const EditorFieldImpl = ({
               onUpdate={(html) => handleChange(code, html)}
               readOnly={readOnly}
               cdnUrl={cdnUrl || ''}
+              showBinding={showBinding}
             />
           </div>
         );

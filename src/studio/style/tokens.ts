@@ -12,6 +12,7 @@
  */
 
 import { TAILWIND_PALETTE, TAILWIND_SHADES, tailwindSwatch } from './palette';
+import { BUILTIN_FONTS } from '../theme/fonts';
 
 export type StyleGroup = 'layout' | 'spacing' | 'sizing' | 'typography' | 'background' | 'border' | 'effects';
 export type StyleControlType = 'segment' | 'select' | 'color' | 'space';
@@ -156,6 +157,18 @@ const opts = (values: string[], withNone = true): StyleControlOption[] => [
   ...values.map((v) => ({ label: v, value: v })),
 ];
 
+/**
+ * Per-node font-family options. Like the theme colors, each value is an
+ * arbitrary token pointing at a live CSS variable (`[var(--font-<id>)]`) that
+ * `generateCSSVariables` defines — so the finite builtin set stays safelisted,
+ * while uploaded custom fonts (dynamic) resolve through the same `font-[…]`
+ * arbitrary path. The empty option inherits the theme font.
+ */
+const FONT_OPTIONS: StyleControlOption[] = [
+  { label: 'Tema (miras)', value: '' },
+  ...BUILTIN_FONTS.map((f) => ({ label: f.label, value: `[var(--font-${f.id})]` })),
+];
+
 /* ─── Controls registry ─── */
 
 /**
@@ -264,6 +277,10 @@ export const STYLE_CONTROLS: StyleControl[] = [
     arbitraryPrefix: 'to', toClass: withArbitrary('to', (v) => `to-${v}`) },
 
   // Typography
+  { id: 'fontFamily', label: 'Yazı tipi', group: 'typography', type: 'select', options: FONT_OPTIONS,
+    // Options are arbitrary var-tokens → `withArbitrary` emits `font-[var(--font-id)]`.
+    // `arbitraryPrefix: 'font'` also lets cssGenerator resolve custom-font classes.
+    arbitraryPrefix: 'font', toClass: withArbitrary('font', () => null) },
   { id: 'text', label: 'Metin rengi', group: 'typography', type: 'color', options: COLOR_OPTIONS,
     arbitraryPrefix: 'text', toClass: withArbitrary('text', (v) => `text-${v}`) },
   { id: 'fontSize', label: 'Yazı boyutu', group: 'typography', type: 'select',
@@ -360,6 +377,29 @@ export const STYLE_CONTROLS: StyleControl[] = [
       { label: '500ms', value: '500' },
     ],
     toClass: (v) => (v ? `tecof-anim-delay-${v}` : null) },
+  // Scroll interactions — custom classes driven by scrollEffects.ts at runtime
+  // (IntersectionObserver + parallax). CSS in animationCss.ts (published) +
+  // mirrored in styles.css (editor canvas). Unlike `anim` (plays on load),
+  // `reveal` triggers when the element scrolls into view.
+  { id: 'reveal', label: 'Görününce (scroll)', group: 'effects', type: 'select',
+    options: [
+      { label: 'Yok', value: '' },
+      { label: 'Belirme', value: 'fade' },
+      { label: 'Yukarı', value: 'up' },
+      { label: 'Aşağı', value: 'down' },
+      { label: 'Soldan', value: 'left' },
+      { label: 'Sağdan', value: 'right' },
+      { label: 'Büyüme', value: 'zoom' },
+    ],
+    toClass: (v) => (!v ? null : v === 'fade' ? 'tecof-reveal' : `tecof-reveal tecof-reveal-${v}`) },
+  { id: 'parallax', label: 'Parallax (scroll)', group: 'effects', type: 'select',
+    options: [
+      { label: 'Yok', value: '' },
+      { label: 'Yavaş', value: 'slow' },
+      { label: 'Orta', value: 'md' },
+      { label: 'Hızlı', value: 'fast' },
+    ],
+    toClass: (v) => (v ? `tecof-parallax tecof-parallax-${v}` : null) },
 ];
 
 /** Fast lookup: control id → control. */

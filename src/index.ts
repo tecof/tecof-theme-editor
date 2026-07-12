@@ -39,6 +39,19 @@ export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types'
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
 
+/* ─── Fonts ─── */
+// The Tema panel picks/loads fonts automatically, and TecofRender injects the
+// Google Fonts <link> + custom @font-face into published pages. These helpers are
+// for hosts that assemble their own <head> (e.g. SSR) and need the same output.
+export {
+  BUILTIN_FONTS,
+  googleFontsHref,
+  customFontFaceCss,
+  themeGoogleFontsHref,
+  themeFontFaceCss,
+} from './studio/theme/fonts';
+export type { BuiltinFont } from './studio/theme/fonts';
+
 /* ─── Utilities ─── */
 export {
   hexToHsl,
@@ -56,6 +69,7 @@ export type {
   DeepPartialThemeConfig,
   ThemeColors,
   ThemeTypography,
+  CustomFont,
   ThemeSpacing,
   StudioConfig,
   HSL,

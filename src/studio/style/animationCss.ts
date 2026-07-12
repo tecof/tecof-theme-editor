@@ -46,6 +46,28 @@ export const ANIMATION_CSS = `@media (prefers-reduced-motion: reduce) {
 .tecof-anim-delay-200 { animation-delay: 200ms; }
 .tecof-anim-delay-300 { animation-delay: 300ms; }
 .tecof-anim-delay-500 { animation-delay: 500ms; }
+
+/* ── Scroll reveal (scrollEffects.ts adds .is-visible on intersect) ──
+   Hidden initial state is gated on html.tecof-has-js so no-JS / pre-hydration
+   pages keep content visible (progressive enhancement). */
+.tecof-reveal {
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+html.tecof-has-js .tecof-reveal:not(.is-visible) { opacity: 0; }
+html.tecof-has-js .tecof-reveal-up:not(.is-visible) { transform: translateY(28px); }
+html.tecof-has-js .tecof-reveal-down:not(.is-visible) { transform: translateY(-28px); }
+html.tecof-has-js .tecof-reveal-left:not(.is-visible) { transform: translateX(28px); }
+html.tecof-has-js .tecof-reveal-right:not(.is-visible) { transform: translateX(-28px); }
+html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); }
+.tecof-reveal.is-visible { opacity: 1; transform: none; }
+
+.tecof-parallax { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-reveal { transition: none; }
+  html.tecof-has-js .tecof-reveal:not(.is-visible) { opacity: 1; transform: none; }
+  .tecof-parallax { transform: none !important; }
+}
 `;
 
 export default ANIMATION_CSS;

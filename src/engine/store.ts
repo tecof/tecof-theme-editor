@@ -42,6 +42,14 @@ const writeClipboardStorage = (payload: ClipboardPayload | null) => {
   }
 };
 
+/**
+ * True when paste has content to work with: the in-memory clipboard OR the
+ * cross-page localStorage mirror. UI affordances (context menu "Yapıştır")
+ * use this so pasting a section copied on ANOTHER page enables correctly.
+ */
+export const hasClipboardContent = (): boolean =>
+  useEditorStore.getState().clipboard != null || readClipboardStorage() != null;
+
 /** Reads the localStorage clipboard mirror, returning null when absent/invalid. */
 const readClipboardStorage = (): ClipboardPayload | null => {
   try {

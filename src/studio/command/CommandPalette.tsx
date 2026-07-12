@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Undo2, Redo2, Copy, Scissors, ClipboardPaste, CopyPlus, Trash2,
-  Eye, Pencil, PanelLeft, PanelRight, Save, Plus, Search, Paintbrush,
+  Eye, Pencil, PanelLeft, PanelRight, Save, Plus, Search, Paintbrush, Sparkles,
 } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
@@ -97,6 +97,19 @@ export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
 
     if (onSave) {
       actions.push({ id: 'save', label: 'Kaydet', group: 'Eylemler', icon: <Save size={15} />, hint: `${MOD}S`, keywords: 'save taslak', run: onSave });
+    }
+
+    // AI section generation — only when the host wired `config.ai`. Listed
+    // FIRST so the sparkle sits at the top of the palette.
+    if (config.ai) {
+      actions.unshift({
+        id: 'ai-generate',
+        label: 'AI ile bölüm üret…',
+        group: 'Eylemler',
+        icon: <Sparkles size={15} />,
+        keywords: 'ai yapay zeka üret generate bölüm section',
+        run: () => ui().setAiModalOpen(true),
+      });
     }
 
     const inserts: Command[] = Object.entries(config.components || {}).map(([type, comp]: [string, any]) => ({

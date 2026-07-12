@@ -1,6 +1,35 @@
 import { create } from 'zustand';
 import type { NodeStyles } from './style/types';
-import type { TecofNode } from '../types';
+
+/**
+ * Versioned localStorage key for the style-clipboard mirror — copy a node's
+ * styles on one page, paste them on another (same pattern as the engine's
+ * node-clipboard mirror in engine/store.ts). Guarded: SSR / disabled storage
+ * silently degrade to the in-memory buffer.
+ */
+const STYLE_CLIPBOARD_STORAGE_KEY = 'tecof:style-clipboard:v1';
+
+const writeStyleClipboardStorage = (styles: NodeStyles | null) => {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    if (styles == null) localStorage.removeItem(STYLE_CLIPBOARD_STORAGE_KEY);
+    else localStorage.setItem(STYLE_CLIPBOARD_STORAGE_KEY, JSON.stringify(styles));
+  } catch {
+    /* storage unavailable — in-memory buffer still works */
+  }
+};
+
+const readStyleClipboardStorage = (): NodeStyles | null => {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem(STYLE_CLIPBOARD_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? (parsed as NodeStyles) : null;
+  } catch {
+    return null;
+  }
+};
 
 export type EditorMode = 'edit' | 'preview';
 
@@ -26,6 +55,20 @@ export interface AddSectionTarget {
 }
 
 /**
+ * Live positional drop hover during a canvas drag: which node the drag is
+ * hovering, which list it belongs to, and where the insertion line sits.
+ * Published by `useDropTarget` and consumed by the smart alignment guides
+ * (`DragGuides`). `null` = no positional target hovered.
+ */
+export interface DropHoverState {
+  targetId: string;
+  /** Zone the target belongs to; undefined = root content flow. */
+  zoneKey?: string;
+  position: 'before' | 'after';
+  axis: 'x' | 'y';
+}
+
+/**
  * Editor *UI* state, deliberately kept separate from the document engine store
  * (`useEditorStore`). This holds chrome/interaction state that should NOT be part
  * of the page document or its undo history: the active mode and panel visibility.
@@ -38,9 +81,10 @@ interface UiState {
   /** Whether the Cmd/Ctrl+K command palette is open. */
   commandPaletteOpen: boolean;
   /**
-   * Session style clipboard: the most recently copied node's structured styles
+   * Style clipboard: the most recently copied node's structured styles
    * (`_tecofStyles`). Lives here (UI state, not the document) so "paste styles"
-   * buttons can reactively enable/disable. In-memory only (not persisted).
+   * buttons can reactively enable/disable. Mirrored to localStorage so styles
+   * copied on one page can be pasted on another.
    */
   styleClipboard: NodeStyles | null;
   /**
@@ -48,15 +92,22 @@ interface UiState {
    * Coordinates are in the PARENT document's coordinate space.
    */
   contextMenu: ContextMenuState | null;
-  /**
-   * Session node clipboard for the context menu's Kopyala/Yapıştır: a
-   * self-contained node snapshot whose slot children are folded back into the
-   * props (see `serializeNodeSubtree`). In-memory only (not persisted); kept
-   * separate from the engine clipboard so it never leaks into undo history.
-   */
-  nodeClipboard: TecofNode | null;
   /** "Bölüm Ekle" modalının ekleme hedefi; null = modal kapalı. */
   addSectionTarget: AddSectionTarget | null;
+
+  /** Column-grid alignment overlay (Webflow-style): visibility + config. Editor
+   * aid only — not part of the document, resets each session. */
+  gridVisible: boolean;
+  gridColumns: number;
+  gridGap: number;
+  /** Resize mode: when on, the selected node shows width/height resize handles
+   * (instead of the spacing handles). Editor aid, session-only. */
+  resizeEnabled: boolean;
+  /** Live drop hover for the drag-time alignment guides; null = idle. */
+  dropHover: DropHoverState | null;
+  /** Whether the "AI ile bölüm üret" modal is open (only reachable when the
+   * host wires `config.ai`). */
+  aiModalOpen: boolean;
 
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
@@ -68,9 +119,14 @@ interface UiState {
   toggleCommandPalette: () => void;
   setStyleClipboard: (styles: NodeStyles | null) => void;
   setContextMenu: (menu: ContextMenuState | null) => void;
-  setNodeClipboard: (node: TecofNode | null) => void;
   openAddSection: (target: AddSectionTarget) => void;
   closeAddSection: () => void;
+  toggleGrid: () => void;
+  setGridColumns: (n: number) => void;
+  setGridGap: (px: number) => void;
+  toggleResize: () => void;
+  setDropHover: (hover: DropHoverState | null) => void;
+  setAiModalOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -78,10 +134,17 @@ export const useUiStore = create<UiState>((set) => ({
   leftPanelOpen: false,
   rightPanelOpen: true,
   commandPaletteOpen: false,
-  styleClipboard: null,
+  // Seeded from the cross-page mirror so styles copied on a previous page are
+  // immediately pasteable here.
+  styleClipboard: readStyleClipboardStorage(),
   contextMenu: null,
-  nodeClipboard: null,
   addSectionTarget: null,
+  gridVisible: false,
+  gridColumns: 12,
+  gridGap: 24,
+  resizeEnabled: false,
+  dropHover: null,
+  aiModalOpen: false,
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
@@ -91,9 +154,34 @@ export const useUiStore = create<UiState>((set) => ({
   setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
-  setStyleClipboard: (styles) => set({ styleClipboard: styles }),
+  setStyleClipboard: (styles) => {
+    writeStyleClipboardStorage(styles);
+    set({ styleClipboard: styles });
+  },
   setContextMenu: (menu) => set({ contextMenu: menu }),
-  setNodeClipboard: (node) => set({ nodeClipboard: node }),
   openAddSection: (target) => set({ addSectionTarget: target }),
   closeAddSection: () => set({ addSectionTarget: null }),
+  toggleGrid: () => set((s) => ({ gridVisible: !s.gridVisible })),
+  setGridColumns: (n) => set({ gridColumns: Math.max(1, Math.min(24, Math.round(n) || 1)) }),
+  setGridGap: (px) => set({ gridGap: Math.max(0, Math.round(px) || 0) }),
+  toggleResize: () => set((s) => ({ resizeEnabled: !s.resizeEnabled })),
+  // Dragover fires continuously; only notify subscribers on a real change so the
+  // guides don't re-render every pointer move over the same position.
+  setDropHover: (hover) =>
+    set((s) => {
+      const cur = s.dropHover;
+      if (
+        cur === hover ||
+        (cur &&
+          hover &&
+          cur.targetId === hover.targetId &&
+          cur.zoneKey === hover.zoneKey &&
+          cur.position === hover.position &&
+          cur.axis === hover.axis)
+      ) {
+        return s;
+      }
+      return { dropHover: hover };
+    }),
+  setAiModalOpen: (open) => set({ aiModalOpen: open }),
 }));

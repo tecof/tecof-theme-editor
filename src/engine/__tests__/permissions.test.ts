@@ -72,6 +72,20 @@ describe('getNodePermissions', () => {
   it('tolerates an undefined config', () => {
     expect(getNodePermissions(undefined, node('Box'))).toEqual(DEFAULT_PERMISSIONS);
   });
+
+  it('a locked node (`_locked`) denies every action, overriding permissive config', () => {
+    const config = cfg({
+      components: { Box: { render: () => null, resolvePermissions: () => ({ delete: true, drag: true }) } as any },
+    });
+    expect(getNodePermissions(config, node('Box', { _locked: true }))).toEqual({
+      drag: false,
+      delete: false,
+      duplicate: false,
+      edit: false,
+    });
+    // Unlocked is unaffected.
+    expect(getNodePermissions(config, node('Box'))).toEqual(DEFAULT_PERMISSIONS);
+  });
 });
 
 describe('store enforcement via permissionResolver', () => {

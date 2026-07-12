@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
+import { initScrollEffects } from '../style/scrollEffects';
 import { useStudio } from '../context';
 import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
@@ -8,8 +9,11 @@ import { useDropTarget } from './useDropTarget';
 import { AddSectionButton } from './AddSectionButton';
 import { AddSectionModal } from '../panels/AddSectionModal';
 import { CanvasStyleInjector } from './CanvasStyleInjector';
+import { GridOverlay } from './GridOverlay';
+import { DragGuides } from './DragGuides';
 import { createNode } from './dndUtils';
 import { isValidDrop } from '../../engine/rules';
+import { resolveTheme } from '../theme/theme';
 import { LayoutTemplate, Plus } from 'lucide-react';
 import { postToHost } from '../bridge';
 import type { SectionTemplate } from '../../types';
@@ -19,6 +23,10 @@ export const Canvas = () => {
   const viewport = useEditorStore((state) => state.viewport);
   const { config, readOnly } = useStudio();
   const rootProps = useEditorStore((state) => state.document.root?.props) || {};
+  const gridVisible = useUiStore((s) => s.gridVisible);
+  const gridColumns = useUiStore((s) => s.gridColumns);
+  const gridGap = useUiStore((s) => s.gridGap);
+  const theme = resolveTheme(rootProps, config.theme);
   const insertNode = useEditorStore((state) => state.insertNode);
   const insertPayload = useEditorStore((state) => state.insertPayload);
   const selectNode = useEditorStore((state) => state.selectNode);
@@ -46,6 +54,31 @@ export const Canvas = () => {
     locked: readOnly,
     getIndex: () => content.length,
   });
+
+  // Drag can end anywhere (Escape, drop outside, dragend on the source); make
+  // sure a stale drop-hover never survives it — the guides key off this state.
+  useEffect(
+    () =>
+      useEditorStore.subscribe((cur, prev) => {
+        if (prev.drag && !cur.drag) useUiStore.getState().setDropHover(null);
+      }),
+    []
+  );
+
+  // Scroll interactions run inside the canvas iframe ONLY in preview mode, so
+  // edit mode never hides `reveal` content (no `tecof-has-js` gate) — matching
+  // how the published page behaves once live.
+  const mode = useUiStore((s) => s.mode);
+  useEffect(() => {
+    if (mode !== 'preview') return;
+    const iframe = document.querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe');
+    const doc = iframe?.contentDocument;
+    if (!doc) return;
+    const handle = initScrollEffects(doc);
+    return () => handle.destroy();
+    // `viewport` is included because switching it remounts the iframe — we must
+    // re-init the effects on the fresh document.
+  }, [mode, viewport]);
 
   const handleSelectComponent = (type: string, customProps?: Record<string, unknown>) => {
     // `customProps` carries a saved/shared component's props snapshot; without
@@ -175,6 +208,18 @@ export const Canvas = () => {
           {/* Stil token'larının CSS'i host Tailwind build'ine bağımlı değil —
               iframe içine canlı üretilir (cssGenerator.ts). */}
           <CanvasStyleInjector />
+          {/* Column alignment guide — editor aid, hidden in preview. Aligns to the
+              theme container width so it matches how sections lay out. */}
+          {gridVisible && mode !== 'preview' && (
+            <GridOverlay
+              columns={gridColumns}
+              gap={gridGap}
+              maxWidth={theme.spacing.containerMaxWidth}
+              paddingX={theme.spacing.sectionPaddingX}
+            />
+          )}
+          {/* Drag-time smart alignment guides (renders nothing while idle). */}
+          {mode !== 'preview' && <DragGuides />}
           {contentWithLayout}
         </Frame>
       </div>

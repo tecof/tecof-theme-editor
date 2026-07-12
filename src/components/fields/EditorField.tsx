@@ -23,6 +23,12 @@ export interface EditorFieldOptions {
   visible?: boolean;
   /** Placeholder text for empty editor */
   placeholder?: string;
+  /**
+   * Show the CMS data-binding button in the toolbar (inserts a `{{ data.field }}`
+   * reference at the cursor). Defaults to `true`; the button only appears when a
+   * TecofProvider `apiClient` is available. Set `false` to hide it.
+   */
+  bindable?: boolean;
 }
 
 /* ─── Lazy Heavy Implementation ─── */

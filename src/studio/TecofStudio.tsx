@@ -13,6 +13,7 @@ import { LanguageProvider } from './language/LanguageContext';
 import { Canvas } from './canvas/Canvas';
 import { SelectionOverlay } from './overlay/SelectionOverlay';
 import { NodeContextMenu } from './overlay/NodeContextMenu';
+import { AiSectionModal } from './ai/AiSectionModal';
 import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
@@ -451,6 +452,20 @@ export const TecofStudio = ({
       // browser's native copy/cut/paste keeps working inside fields/inline-edit.
       if (isInput()) return;
 
+      // 'G' -> toggle the column alignment grid (no modifier; Cmd+G stays native).
+      if (!isCmdOrCtrl && !e.altKey && e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        useUiStore.getState().toggleGrid();
+        return;
+      }
+
+      // 'R' -> toggle resize mode (no modifier; Cmd+R stays native reload).
+      if (!isCmdOrCtrl && !e.altKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        useUiStore.getState().toggleResize();
+        return;
+      }
+
       // Arrow keys -> move selection to the previous/next sibling in the same
       // list. Up/Left = previous, Down/Right = next (works for both column and
       // row layouts, since either pair walks the sibling order).
@@ -578,6 +593,7 @@ export const TecofStudio = ({
           )}
 
           <CommandPalette onSave={handleSaveDraft} />
+          <AiSectionModal />
           <ThemeVars />
         </div>
       </LanguageProvider>

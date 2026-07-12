@@ -45,11 +45,29 @@ interface ThemeSpacing {
     borderRadiusLg: number;
     borderRadiusSm: number;
 }
+/**
+ * An uploaded/self-hosted font registered as an `@font-face`. `id` is a stable
+ * kebab-case slug (used in `--font-<id>` vars and per-node `font-[<id>]` tokens),
+ * `family` is the CSS font-family name, `src` the file URL.
+ */
+interface CustomFont {
+    id: string;
+    family: string;
+    src: string;
+    weight?: number | string;
+    style?: 'normal' | 'italic';
+    /** `src url() format()` hint, e.g. `'woff2'`, `'truetype'`. */
+    format?: string;
+}
 interface ThemeConfig {
     colors: ThemeColors;
     typography: ThemeTypography;
     spacing: ThemeSpacing;
     customTokens?: Record<string, string>;
+    /** Uploaded/self-hosted fonts, injected as `@font-face` in editor + publish. */
+    customFonts?: CustomFont[];
+    /** Builtin font ids in use — drives which Google Fonts links get loaded. */
+    fonts?: string[];
 }
 interface DeepPartialThemeConfig {
     colors?: Partial<ThemeColors>;
@@ -58,6 +76,8 @@ interface DeepPartialThemeConfig {
     };
     spacing?: Partial<ThemeSpacing>;
     customTokens?: Record<string, string>;
+    customFonts?: CustomFont[];
+    fonts?: string[];
 }
 interface HSL {
     h: number;
@@ -184,6 +204,13 @@ interface ResolveContext {
  * Configuration for a single component registered in the studio. `render` is
  * the only required member; everything else is optional metadata or behavior.
  */
+/** One named prop preset of a component (see `ComponentConfig.variants`). */
+interface ComponentVariant {
+    /** Display name of the variant (e.g. "Primary"). */
+    label: string;
+    /** Props merged over the node when the variant is inserted/applied. */
+    props: Record<string, any>;
+}
 interface ComponentConfig {
     /** Display name in the component picker. */
     label?: string;
@@ -193,6 +220,25 @@ interface ComponentConfig {
     fields?: Record<string, FieldConfig>;
     /** Default props applied when the component is inserted. */
     defaultProps?: Record<string, any>;
+    /**
+     * Named prop presets for this component (design-system variants — e.g. a
+     * Button's Primary/Ghost/Outline). Each variant shows as its own card in the
+     * "Bölüm Ekle" modal and as a switcher chip in the Inspector; applying one
+     * merges `props` over the node (plus a `_variant` marker for the active chip).
+     */
+    variants?: Record<string, ComponentVariant>;
+    /**
+     * Default children auto-created in each slot when the component is inserted, so
+     * a freshly-added component isn't a shell of empty slots (e.g. "Columns" →
+     * two "Column" children). Keyed by slot (field) name; each entry is a child
+     * type string or `{ type, props }`. Applied recursively (a default child gets
+     * its OWN `defaultChildren` too), guarded against type cycles. Skipped for a
+     * slot whose content is already provided via `defaultProps`.
+     */
+    defaultChildren?: Record<string, Array<string | {
+        type: string;
+        props?: Record<string, any>;
+    }>>;
     /** If true, removes the editor's div wrapper. The component must attach puck.dragRef to its root element. */
     inline?: boolean;
     /** Renders the component for a given set of props. */
@@ -205,6 +251,13 @@ interface ComponentConfig {
     maxItems?: number;
     /** Component types that may contain this component as a child. */
     allowedParents?: string[];
+    /**
+     * Whether this component shows width/height resize handles when the editor's
+     * resize mode is on. Defaults to `true` (opt-out): set `false` for components
+     * that shouldn't be resized (e.g. full-width sections) — they keep the spacing
+     * handles instead.
+     */
+    resizable?: boolean;
     /** Per-component permission overrides, merged OVER the global `permissions`. */
     permissions?: Partial<Permissions>;
     /** Dynamically compute permissions from the node's current props. */
@@ -300,6 +353,19 @@ interface StudioConfig {
      * pages keep the theme's look while `--theme-*` variables stay defined.
      */
     theme?: DeepPartialThemeConfig;
+    /**
+     * AI assistant hookup (optional — no `ai` config, no AI UI). The LIBRARY owns
+     * prompt building (component catalog from this config) and response
+     * parsing/validation; the HOST owns the actual LLM call: `complete` receives
+     * a system prompt + user prompt and returns the model's raw text (which must
+     * contain the JSON section payload). Wire it to any provider.
+     */
+    ai?: {
+        complete: (req: {
+            system: string;
+            prompt: string;
+        }) => Promise<string>;
+    };
     /** Allow host-specific extra props without breaking typing. */
     [key: string]: any;
 }
@@ -669,6 +735,12 @@ interface EditorFieldOptions {
     visible?: boolean;
     /** Placeholder text for empty editor */
     placeholder?: string;
+    /**
+     * Show the CMS data-binding button in the toolbar (inserts a `{{ data.field }}`
+     * reference at the cursor). Defaults to `true`; the button only appears when a
+     * TecofProvider `apiClient` is available. Set `false` to hide it.
+     */
+    bindable?: boolean;
 }
 /**
  * EditorField — A multilingual TipTap rich text editor field for Puck.
@@ -1117,7 +1189,7 @@ declare class FieldErrorBoundary extends Component<FieldErrorBoundaryProps, Fiel
     static getDerivedStateFromError(error: Error): FieldErrorBoundaryState;
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void;
     handleRetry: () => void;
-    render(): string | number | bigint | boolean | react_jsx_runtime.JSX.Element | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined;
+    render(): string | number | bigint | boolean | Iterable<ReactNode> | Promise<string | number | bigint | boolean | react.ReactPortal | react.ReactElement<unknown, string | react.JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | react_jsx_runtime.JSX.Element | null | undefined;
 }
 
 /**
@@ -1308,6 +1380,19 @@ interface AddSectionTarget {
     index: number;
 }
 /**
+ * Live positional drop hover during a canvas drag: which node the drag is
+ * hovering, which list it belongs to, and where the insertion line sits.
+ * Published by `useDropTarget` and consumed by the smart alignment guides
+ * (`DragGuides`). `null` = no positional target hovered.
+ */
+interface DropHoverState {
+    targetId: string;
+    /** Zone the target belongs to; undefined = root content flow. */
+    zoneKey?: string;
+    position: 'before' | 'after';
+    axis: 'x' | 'y';
+}
+/**
  * Editor *UI* state, deliberately kept separate from the document engine store
  * (`useEditorStore`). This holds chrome/interaction state that should NOT be part
  * of the page document or its undo history: the active mode and panel visibility.
@@ -1320,9 +1405,10 @@ interface UiState {
     /** Whether the Cmd/Ctrl+K command palette is open. */
     commandPaletteOpen: boolean;
     /**
-     * Session style clipboard: the most recently copied node's structured styles
+     * Style clipboard: the most recently copied node's structured styles
      * (`_tecofStyles`). Lives here (UI state, not the document) so "paste styles"
-     * buttons can reactively enable/disable. In-memory only (not persisted).
+     * buttons can reactively enable/disable. Mirrored to localStorage so styles
+     * copied on one page can be pasted on another.
      */
     styleClipboard: NodeStyles | null;
     /**
@@ -1330,15 +1416,21 @@ interface UiState {
      * Coordinates are in the PARENT document's coordinate space.
      */
     contextMenu: ContextMenuState | null;
-    /**
-     * Session node clipboard for the context menu's Kopyala/Yapıştır: a
-     * self-contained node snapshot whose slot children are folded back into the
-     * props (see `serializeNodeSubtree`). In-memory only (not persisted); kept
-     * separate from the engine clipboard so it never leaks into undo history.
-     */
-    nodeClipboard: TecofNode | null;
     /** "Bölüm Ekle" modalının ekleme hedefi; null = modal kapalı. */
     addSectionTarget: AddSectionTarget | null;
+    /** Column-grid alignment overlay (Webflow-style): visibility + config. Editor
+     * aid only — not part of the document, resets each session. */
+    gridVisible: boolean;
+    gridColumns: number;
+    gridGap: number;
+    /** Resize mode: when on, the selected node shows width/height resize handles
+     * (instead of the spacing handles). Editor aid, session-only. */
+    resizeEnabled: boolean;
+    /** Live drop hover for the drag-time alignment guides; null = idle. */
+    dropHover: DropHoverState | null;
+    /** Whether the "AI ile bölüm üret" modal is open (only reachable when the
+     * host wires `config.ai`). */
+    aiModalOpen: boolean;
     setMode: (mode: EditorMode) => void;
     toggleMode: () => void;
     toggleLeftPanel: () => void;
@@ -1349,9 +1441,14 @@ interface UiState {
     toggleCommandPalette: () => void;
     setStyleClipboard: (styles: NodeStyles | null) => void;
     setContextMenu: (menu: ContextMenuState | null) => void;
-    setNodeClipboard: (node: TecofNode | null) => void;
     openAddSection: (target: AddSectionTarget) => void;
     closeAddSection: () => void;
+    toggleGrid: () => void;
+    setGridColumns: (n: number) => void;
+    setGridGap: (px: number) => void;
+    toggleResize: () => void;
+    setDropHover: (hover: DropHoverState | null) => void;
+    setAiModalOpen: (open: boolean) => void;
 }
 declare const useUiStore: zustand.UseBoundStore<zustand.StoreApi<UiState>>;
 
@@ -1676,6 +1773,37 @@ declare const useEditorStore: zustand.UseBoundStore<Omit<zustand.StoreApi<Editor
     }) => void), shouldReplace: true): void;
 }>;
 
+/**
+ * Font system — a curated registry of loadable web fonts plus pure helpers that
+ * turn a theme's font selection into the CSS the editor and published pages need:
+ * a Google Fonts `<link>` href, `@font-face` rules for uploaded custom fonts, and
+ * `--font-<id>` CSS variables.
+ *
+ * Everything here is pure (string in / string out) and DOM-free, so it drives
+ * both the live editor injection (ThemeVars) and static publish output
+ * (TecofRender / exported helpers) from one source of truth.
+ */
+
+type FontCategory = 'sans' | 'serif' | 'display' | 'mono' | 'system';
+interface BuiltinFont {
+    id: string;
+    label: string;
+    /** The full CSS `font-family` value (primary + fallbacks). */
+    stack: string;
+    category: FontCategory;
+    /** Google Fonts family name; omitted for system fonts that need no loading. */
+    google?: string;
+}
+declare const BUILTIN_FONTS: readonly BuiltinFont[];
+/** Combined Google Fonts css2 URL for the given ids (google-backed ids only). */
+declare function googleFontsHref(ids: readonly string[], weights?: readonly number[]): string | null;
+/** `@font-face` CSS for uploaded custom fonts. */
+declare function customFontFaceCss(fonts: readonly CustomFont[] | undefined): string;
+/** Google Fonts href for every builtin id referenced by the theme. */
+declare const themeGoogleFontsHref: (theme: ThemeConfig) => string | null;
+/** `@font-face` block for the theme's custom fonts. */
+declare const themeFontFaceCss: (theme: ThemeConfig) => string;
+
 declare function hexToHsl(hex: string): HSL;
 declare function hslToHex(h: number, s: number, l: number): string;
 declare function lighten(hex: string, amount: number): string;
@@ -1684,4 +1812,4 @@ declare function generateCSSVariables(theme: ThemeConfig): string;
 declare function getDefaultTheme(): ThemeConfig;
 declare function mergeTheme(base: ThemeConfig, overrides: DeepPartialThemeConfig): ThemeConfig;
 
-export { type ApiResponse, type Breakpoint, CmsCollectionField, CodeEditorField, ColorField, type DeepPartialThemeConfig, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, type StudioConfig, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useTecof, useUiStore };
+export { type ApiResponse, BUILTIN_FONTS, type Breakpoint, type BuiltinFont, CmsCollectionField, CodeEditorField, ColorField, type CustomFont, type DeepPartialThemeConfig, EditorField, ExternalField, FieldErrorBoundary, type HSL, IconField, LanguageField, type LanguageFieldValue, LinkField, type LinkFieldValue, type MerchantInfoData, type MigrationConfig, type NodeStyles, type PageApiData, type PaletteHue, type Permissions, type PuckContentItem, type PuckPageData, RepeaterField, type ResolveContext, type ResolveDataResult, type ResolveFieldsContext, STYLES_PROP, STYLE_CONTROLS, type StateVariant, type StudioConfig, TAILWIND_PALETTE, TAILWIND_SHADES, type TailwindShade, TecofApiClient, TecofEditor, type TecofEditorProps, TecofPicture, type TecofPictureProps, TecofProvider, type TecofProviderProps, TecofRender, type TecofRenderProps, TecofStudio, type ThemeColors, type ThemeConfig, type ThemeSpacing, type ThemeTypography, UploadField, type UploadedFile, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLanguageField, createLinkField, createRepeaterField, createUploadField, customFontFaceCss, darken, generateCSSVariables, getDefaultTheme, getSafelist, googleFontsHref, hexToHsl, hslToHex, lighten, mergeTheme, themeFontFaceCss, themeGoogleFontsHref, useEditorStore, useTecof, useUiStore };

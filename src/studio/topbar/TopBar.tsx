@@ -5,8 +5,9 @@ import { useActiveLanguage } from '../language/LanguageContext';
 import { collectTranslationGaps } from '../language/translationCoverage';
 import {
   Monitor, Tablet, Smartphone, Undo2, Redo2, Save, Check,
-  PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown,
+  PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown, Scaling,
 } from 'lucide-react';
+import { GridControl } from './GridControl';
 
 interface TopBarProps {
   onSave: () => Promise<void>;
@@ -108,6 +109,8 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
   const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
   const toggleLeftPanel = useUiStore((state) => state.toggleLeftPanel);
   const toggleRightPanel = useUiStore((state) => state.toggleRightPanel);
+  const resizeEnabled = useUiStore((state) => state.resizeEnabled);
+  const toggleResize = useUiStore((state) => state.toggleResize);
 
   return (
     <div className="tecof-topbar">
@@ -193,6 +196,19 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
             <Eye size={14} /> Önizle
           </button>
         </div>
+
+        <div className="tecof-topbar-divider" />
+
+        <GridControl />
+        <button
+          type="button"
+          onClick={toggleResize}
+          className={`tecof-icon-btn${resizeEnabled ? ' is-active' : ''}`}
+          title="Boyutlandırma modu (R)"
+          aria-pressed={resizeEnabled}
+        >
+          <Scaling size={16} />
+        </button>
       </div>
 
       {/* Right: language + undo/redo + save + right panel toggle */}

@@ -66,6 +66,16 @@ export const Inspector = () => {
     const { node, label } = activeNodeInfo;
     const parentId = getParentId(documentState, selectedId);
 
+    // Design-system variants: named prop presets declared on the component.
+    // Applying one merges its props over the node (undoable) and records the
+    // key in `_variant` so the active chip stays highlighted. User edits after
+    // applying may diverge from the preset — the chip shows the last APPLIED
+    // variant, which is the honest signal.
+    const variantEntries = Object.entries(activeNodeInfo.componentConfig?.variants ?? {});
+    const activeVariant = typeof node.props._variant === 'string' ? node.props._variant : null;
+    const applyVariant = (key: string, props: Record<string, unknown>) =>
+      updateProps(selectedId, { ...props, _variant: key });
+
     return (
       <div className="tecof-inspector">
         {/* Header */}
@@ -121,6 +131,25 @@ export const Inspector = () => {
             <div className="tecof-inspector-readonly-note">
               <Lock size={12} aria-hidden="true" />
               Salt okunur — bu bileşen düzenlemeye kilitli.
+            </div>
+          )}
+          {tab === 'content' && variantEntries.length > 0 && (
+            <div className="tecof-variant-switcher" role="group" aria-label="Varyant">
+              <span className="tecof-variant-label">Varyant</span>
+              <div className="tecof-variant-chips">
+                {variantEntries.map(([key, variant]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`tecof-variant-chip${activeVariant === key ? ' is-active' : ''}`}
+                    disabled={fieldsReadOnly}
+                    title={`${variant.label} varyantını uygula`}
+                    onClick={() => applyVariant(key, variant.props)}
+                  >
+                    {variant.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {tab === 'style' ? (

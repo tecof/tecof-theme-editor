@@ -3,6 +3,10 @@ import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
 import { generateCSSVariables } from '../../utils';
 import { resolveTheme, THEME_STYLE_ID } from './theme';
+import { themeGoogleFontsHref, themeFontFaceCss } from './fonts';
+
+const GOOGLE_LINK_ID = 'tecof-google-fonts';
+const FONT_FACE_ID = 'tecof-font-faces';
 
 /**
  * Injects the resolved theme as `--theme-*` CSS variables into BOTH the editor
@@ -20,22 +24,48 @@ export const ThemeVars = () => {
   const { config } = useStudio();
 
   useEffect(() => {
-    const css = generateCSSVariables(resolveTheme(rootProps, config.theme));
+    const theme = resolveTheme(rootProps, config.theme);
+    const css = generateCSSVariables(theme);
+    const googleHref = themeGoogleFontsHref(theme);
+    const fontFaceCss = themeFontFaceCss(theme);
 
-    const ensure = (doc: Document | null | undefined) => {
-      if (!doc?.head) return;
-      let el = doc.getElementById(THEME_STYLE_ID) as HTMLStyleElement | null;
+    const ensureStyle = (doc: Document, id: string, content: string) => {
+      let el = doc.getElementById(id) as HTMLStyleElement | null;
       if (!el) {
         el = doc.createElement('style');
-        el.id = THEME_STYLE_ID;
+        el.id = id;
         doc.head.appendChild(el);
       }
-      if (el.textContent !== css) el.textContent = css;
+      if (el.textContent !== content) el.textContent = content;
     };
 
-    ensure(document);
+    // Google Fonts <link>: created/updated when needed, removed when nothing to
+    // load, so switching away from a webfont doesn't leave a stale request.
+    const ensureGoogleLink = (doc: Document, href: string | null) => {
+      let el = doc.getElementById(GOOGLE_LINK_ID) as HTMLLinkElement | null;
+      if (!href) {
+        el?.remove();
+        return;
+      }
+      if (!el) {
+        el = doc.createElement('link');
+        el.id = GOOGLE_LINK_ID;
+        el.rel = 'stylesheet';
+        doc.head.appendChild(el);
+      }
+      if (el.href !== href) el.href = href;
+    };
+
+    const apply = (doc: Document | null | undefined) => {
+      if (!doc?.head) return;
+      ensureStyle(doc, THEME_STYLE_ID, css);
+      ensureStyle(doc, FONT_FACE_ID, fontFaceCss);
+      ensureGoogleLink(doc, googleHref);
+    };
+
+    apply(document);
     const iframe = document.querySelector('.tecof-canvas-viewport iframe') as HTMLIFrameElement | null;
-    ensure(iframe?.contentDocument);
+    apply(iframe?.contentDocument);
   }, [rootProps, config.theme]);
 
   return null;

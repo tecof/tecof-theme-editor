@@ -491,6 +491,23 @@
   align-self: center;
 }
 
+/* CMS binding button sits inside the editor toolbar — match the borderless
+   28×28 toolbar buttons instead of the bordered standalone variant. */
+.tecof-editor-toolbar .tecof-bind-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: var(--tecof-radius-xs);
+}
+
+.tecof-editor-toolbar .tecof-bind-btn:hover,
+.tecof-editor-toolbar .tecof-bind-btn.is-active {
+  border-color: transparent;
+  background: var(--tecof-accent-subtle);
+  color: var(--tecof-accent);
+}
+
 /* TipTap Editor Inner Styles */
 .tecof-editor-field .tiptap {
   padding: 10px 14px;
@@ -3900,6 +3917,129 @@
 
 .tecof-node-wrapper.is-readonly { cursor: default; }
 .tecof-node-wrapper.is-dragging { opacity: 0.4; }
+/* Hidden layer (eye toggle): faded + dashed outline in edit mode so it's still
+   discoverable/selectable; omitted entirely in preview + on the published page. */
+.tecof-node-wrapper.is-hidden {
+  opacity: 0.4;
+  outline: 1px dashed var(--tecof-border);
+  outline-offset: -1px;
+}
+
+/* ── Column alignment grid (rendered inside the iframe; mirrored via Frame) ── */
+.tecof-grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+.tecof-grid-overlay-inner {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+.tecof-grid-col {
+  flex: 1 1 0;
+  min-width: 0;
+  background: rgba(99, 102, 241, 0.07);
+  border-left: 1px solid rgba(99, 102, 241, 0.22);
+  border-right: 1px solid rgba(99, 102, 241, 0.22);
+}
+
+/* ── Drag-time smart alignment guides (inside the iframe; DragGuides.tsx) ── */
+.tecof-drag-guides {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483001;
+  pointer-events: none;
+}
+.tecof-drag-guide-line,
+.tecof-drag-guide-edge,
+.tecof-drag-guide-badge {
+  position: fixed;
+  pointer-events: none;
+}
+.tecof-drag-guide-line { background: var(--tecof-accent, #6366f1); }
+.tecof-drag-guide-edge {
+  /* Subtle hairline; works for both the vertical (column flow) and horizontal
+     (row flow) orientation without per-axis dash tricks. */
+  background: rgba(99, 102, 241, 0.35);
+}
+.tecof-drag-guide-badge {
+  transform: translate(-50%, -50%);
+  padding: 1px 6px;
+  border-radius: var(--tecof-radius-sm, 4px);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fff;
+  background: var(--tecof-accent, #6366f1);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* ── TopBar grid control (button + settings popover) ── */
+.tecof-grid-control { display: inline-flex; align-items: center; gap: 1px; }
+.tecof-grid-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 28px;
+  padding: 0;
+  color: var(--tecof-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--tecof-radius-xs);
+  cursor: pointer;
+}
+.tecof-grid-caret:hover,
+.tecof-grid-caret.is-active { color: var(--tecof-text); background: var(--tecof-border); }
+.tecof-grid-popover {
+  z-index: 10002;
+  width: 184px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  box-shadow: var(--tecof-shadow-lg);
+}
+.tecof-grid-pop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tecof-text);
+}
+.tecof-grid-pop-row input {
+  width: 64px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  font-size: 12px;
+  color: var(--tecof-text);
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  outline: none;
+}
+.tecof-grid-pop-row input:focus { border-color: var(--tecof-accent); }
+.tecof-grid-pop-toggle {
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tecof-text);
+  background: var(--tecof-surface-2);
+  border: none;
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+}
+.tecof-grid-pop-toggle:hover { background: var(--tecof-border); }
 
 .tecof-node-missing {
   padding: 12px;
@@ -5327,6 +5467,59 @@
   background: var(--tecof-accent);
 }
 
+/* ── In-slot "+" insert affordance (layout-neutral, hover-revealed) ──
+   Rendered between (and around) items INSIDE a DropZone slot so a component can
+   be inserted at any position — not only at the root. The divider collapses to
+   zero size (its ±4px margins cancel the flex gap it would otherwise add, so the
+   slot's own spacing is untouched); a padded ::before supplies a hoverable strip
+   and the "+" pill is absolutely centered over the gap. */
+.tecof-add-section-divider.is-slot {
+  position: relative;
+  height: 0;
+  margin: -4px 0;
+  align-self: stretch;
+  overflow: visible;
+  z-index: 50;
+}
+
+.tecof-add-section-divider.is-slot .tecof-add-section-line {
+  display: none;
+}
+
+.tecof-add-section-divider.is-slot::before {
+  content: '';
+  position: absolute;
+  /* Hover strip kept close to the flex gap (which was already empty space), so
+     it reveals the "+" without stealing clicks aimed at the adjacent items. */
+  inset: -5px 0;
+}
+
+.tecof-add-section-divider.is-slot .tecof-add-section-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  margin: 0;
+  padding: 3px 9px;
+  font-size: 10px;
+}
+
+.tecof-add-section-divider.is-slot:hover .tecof-add-section-btn {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Horizontal slot → a VERTICAL divider between side-by-side items. */
+.tecof-add-section-divider.is-slot.is-horizontal {
+  height: auto;
+  width: 0;
+  margin: 0 -4px;
+}
+
+.tecof-add-section-divider.is-slot.is-horizontal::before {
+  inset: 0 -5px;
+}
+
 .tecof-canvas-empty-add-btn {
   display: inline-flex;
   align-items: center;
@@ -6194,6 +6387,252 @@
   box-shadow: var(--tecof-focus-ring);
 }
 
+/* ── AI section modal ── */
+.tecof-ai-modal {
+  width: min(520px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius);
+  box-shadow: var(--tecof-shadow-lg);
+}
+.tecof-ai-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tecof-ai-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tecof-text);
+}
+.tecof-ai-modal-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--tecof-text);
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  outline: none;
+  resize: vertical;
+}
+.tecof-ai-modal-input:focus { border-color: var(--tecof-accent); box-shadow: var(--tecof-focus-ring); }
+.tecof-ai-modal-suggestions { display: flex; flex-wrap: wrap; gap: 5px; }
+.tecof-ai-modal-chip {
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: 9999px;
+  cursor: pointer;
+}
+.tecof-ai-modal-chip:hover:not(:disabled) { color: var(--tecof-accent-text); border-color: var(--tecof-accent); }
+.tecof-ai-modal-error {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--tecof-destructive, #ef4444);
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: var(--tecof-radius-sm);
+}
+.tecof-ai-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tecof-ai-modal-hint { font-size: 11px; color: var(--tecof-text-muted); }
+
+/* ── Component variant switcher (Inspector) ── */
+.tecof-variant-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0 12px;
+  border-bottom: var(--tecof-line);
+  margin-bottom: 10px;
+}
+.tecof-variant-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tecof-text-muted);
+}
+.tecof-variant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tecof-variant-chip {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tecof-text);
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tecof-variant-chip:hover:not(:disabled) { border-color: var(--tecof-accent); color: var(--tecof-accent-text); }
+.tecof-variant-chip.is-active {
+  color: var(--tecof-accent-fg);
+  background: var(--tecof-accent);
+  border-color: var(--tecof-accent);
+}
+.tecof-variant-chip:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Font picker (FontSelect) ── */
+.tecof-font-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--tecof-text);
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.tecof-font-select:hover { border-color: var(--tecof-accent); }
+.tecof-font-select.is-open { border-color: var(--tecof-accent); box-shadow: var(--tecof-focus-ring); }
+
+.tecof-font-select-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tecof-font-select-caret { flex-shrink: 0; color: var(--tecof-text-muted); }
+
+.tecof-font-menu {
+  z-index: 10002;
+  width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 4px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  box-shadow: var(--tecof-shadow-lg);
+}
+
+.tecof-font-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 15px;
+  color: var(--tecof-text);
+  background: transparent;
+  border: none;
+  border-radius: var(--tecof-radius-xs);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tecof-font-item:hover { background: var(--tecof-surface-2); }
+.tecof-font-item.is-active { color: var(--tecof-accent); background: var(--tecof-accent-subtle); }
+.tecof-font-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tecof-font-item-check { flex-shrink: 0; }
+
+.tecof-font-menu-sep {
+  padding: 8px 10px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tecof-text-muted);
+}
+
+/* ── Custom font list + upload ── */
+.tecof-font-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.tecof-font-list-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--tecof-surface-2);
+  border-radius: var(--tecof-radius-sm);
+}
+
+.tecof-font-list-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--tecof-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tecof-font-list-meta {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-font-list-del {
+  display: inline-flex;
+  padding: 4px;
+  color: var(--tecof-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--tecof-radius-xs);
+  cursor: pointer;
+}
+
+.tecof-font-list-del:hover { color: var(--tecof-destructive, #ef4444); background: var(--tecof-surface); }
+
+.tecof-font-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tecof-text);
+  background: var(--tecof-surface);
+  border: 1px dashed var(--tecof-border);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tecof-font-upload:hover:not(:disabled) { border-color: var(--tecof-accent); color: var(--tecof-accent); }
+.tecof-font-upload:disabled { opacity: 0.6; cursor: default; }
+
+.tecof-font-error {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--tecof-destructive, #ef4444);
+}
+
 .tecof-theme-reset {
   margin-top: 4px;
   padding: 8px 10px;
@@ -6540,6 +6979,52 @@
 }
 .tecof-overlay.is-spacing-dragging.is-axis-y { cursor: ns-resize; }
 .tecof-overlay.is-spacing-dragging.is-axis-x { cursor: ew-resize; }
+.tecof-overlay.is-resizing.is-resize-e { cursor: ew-resize; }
+.tecof-overlay.is-resizing.is-resize-s { cursor: ns-resize; }
+.tecof-overlay.is-resizing.is-resize-se { cursor: nwse-resize; }
+
+/* ── Resize handles (width/height) — resize mode ── */
+.tecof-resize-handle {
+  position: absolute;
+  background: var(--tecof-accent, #6366f1);
+  border: 1.5px solid #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 6;
+  transition: transform 0.12s ease;
+}
+.tecof-resize-handle.is-e { width: 8px; height: 24px; right: -5px; top: 50%; margin-top: -12px; }
+.tecof-resize-handle.is-s { width: 24px; height: 8px; bottom: -5px; left: 50%; margin-left: -12px; }
+.tecof-resize-handle.is-se { width: 12px; height: 12px; right: -6px; bottom: -6px; }
+.tecof-resize-handle:hover,
+.tecof-resize-handle.is-active { transform: scale(1.25); }
+
+.tecof-resize-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px dashed var(--tecof-accent, #6366f1);
+  background: rgba(99, 102, 241, 0.06);
+  pointer-events: none;
+  z-index: 4;
+}
+.tecof-resize-label {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  padding: 2px 6px;
+  border-radius: var(--tecof-radius-sm, 4px);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+  background: var(--tecof-accent, #6366f1);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 6;
+}
 
 /* ─── Info Popover Styles ─── */
 .tecof-outline-label {
@@ -6790,6 +7275,28 @@
 .tecof-anim-delay-200 { animation-delay: 200ms; }
 .tecof-anim-delay-300 { animation-delay: 300ms; }
 .tecof-anim-delay-500 { animation-delay: 500ms; }
+
+/* Scroll reveal + parallax (mirror of animationCss.ts; runtime: scrollEffects.ts).
+   Active in the canvas only in PREVIEW mode — that's when `tecof-has-js` gets
+   added to the iframe root, so edit mode always shows content in place. */
+.tecof-reveal {
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+html.tecof-has-js .tecof-reveal:not(.is-visible) { opacity: 0; }
+html.tecof-has-js .tecof-reveal-up:not(.is-visible) { transform: translateY(28px); }
+html.tecof-has-js .tecof-reveal-down:not(.is-visible) { transform: translateY(-28px); }
+html.tecof-has-js .tecof-reveal-left:not(.is-visible) { transform: translateX(28px); }
+html.tecof-has-js .tecof-reveal-right:not(.is-visible) { transform: translateX(-28px); }
+html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); }
+.tecof-reveal.is-visible { opacity: 1; transform: none; }
+
+.tecof-parallax { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-reveal { transition: none; }
+  html.tecof-has-js .tecof-reveal:not(.is-visible) { opacity: 1; transform: none; }
+  .tecof-parallax { transform: none !important; }
+}
 
 
 /* ─── Node Context Menu ─── */
@@ -7042,6 +7549,38 @@
 
 .tecof-layer-action:hover {
   color: var(--tecof-accent-text);
+}
+
+/* Hide + lock toggles: hover-revealed like the other actions, but they STAY
+   visible while active (hidden/locked) so the state is always readable. */
+.tecof-layer-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--tecof-text-subtle);
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.15s ease;
+}
+
+.tecof-layer-row:hover .tecof-layer-toggle,
+.tecof-layer-row:focus-visible .tecof-layer-toggle,
+.tecof-layer-toggle.is-active {
+  opacity: 1;
+}
+
+.tecof-layer-toggle:hover { color: var(--tecof-accent-text); }
+.tecof-layer-toggle.is-active { color: var(--tecof-accent-text); }
+
+/* Hidden / locked row affordances. */
+.tecof-layer-row.is-hidden .tecof-layer-label {
+  opacity: 0.55;
+  font-style: italic;
+}
+.tecof-layer-row.is-locked .tecof-layer-icon {
+  color: var(--tecof-text-subtle);
 }
 
 /* Double-click layer rename */

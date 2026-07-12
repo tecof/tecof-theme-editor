@@ -1,10 +1,10 @@
 export { UnderConstruction } from './chunk-FVWRKU3I.mjs';
-import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar } from './chunk-GIQR5Q5A.mjs';
-export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-GIQR5Q5A.mjs';
+import { FieldLoading, FieldErrorBoundary, FieldLabel, LanguageProvider, useLanguages, useActiveLanguage, LanguageTabBar, useFloating, CmsBindingButton } from './chunk-CHDU3NV7.mjs';
+export { FieldErrorBoundary, LanguageField, createLanguageField } from './chunk-CHDU3NV7.mjs';
 import { useTecof, Drawer } from './chunk-JQGJZ4SL.mjs';
 export { TecofApiClient, TecofPicture, TecofProvider, useTecof } from './chunk-JQGJZ4SL.mjs';
 import React, { createContext, lazy, forwardRef, Suspense, useState, useMemo, useRef, useEffect, useCallback, useContext, useLayoutEffect, Component } from 'react';
-import { icons, Database, X, RotateCcw, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, Link, Search, ChevronRight, Plus, RefreshCw, ChevronDown, Link2, RefreshCcw, Check, Pipette, Monitor, Tablet, Smartphone, Eye, Undo2, Redo2, Save, Grid, Layers, EyeOff, LayoutTemplate, ChevronUp, Lock, CopyPlus, Copy, Scissors, ClipboardPaste, Trash2, Paintbrush, GripVertical, LayoutGrid, Bookmark, ArrowUp, ArrowDown, Type, Eraser, HelpCircle, Layout, Box, Info, Braces, ChevronLeft } from 'lucide-react';
+import { icons, Database, X, RotateCcw, PanelLeft, PanelRight, FileText, Globe, ExternalLink, Pencil, Link, Search, ChevronRight, Plus, RefreshCw, ChevronDown, Link2, RefreshCcw, Check, Pipette, Monitor, Tablet, Smartphone, Eye, Scaling, Undo2, Redo2, Save, Grid, Layers, EyeOff, LayoutTemplate, ChevronUp, Lock, CopyPlus, Copy, Scissors, ClipboardPaste, Trash2, Paintbrush, Sparkles, GripVertical, LayoutGrid, Bookmark, ArrowUp, ArrowDown, Type, Eraser, HelpCircle, UploadCloud, Layout, Box, Unlock, Info } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
 
@@ -1794,6 +1794,7 @@ var writeClipboardStorage = (payload) => {
   } catch {
   }
 };
+var hasClipboardContent = () => useEditorStore.getState().clipboard != null || readClipboardStorage() != null;
 var readClipboardStorage = () => {
   try {
     if (typeof localStorage === "undefined") return null;
@@ -2032,15 +2033,42 @@ var useEditorStore = create()(
 );
 
 // src/studio/uiStore.ts
+var STYLE_CLIPBOARD_STORAGE_KEY = "tecof:style-clipboard:v1";
+var writeStyleClipboardStorage = (styles) => {
+  try {
+    if (typeof localStorage === "undefined") return;
+    if (styles == null) localStorage.removeItem(STYLE_CLIPBOARD_STORAGE_KEY);
+    else localStorage.setItem(STYLE_CLIPBOARD_STORAGE_KEY, JSON.stringify(styles));
+  } catch {
+  }
+};
+var readStyleClipboardStorage = () => {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(STYLE_CLIPBOARD_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+};
 var useUiStore = create((set2) => ({
   mode: "edit",
   leftPanelOpen: false,
   rightPanelOpen: true,
   commandPaletteOpen: false,
-  styleClipboard: null,
+  // Seeded from the cross-page mirror so styles copied on a previous page are
+  // immediately pasteable here.
+  styleClipboard: readStyleClipboardStorage(),
   contextMenu: null,
-  nodeClipboard: null,
   addSectionTarget: null,
+  gridVisible: false,
+  gridColumns: 12,
+  gridGap: 24,
+  resizeEnabled: false,
+  dropHover: null,
+  aiModalOpen: false,
   setMode: (mode) => set2({ mode }),
   toggleMode: () => set2((s) => ({ mode: s.mode === "edit" ? "preview" : "edit" })),
   toggleLeftPanel: () => set2((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
@@ -2049,11 +2077,27 @@ var useUiStore = create((set2) => ({
   setRightPanelOpen: (open) => set2({ rightPanelOpen: open }),
   setCommandPaletteOpen: (open) => set2({ commandPaletteOpen: open }),
   toggleCommandPalette: () => set2((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
-  setStyleClipboard: (styles) => set2({ styleClipboard: styles }),
+  setStyleClipboard: (styles) => {
+    writeStyleClipboardStorage(styles);
+    set2({ styleClipboard: styles });
+  },
   setContextMenu: (menu) => set2({ contextMenu: menu }),
-  setNodeClipboard: (node) => set2({ nodeClipboard: node }),
   openAddSection: (target) => set2({ addSectionTarget: target }),
-  closeAddSection: () => set2({ addSectionTarget: null })
+  closeAddSection: () => set2({ addSectionTarget: null }),
+  toggleGrid: () => set2((s) => ({ gridVisible: !s.gridVisible })),
+  setGridColumns: (n) => set2({ gridColumns: Math.max(1, Math.min(24, Math.round(n) || 1)) }),
+  setGridGap: (px) => set2({ gridGap: Math.max(0, Math.round(px) || 0) }),
+  toggleResize: () => set2((s) => ({ resizeEnabled: !s.resizeEnabled })),
+  // Dragover fires continuously; only notify subscribers on a real change so the
+  // guides don't re-render every pointer move over the same position.
+  setDropHover: (hover) => set2((s) => {
+    const cur = s.dropHover;
+    if (cur === hover || cur && hover && cur.targetId === hover.targetId && cur.zoneKey === hover.zoneKey && cur.position === hover.position && cur.axis === hover.axis) {
+      return s;
+    }
+    return { dropHover: hover };
+  }),
+  setAiModalOpen: (open) => set2({ aiModalOpen: open })
 }));
 var StudioContext = createContext(null);
 var useStudio = () => {
@@ -2086,23 +2130,42 @@ var getNodePermissions = (config, node) => {
     } catch {
     }
   }
+  if (node.props?._locked) {
+    merged = { ...merged, drag: false, delete: false, duplicate: false, edit: false };
+  }
   return merged;
 };
 
 // src/studio/canvas/dndUtils.ts
 var TECOF_NODE_ID = "application/tecof-node-id";
 var TECOF_BLOCK_TYPE = "application/tecof-block-type";
-function createNode(config, type, overrideProps) {
+function createNode(config, type, overrideProps, ancestorTypes) {
   const compConfig = config?.components?.[type];
   const defaultProps = compConfig?.defaultProps || {};
-  return {
-    type,
-    props: {
-      ...JSON.parse(JSON.stringify(defaultProps)),
-      ...overrideProps ? JSON.parse(JSON.stringify(overrideProps)) : {},
-      id: generateId()
-    }
+  const props = {
+    ...JSON.parse(JSON.stringify(defaultProps)),
+    ...overrideProps ? JSON.parse(JSON.stringify(overrideProps)) : {},
+    id: generateId()
   };
+  const defaultChildren = compConfig?.defaultChildren;
+  if (defaultChildren && typeof defaultChildren === "object") {
+    const seen = new Set(ancestorTypes);
+    seen.add(type);
+    for (const [slotName, specs] of Object.entries(defaultChildren)) {
+      if (!Array.isArray(specs)) continue;
+      const existing = props[slotName];
+      if (Array.isArray(existing) && existing.length > 0) continue;
+      const children = [];
+      for (const spec of specs) {
+        const childType = typeof spec === "string" ? spec : spec?.type;
+        if (!childType || seen.has(childType)) continue;
+        const childProps = typeof spec === "string" ? void 0 : spec?.props;
+        children.push(createNode(config, childType, childProps, seen));
+      }
+      if (children.length > 0) props[slotName] = children;
+    }
+  }
+  return { type, props };
 }
 function readDragData(e) {
   if (!e.dataTransfer) return { nodeId: "", type: "" };
@@ -2263,6 +2326,16 @@ var CommandPalette = ({ onSave }) => {
     if (onSave) {
       actions.push({ id: "save", label: "Kaydet", group: "Eylemler", icon: /* @__PURE__ */ jsx(Save, { size: 15 }), hint: `${MOD}S`, keywords: "save taslak", run: onSave });
     }
+    if (config.ai) {
+      actions.unshift({
+        id: "ai-generate",
+        label: "AI ile b\xF6l\xFCm \xFCret\u2026",
+        group: "Eylemler",
+        icon: /* @__PURE__ */ jsx(Sparkles, { size: 15 }),
+        keywords: "ai yapay zeka \xFCret generate b\xF6l\xFCm section",
+        run: () => ui().setAiModalOpen(true)
+      });
+    }
     const inserts = Object.entries(config.components || {}).map(([type, comp]) => ({
       id: `insert:${type}`,
       label: comp?.label || type,
@@ -2357,15 +2430,101 @@ var CommandPalette = ({ onSave }) => {
   );
 };
 
+// src/studio/theme/fonts.ts
+var SANS_FALLBACK = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+var SERIF_FALLBACK = 'Georgia, Cambria, "Times New Roman", serif';
+var MONO_FALLBACK = "ui-monospace, SFMono-Regular, Menlo, monospace";
+var g = (id, label, google, category, fallback = SANS_FALLBACK) => ({ id, label, google, category, stack: `'${google}', ${fallback}` });
+var BUILTIN_FONTS = [
+  { id: "system", label: "Sistem", category: "system", stack: SANS_FALLBACK },
+  { id: "georgia", label: "Georgia", category: "serif", stack: `Georgia, ${SERIF_FALLBACK}` },
+  g("inter", "Inter", "Inter", "sans"),
+  g("roboto", "Roboto", "Roboto", "sans"),
+  g("open-sans", "Open Sans", "Open Sans", "sans"),
+  g("lato", "Lato", "Lato", "sans"),
+  g("montserrat", "Montserrat", "Montserrat", "sans"),
+  g("poppins", "Poppins", "Poppins", "sans"),
+  g("nunito", "Nunito", "Nunito", "sans"),
+  g("work-sans", "Work Sans", "Work Sans", "sans"),
+  g("dm-sans", "DM Sans", "DM Sans", "sans"),
+  g("raleway", "Raleway", "Raleway", "sans"),
+  g("playfair-display", "Playfair Display", "Playfair Display", "serif", SERIF_FALLBACK),
+  g("merriweather", "Merriweather", "Merriweather", "serif", SERIF_FALLBACK),
+  g("lora", "Lora", "Lora", "serif", SERIF_FALLBACK),
+  g("oswald", "Oswald", "Oswald", "display"),
+  g("bebas-neue", "Bebas Neue", "Bebas Neue", "display"),
+  g("jetbrains-mono", "JetBrains Mono", "JetBrains Mono", "mono", MONO_FALLBACK)
+];
+var BY_ID = new Map(BUILTIN_FONTS.map((f) => [f.id, f]));
+var getBuiltinFont = (id) => BY_ID.get(id);
+var GOOGLE_WEIGHTS = [400, 500, 600, 700];
+function googleFontsHref(ids, weights = GOOGLE_WEIGHTS) {
+  const wght = Array.from(new Set(weights)).sort((a, b) => a - b).join(";");
+  const families = ids.map((id) => BY_ID.get(id)).filter((f) => Boolean(f?.google)).map((f) => `family=${encodeURIComponent(f.google).replace(/%20/g, "+")}:wght@${wght}`);
+  const unique = Array.from(new Set(families));
+  if (unique.length === 0) return null;
+  return `https://fonts.googleapis.com/css2?${unique.join("&")}&display=swap`;
+}
+var previewFontsHref = () => googleFontsHref(BUILTIN_FONTS.filter((f) => f.google).map((f) => f.id), [400, 600]);
+function customFontFaceCss(fonts) {
+  if (!fonts?.length) return "";
+  return fonts.filter((f) => f && f.family && f.src).map((f) => {
+    const fmt = f.format ? ` format('${f.format}')` : "";
+    return `@font-face { font-family: '${f.family}'; src: url('${f.src}')${fmt}; font-weight: ${f.weight ?? 400}; font-style: ${f.style ?? "normal"}; font-display: swap; }`;
+  }).join("\n");
+}
+var themeGoogleFontsHref = (theme) => googleFontsHref(theme.fonts ?? []);
+var themeFontFaceCss = (theme) => customFontFaceCss(theme.customFonts);
+function themeFontVarLines(theme) {
+  const lines = [];
+  for (const id of theme.fonts ?? []) {
+    const b = BY_ID.get(id);
+    if (b) lines.push(`  --font-${id}: ${b.stack};`);
+  }
+  for (const c of theme.customFonts ?? []) {
+    if (c?.id && c.family) lines.push(`  --font-${c.id}: '${c.family}', ${SANS_FALLBACK};`);
+  }
+  return lines;
+}
+function listThemeFonts(customFonts) {
+  const builtin = BUILTIN_FONTS.map((f) => ({
+    id: f.id,
+    label: f.label,
+    stack: f.stack,
+    kind: "builtin",
+    category: f.category
+  }));
+  const custom = (customFonts ?? []).map((c) => ({
+    id: c.id,
+    label: c.family,
+    stack: `'${c.family}', ${SANS_FALLBACK}`,
+    kind: "custom"
+  }));
+  return [...builtin, ...custom];
+}
+function findFontByStack(stack, customFonts) {
+  if (!stack) return void 0;
+  const norm = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
+  const target = norm(stack);
+  return listThemeFonts(customFonts).find((f) => norm(f.stack) === target);
+}
+function fontIdFromVarToken(value) {
+  const m = /^\[var\(--font-([a-z0-9-]+)\)\]$/.exec(value ?? "");
+  return m ? m[1] : null;
+}
+function fontIdFromFamily(family) {
+  return family.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "font";
+}
+
 // src/utils/index.ts
 function hexToHsl(hex) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return { h: 0, s: 0, l: 0 };
   const r2 = parseInt(result[1], 16) / 255;
-  const g = parseInt(result[2], 16) / 255;
+  const g2 = parseInt(result[2], 16) / 255;
   const b = parseInt(result[3], 16) / 255;
-  const max = Math.max(r2, g, b);
-  const min = Math.min(r2, g, b);
+  const max = Math.max(r2, g2, b);
+  const min = Math.min(r2, g2, b);
   let h = 0;
   let s = 0;
   const l = (max + min) / 2;
@@ -2374,13 +2533,13 @@ function hexToHsl(hex) {
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
       case r2:
-        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+        h = ((g2 - b) / d + (g2 < b ? 6 : 0)) / 6;
         break;
-      case g:
+      case g2:
         h = ((b - r2) / d + 2) / 6;
         break;
       case b:
-        h = ((r2 - g) / d + 4) / 6;
+        h = ((r2 - g2) / d + 4) / 6;
         break;
     }
   }
@@ -2425,6 +2584,7 @@ function generateCSSVariables(theme) {
   for (const [level, scale] of Object.entries(theme.typography.headingScale)) {
     lines.push(`  --theme-heading-${level}: ${scale}rem;`);
   }
+  lines.push(...themeFontVarLines(theme));
   lines.push(`  --theme-container-max-width: ${theme.spacing.containerMaxWidth}px;`);
   lines.push(`  --theme-section-padding-y: ${theme.spacing.sectionPaddingY}px;`);
   lines.push(`  --theme-section-padding-x: ${theme.spacing.sectionPaddingX}px;`);
@@ -2472,6 +2632,8 @@ function getDefaultTheme() {
       fontWeightMedium: 500,
       fontWeightBold: 700
     },
+    fonts: ["inter"],
+    customFonts: [],
     spacing: {
       containerMaxWidth: 1280,
       sectionPaddingY: 80,
@@ -2513,7 +2675,11 @@ function mergeTheme(base, overrides) {
     colors: { ...base.colors, ...overrides.colors ?? {} },
     typography: { ...base.typography, ...overrides.typography ?? {} },
     spacing: { ...base.spacing, ...overrides.spacing ?? {} },
-    customTokens: { ...base.customTokens ?? {}, ...overrides.customTokens ?? {} }
+    customTokens: { ...base.customTokens ?? {}, ...overrides.customTokens ?? {} },
+    // Font selection is replaced wholesale when the override provides it (the
+    // theme editor always writes the full arrays), else inherited from base.
+    fonts: overrides.fonts ?? base.fonts,
+    customFonts: overrides.customFonts ?? base.customFonts
   };
   if (overrides.typography?.headingScale) {
     result.typography.headingScale = {
@@ -2533,24 +2699,48 @@ var resolveTheme = (rootProps, configTheme) => mergeTheme(
 );
 
 // src/studio/theme/ThemeVars.tsx
+var GOOGLE_LINK_ID = "tecof-google-fonts";
+var FONT_FACE_ID = "tecof-font-faces";
 var ThemeVars = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
   const { config } = useStudio();
   useEffect(() => {
-    const css = generateCSSVariables(resolveTheme(rootProps, config.theme));
-    const ensure = (doc) => {
-      if (!doc?.head) return;
-      let el = doc.getElementById(THEME_STYLE_ID);
+    const theme = resolveTheme(rootProps, config.theme);
+    const css = generateCSSVariables(theme);
+    const googleHref = themeGoogleFontsHref(theme);
+    const fontFaceCss = themeFontFaceCss(theme);
+    const ensureStyle = (doc, id, content) => {
+      let el = doc.getElementById(id);
       if (!el) {
         el = doc.createElement("style");
-        el.id = THEME_STYLE_ID;
+        el.id = id;
         doc.head.appendChild(el);
       }
-      if (el.textContent !== css) el.textContent = css;
+      if (el.textContent !== content) el.textContent = content;
     };
-    ensure(document);
+    const ensureGoogleLink = (doc, href) => {
+      let el = doc.getElementById(GOOGLE_LINK_ID);
+      if (!href) {
+        el?.remove();
+        return;
+      }
+      if (!el) {
+        el = doc.createElement("link");
+        el.id = GOOGLE_LINK_ID;
+        el.rel = "stylesheet";
+        doc.head.appendChild(el);
+      }
+      if (el.href !== href) el.href = href;
+    };
+    const apply = (doc) => {
+      if (!doc?.head) return;
+      ensureStyle(doc, THEME_STYLE_ID, css);
+      ensureStyle(doc, FONT_FACE_ID, fontFaceCss);
+      ensureGoogleLink(doc, googleHref);
+    };
+    apply(document);
     const iframe = document.querySelector(".tecof-canvas-viewport iframe");
-    ensure(iframe?.contentDocument);
+    apply(iframe?.contentDocument);
   }, [rootProps, config.theme]);
   return null;
 };
@@ -2606,6 +2796,95 @@ var migrateDocument = (doc, migration) => {
   return next;
 };
 
+// src/studio/style/scrollEffects.ts
+var PARALLAX_SPEED = { slow: 0.08, md: 0.16, fast: 0.28 };
+var parallaxSpeed = (el) => {
+  if (el.classList.contains("tecof-parallax-fast")) return PARALLAX_SPEED.fast;
+  if (el.classList.contains("tecof-parallax-slow")) return PARALLAX_SPEED.slow;
+  return PARALLAX_SPEED.md;
+};
+var NOOP = { refresh() {
+}, destroy() {
+} };
+function initScrollEffects(root) {
+  const win = root?.defaultView;
+  if (!root || !win) return NOOP;
+  const reduceMotion = win.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  root.documentElement.classList.add("tecof-has-js");
+  const io = new win.IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          io.unobserve(entry.target);
+        }
+      }
+    },
+    { threshold: 0.1, rootMargin: "0px 0px -8% 0px" }
+  );
+  const observeReveals = () => {
+    root.querySelectorAll(".tecof-reveal:not(.is-visible)").forEach((el) => io.observe(el));
+  };
+  let parallaxEls = [];
+  const collectParallax = () => {
+    parallaxEls = Array.from(root.querySelectorAll(".tecof-parallax"));
+  };
+  let raf = 0;
+  const applyParallax = () => {
+    raf = 0;
+    const vh = win.innerHeight || 0;
+    for (const el of parallaxEls) {
+      const rect = el.getBoundingClientRect();
+      const fromCentre = rect.top + rect.height / 2 - vh / 2;
+      const offset = -fromCentre * parallaxSpeed(el);
+      el.style.transform = `translate3d(0, ${offset.toFixed(1)}px, 0)`;
+    }
+  };
+  const scheduleParallax = () => {
+    if (parallaxEls.length === 0 || raf) return;
+    raf = win.requestAnimationFrame(applyParallax);
+  };
+  observeReveals();
+  if (!reduceMotion) {
+    collectParallax();
+    win.addEventListener("scroll", scheduleParallax, { passive: true });
+    win.addEventListener("resize", scheduleParallax);
+    scheduleParallax();
+  }
+  let moRaf = 0;
+  const mo = new win.MutationObserver(() => {
+    if (moRaf) return;
+    moRaf = win.requestAnimationFrame(() => {
+      moRaf = 0;
+      observeReveals();
+      if (!reduceMotion) {
+        collectParallax();
+        scheduleParallax();
+      }
+    });
+  });
+  if (root.body) mo.observe(root.body, { childList: true, subtree: true });
+  return {
+    refresh() {
+      observeReveals();
+      if (!reduceMotion) {
+        collectParallax();
+        scheduleParallax();
+      }
+    },
+    destroy() {
+      io.disconnect();
+      mo.disconnect();
+      if (raf) win.cancelAnimationFrame(raf);
+      if (moRaf) win.cancelAnimationFrame(moRaf);
+      win.removeEventListener("scroll", scheduleParallax);
+      win.removeEventListener("resize", scheduleParallax);
+      for (const el of parallaxEls) el.style.transform = "";
+      root.documentElement.classList.remove("tecof-has-js");
+    }
+  };
+}
+
 // src/studio/bridge.ts
 var configuredOrigin;
 var configureBridge = (origin) => {
@@ -2621,6 +2900,50 @@ var postToHost = (type, payload, origin) => {
   const targetOrigin = configuredOrigin ?? "*";
   window.parent.postMessage({ type, ...payload ?? {} }, targetOrigin);
 };
+
+// src/studio/canvas/overlayPortal.ts
+var OVERLAY_PORTAL_ATTR = "data-tecof-portal";
+function registerOverlayPortal(el) {
+  if (!el) return () => {
+  };
+  el.setAttribute(OVERLAY_PORTAL_ATTR, "true");
+  el.draggable = false;
+  return () => {
+    el.removeAttribute(OVERLAY_PORTAL_ATTR);
+  };
+}
+function isInsideOverlayPortal(target) {
+  if (!target || typeof target.closest !== "function") return false;
+  return target.closest(`[${OVERLAY_PORTAL_ATTR}]`) !== null;
+}
+var NATIVE_ACTION_SELECTOR = 'a[href], area[href], button, input[type="submit"], input[type="reset"], input[type="image"]';
+function findBlockableInteraction(target) {
+  if (!target || typeof target.closest !== "function") return null;
+  const el = target;
+  if (el.closest(`[${OVERLAY_PORTAL_ATTR}]`)) return null;
+  return el.closest(NATIVE_ACTION_SELECTOR);
+}
+function installCanvasInteractionGuard(doc, isEditMode) {
+  const onActivate = (e) => {
+    if (!isEditMode()) return;
+    if (findBlockableInteraction(e.target)) {
+      e.preventDefault();
+    }
+  };
+  const onSubmit = (e) => {
+    if (!isEditMode()) return;
+    if (isInsideOverlayPortal(e.target)) return;
+    e.preventDefault();
+  };
+  doc.addEventListener("click", onActivate, true);
+  doc.addEventListener("auxclick", onActivate, true);
+  doc.addEventListener("submit", onSubmit, true);
+  return () => {
+    doc.removeEventListener("click", onActivate, true);
+    doc.removeEventListener("auxclick", onActivate, true);
+    doc.removeEventListener("submit", onSubmit, true);
+  };
+}
 var Frame = ({
   children,
   title = "Canvas Frame",
@@ -2731,6 +3054,10 @@ var Frame = ({
     let handleBodyClick = null;
     let handleIframeKeyDown = null;
     let handleScroll = null;
+    const uninstallGuard = installCanvasInteractionGuard(
+      doc,
+      () => useUiStore.getState().mode === "edit"
+    );
     if (body) {
       body.className = "tecof-canvas-body";
       handleBodyClick = (e) => {
@@ -2781,6 +3108,7 @@ var Frame = ({
         cancelAnimationFrame(rafId);
         rafId = null;
       }
+      uninstallGuard();
       if (body && handleBodyClick) {
         body.removeEventListener("click", handleBodyClick);
       }
@@ -2883,6 +3211,42 @@ var resolveNodeType = (doc, id) => {
   }
   return null;
 };
+var AddSectionButton = ({
+  index,
+  onClick,
+  disabled,
+  fixed,
+  orientation = "vertical",
+  slot
+}) => {
+  if (disabled) return null;
+  const className = [
+    "tecof-add-section-divider",
+    fixed ? "is-fixed" : "",
+    slot ? "is-slot" : "",
+    orientation === "horizontal" ? "is-horizontal" : ""
+  ].filter(Boolean).join(" ");
+  return /* @__PURE__ */ jsxs("div", { className, children: [
+    /* @__PURE__ */ jsx("div", { className: "tecof-add-section-line" }),
+    /* @__PURE__ */ jsxs(
+      "button",
+      {
+        type: "button",
+        className: "tecof-add-section-btn",
+        onClick: (e) => {
+          e.stopPropagation();
+          onClick(index);
+        },
+        title: slot ? "Buraya bile\u015Fen ekle" : "Buraya B\xF6l\xFCm Ekle",
+        children: [
+          /* @__PURE__ */ jsx(Plus, { size: 12, className: "tecof-add-section-icon" }),
+          /* @__PURE__ */ jsx("span", { children: slot ? "Ekle" : "B\xF6l\xFCm Ekle" })
+        ]
+      }
+    ),
+    /* @__PURE__ */ jsx("div", { className: "tecof-add-section-line" })
+  ] });
+};
 var getDropAxis = (wrapperEl) => {
   const parent = wrapperEl.parentElement;
   const item = parent?.classList.contains("tecof-node") ? parent : wrapperEl;
@@ -2935,6 +3299,11 @@ var useDropTarget = (options) => {
   const [position, setPosition] = useState(null);
   const [axis, setAxis] = useState("y");
   const [isDragOver, setIsDragOver] = useState(false);
+  const clearDropHover = useCallback(() => {
+    if (!selfId) return;
+    const ui = useUiStore.getState();
+    if (ui.dropHover?.targetId === selfId) ui.setDropHover(null);
+  }, [selfId]);
   useEffect(() => {
     const scroller = autoScrollerRef.current;
     return () => scroller.stop();
@@ -2960,6 +3329,7 @@ var useDropTarget = (options) => {
         autoScrollerRef.current.stop();
         setPosition(null);
         setIsDragOver(false);
+        clearDropHover();
         return;
       }
       e.stopPropagation();
@@ -2972,18 +3342,27 @@ var useDropTarget = (options) => {
         const before = dropAxis === "x" ? e.clientX - rect.left < rect.width / 2 : e.clientY - rect.top < rect.height / 2;
         setAxis(dropAxis);
         setPosition(before ? "before" : "after");
+        if (selfId) {
+          useUiStore.getState().setDropHover({
+            targetId: selfId,
+            zoneKey,
+            position: before ? "before" : "after",
+            axis: dropAxis
+          });
+        }
       } else {
         setIsDragOver(true);
       }
     },
-    [locked, positional, checkValid]
+    [locked, positional, checkValid, clearDropHover, selfId, zoneKey]
   );
   const onDragLeave = useCallback((e) => {
     if (e.currentTarget.contains(e.relatedTarget)) return;
     autoScrollerRef.current.stop();
     setPosition(null);
     setIsDragOver(false);
-  }, []);
+    clearDropHover();
+  }, [clearDropHover]);
   const onDrop = useCallback(
     (e) => {
       if (locked) return;
@@ -2993,6 +3372,7 @@ var useDropTarget = (options) => {
       const droppedPosition = position;
       setPosition(null);
       setIsDragOver(false);
+      clearDropHover();
       if (!valid) {
         endDrag();
         return;
@@ -3007,7 +3387,7 @@ var useDropTarget = (options) => {
       }
       endDrag();
     },
-    [locked, positional, index, getIndex, zoneKey, config, selfId, position, checkValid, moveNode2, insertNode2, endDrag]
+    [locked, positional, index, getIndex, zoneKey, config, selfId, position, checkValid, clearDropHover, moveNode2, insertNode2, endDrag]
   );
   return { position, axis, isDragOver, onDragOver, onDragLeave, onDrop };
 };
@@ -3071,7 +3451,36 @@ var DropZone = ({ zone, className, style, orientation = "vertical" }) => {
             ] })
           }
         )
-      ) : items.map((item, index) => /* @__PURE__ */ jsx(NodeRenderer, { node: item, index, zoneKey }, item.props.id))
+      ) : (
+        // Non-empty slot: interleave hover-revealed "+" affordances so a
+        // component can be inserted at ANY position (top / between / end), not
+        // just at the root. During an active drag they're suppressed — the drop
+        // indicators own positioning then. `openAddSection` targets this zone,
+        // so the modal filters to the types this slot actually accepts.
+        /* @__PURE__ */ jsxs(Fragment, { children: [
+          !readOnly && !isDragActive && /* @__PURE__ */ jsx(
+            AddSectionButton,
+            {
+              index: 0,
+              orientation,
+              slot: true,
+              onClick: (idx) => openAddSection({ zoneKey, index: idx })
+            }
+          ),
+          items.map((item, index) => /* @__PURE__ */ jsxs(React.Fragment, { children: [
+            /* @__PURE__ */ jsx(NodeRenderer, { node: item, index, zoneKey }),
+            !readOnly && !isDragActive && /* @__PURE__ */ jsx(
+              AddSectionButton,
+              {
+                index: index + 1,
+                orientation,
+                slot: true,
+                onClick: (idx) => openAddSection({ zoneKey, index: idx })
+              }
+            )
+          ] }, item.props.id))
+        ] })
+      )
     }
   );
 };
@@ -3096,24 +3505,6 @@ function setDragGhost(e, label) {
     win.requestAnimationFrame(() => ghost.remove());
   });
 }
-
-// src/studio/canvas/overlayPortal.ts
-var OVERLAY_PORTAL_ATTR = "data-tecof-portal";
-function registerOverlayPortal(el) {
-  if (!el) return () => {
-  };
-  el.setAttribute(OVERLAY_PORTAL_ATTR, "true");
-  el.draggable = false;
-  return () => {
-    el.removeAttribute(OVERLAY_PORTAL_ATTR);
-  };
-}
-function isInsideOverlayPortal(target) {
-  if (!target || typeof target.closest !== "function") return false;
-  return target.closest(`[${OVERLAY_PORTAL_ATTR}]`) !== null;
-}
-
-// src/studio/canvas/useInlineEdit.ts
 var VALID_TAGS = ["h1", "h2", "h3", "h4", "h5", "h6", "p", "span", "a", "div"];
 var resolveMatch = (target, wrapper, node, text, defaultLang) => {
   const marked = target.closest("[data-tecof-prop]");
@@ -3406,6 +3797,10 @@ var opts = (values, withNone = true) => [
   ...withNone ? [{ label: "\u2014", value: "" }] : [],
   ...values.map((v) => ({ label: v, value: v }))
 ];
+var FONT_OPTIONS = [
+  { label: "Tema (miras)", value: "" },
+  ...BUILTIN_FONTS.map((f) => ({ label: f.label, value: `[var(--font-${f.id})]` }))
+];
 var withArbitrary = (prefix, preset) => (value) => {
   if (!value) return null;
   if (isArbitrary(value)) return `${prefix}-${value}`;
@@ -3602,6 +3997,17 @@ var STYLE_CONTROLS = [
   },
   // Typography
   {
+    id: "fontFamily",
+    label: "Yaz\u0131 tipi",
+    group: "typography",
+    type: "select",
+    options: FONT_OPTIONS,
+    // Options are arbitrary var-tokens → `withArbitrary` emits `font-[var(--font-id)]`.
+    // `arbitraryPrefix: 'font'` also lets cssGenerator resolve custom-font classes.
+    arbitraryPrefix: "font",
+    toClass: withArbitrary("font", () => null)
+  },
+  {
     id: "text",
     label: "Metin rengi",
     group: "typography",
@@ -3793,6 +4199,39 @@ var STYLE_CONTROLS = [
       { label: "500ms", value: "500" }
     ],
     toClass: (v) => v ? `tecof-anim-delay-${v}` : null
+  },
+  // Scroll interactions — custom classes driven by scrollEffects.ts at runtime
+  // (IntersectionObserver + parallax). CSS in animationCss.ts (published) +
+  // mirrored in styles.css (editor canvas). Unlike `anim` (plays on load),
+  // `reveal` triggers when the element scrolls into view.
+  {
+    id: "reveal",
+    label: "G\xF6r\xFCn\xFCnce (scroll)",
+    group: "effects",
+    type: "select",
+    options: [
+      { label: "Yok", value: "" },
+      { label: "Belirme", value: "fade" },
+      { label: "Yukar\u0131", value: "up" },
+      { label: "A\u015Fa\u011F\u0131", value: "down" },
+      { label: "Soldan", value: "left" },
+      { label: "Sa\u011Fdan", value: "right" },
+      { label: "B\xFCy\xFCme", value: "zoom" }
+    ],
+    toClass: (v) => !v ? null : v === "fade" ? "tecof-reveal" : `tecof-reveal tecof-reveal-${v}`
+  },
+  {
+    id: "parallax",
+    label: "Parallax (scroll)",
+    group: "effects",
+    type: "select",
+    options: [
+      { label: "Yok", value: "" },
+      { label: "Yava\u015F", value: "slow" },
+      { label: "Orta", value: "md" },
+      { label: "H\u0131zl\u0131", value: "fast" }
+    ],
+    toClass: (v) => v ? `tecof-parallax tecof-parallax-${v}` : null
   }
 ];
 var CONTROL_BY_ID = Object.fromEntries(
@@ -7359,10 +7798,12 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
     selfId: node.props.id
   });
   const label = componentConfig?.label || node.type;
+  const isHidden = !!node.props._hidden;
   const wrapperClassName = [
     "tecof-node-wrapper",
     locked ? "is-readonly" : "",
-    isDragging ? "is-dragging" : ""
+    isDragging ? "is-dragging" : "",
+    isHidden ? "is-hidden" : ""
   ].filter(Boolean).join(" ");
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
   const { setRef: dragRef, nodeRef: inlineNodeRef } = useInlineDragRef({
@@ -7389,6 +7830,7 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
       node.type
     ] });
   }
+  if (isHidden && mode === "preview") return null;
   const componentProps = {
     ...node.props,
     className: mergeClassName(node.props.className, styleClassName),
@@ -7458,26 +7900,6 @@ var NodeRenderer = ({ node, index, zoneKey }) => {
       }
     )
   ] }) });
-};
-var AddSectionButton = ({ index, onClick, disabled, fixed }) => {
-  if (disabled) return null;
-  return /* @__PURE__ */ jsxs("div", { className: `tecof-add-section-divider${fixed ? " is-fixed" : ""}`, children: [
-    /* @__PURE__ */ jsx("div", { className: "tecof-add-section-line" }),
-    /* @__PURE__ */ jsxs(
-      "button",
-      {
-        type: "button",
-        className: "tecof-add-section-btn",
-        onClick: () => onClick(index),
-        title: "Buraya B\xF6l\xFCm Ekle",
-        children: [
-          /* @__PURE__ */ jsx(Plus, { size: 12, className: "tecof-add-section-icon" }),
-          /* @__PURE__ */ jsx("span", { children: "B\xF6l\xFCm Ekle" })
-        ]
-      }
-    ),
-    /* @__PURE__ */ jsx("div", { className: "tecof-add-section-line" })
-  ] });
 };
 var PREVIEW_REFERENCE_WIDTH = 1280;
 var MAX_PREVIEW_DEPTH = 4;
@@ -7764,13 +8186,38 @@ var AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config, fi
     for (const cat of componentCategories) {
       if (!showAll && activeCategory !== cat.key) continue;
       const isElement = isElementCategory(cat.title);
-      const items = (typesByCategory[cat.key] || []).filter((type) => (components[type]?.label || type).toLowerCase().includes(query)).map((type) => ({
-        id: `component:${type}`,
-        name: components[type]?.label || type,
-        typeText: type,
-        onActivate: () => onSelect(type),
-        preview: /* @__PURE__ */ jsx(LiveBlockPreview, { config, type, mode: isElement ? "element" : "section" })
-      }));
+      const items = (typesByCategory[cat.key] || []).flatMap((type) => {
+        const label = components[type]?.label || type;
+        const cards = [];
+        if (label.toLowerCase().includes(query)) {
+          cards.push({
+            id: `component:${type}`,
+            name: label,
+            typeText: type,
+            onActivate: () => onSelect(type),
+            preview: /* @__PURE__ */ jsx(LiveBlockPreview, { config, type, mode: isElement ? "element" : "section" })
+          });
+        }
+        for (const [key, variant] of Object.entries(components[type]?.variants ?? {})) {
+          if (!variant?.label || !`${label} ${variant.label}`.toLowerCase().includes(query)) continue;
+          cards.push({
+            id: `component:${type}:${key}`,
+            name: `${label} \xB7 ${variant.label}`,
+            typeText: type,
+            onActivate: () => onSelect(type, { ...variant.props, _variant: key }),
+            preview: /* @__PURE__ */ jsx(
+              LiveBlockPreview,
+              {
+                config,
+                type,
+                props: variant.props,
+                mode: isElement ? "element" : "section"
+              }
+            )
+          });
+        }
+        return cards;
+      });
       if (items.length > 0) {
         groups.push({ key: cat.key, title: cat.title, isElement, items });
       }
@@ -8071,6 +8518,8 @@ var declarationsFor = (controlId, value) => {
       const v = FONT_SIZES[value];
       return v ? [["font-size", v[0]], ["line-height", v[1]]] : null;
     }
+    case "fontFamily":
+      return raw ? [["font-family", raw]] : null;
     case "fontWeight":
       return FONT_WEIGHTS[value] ? [["font-weight", FONT_WEIGHTS[value]]] : null;
     case "align":
@@ -8184,11 +8633,141 @@ var CanvasStyleInjector = () => {
   if (!css) return null;
   return /* @__PURE__ */ jsx("style", { "data-tecof-canvas-styles": true, children: css });
 };
+var GridOverlay = ({ columns, gap, maxWidth, paddingX }) => /* @__PURE__ */ jsx("div", { className: "tecof-grid-overlay", "aria-hidden": "true", children: /* @__PURE__ */ jsx(
+  "div",
+  {
+    className: "tecof-grid-overlay-inner",
+    style: { maxWidth: `${maxWidth}px`, paddingLeft: paddingX, paddingRight: paddingX, gap: `${gap}px` },
+    children: Array.from({ length: Math.max(1, columns) }).map((_, i) => /* @__PURE__ */ jsx("div", { className: "tecof-grid-col" }, i))
+  }
+) });
+
+// src/studio/canvas/dragGuideModel.ts
+var MIN_BADGE_GAP = 2;
+function computeDragGuides({
+  axis,
+  lineAt,
+  container,
+  prevEdge,
+  nextEdge
+}) {
+  const badges = [];
+  if (axis === "y") {
+    const line2 = { top: lineAt - 1, left: container.left, width: container.width, height: 2 };
+    const edges2 = [
+      { top: container.top, left: container.left, width: 1, height: container.height },
+      { top: container.top, left: container.left + container.width - 1, width: 1, height: container.height }
+    ];
+    const centerX = container.left + container.width / 2;
+    const prev2 = prevEdge ?? container.top;
+    const next2 = nextEdge ?? container.top + container.height;
+    const prevGap2 = lineAt - prev2;
+    const nextGap2 = next2 - lineAt;
+    if (prevGap2 >= MIN_BADGE_GAP) {
+      badges.push({ value: Math.round(prevGap2), left: centerX, top: (prev2 + lineAt) / 2 });
+    }
+    if (nextGap2 >= MIN_BADGE_GAP) {
+      badges.push({ value: Math.round(nextGap2), left: centerX, top: (lineAt + next2) / 2 });
+    }
+    return { line: line2, edges: edges2, badges };
+  }
+  const line = { top: container.top, left: lineAt - 1, width: 2, height: container.height };
+  const edges = [
+    { top: container.top, left: container.left, width: container.width, height: 1 },
+    { top: container.top + container.height - 1, left: container.left, width: container.width, height: 1 }
+  ];
+  const centerY = container.top + container.height / 2;
+  const prev = prevEdge ?? container.left;
+  const next = nextEdge ?? container.left + container.width;
+  const prevGap = lineAt - prev;
+  const nextGap = next - lineAt;
+  if (prevGap >= MIN_BADGE_GAP) {
+    badges.push({ value: Math.round(prevGap), top: centerY, left: (prev + lineAt) / 2 });
+  }
+  if (nextGap >= MIN_BADGE_GAP) {
+    badges.push({ value: Math.round(nextGap), top: centerY, left: (lineAt + next) / 2 });
+  }
+  return { line, edges, badges };
+}
+function pickNeighbourEdges(axis, lineAt, siblings) {
+  let prevEdge = null;
+  let nextEdge = null;
+  for (const r2 of siblings) {
+    const start = axis === "y" ? r2.top : r2.left;
+    const end = axis === "y" ? r2.top + r2.height : r2.left + r2.width;
+    if (end <= lineAt + 1 && (prevEdge === null || end > prevEdge)) prevEdge = end;
+    if (start >= lineAt - 1 && (nextEdge === null || start < nextEdge)) nextEdge = start;
+  }
+  return { prevEdge, nextEdge };
+}
+var toGuideRect = (r2) => ({
+  top: r2.top,
+  left: r2.left,
+  width: r2.width,
+  height: r2.height
+});
+var DragGuides = () => {
+  const dropHover = useUiStore((s) => s.dropHover);
+  const dragActive = useEditorStore((s) => s.drag != null);
+  const draggedId = useEditorStore((s) => s.drag?.id ?? null);
+  const rootRef = useRef(null);
+  const [model, setModel] = useState(null);
+  const [scrollTick, setScrollTick] = useState(0);
+  useLayoutEffect(() => {
+    const doc = rootRef.current?.ownerDocument;
+    if (!doc || !dragActive || !dropHover) {
+      setModel(null);
+      return;
+    }
+    const onScroll = () => setScrollTick((t) => t + 1);
+    doc.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    const { targetId, zoneKey, position, axis } = dropHover;
+    const target = doc.querySelector(`[data-tecof-id="${targetId}"]`);
+    const container = doc.querySelector(`[data-tecof-zone="${zoneKey ?? "root"}"]`);
+    if (!target || !container) {
+      setModel(null);
+      return () => doc.removeEventListener("scroll", onScroll, true);
+    }
+    const targetRect = target.getBoundingClientRect();
+    const lineAt = axis === "y" ? position === "before" ? targetRect.top : targetRect.bottom : position === "before" ? targetRect.left : targetRect.right;
+    const state = useEditorStore.getState();
+    const list = zoneKey ? state.document.zones[zoneKey] ?? [] : state.document.content;
+    const siblings = [];
+    for (const node of list) {
+      if (node.props.id === draggedId) continue;
+      const el = doc.querySelector(`[data-tecof-id="${node.props.id}"]`);
+      if (el) siblings.push(toGuideRect(el.getBoundingClientRect()));
+    }
+    const { prevEdge, nextEdge } = pickNeighbourEdges(axis, lineAt, siblings);
+    setModel(
+      computeDragGuides({
+        axis,
+        lineAt,
+        container: toGuideRect(container.getBoundingClientRect()),
+        prevEdge,
+        nextEdge
+      })
+    );
+    return () => doc.removeEventListener("scroll", onScroll, true);
+  }, [dropHover, dragActive, draggedId, scrollTick]);
+  return /* @__PURE__ */ jsx("div", { ref: rootRef, className: "tecof-drag-guides", "aria-hidden": "true", children: model && /* @__PURE__ */ jsxs(Fragment, { children: [
+    model.edges.map((edge, i) => /* @__PURE__ */ jsx("div", { className: "tecof-drag-guide-edge", style: edge }, `e${i}`)),
+    /* @__PURE__ */ jsx("div", { className: "tecof-drag-guide-line", style: model.line }),
+    model.badges.map((badge, i) => /* @__PURE__ */ jsxs("div", { className: "tecof-drag-guide-badge", style: { top: badge.top, left: badge.left }, children: [
+      badge.value,
+      "px"
+    ] }, `b${i}`))
+  ] }) });
+};
 var Canvas = () => {
   const content = useEditorStore((state) => state.document.content);
   const viewport = useEditorStore((state) => state.viewport);
   const { config, readOnly } = useStudio();
   const rootProps = useEditorStore((state) => state.document.root?.props) || {};
+  const gridVisible = useUiStore((s) => s.gridVisible);
+  const gridColumns = useUiStore((s) => s.gridColumns);
+  const gridGap = useUiStore((s) => s.gridGap);
+  const theme = resolveTheme(rootProps, config.theme);
   const insertNode2 = useEditorStore((state) => state.insertNode);
   const insertPayload = useEditorStore((state) => state.insertPayload);
   const selectNode = useEditorStore((state) => state.selectNode);
@@ -8207,6 +8786,21 @@ var Canvas = () => {
     locked: readOnly,
     getIndex: () => content.length
   });
+  useEffect(
+    () => useEditorStore.subscribe((cur, prev) => {
+      if (prev.drag && !cur.drag) useUiStore.getState().setDropHover(null);
+    }),
+    []
+  );
+  const mode = useUiStore((s) => s.mode);
+  useEffect(() => {
+    if (mode !== "preview") return;
+    const iframe = document.querySelector(".tecof-canvas-viewport iframe");
+    const doc = iframe?.contentDocument;
+    if (!doc) return;
+    const handle = initScrollEffects(doc);
+    return () => handle.destroy();
+  }, [mode, viewport]);
   const handleSelectComponent = (type, customProps) => {
     const newNode = createNode(config, type, customProps);
     insertNode2(newNode, addSectionTarget?.zoneKey, addSectionTarget?.index);
@@ -8299,6 +8893,16 @@ var Canvas = () => {
   return /* @__PURE__ */ jsxs("div", { className: "tecof-canvas-container", onMouseDown: handleCanvasShellClick, children: [
     /* @__PURE__ */ jsx("div", { className: viewportClassName, children: /* @__PURE__ */ jsxs(Frame, { className: "tecof-canvas-frame", children: [
       /* @__PURE__ */ jsx(CanvasStyleInjector, {}),
+      gridVisible && mode !== "preview" && /* @__PURE__ */ jsx(
+        GridOverlay,
+        {
+          columns: gridColumns,
+          gap: gridGap,
+          maxWidth: theme.spacing.containerMaxWidth,
+          paddingX: theme.spacing.sectionPaddingX
+        }
+      ),
+      mode !== "preview" && /* @__PURE__ */ jsx(DragGuides, {}),
       contentWithLayout
     ] }) }),
     /* @__PURE__ */ jsx(
@@ -8481,6 +9085,124 @@ var SpacingDragHandles = ({ nodeId, coords, onDragAxisChange }) => {
       /* @__PURE__ */ jsxs("div", { className: `tecof-spacing-drag-label is-${drag.edge.kind}`, style: labelStyle(drag), children: [
         drag.valuePx,
         "px"
+      ] })
+    ] })
+  ] });
+};
+var CURSORS = {
+  e: "ew-resize",
+  s: "ns-resize",
+  se: "nwse-resize"
+};
+var MIN_SIZE = 16;
+function resizeStyleUpdate(current2, corner, w, h) {
+  const base = { ...current2.base };
+  if (corner === "e" || corner === "se") base.w = toArbitrary(`${Math.round(w)}px`);
+  if (corner === "s" || corner === "se") base.h = toArbitrary(`${Math.round(h)}px`);
+  return { ...current2, base };
+}
+var HANDLES = ["e", "s", "se"];
+var ResizeHandles = ({ nodeId, coords, onResizeChange }) => {
+  const [drag, setDrag] = useState(null);
+  const dragRef = useRef(null);
+  const captureRef = useRef(null);
+  const endDrag = useCallback(
+    (commit2) => {
+      const d = dragRef.current;
+      const cap = captureRef.current;
+      dragRef.current = null;
+      captureRef.current = null;
+      setDrag(null);
+      onResizeChange(null);
+      if (cap) {
+        try {
+          cap.el.releasePointerCapture(cap.pointerId);
+        } catch {
+        }
+      }
+      if (!d || !commit2 || !d.moved) return;
+      const store = useEditorStore.getState();
+      const details = findNodeById(store.document, nodeId);
+      if (!details) return;
+      const current2 = details.node.props?.[STYLES_PROP] ?? {};
+      store.updateProps(nodeId, { [STYLES_PROP]: resizeStyleUpdate(current2, d.corner, d.w, d.h) });
+    },
+    [nodeId, onResizeChange]
+  );
+  const handlePointerDown = (corner) => (e) => {
+    if (e.button !== 0 || dragRef.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    captureRef.current = { el, pointerId: e.pointerId };
+    const startW = Math.round(coords.width);
+    const startH = Math.round(coords.height);
+    const next = {
+      corner,
+      startW,
+      startH,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      w: startW,
+      h: startH,
+      moved: false
+    };
+    dragRef.current = next;
+    setDrag(next);
+    onResizeChange(corner);
+  };
+  const handlePointerMove = (e) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startClientX;
+    const dy = e.clientY - d.startClientY;
+    const w = d.corner === "s" ? d.w : Math.max(MIN_SIZE, d.startW + dx);
+    const h = d.corner === "e" ? d.h : Math.max(MIN_SIZE, d.startH + dy);
+    const moved = d.moved || dx !== 0 || dy !== 0;
+    if (w === d.w && h === d.h && moved === d.moved) return;
+    const next = { ...d, w, h, moved };
+    dragRef.current = next;
+    setDrag(next);
+  };
+  const handlePointerUp = () => endDrag(true);
+  const handlePointerCancel = () => endDrag(false);
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        endDrag(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [dragging, endDrag]);
+  useEffect(() => () => onResizeChange(null), [onResizeChange]);
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    HANDLES.map((corner) => {
+      if (drag && drag.corner !== corner) return null;
+      return /* @__PURE__ */ jsx(
+        "div",
+        {
+          className: `tecof-resize-handle is-${corner}${drag?.corner === corner ? " is-active" : ""}`,
+          style: { cursor: CURSORS[corner] },
+          onPointerDown: handlePointerDown(corner),
+          onPointerMove: handlePointerMove,
+          onPointerUp: handlePointerUp,
+          onPointerCancel: handlePointerCancel
+        },
+        corner
+      );
+    }),
+    drag && /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx("div", { className: "tecof-resize-preview", style: { width: drag.w, height: drag.h } }),
+      /* @__PURE__ */ jsxs("div", { className: "tecof-resize-label", children: [
+        Math.round(drag.w),
+        " \xD7 ",
+        Math.round(drag.h)
       ] })
     ] })
   ] });
@@ -8854,12 +9576,15 @@ var SelectionOverlay = () => {
   };
   const perms = usePermissions(selectedId);
   const [spacingDragAxis, setSpacingDragAxis] = useState(null);
+  const [resizeCorner, setResizeCorner] = useState(null);
+  const resizeEnabled = useUiStore((state) => state.resizeEnabled);
+  const canResize = resizeEnabled && componentConfig?.resizable !== false;
   if (mode === "preview") return null;
   return /* @__PURE__ */ jsxs(
     "div",
     {
       ref: containerRef,
-      className: `tecof-overlay${isScrolling ? " is-scrolling" : ""}${spacingDragAxis ? ` is-spacing-dragging is-axis-${spacingDragAxis}` : ""}`,
+      className: `tecof-overlay${isScrolling ? " is-scrolling" : ""}${spacingDragAxis ? ` is-spacing-dragging is-axis-${spacingDragAxis}` : ""}${resizeCorner ? ` is-spacing-dragging is-resizing is-resize-${resizeCorner}` : ""}`,
       children: [
         hoveredCoords && /* @__PURE__ */ jsxs(Fragment, { children: [
           /* @__PURE__ */ jsx(SpacingBands, { coords: hoveredCoords }),
@@ -8902,14 +9627,21 @@ var SelectionOverlay = () => {
                   onDelete: handleDelete
                 }
               ),
-              !isMulti && perms.edit !== false && selectedCoords.box && selectedCoords.width >= SPACING_HANDLES_MIN_WIDTH && selectedCoords.height >= SPACING_HANDLES_MIN_HEIGHT && /* @__PURE__ */ jsx(
+              !isMulti && perms.edit !== false && selectedCoords.box && selectedCoords.width >= SPACING_HANDLES_MIN_WIDTH && selectedCoords.height >= SPACING_HANDLES_MIN_HEIGHT && (canResize ? /* @__PURE__ */ jsx(
+                ResizeHandles,
+                {
+                  nodeId: selectedId,
+                  coords: selectedCoords,
+                  onResizeChange: setResizeCorner
+                }
+              ) : /* @__PURE__ */ jsx(
                 SpacingDragHandles,
                 {
                   nodeId: selectedId,
                   coords: selectedCoords,
                   onDragAxisChange: setSpacingDragAxis
                 }
-              )
+              ))
             ]
           }
         ),
@@ -8946,11 +9678,12 @@ var Menu = ({ menu, onClose }) => {
   const selectNode = useEditorStore((s) => s.selectNode);
   const removeNode2 = useEditorStore((s) => s.removeNode);
   const duplicateNode2 = useEditorStore((s) => s.duplicateNode);
-  const insertNode2 = useEditorStore((s) => s.insertNode);
+  const copyNode = useEditorStore((s) => s.copyNode);
+  const pasteClipboard = useEditorStore((s) => s.pasteClipboard);
   const updateProps2 = useEditorStore((s) => s.updateProps);
   const styleClipboard = useUiStore((s) => s.styleClipboard);
-  const nodeClipboard = useUiStore((s) => s.nodeClipboard);
-  const setNodeClipboard = useUiStore((s) => s.setNodeClipboard);
+  const clipboardInMemory = useEditorStore((s) => s.clipboard != null);
+  const canPaste = clipboardInMemory || hasClipboardContent();
   const perms = usePermissions(menu.nodeId);
   const nodeDetails = findNodeById(documentState, menu.nodeId);
   const parentId = getParentId(documentState, menu.nodeId);
@@ -9048,17 +9781,12 @@ var Menu = ({ menu, onClose }) => {
     onClose();
   };
   const handleCopy = () => {
-    const snapshot = serializeNodeSubtree(documentState, menu.nodeId);
-    if (snapshot) setNodeClipboard(snapshot);
+    copyNode(menu.nodeId);
     onClose();
   };
   const handlePaste = () => {
-    if (!nodeClipboard) return;
-    const clone = JSON.parse(JSON.stringify(nodeClipboard));
-    const newId = generateId();
-    clone.props.id = newId;
-    insertNode2(clone, nodeDetails.path.zoneKey, nodeDetails.path.index + 1);
-    selectNode(newId);
+    if (!canPaste) return;
+    pasteClipboard(nodeDetails.path.zoneKey, nodeDetails.path.index + 1);
     onClose();
   };
   const handleCopyStyles = () => {
@@ -9186,7 +9914,7 @@ var Menu = ({ menu, onClose }) => {
             {
               icon: /* @__PURE__ */ jsx(ClipboardPaste, { size: 14 }),
               label: "Yap\u0131\u015Ft\u0131r",
-              disabled: !nodeClipboard,
+              disabled: !canPaste,
               onSelect: handlePaste
             }
           ),
@@ -9262,240 +9990,230 @@ var NodeContextMenu = () => {
     `${contextMenu.nodeId}:${contextMenu.x}:${contextMenu.y}`
   );
 };
-var OPPOSITE = {
-  top: "bottom",
-  bottom: "top",
-  left: "right",
-  right: "left"
+
+// src/studio/ai/prompt.ts
+var fieldSpec = (name, def) => {
+  const spec = { name, type: def.type ?? "custom" };
+  if (def.label) spec.label = def.label;
+  if (def.type === "select" || def.type === "radio") {
+    const opts2 = Array.isArray(def.options) ? def.options.map((o) => typeof o === "object" ? o.value : o).filter(Boolean) : void 0;
+    if (opts2?.length) spec.options = opts2;
+  }
+  if (def.type === "slot") spec.slot = true;
+  return spec;
 };
-var parsePlacement = (placement) => {
-  const [side, align] = placement.split("-");
-  return { side, align: align ?? "center" };
-};
-function useFloating({
-  anchor,
-  open,
-  placement = "bottom-start",
-  offset = 6,
-  padding = 8
-}) {
-  const floatingRef = useRef(null);
-  const [pos, setPos] = useState({
-    top: -9999,
-    left: -9999,
-    side: parsePlacement(placement).side
+function buildComponentCatalog(config) {
+  const catalog = Object.entries(config.components ?? {}).map(([type, comp]) => {
+    const entry = { type };
+    if (comp.label) entry.label = comp.label;
+    if (comp.category) entry.category = comp.category;
+    if (comp.fields) {
+      entry.fields = Object.entries(comp.fields).map(([name, def]) => fieldSpec(name, def));
+    }
+    if (comp.defaultProps) entry.defaultProps = comp.defaultProps;
+    if (comp.variants) {
+      entry.variants = Object.fromEntries(
+        Object.entries(comp.variants).map(([k, v]) => [k, v.props])
+      );
+    }
+    if (comp.acceptsChildren !== void 0) entry.acceptsChildren = comp.acceptsChildren;
+    if (comp.allowedParents) entry.allowedParents = comp.allowedParents;
+    return entry;
   });
-  const update = useCallback(() => {
-    const floating = floatingRef.current;
-    if (!anchor || !floating) return;
-    const a = anchor.getBoundingClientRect();
-    const fw = floating.offsetWidth;
-    const fh = floating.offsetHeight;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const { side: preferred, align } = parsePlacement(placement);
-    const space = {
-      top: a.top - padding,
-      bottom: vh - a.bottom - padding,
-      left: a.left - padding,
-      right: vw - a.right - padding
-    };
-    const needed = (s) => (s === "top" || s === "bottom" ? fh : fw) + offset;
-    let side = preferred;
-    if (space[preferred] < needed(preferred) && space[OPPOSITE[preferred]] > space[preferred]) {
-      side = OPPOSITE[preferred];
-    }
-    let top = 0;
-    let left = 0;
-    if (side === "bottom") top = a.bottom + offset;
-    else if (side === "top") top = a.top - fh - offset;
-    else if (side === "right") left = a.right + offset;
-    else left = a.left - fw - offset;
-    if (side === "top" || side === "bottom") {
-      if (align === "start") left = a.left;
-      else if (align === "end") left = a.right - fw;
-      else left = a.left + (a.width - fw) / 2;
-    } else {
-      if (align === "start") top = a.top;
-      else if (align === "end") top = a.bottom - fh;
-      else top = a.top + (a.height - fh) / 2;
-    }
-    const clamp2 = (value, size, viewport) => Math.max(padding, Math.min(value, viewport - size - padding));
-    setPos({
-      top: clamp2(top, fh, vh),
-      left: clamp2(left, fw, vw),
-      side
-    });
-  }, [anchor, placement, offset, padding]);
-  useLayoutEffect(() => {
-    if (open) update();
-  }, [open, update]);
-  useEffect(() => {
-    if (!open || !anchor) return;
-    let frame = 0;
-    const schedule = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(update);
-    };
-    window.addEventListener("scroll", schedule, true);
-    window.addEventListener("resize", schedule);
-    const observer = new ResizeObserver(schedule);
-    if (floatingRef.current) observer.observe(floatingRef.current);
-    observer.observe(anchor);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", schedule, true);
-      window.removeEventListener("resize", schedule);
-      observer.disconnect();
-    };
-  }, [open, anchor, update]);
-  return {
-    floatingRef,
-    style: { position: "fixed", top: pos.top, left: pos.left },
-    side: pos.side,
-    update
-  };
+  return JSON.stringify(catalog);
 }
-var tokenFor = (shortcode) => `{{ data.${shortcode} }}`;
-var BindingPopover = ({
-  anchor,
-  onInsert,
-  onClose
-}) => {
-  const { apiClient } = useTecof();
-  const { floatingRef, style: floatingStyle } = useFloating({
-    anchor,
-    open: true,
-    placement: "bottom-end"
-  });
-  const [collections, setCollections] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeSlug, setActiveSlug] = useState(null);
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await apiClient.getCmsCollections();
-        if (cancelled) return;
-        if (res.success && Array.isArray(res.data)) setCollections(res.data);
-        else setError(res.message || "Koleksiyonlar y\xFCklenemedi");
-      } catch (e) {
-        if (!cancelled) setError(e?.message || "Ba\u011Flant\u0131 hatas\u0131");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [apiClient]);
-  useEffect(() => {
-    const onDown = (e) => {
-      if (!floatingRef.current?.contains(e.target) && !anchor.contains(e.target)) onClose();
-    };
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [anchor, onClose, floatingRef]);
-  const active = collections.find((c) => c.slug === activeSlug) || null;
-  const filteredCollections = collections.filter(
-    (c) => !query.trim() || `${c.name} ${c.slug}`.toLowerCase().includes(query.toLowerCase())
-  );
-  const fields = active?.fields || [];
-  const filteredFields = fields.filter(
-    (f) => !query.trim() || `${f.name} ${f.shortcode}`.toLowerCase().includes(query.toLowerCase())
-  );
-  return createPortal(
-    /* @__PURE__ */ jsxs("div", { ref: floatingRef, className: "tecof-bind-popover", style: floatingStyle, role: "dialog", "aria-label": "CMS verisine ba\u011Fla", children: [
-      /* @__PURE__ */ jsx("div", { className: "tecof-bind-header", children: active ? /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-bind-back", onClick: () => {
-        setActiveSlug(null);
-        setQuery("");
-      }, children: [
-        /* @__PURE__ */ jsx(ChevronLeft, { size: 14 }),
-        " ",
-        active.name
-      ] }) : /* @__PURE__ */ jsx("span", { className: "tecof-bind-title", children: "CMS verisine ba\u011Fla" }) }),
-      /* @__PURE__ */ jsxs("div", { className: "tecof-bind-search", children: [
-        /* @__PURE__ */ jsx(Search, { size: 13 }),
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "text",
-            value: query,
-            onChange: (e) => setQuery(e.target.value),
-            placeholder: active ? "Alan ara\u2026" : "Koleksiyon ara\u2026",
-            className: "tecof-bind-search-input",
-            autoFocus: true
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "tecof-bind-list", children: loading ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: "Y\xFCkleniyor\u2026" }) : error ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: error }) : !active ? filteredCollections.length === 0 ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: "Koleksiyon yok" }) : filteredCollections.map((col) => /* @__PURE__ */ jsxs(
-        "button",
-        {
-          type: "button",
-          className: "tecof-bind-item",
-          onClick: () => {
-            setActiveSlug(col.slug);
-            setQuery("");
-          },
-          children: [
-            /* @__PURE__ */ jsx(Database, { size: 13 }),
-            /* @__PURE__ */ jsx("span", { className: "tecof-bind-item-label", children: col.name }),
-            /* @__PURE__ */ jsxs("span", { className: "tecof-bind-item-meta", children: [
-              col.fields?.length ?? 0,
-              " alan"
-            ] })
-          ]
-        },
-        col._id
-      )) : filteredFields.length === 0 ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: "Alan yok" }) : filteredFields.map((f) => /* @__PURE__ */ jsxs(
-        "button",
-        {
-          type: "button",
-          className: "tecof-bind-item",
-          onClick: () => {
-            onInsert(tokenFor(f.shortcode));
-            onClose();
-          },
-          children: [
-            /* @__PURE__ */ jsx(Braces, { size: 13 }),
-            /* @__PURE__ */ jsx("span", { className: "tecof-bind-item-label", children: f.name }),
-            /* @__PURE__ */ jsx("span", { className: "tecof-bind-item-meta", children: f.type })
-          ]
-        },
-        f.shortcode
-      )) })
-    ] }),
-    document.body
-  );
+function buildSectionSystemPrompt(config) {
+  return [
+    "Sen bir sayfa edit\xF6r\xFC i\xE7in b\xF6l\xFCm \xFCreten asistans\u0131n.",
+    "Kullan\u0131c\u0131n\u0131n iste\u011Fine uygun TEK bir b\xF6l\xFCm (node a\u011Fac\u0131) \xFCret.",
+    "",
+    "KURALLAR:",
+    '- SADECE ge\xE7erli JSON d\xF6nd\xFCr: tek bir node objesi { "type": string, "props": object }. A\xE7\u0131klama, markdown, kod blo\u011Fu YOK.',
+    "- Yaln\u0131zca a\u015Fa\u011F\u0131daki katalogdaki component tiplerini kullan. Katalogda olmayan tip UYDURMA.",
+    `- Alan de\u011Ferlerini her component'in "fields" tan\u0131m\u0131na g\xF6re doldur; select alanlar\u0131nda yaln\u0131zca listelenen options de\u011Ferlerini kullan.`,
+    `- Slot alanlar\u0131 (slot:true): \xE7ocuk node'lar\u0131 props i\xE7inde o alan ad\u0131yla bir D\u0130Z\u0130 olarak ver: "cols": [{ "type": "...", "props": {...} }].`,
+    '- "id" alan\u0131 YAZMA (edit\xF6r kendisi \xFCretir).',
+    "- \u0130\xE7erik dili: kullan\u0131c\u0131n\u0131n istek dili.",
+    "",
+    `KATALOG: ${buildComponentCatalog(config)}`
+  ].join("\n");
+}
+var buildSectionUserPrompt = (request) => `\u0130stek: ${request.trim()}
+Sadece JSON node objesini d\xF6nd\xFCr.`;
+
+// src/studio/ai/parse.ts
+var AiParseError = class extends Error {
 };
-var CmsBindingButton = ({ onInsert, title = "CMS verisine ba\u011Fla" }) => {
-  const [open, setOpen] = useState(false);
-  const btnRef = useRef(null);
-  const close = useCallback(() => setOpen(false), []);
-  return /* @__PURE__ */ jsxs(Fragment, { children: [
-    /* @__PURE__ */ jsx(
-      "button",
-      {
-        ref: btnRef,
-        type: "button",
-        className: `tecof-bind-btn${open ? " is-active" : ""}`,
-        onClick: () => setOpen((o) => !o),
-        title,
-        "aria-label": title,
-        children: /* @__PURE__ */ jsx(Braces, { size: 14 })
+var extractJson = (text) => {
+  const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(text);
+  const candidate = fence ? fence[1] : text;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end <= start) {
+    throw new AiParseError("Yan\u0131tta JSON bulunamad\u0131 \u2014 tekrar deneyin.");
+  }
+  return candidate.slice(start, end + 1);
+};
+var isNodeShape = (v) => !!v && typeof v === "object" && typeof v.type === "string" && (v.props === void 0 || typeof v.props === "object");
+var sanitizeNode = (raw, config, depth) => {
+  if (depth > 12) throw new AiParseError("B\xF6l\xFCm a\u011Fac\u0131 \xE7ok derin \u2014 tekrar deneyin.");
+  if (!isNodeShape(raw)) {
+    throw new AiParseError("Yan\u0131t ge\xE7erli bir bile\u015Fen d\xFC\u011F\xFCm\xFC de\u011Fil \u2014 tekrar deneyin.");
+  }
+  if (!config.components?.[raw.type]) {
+    throw new AiParseError(`Bilinmeyen bile\u015Fen tipi: "${raw.type}" \u2014 tekrar deneyin.`);
+  }
+  const props = {};
+  for (const [key, value] of Object.entries(raw.props ?? {})) {
+    if (key === "id") continue;
+    if (Array.isArray(value) && value.length > 0 && value.every(isNodeShape)) {
+      props[key] = value.map((child) => sanitizeNode(child, config, depth + 1));
+    } else {
+      props[key] = value;
+    }
+  }
+  return { type: raw.type, props };
+};
+function parseAiSection(text, config) {
+  let parsed;
+  try {
+    parsed = JSON.parse(extractJson(text));
+  } catch (e) {
+    if (e instanceof AiParseError) throw e;
+    throw new AiParseError("Yan\u0131t JSON olarak \xE7\xF6z\xFCmlenemedi \u2014 tekrar deneyin.");
+  }
+  return sanitizeNode(parsed, config, 0);
+}
+var SUGGESTIONS = [
+  "3 kolonlu fiyatland\u0131rma b\xF6l\xFCm\xFC",
+  "Ba\u015Fl\u0131k, a\xE7\u0131klama ve buton i\xE7eren hero",
+  "M\xFC\u015Fteri yorumlar\u0131 b\xF6l\xFCm\xFC"
+];
+var AiSectionModal = () => {
+  const { config } = useStudio();
+  const open = useUiStore((s) => s.aiModalOpen);
+  const setOpen = useUiStore((s) => s.setAiModalOpen);
+  const insertNode2 = useEditorStore((s) => s.insertNode);
+  const selectNode = useEditorStore((s) => s.selectNode);
+  const [prompt, setPrompt] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const cancelledRef = useRef(false);
+  const close = useCallback(() => {
+    cancelledRef.current = true;
+    setOpen(false);
+  }, [setOpen]);
+  useEffect(() => {
+    if (open) {
+      cancelledRef.current = false;
+      setPrompt("");
+      setError(null);
+      setBusy(false);
+    }
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
       }
-    ),
-    open && btnRef.current && /* @__PURE__ */ jsx(BindingPopover, { anchor: btnRef.current, onInsert, onClose: close })
-  ] });
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open, close]);
+  const ai = config.ai;
+  if (!open || !ai) return null;
+  const generate = async () => {
+    const request = prompt.trim();
+    if (!request || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const text = await ai.complete({
+        system: buildSectionSystemPrompt(config),
+        prompt: buildSectionUserPrompt(request)
+      });
+      if (cancelledRef.current) return;
+      const node = parseAiSection(text, config);
+      node.props.id = generateId();
+      insertNode2(node);
+      selectNode(node.props.id);
+      setOpen(false);
+    } catch (e) {
+      if (cancelledRef.current) return;
+      setError(
+        e instanceof AiParseError ? e.message : "\xDCretim ba\u015Far\u0131s\u0131z oldu \u2014 ba\u011Flant\u0131y\u0131 kontrol edip tekrar deneyin."
+      );
+    } finally {
+      if (!cancelledRef.current) setBusy(false);
+    }
+  };
+  return /* @__PURE__ */ jsx("div", { className: "tecof-modal-overlay", onClick: close, children: /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: "tecof-ai-modal",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-label": "AI ile b\xF6l\xFCm \xFCret",
+      onClick: (e) => e.stopPropagation(),
+      children: [
+        /* @__PURE__ */ jsxs("div", { className: "tecof-ai-modal-head", children: [
+          /* @__PURE__ */ jsxs("span", { className: "tecof-ai-modal-title", children: [
+            /* @__PURE__ */ jsx(Sparkles, { size: 15, "aria-hidden": "true" }),
+            "AI ile b\xF6l\xFCm \xFCret"
+          ] }),
+          /* @__PURE__ */ jsx("button", { type: "button", className: "tecof-modal-close", onClick: close, title: "Kapat", children: /* @__PURE__ */ jsx(X, { size: 16 }) })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "textarea",
+          {
+            className: "tecof-ai-modal-input",
+            placeholder: "Ne eklemek istiyorsun? \xD6rn: 3 kolonlu fiyatland\u0131rma b\xF6l\xFCm\xFC\u2026",
+            value: prompt,
+            autoFocus: true,
+            rows: 3,
+            disabled: busy,
+            onChange: (e) => setPrompt(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                generate();
+              }
+            }
+          }
+        ),
+        /* @__PURE__ */ jsx("div", { className: "tecof-ai-modal-suggestions", children: SUGGESTIONS.map((s) => /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-ai-modal-chip",
+            disabled: busy,
+            onClick: () => setPrompt(s),
+            children: s
+          },
+          s
+        )) }),
+        error && /* @__PURE__ */ jsx("div", { className: "tecof-ai-modal-error", role: "alert", children: error }),
+        /* @__PURE__ */ jsxs("div", { className: "tecof-ai-modal-actions", children: [
+          /* @__PURE__ */ jsx("span", { className: "tecof-ai-modal-hint", children: "\u2318\u23CE ile \xFCret \xB7 sonu\xE7 geri al\u0131nabilir" }),
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              className: "tecof-btn-primary",
+              disabled: !prompt.trim() || busy,
+              onClick: generate,
+              children: [
+                /* @__PURE__ */ jsx(Sparkles, { size: 14 }),
+                busy ? "\xDCretiliyor\u2026" : "\xDCret"
+              ]
+            }
+          )
+        ] })
+      ]
+    }
+  ) });
 };
 var defaultSummary = (value) => {
   if (value == null) return "";
@@ -10120,8 +10838,8 @@ var toInputHex = (raw) => {
   if (/^#[0-9a-f]{6}$/i.test(raw)) return raw;
   if (/^#[0-9a-f]{8}$/i.test(raw)) return raw.slice(0, 7);
   if (/^#[0-9a-f]{3,4}$/i.test(raw)) {
-    const [r2, g, b] = raw.slice(1, 4).split("");
-    return `#${r2}${r2}${g}${g}${b}${b}`;
+    const [r2, g2, b] = raw.slice(1, 4).split("");
+    return `#${r2}${r2}${g2}${g2}${b}${b}`;
   }
   return "#000000";
 };
@@ -10500,6 +11218,25 @@ var StyleEditor = ({ value, onChange }) => {
       onChange({ ...styles, states: { ...styles.states, [stateKey]: {} } });
     }
   };
+  const { config } = useStudio();
+  const rootProps = useEditorStore((s) => s.document.root?.props);
+  const setRootProps2 = useEditorStore((s) => s.setRootProps);
+  const theme = resolveTheme(rootProps, config.theme);
+  const customFontOptions = useMemo(
+    () => (theme.customFonts ?? []).map((c) => ({ label: c.family, value: `[var(--font-${c.id})]` })),
+    [theme.customFonts]
+  );
+  const effectiveControl = (control) => control.id === "fontFamily" && customFontOptions.length ? { ...control, options: [...control.options, ...customFontOptions] } : control;
+  const ensureFontLoaded = (tokenValue) => {
+    const id = fontIdFromVarToken(tokenValue);
+    if (!id || !getBuiltinFont(id) || (theme.fonts ?? []).includes(id)) return;
+    const current2 = rootProps?.[THEME_PROP] ?? {};
+    setRootProps2({ [THEME_PROP]: { ...current2, fonts: [...theme.fonts ?? [], id] } });
+  };
+  const handleControlChange = (controlId, v) => {
+    setLayerValue(controlId, v);
+    if (controlId === "fontFamily") ensureFontLoaded(v);
+  };
   const [tab, setTabState] = useState(panelUi.tab);
   const [openGroups, setOpenGroups] = useState(panelUi.open);
   const setTab = (next) => {
@@ -10591,33 +11328,36 @@ var StyleEditor = ({ value, onChange }) => {
       }) })
     ] }),
     activeControls.length > 0 && /* @__PURE__ */ jsxs("div", { className: "tecof-style-chips", children: [
-      activeControls.map((control) => /* @__PURE__ */ jsxs("span", { className: "tecof-style-chip", children: [
-        /* @__PURE__ */ jsxs(
-          "button",
-          {
-            type: "button",
-            className: "tecof-style-chip-label",
-            title: `${control.label}: ${valueLabel(control, layer[control.id])} \u2014 kontrole git`,
-            onClick: () => jumpToControl(control),
-            children: [
-              control.label,
-              ": ",
-              valueLabel(control, layer[control.id])
-            ]
-          }
-        ),
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            className: "tecof-style-chip-x",
-            title: "Bu stili kald\u0131r",
-            "aria-label": `${control.label} stilini kald\u0131r`,
-            onClick: () => setLayerValue(control.id, ""),
-            children: "\xD7"
-          }
-        )
-      ] }, control.id)),
+      activeControls.map((control) => {
+        const ec = effectiveControl(control);
+        return /* @__PURE__ */ jsxs("span", { className: "tecof-style-chip", children: [
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              type: "button",
+              className: "tecof-style-chip-label",
+              title: `${ec.label}: ${valueLabel(ec, layer[control.id])} \u2014 kontrole git`,
+              onClick: () => jumpToControl(control),
+              children: [
+                ec.label,
+                ": ",
+                valueLabel(ec, layer[control.id])
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: "tecof-style-chip-x",
+              title: "Bu stili kald\u0131r",
+              "aria-label": `${control.label} stilini kald\u0131r`,
+              onClick: () => setLayerValue(control.id, ""),
+              children: "\xD7"
+            }
+          )
+        ] }, control.id);
+      }),
       /* @__PURE__ */ jsxs(
         "button",
         {
@@ -10633,7 +11373,7 @@ var StyleEditor = ({ value, onChange }) => {
       )
     ] }),
     /* @__PURE__ */ jsx("div", { className: "tecof-style-tabs", role: "tablist", "aria-label": "Stil kategorileri", children: TABS.map(({ key, label, Icon, groups, tip }) => {
-      const hasOverride = groups.some((g) => groupSetCount(g) > 0);
+      const hasOverride = groups.some((g2) => groupSetCount(g2) > 0);
       return /* @__PURE__ */ jsxs(
         "button",
         {
@@ -10695,10 +11435,10 @@ var StyleEditor = ({ value, onChange }) => {
           controls.map((control) => /* @__PURE__ */ jsx(
             ControlRow,
             {
-              control,
+              control: effectiveControl(control),
               value: layer[control.id] || "",
               inherited: inheritedLayer[control.id],
-              onChange: (v) => setLayerValue(control.id, v)
+              onChange: (v) => handleControlChange(control.id, v)
             },
             `${bp}:${state}:${control.id}`
           ))
@@ -10802,10 +11542,10 @@ var toHex = (val) => {
   const rgbaMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/i);
   if (rgbaMatch) {
     const r2 = parseInt(rgbaMatch[1], 10);
-    const g = parseInt(rgbaMatch[2], 10);
+    const g2 = parseInt(rgbaMatch[2], 10);
     const b = parseInt(rgbaMatch[3], 10);
     const a = rgbaMatch[4] !== void 0 ? parseFloat(rgbaMatch[4]) : 1;
-    const hex = `#${[r2, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+    const hex = `#${[r2, g2, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
     if (a < 1) return hex + Math.round(a * 255).toString(16).padStart(2, "0");
     return hex;
   }
@@ -10821,9 +11561,9 @@ var hexAlpha = (hex) => {
   const m = /^#[0-9a-f]{6}([0-9a-f]{2})$/i.exec(normalizeHex(hex));
   return m ? parseInt(m[1], 16) / 255 : 1;
 };
-var rgbToHex = ({ r: r2, g, b }) => "#" + [r2, g, b].map((c) => clamp(Math.round(c), 0, 255).toString(16).padStart(2, "0")).join("");
-var rgbToHsv = ({ r: r2, g, b }) => {
-  const rn = r2 / 255, gn = g / 255, bn = b / 255;
+var rgbToHex = ({ r: r2, g: g2, b }) => "#" + [r2, g2, b].map((c) => clamp(Math.round(c), 0, 255).toString(16).padStart(2, "0")).join("");
+var rgbToHsv = ({ r: r2, g: g2, b }) => {
+  const rn = r2 / 255, gn = g2 / 255, bn = b / 255;
   const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
   const d = max - min;
   let h = 0;
@@ -10840,18 +11580,18 @@ var hsvToRgb = ({ h, s, v }) => {
   const c = v * s;
   const x = c * (1 - Math.abs(h / 60 % 2 - 1));
   const m = v - c;
-  let r2 = 0, g = 0, b = 0;
+  let r2 = 0, g2 = 0, b = 0;
   if (h < 60) {
     r2 = c;
-    g = x;
+    g2 = x;
   } else if (h < 120) {
     r2 = x;
-    g = c;
+    g2 = c;
   } else if (h < 180) {
-    g = c;
+    g2 = c;
     b = x;
   } else if (h < 240) {
-    g = x;
+    g2 = x;
     b = c;
   } else if (h < 300) {
     r2 = x;
@@ -10860,7 +11600,7 @@ var hsvToRgb = ({ h, s, v }) => {
     r2 = c;
     b = x;
   }
-  return { r: Math.round((r2 + m) * 255), g: Math.round((g + m) * 255), b: Math.round((b + m) * 255) };
+  return { r: Math.round((r2 + m) * 255), g: Math.round((g2 + m) * 255), b: Math.round((b + m) * 255) };
 };
 var cssColor = (rgb, alpha) => alpha < 1 ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})` : rgbToHex(rgb);
 var RECENT_KEY = "tecof-recent-colors";
@@ -11259,6 +11999,98 @@ var createColorField = (options = {}) => {
     ) }) })
   };
 };
+var PREVIEW_LINK_ID = "tecof-font-preview";
+var ensurePreviewFonts = () => {
+  if (typeof document === "undefined") return;
+  const href = previewFontsHref();
+  if (!href || document.getElementById(PREVIEW_LINK_ID)) return;
+  const link = document.createElement("link");
+  link.id = PREVIEW_LINK_ID;
+  link.rel = "stylesheet";
+  link.href = href;
+  document.head.appendChild(link);
+};
+var FontSelect = ({ label, value, customFonts, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef(null);
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor: btnRef.current,
+    open,
+    placement: "bottom-start"
+  });
+  const fonts = listThemeFonts(customFonts);
+  const current2 = findFontByStack(value, customFonts);
+  useEffect(() => {
+    if (open) ensurePreviewFonts();
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (!floatingRef.current?.contains(e.target) && !btnRef.current?.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, floatingRef]);
+  const builtin = fonts.filter((f) => f.kind === "builtin");
+  const custom = fonts.filter((f) => f.kind === "custom");
+  const renderItem = (font) => /* @__PURE__ */ jsxs(
+    "button",
+    {
+      type: "button",
+      className: `tecof-font-item${current2?.id === font.id ? " is-active" : ""}`,
+      onClick: () => {
+        onSelect(font);
+        setOpen(false);
+      },
+      children: [
+        /* @__PURE__ */ jsx("span", { className: "tecof-font-item-name", style: { fontFamily: font.stack }, children: font.label }),
+        current2?.id === font.id && /* @__PURE__ */ jsx(Check, { size: 14, className: "tecof-font-item-check" })
+      ]
+    },
+    font.id
+  );
+  return /* @__PURE__ */ jsxs("label", { className: "tecof-theme-row tecof-theme-row-stack", children: [
+    /* @__PURE__ */ jsx("span", { className: "tecof-theme-row-label", children: label }),
+    /* @__PURE__ */ jsxs(
+      "button",
+      {
+        ref: btnRef,
+        type: "button",
+        className: `tecof-font-select${open ? " is-open" : ""}`,
+        onClick: () => setOpen((o) => !o),
+        children: [
+          /* @__PURE__ */ jsx("span", { className: "tecof-font-select-value", style: { fontFamily: value }, children: current2?.label ?? "\xD6zel\u2026" }),
+          /* @__PURE__ */ jsx(ChevronDown, { size: 14, className: "tecof-font-select-caret" })
+        ]
+      }
+    ),
+    open && createPortal(
+      /* @__PURE__ */ jsxs("div", { ref: floatingRef, className: "tecof-font-menu", style: floatingStyle, role: "listbox", "aria-label": label, children: [
+        builtin.map(renderItem),
+        custom.length > 0 && /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx("div", { className: "tecof-font-menu-sep", children: "\xD6zel fontlar" }),
+          custom.map(renderItem)
+        ] })
+      ] }),
+      document.body
+    )
+  ] });
+};
+var FONT_FORMATS = {
+  woff2: "woff2",
+  woff: "woff",
+  ttf: "truetype",
+  otf: "opentype"
+};
 var COLOR_FIELDS = [
   { key: "primary", label: "Ana renk" },
   { key: "secondary", label: "\u0130kincil" },
@@ -11293,18 +12125,6 @@ var NumberRow = ({ label, value, onChange }) => /* @__PURE__ */ jsxs("label", { 
     }
   )
 ] });
-var TextRow = ({ label, value, onChange }) => /* @__PURE__ */ jsxs("label", { className: "tecof-theme-row tecof-theme-row-stack", children: [
-  /* @__PURE__ */ jsx("span", { className: "tecof-theme-row-label", children: label }),
-  /* @__PURE__ */ jsx(
-    "input",
-    {
-      type: "text",
-      className: "tecof-theme-text",
-      value,
-      onChange: (e) => onChange(e.target.value)
-    }
-  )
-] });
 var ThemeEditor = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
   const setRootProps2 = useEditorStore((s) => s.setRootProps);
@@ -11314,6 +12134,53 @@ var ThemeEditor = () => {
   const setColor = (key, value) => patch({ ...theme, colors: { ...theme.colors, [key]: value } });
   const setSpacing = (key, value) => patch({ ...theme, spacing: { ...theme.spacing, [key]: value } });
   const setTypography = (key, value) => patch({ ...theme, typography: { ...theme.typography, [key]: value } });
+  const { apiClient, cdnUrl } = useTecof();
+  const fileInputRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [fontError, setFontError] = useState(null);
+  const setFont = (key, font) => {
+    const typography = { ...theme.typography, [key]: font.stack };
+    const fonts = theme.fonts ?? [];
+    const nextFonts = font.kind === "builtin" && !fonts.includes(font.id) ? [...fonts, font.id] : fonts;
+    patch({ ...theme, typography, fonts: nextFonts });
+  };
+  const handleFontFile = async (file) => {
+    if (!apiClient) return;
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    if (!FONT_FORMATS[ext]) {
+      setFontError("Desteklenmeyen bi\xE7im (woff2/woff/ttf/otf)");
+      return;
+    }
+    setUploading(true);
+    setFontError(null);
+    try {
+      const res = await apiClient.uploadFile(file, "fonts");
+      const uploaded = Array.isArray(res?.data) ? res.data[0] : null;
+      const name = uploaded?.name;
+      if (!res?.success || !name) throw new Error("upload failed");
+      const family = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Custom Font";
+      const id = fontIdFromFamily(family);
+      const next = { id, family, src: `${cdnUrl || ""}/${name}`, format: FONT_FORMATS[ext] };
+      const customFonts = [...(theme.customFonts ?? []).filter((f) => f.id !== id), next];
+      patch({ ...theme, customFonts });
+    } catch {
+      setFontError("Y\xFCkleme ba\u015Far\u0131s\u0131z, tekrar deneyin");
+    } finally {
+      setUploading(false);
+    }
+  };
+  const removeCustomFont = (id) => {
+    const customFonts = (theme.customFonts ?? []).filter((f) => f.id !== id);
+    const stacks = { fontFamily: theme.typography.fontFamily, headingFontFamily: theme.typography.headingFontFamily };
+    const typography = { ...theme.typography };
+    for (const key of ["fontFamily", "headingFontFamily"]) {
+      const f = findFontByStack(stacks[key], theme.customFonts);
+      if (f?.kind === "custom" && f.id === id) {
+        typography[key] = getBuiltinFont("system").stack;
+      }
+    }
+    patch({ ...theme, customFonts, typography });
+  };
   const resetTheme = () => setRootProps2({ [THEME_PROP]: void 0 });
   return /* @__PURE__ */ jsxs("div", { className: "tecof-theme-editor", children: [
     /* @__PURE__ */ jsxs("div", { className: "tecof-theme-section", children: [
@@ -11335,13 +12202,75 @@ var ThemeEditor = () => {
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-theme-section", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-theme-section-title", children: "Tipografi" }),
-      /* @__PURE__ */ jsx(TextRow, { label: "Yaz\u0131 tipi", value: theme.typography.fontFamily, onChange: (v) => setTypography("fontFamily", v) }),
-      /* @__PURE__ */ jsx(TextRow, { label: "Ba\u015Fl\u0131k yaz\u0131 tipi", value: theme.typography.headingFontFamily, onChange: (v) => setTypography("headingFontFamily", v) }),
+      /* @__PURE__ */ jsx(
+        FontSelect,
+        {
+          label: "Yaz\u0131 tipi",
+          value: theme.typography.fontFamily,
+          customFonts: theme.customFonts,
+          onSelect: (font) => setFont("fontFamily", font)
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        FontSelect,
+        {
+          label: "Ba\u015Fl\u0131k yaz\u0131 tipi",
+          value: theme.typography.headingFontFamily,
+          customFonts: theme.customFonts,
+          onSelect: (font) => setFont("headingFontFamily", font)
+        }
+      ),
       /* @__PURE__ */ jsx(NumberRow, { label: "Temel boyut (px)", value: theme.typography.baseFontSize, onChange: (v) => setTypography("baseFontSize", v) }),
       /* @__PURE__ */ jsx(NumberRow, { label: "Sat\u0131r y\xFCksekli\u011Fi", value: theme.typography.lineHeight, onChange: (v) => setTypography("lineHeight", v) }),
       /* @__PURE__ */ jsx(NumberRow, { label: "Kal\u0131nl\u0131k \u2014 normal", value: theme.typography.fontWeightNormal, onChange: (v) => setTypography("fontWeightNormal", v) }),
       /* @__PURE__ */ jsx(NumberRow, { label: "Kal\u0131nl\u0131k \u2014 orta", value: theme.typography.fontWeightMedium, onChange: (v) => setTypography("fontWeightMedium", v) }),
       /* @__PURE__ */ jsx(NumberRow, { label: "Kal\u0131nl\u0131k \u2014 kal\u0131n", value: theme.typography.fontWeightBold, onChange: (v) => setTypography("fontWeightBold", v) })
+    ] }),
+    apiClient && /* @__PURE__ */ jsxs("div", { className: "tecof-theme-section", children: [
+      /* @__PURE__ */ jsx("div", { className: "tecof-theme-section-title", children: "\xD6zel Fontlar" }),
+      (theme.customFonts ?? []).length > 0 && /* @__PURE__ */ jsx("div", { className: "tecof-font-list", children: (theme.customFonts ?? []).map((f) => /* @__PURE__ */ jsxs("div", { className: "tecof-font-list-row", children: [
+        /* @__PURE__ */ jsx("span", { className: "tecof-font-list-name", style: { fontFamily: `'${f.family}', sans-serif` }, children: f.family }),
+        /* @__PURE__ */ jsx("span", { className: "tecof-font-list-meta", children: f.format }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            type: "button",
+            className: "tecof-font-list-del",
+            title: "Fontu kald\u0131r",
+            "aria-label": `${f.family} fontunu kald\u0131r`,
+            onClick: () => removeCustomFont(f.id),
+            children: /* @__PURE__ */ jsx(Trash2, { size: 13 })
+          }
+        )
+      ] }, f.id)) }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          ref: fileInputRef,
+          type: "file",
+          accept: ".woff2,.woff,.ttf,.otf",
+          hidden: true,
+          onChange: (e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFontFile(file);
+            e.target.value = "";
+          }
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tecof-font-upload",
+          disabled: uploading,
+          onClick: () => fileInputRef.current?.click(),
+          children: [
+            /* @__PURE__ */ jsx(UploadCloud, { size: 14 }),
+            uploading ? "Y\xFCkleniyor\u2026" : "Font dosyas\u0131 y\xFCkle"
+          ]
+        }
+      ),
+      fontError && /* @__PURE__ */ jsx("div", { className: "tecof-font-error", role: "alert", children: fontError })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-theme-section", children: [
       /* @__PURE__ */ jsx("div", { className: "tecof-theme-section-title", children: "Bo\u015Fluk & K\xF6\u015Fe" }),
@@ -11388,6 +12317,9 @@ var Inspector = () => {
     }
     const { node, label } = activeNodeInfo;
     const parentId = getParentId(documentState, selectedId);
+    const variantEntries = Object.entries(activeNodeInfo.componentConfig?.variants ?? {});
+    const activeVariant = typeof node.props._variant === "string" ? node.props._variant : null;
+    const applyVariant = (key, props) => updateProps2(selectedId, { ...props, _variant: key });
     return /* @__PURE__ */ jsxs("div", { className: "tecof-inspector", children: [
       /* @__PURE__ */ jsxs("div", { className: "tecof-inspector-header", children: [
         /* @__PURE__ */ jsxs("div", { children: [
@@ -11440,6 +12372,21 @@ var Inspector = () => {
         fieldsReadOnly && /* @__PURE__ */ jsxs("div", { className: "tecof-inspector-readonly-note", children: [
           /* @__PURE__ */ jsx(Lock, { size: 12, "aria-hidden": "true" }),
           "Salt okunur \u2014 bu bile\u015Fen d\xFCzenlemeye kilitli."
+        ] }),
+        tab === "content" && variantEntries.length > 0 && /* @__PURE__ */ jsxs("div", { className: "tecof-variant-switcher", role: "group", "aria-label": "Varyant", children: [
+          /* @__PURE__ */ jsx("span", { className: "tecof-variant-label", children: "Varyant" }),
+          /* @__PURE__ */ jsx("div", { className: "tecof-variant-chips", children: variantEntries.map(([key, variant]) => /* @__PURE__ */ jsx(
+            "button",
+            {
+              type: "button",
+              className: `tecof-variant-chip${activeVariant === key ? " is-active" : ""}`,
+              disabled: fieldsReadOnly,
+              title: `${variant.label} varyant\u0131n\u0131 uygula`,
+              onClick: () => applyVariant(key, variant.props),
+              children: variant.label
+            },
+            key
+          )) })
         ] }),
         tab === "style" ? /* @__PURE__ */ jsx(
           StyleEditor,
@@ -11598,6 +12545,90 @@ var collectTranslationGaps = (doc, languages) => {
   }
   return acc;
 };
+var GridControl = () => {
+  const gridVisible = useUiStore((s) => s.gridVisible);
+  const toggleGrid = useUiStore((s) => s.toggleGrid);
+  const gridColumns = useUiStore((s) => s.gridColumns);
+  const gridGap = useUiStore((s) => s.gridGap);
+  const setGridColumns = useUiStore((s) => s.setGridColumns);
+  const setGridGap = useUiStore((s) => s.setGridGap);
+  const [open, setOpen] = useState(false);
+  const caretRef = useRef(null);
+  const { floatingRef, style } = useFloating({ anchor: caretRef.current, open, placement: "bottom-end" });
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => {
+      if (!floatingRef.current?.contains(e.target) && !caretRef.current?.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open, floatingRef]);
+  return /* @__PURE__ */ jsxs("div", { className: "tecof-grid-control", children: [
+    /* @__PURE__ */ jsx(
+      "button",
+      {
+        type: "button",
+        onClick: toggleGrid,
+        className: `tecof-icon-btn${gridVisible ? " is-active" : ""}`,
+        title: "S\xFCtun k\u0131lavuzu (G)",
+        "aria-pressed": gridVisible,
+        children: /* @__PURE__ */ jsx(LayoutGrid, { size: 16 })
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      "button",
+      {
+        ref: caretRef,
+        type: "button",
+        onClick: () => setOpen((o) => !o),
+        className: `tecof-grid-caret${open ? " is-active" : ""}`,
+        title: "K\u0131lavuz ayarlar\u0131",
+        "aria-expanded": open,
+        children: /* @__PURE__ */ jsx(ChevronDown, { size: 11 })
+      }
+    ),
+    open && createPortal(
+      /* @__PURE__ */ jsxs("div", { ref: floatingRef, className: "tecof-grid-popover", style, role: "dialog", "aria-label": "K\u0131lavuz ayarlar\u0131", children: [
+        /* @__PURE__ */ jsxs("label", { className: "tecof-grid-pop-row", children: [
+          /* @__PURE__ */ jsx("span", { children: "S\xFCtun" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "number",
+              min: 1,
+              max: 24,
+              value: gridColumns,
+              onChange: (e) => setGridColumns(Number(e.target.value))
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs("label", { className: "tecof-grid-pop-row", children: [
+          /* @__PURE__ */ jsx("span", { children: "Bo\u015Fluk (px)" }),
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "number",
+              min: 0,
+              value: gridGap,
+              onChange: (e) => setGridGap(Number(e.target.value))
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx("button", { type: "button", className: "tecof-grid-pop-toggle", onClick: toggleGrid, children: gridVisible ? "K\u0131lavuzu gizle" : "K\u0131lavuzu g\xF6ster" })
+      ] }),
+      document.body
+    )
+  ] });
+};
 var trLanguageNames = (() => {
   try {
     return new Intl.DisplayNames(["tr"], { type: "language" });
@@ -11660,6 +12691,8 @@ var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }) => {
   const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
   const toggleLeftPanel = useUiStore((state) => state.toggleLeftPanel);
   const toggleRightPanel = useUiStore((state) => state.toggleRightPanel);
+  const resizeEnabled = useUiStore((state) => state.resizeEnabled);
+  const toggleResize = useUiStore((state) => state.toggleResize);
   return /* @__PURE__ */ jsxs("div", { className: "tecof-topbar", children: [
     /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-group", children: [
       /* @__PURE__ */ jsx(
@@ -11753,7 +12786,20 @@ var TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }) => {
             ]
           }
         )
-      ] })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tecof-topbar-divider" }),
+      /* @__PURE__ */ jsx(GridControl, {}),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          type: "button",
+          onClick: toggleResize,
+          className: `tecof-icon-btn${resizeEnabled ? " is-active" : ""}`,
+          title: "Boyutland\u0131rma modu (R)",
+          "aria-pressed": resizeEnabled,
+          children: /* @__PURE__ */ jsx(Scaling, { size: 16 })
+        }
+      )
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "tecof-topbar-group", children: [
       /* @__PURE__ */ jsx(LanguageSwitcher, {}),
@@ -11824,6 +12870,8 @@ var TreeNode = ({ node, depth }) => {
   const customName = typeof node.props._layerName === "string" ? node.props._layerName : "";
   const displayLabel = customName || label;
   const perms = usePermissions(node.props.id);
+  const isHidden = node.props._hidden === true;
+  const isLocked = node.props._locked === true;
   useEffect(() => {
     if (isPrimary) rowRef.current?.scrollIntoView({ block: "nearest" });
   }, [isPrimary]);
@@ -11969,7 +13017,7 @@ var TreeNode = ({ node, depth }) => {
         onMouseLeave: () => hoverNode(null),
         onClick: handleRowClick,
         onKeyDown: handleRowKeyDown,
-        className: `tecof-layer-row${isSelected ? " is-selected" : ""}${dragOverPos === "inside" ? " is-drop-inside" : ""}`,
+        className: `tecof-layer-row${isSelected ? " is-selected" : ""}${dragOverPos === "inside" ? " is-drop-inside" : ""}${isHidden ? " is-hidden" : ""}${isLocked ? " is-locked" : ""}`,
         role: "treeitem",
         tabIndex: 0,
         "aria-selected": isSelected,
@@ -12025,6 +13073,36 @@ var TreeNode = ({ node, depth }) => {
             )
           ] }),
           /* @__PURE__ */ jsxs("div", { className: "tecof-layer-row-actions", children: [
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  updateProps2(node.props.id, { _hidden: !isHidden });
+                },
+                className: `tecof-layer-toggle${isHidden ? " is-active" : ""}`,
+                title: isHidden ? "G\xF6ster" : "Gizle",
+                "aria-label": `${displayLabel} \u2014 ${isHidden ? "g\xF6ster" : "gizle"}`,
+                "aria-pressed": isHidden,
+                children: isHidden ? /* @__PURE__ */ jsx(EyeOff, { size: 12 }) : /* @__PURE__ */ jsx(Eye, { size: 12 })
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              "button",
+              {
+                type: "button",
+                onClick: (e) => {
+                  e.stopPropagation();
+                  updateProps2(node.props.id, { _locked: !isLocked });
+                },
+                className: `tecof-layer-toggle${isLocked ? " is-active" : ""}`,
+                title: isLocked ? "Kilidi a\xE7" : "Kilitle",
+                "aria-label": `${displayLabel} \u2014 ${isLocked ? "kilidi a\xE7" : "kilitle"}`,
+                "aria-pressed": isLocked,
+                children: isLocked ? /* @__PURE__ */ jsx(Lock, { size: 12 }) : /* @__PURE__ */ jsx(Unlock, { size: 12 })
+              }
+            ),
             perms.duplicate !== false && /* @__PURE__ */ jsx(
               "button",
               {
@@ -12546,6 +13624,16 @@ var TecofStudio = ({
         return;
       }
       if (isInput()) return;
+      if (!isCmdOrCtrl && !e.altKey && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        useUiStore.getState().toggleGrid();
+        return;
+      }
+      if (!isCmdOrCtrl && !e.altKey && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        useUiStore.getState().toggleResize();
+        return;
+      }
       if (!isCmdOrCtrl && selectedId && (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
         const doc = useEditorStore.getState().document;
         const res = findNodeById(doc, selectedId);
@@ -12627,6 +13715,7 @@ var TecofStudio = ({
     ] }),
     saving && /* @__PURE__ */ jsx("div", { className: `tecof-studio-save-indicator${saveStatus === "error" ? " is-error" : ""}`, children: saveStatus === "error" ? "Kaydedilemedi" : "Kaydediliyor..." }),
     /* @__PURE__ */ jsx(CommandPalette, { onSave: handleSaveDraft }),
+    /* @__PURE__ */ jsx(AiSectionModal, {}),
     /* @__PURE__ */ jsx(ThemeVars, {})
   ] }) }) });
 };
@@ -12713,6 +13802,28 @@ var ANIMATION_CSS = `@media (prefers-reduced-motion: reduce) {
 .tecof-anim-delay-200 { animation-delay: 200ms; }
 .tecof-anim-delay-300 { animation-delay: 300ms; }
 .tecof-anim-delay-500 { animation-delay: 500ms; }
+
+/* \u2500\u2500 Scroll reveal (scrollEffects.ts adds .is-visible on intersect) \u2500\u2500
+   Hidden initial state is gated on html.tecof-has-js so no-JS / pre-hydration
+   pages keep content visible (progressive enhancement). */
+.tecof-reveal {
+  transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+html.tecof-has-js .tecof-reveal:not(.is-visible) { opacity: 0; }
+html.tecof-has-js .tecof-reveal-up:not(.is-visible) { transform: translateY(28px); }
+html.tecof-has-js .tecof-reveal-down:not(.is-visible) { transform: translateY(-28px); }
+html.tecof-has-js .tecof-reveal-left:not(.is-visible) { transform: translateX(28px); }
+html.tecof-has-js .tecof-reveal-right:not(.is-visible) { transform: translateX(-28px); }
+html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); }
+.tecof-reveal.is-visible { opacity: 1; transform: none; }
+
+.tecof-parallax { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-reveal { transition: none; }
+  html.tecof-has-js .tecof-reveal:not(.is-visible) { opacity: 1; transform: none; }
+  .tecof-parallax { transform: none !important; }
+}
 `;
 var RenderContext = createContext(null);
 var ParentNodeContext2 = createContext(null);
@@ -12728,6 +13839,7 @@ var RenderDropZone = ({ zone, className, style, orientation = "vertical" }) => {
 var RenderNode = ({ node, index }) => {
   const context = useContext(RenderContext);
   if (!context) return null;
+  if (node.props?._hidden) return null;
   const componentConfig = context.config.components[node.type];
   if (!componentConfig) return null;
   const styleClassName = compileStyles(node.props[STYLES_PROP]);
@@ -12754,6 +13866,10 @@ var RenderNode = ({ node, index }) => {
   return /* @__PURE__ */ jsx(ParentNodeContext2.Provider, { value: node.props.id || null, children: componentConfig.render(componentProps) });
 };
 var TecofRender = ({ data, config, className, cmsData }) => {
+  useEffect(() => {
+    const handle = initScrollEffects(typeof document !== "undefined" ? document : null);
+    return () => handle.destroy();
+  }, []);
   if (!data) return null;
   const doc = migrateDocument(
     {
@@ -12778,15 +13894,20 @@ var TecofRender = ({ data, config, className, cmsData }) => {
     editMode: false
   }) : renderedContent;
   const styleCss = generateStyleCss(collectDocumentClasses(doc));
-  const themeCss = generateCSSVariables(resolveTheme(rootProps, config.theme));
+  const resolvedTheme = resolveTheme(rootProps, config.theme);
+  const themeCss = generateCSSVariables(resolvedTheme);
+  const googleFontsHref2 = themeGoogleFontsHref(resolvedTheme);
+  const fontFaceCss = themeFontFaceCss(resolvedTheme);
   return /* @__PURE__ */ jsxs(RenderContext.Provider, { value: contextValue, children: [
+    googleFontsHref2 && /* @__PURE__ */ jsx("link", { rel: "stylesheet", href: googleFontsHref2 }),
+    fontFaceCss && /* @__PURE__ */ jsx("style", { "data-tecof-font-faces": true, children: fontFaceCss }),
     /* @__PURE__ */ jsx("style", { "data-tecof-theme": true, children: themeCss }),
     /* @__PURE__ */ jsx("style", { "data-tecof-animations": true, children: ANIMATION_CSS }),
     styleCss && /* @__PURE__ */ jsx("style", { "data-tecof-styles": true, children: styleCss }),
     /* @__PURE__ */ jsx("div", { className, children: contentWithLayout })
   ] });
 };
-var EditorFieldImpl = lazy(() => import('./EditorField.impl-EG65RRZM.mjs'));
+var EditorFieldImpl = lazy(() => import('./EditorField.impl-L57K7TIH.mjs'));
 var EditorField = (props) => /* @__PURE__ */ jsx(Suspense, { fallback: /* @__PURE__ */ jsx(FieldLoading, {}), children: /* @__PURE__ */ jsx(EditorFieldImpl, { ...props }) });
 var createEditorField = (options = {}) => {
   const { label, labelIcon, visible, ...fieldOptions } = options;
@@ -13968,6 +15089,6 @@ var createIconField = (options = {}) => {
   };
 };
 
-export { CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, IconField, LinkField, RepeaterField, STYLES_PROP, STYLE_CONTROLS, TAILWIND_PALETTE, TAILWIND_SHADES, TecofEditor, TecofRender, TecofStudio, UploadField, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLinkField, createRepeaterField, createUploadField, darken, generateCSSVariables, getDefaultTheme, getSafelist, hexToHsl, hslToHex, lighten, mergeTheme, useEditorStore, useUiStore };
+export { BUILTIN_FONTS, CmsCollectionField, CodeEditorField, ColorField, EditorField, ExternalField, IconField, LinkField, RepeaterField, STYLES_PROP, STYLE_CONTROLS, TAILWIND_PALETTE, TAILWIND_SHADES, TecofEditor, TecofRender, TecofStudio, UploadField, cn, collectDocumentClasses, collectStyleClasses, compileStyles, createCmsCollectionField, createCodeEditorField, createColorField, createEditorField, createExternalField, createIconField, createLinkField, createRepeaterField, createUploadField, customFontFaceCss, darken, generateCSSVariables, getDefaultTheme, getSafelist, googleFontsHref, hexToHsl, hslToHex, lighten, mergeTheme, themeFontFaceCss, themeGoogleFontsHref, useEditorStore, useUiStore };
 //# sourceMappingURL=index.mjs.map
 //# sourceMappingURL=index.mjs.map

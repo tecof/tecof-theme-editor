@@ -65,3 +65,74 @@ export function isInsideOverlayPortal(target: EventTarget | null): boolean {
   if (!target || typeof (target as Element).closest !== 'function') return false;
   return (target as Element).closest(`[${OVERLAY_PORTAL_ATTR}]`) !== null;
 }
+
+/**
+ * Elements whose NATIVE default action would take the user away from — or
+ * submit — the page: link navigation and form submission. In edit mode these
+ * must stay inert so a stray click selects the node instead of navigating the
+ * canvas iframe off the page being edited. (`button` with no `type` defaults to
+ * a form submit; `type="button"` has no default, so blocking it is a harmless
+ * no-op — matching them all keeps the rule simple.)
+ */
+const NATIVE_ACTION_SELECTOR =
+  'a[href], area[href], button, input[type="submit"], input[type="reset"], input[type="image"]';
+
+/**
+ * Given an event target, returns the nearest ancestor (or the target itself)
+ * whose native default action should be blocked while editing, or `null` when
+ * there is nothing to block. Overlay portals opt fully out: their controls stay
+ * live in edit mode, so a portal descendant always returns `null`.
+ *
+ * Pure and DOM-light — only calls `Element.closest`, so it's unit-testable with
+ * a duck-typed target.
+ */
+export function findBlockableInteraction(target: EventTarget | null): Element | null {
+  if (!target || typeof (target as Element).closest !== 'function') return null;
+  const el = target as Element;
+  if (el.closest(`[${OVERLAY_PORTAL_ATTR}]`)) return null;
+  return el.closest(NATIVE_ACTION_SELECTOR);
+}
+
+/**
+ * Installs the edit-mode interaction guard on a canvas document. While
+ * `isEditMode()` is true, it cancels the native default of link clicks
+ * (`click`/`auxclick` — plain and middle-click) and form submissions (`submit`,
+ * e.g. Enter inside an input) that originate outside an overlay portal, so the
+ * canvas never navigates away or submits while the user is editing.
+ *
+ * Listeners run in the CAPTURE phase and only call `preventDefault()` — never
+ * `stopPropagation()`. That cancels the browser's default action while leaving
+ * the editor's own bubble-phase handlers (node selection, host postMessage)
+ * completely untouched. In preview mode `isEditMode()` returns false and the
+ * canvas behaves exactly like the live site.
+ *
+ * Note: JS-driven navigation (a `<button onClick={() => router.push(...)}>`)
+ * cannot be cancelled from here — components should honour the `editMode` /
+ * `puck.isEditing` prop for that, or register the control as an overlay portal.
+ *
+ * @returns a cleanup function that removes every listener it added.
+ */
+export function installCanvasInteractionGuard(
+  doc: Document,
+  isEditMode: () => boolean
+): () => void {
+  const onActivate = (e: Event) => {
+    if (!isEditMode()) return;
+    if (findBlockableInteraction(e.target)) {
+      e.preventDefault();
+    }
+  };
+  const onSubmit = (e: Event) => {
+    if (!isEditMode()) return;
+    if (isInsideOverlayPortal(e.target)) return;
+    e.preventDefault();
+  };
+  doc.addEventListener('click', onActivate, true);
+  doc.addEventListener('auxclick', onActivate, true);
+  doc.addEventListener('submit', onSubmit, true);
+  return () => {
+    doc.removeEventListener('click', onActivate, true);
+    doc.removeEventListener('auxclick', onActivate, true);
+    doc.removeEventListener('submit', onSubmit, true);
+  };
+}

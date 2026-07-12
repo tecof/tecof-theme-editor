@@ -6,6 +6,7 @@ import { useStudio } from '../context';
 import { findNodeById } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
 import { NodeRenderer } from './NodeRenderer';
+import { AddSectionButton } from './AddSectionButton';
 import { useDropTarget } from './useDropTarget';
 
 export const ParentNodeContext = createContext<string | null>(null);
@@ -95,9 +96,34 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical' }: D
           </button>
         )
       ) : (
-        items.map((item, index) => (
-          <NodeRenderer key={item.props.id} node={item} index={index} zoneKey={zoneKey} />
-        ))
+        // Non-empty slot: interleave hover-revealed "+" affordances so a
+        // component can be inserted at ANY position (top / between / end), not
+        // just at the root. During an active drag they're suppressed — the drop
+        // indicators own positioning then. `openAddSection` targets this zone,
+        // so the modal filters to the types this slot actually accepts.
+        <>
+          {!readOnly && !isDragActive && (
+            <AddSectionButton
+              index={0}
+              orientation={orientation}
+              slot
+              onClick={(idx) => openAddSection({ zoneKey, index: idx })}
+            />
+          )}
+          {items.map((item, index) => (
+            <React.Fragment key={item.props.id}>
+              <NodeRenderer node={item} index={index} zoneKey={zoneKey} />
+              {!readOnly && !isDragActive && (
+                <AddSectionButton
+                  index={index + 1}
+                  orientation={orientation}
+                  slot
+                  onClick={(idx) => openAddSection({ zoneKey, index: idx })}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </>
       )}
     </div>
   );

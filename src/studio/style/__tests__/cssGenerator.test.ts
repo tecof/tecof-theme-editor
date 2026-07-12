@@ -70,4 +70,17 @@ describe('generateStyleCss', () => {
     const css = generateStyleCss(['p-4!', 'p-4!']);
     expect(css.match(/padding: 1rem/g)).toHaveLength(1);
   });
+
+  it('resolves per-node font-family to its CSS variable (builtin preset + custom arbitrary)', () => {
+    // Builtin font — a static option in the fontFamily control.
+    expect(generateStyleCss(['font-[var(--font-inter)]!']))
+      .toContain('font-family: var(--font-inter) !important;');
+    // Custom (uploaded) font — resolves through the `font-[` arbitrary path.
+    expect(generateStyleCss(['font-[var(--font-brand-sans)]!']))
+      .toContain('font-family: var(--font-brand-sans) !important;');
+  });
+
+  it('keeps font-weight (font-*) distinct from font-family (font-[…])', () => {
+    expect(generateStyleCss(['font-bold!'])).toContain('font-weight: 700 !important;');
+  });
 });

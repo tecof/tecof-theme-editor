@@ -128,6 +128,30 @@ describe('getSafelist', () => {
     expect(safelist).toContain('tecof-anim-zoom-in');
     expect(safelist).toContain('tecof-anim-delay-200');
   });
+
+  it('includes the scroll-interaction classes (no `!` marker — they are tecof-*)', () => {
+    const safelist = getSafelist();
+    expect(safelist).toContain('tecof-reveal');
+    expect(safelist).toContain('tecof-reveal-up');
+    expect(safelist).toContain('tecof-parallax');
+    expect(safelist).toContain('tecof-parallax-fast');
+    expect(safelist).not.toContain('tecof-reveal!');
+  });
+});
+
+describe('scroll interaction controls', () => {
+  it('emits reveal classes (fade = base only, directional = base + modifier)', () => {
+    expect(compileStyles({ base: { reveal: 'fade' } })).toBe('tecof-reveal');
+    const up = compileStyles({ base: { reveal: 'up' } }).split(' ');
+    expect(up).toContain('tecof-reveal');
+    expect(up).toContain('tecof-reveal-up');
+  });
+
+  it('emits parallax classes with the chosen speed', () => {
+    const cls = compileStyles({ base: { parallax: 'fast' } }).split(' ');
+    expect(cls).toContain('tecof-parallax');
+    expect(cls).toContain('tecof-parallax-fast');
+  });
 });
 
 describe('Tailwind palette tokens', () => {

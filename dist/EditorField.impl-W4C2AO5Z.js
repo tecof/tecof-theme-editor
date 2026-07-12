@@ -1,15 +1,18 @@
-import { useLanguages, useActiveLanguage, FieldLoading, LanguageTabBar } from './chunk-GIQR5Q5A.mjs';
-import { MediaDrawer } from './chunk-GYBPP7DV.mjs';
-import { useTecof } from './chunk-JQGJZ4SL.mjs';
-import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import { Node, mergeAttributes, Mark, markPasteRule, markInputRule, textblockTypeInputRule, wrappingInputRule, renderNestedMarkdownContent, Extension, getRenderedAttributes, parseIndentedBlocks, nodeInputRule, canInsertNode, isNodeSelection, ResizableNodeView, isNodeActive, isAtStartOfNode, isAtEndOfNode, combineTransactionSteps, getChangedRanges, findChildrenInRange, getMarksBetween, getAttributes, getNodeAtPosition, getNodeType } from '@tiptap/core';
-import { jsx } from '@tiptap/core/jsx-runtime';
-import { Fragment } from '@tiptap/pm/model';
-import { Plugin, TextSelection as TextSelection$1, NodeSelection as NodeSelection$1, PluginKey, Selection as Selection$1 } from '@tiptap/pm/state';
-import { jsx as jsx$1, jsxs } from 'react/jsx-runtime';
+'use strict';
 
-var Document = Node.create({
+var chunkHOUGBQE3_js = require('./chunk-HOUGBQE3.js');
+var chunkIS7WYFKP_js = require('./chunk-IS7WYFKP.js');
+var chunkFMV4YLE6_js = require('./chunk-FMV4YLE6.js');
+var react = require('react');
+var react$1 = require('@tiptap/react');
+var core = require('@tiptap/core');
+var jsxRuntime = require('@tiptap/core/jsx-runtime');
+var model = require('@tiptap/pm/model');
+var state = require('@tiptap/pm/state');
+var lucideReact = require('lucide-react');
+var jsxRuntime$1 = require('react/jsx-runtime');
+
+var Document = core.Node.create({
   name: "doc",
   topNode: true,
   content: "block+",
@@ -23,7 +26,7 @@ var Document = Node.create({
 var index_default = Document;
 var EMPTY_PARAGRAPH_MARKDOWN = "&nbsp;";
 var NBSP_CHAR = "\xA0";
-var Paragraph = Node.create({
+var Paragraph = core.Node.create({
   name: "paragraph",
   priority: 1e3,
   addOptions() {
@@ -37,7 +40,7 @@ var Paragraph = Node.create({
     return [{ tag: "p" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["p", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["p", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   parseMarkdown: (token, helpers) => {
     const tokens = token.tokens || [];
@@ -78,7 +81,7 @@ var Paragraph = Node.create({
   }
 });
 var index_default2 = Paragraph;
-var Text = Node.create({
+var Text = core.Node.create({
   name: "text",
   group: "inline",
   parseMarkdown: (token) => {
@@ -94,7 +97,7 @@ var starInputRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))$/;
 var starPasteRegex = /(?:^|\s)(\*\*(?!\s+\*\*)((?:[^*]+))\*\*(?!\s+\*\*))/g;
 var underscoreInputRegex = /(?:^|\s)(__(?!\s+__)((?:[^_]+))__(?!\s+__))$/;
 var underscorePasteRegex = /(?:^|\s)(__(?!\s+__)((?:[^_]+))__(?!\s+__))/g;
-var Bold = Mark.create({
+var Bold = core.Mark.create({
   name: "bold",
   addOptions() {
     return {
@@ -121,7 +124,7 @@ var Bold = Mark.create({
     ];
   },
   renderHTML({ HTMLAttributes }) {
-    return /* @__PURE__ */ jsx("strong", { ...mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), children: /* @__PURE__ */ jsx("slot", {}) });
+    return /* @__PURE__ */ jsxRuntime.jsx("strong", { ...core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), children: /* @__PURE__ */ jsxRuntime.jsx("slot", {}) });
   },
   markdownTokenName: "strong",
   parseMarkdown: (token, helpers) => {
@@ -157,11 +160,11 @@ var Bold = Mark.create({
   },
   addInputRules() {
     return [
-      markInputRule({
+      core.markInputRule({
         find: starInputRegex,
         type: this.type
       }),
-      markInputRule({
+      core.markInputRule({
         find: underscoreInputRegex,
         type: this.type
       })
@@ -169,11 +172,11 @@ var Bold = Mark.create({
   },
   addPasteRules() {
     return [
-      markPasteRule({
+      core.markPasteRule({
         find: starPasteRegex,
         type: this.type
       }),
-      markPasteRule({
+      core.markPasteRule({
         find: underscorePasteRegex,
         type: this.type
       })
@@ -185,7 +188,7 @@ var starInputRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))$/;
 var starPasteRegex2 = /(?:^|\s)(\*(?!\s+\*)((?:[^*]+))\*(?!\s+\*))/g;
 var underscoreInputRegex2 = /(?:^|\s)(_(?!\s+_)((?:[^_]+))_(?!\s+_))$/;
 var underscorePasteRegex2 = /(?:^|\s)(_(?!\s+_)((?:[^_]+))_(?!\s+_))/g;
-var Italic = Mark.create({
+var Italic = core.Mark.create({
   name: "italic",
   addOptions() {
     return {
@@ -211,7 +214,7 @@ var Italic = Mark.create({
     ];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["em", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["em", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   addCommands() {
     return {
@@ -247,11 +250,11 @@ var Italic = Mark.create({
   },
   addInputRules() {
     return [
-      markInputRule({
+      core.markInputRule({
         find: starInputRegex2,
         type: this.type
       }),
-      markInputRule({
+      core.markInputRule({
         find: underscoreInputRegex2,
         type: this.type
       })
@@ -259,11 +262,11 @@ var Italic = Mark.create({
   },
   addPasteRules() {
     return [
-      markPasteRule({
+      core.markPasteRule({
         find: starPasteRegex2,
         type: this.type
       }),
-      markPasteRule({
+      core.markPasteRule({
         find: underscorePasteRegex2,
         type: this.type
       })
@@ -273,7 +276,7 @@ var Italic = Mark.create({
 var index_default5 = Italic;
 var inputRegex = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))$/;
 var pasteRegex = /(?:^|\s)(~~(?!\s+~~)((?:[^~]+))~~(?!\s+~~))/g;
-var Strike = Mark.create({
+var Strike = core.Mark.create({
   name: "strike",
   addOptions() {
     return {
@@ -299,7 +302,7 @@ var Strike = Mark.create({
     ];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["s", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["s", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   markdownTokenName: "del",
   parseMarkdown: (token, helpers) => {
@@ -328,7 +331,7 @@ var Strike = Mark.create({
   },
   addInputRules() {
     return [
-      markInputRule({
+      core.markInputRule({
         find: inputRegex,
         type: this.type
       })
@@ -336,7 +339,7 @@ var Strike = Mark.create({
   },
   addPasteRules() {
     return [
-      markPasteRule({
+      core.markPasteRule({
         find: pasteRegex,
         type: this.type
       })
@@ -344,7 +347,7 @@ var Strike = Mark.create({
   }
 });
 var index_default6 = Strike;
-var Underline = Mark.create({
+var Underline = core.Mark.create({
   name: "underline",
   addOptions() {
     return {
@@ -364,7 +367,7 @@ var Underline = Mark.create({
     ];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["u", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["u", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   parseMarkdown(token, helpers) {
     return helpers.applyMark(this.name || "underline", helpers.parseInline(token.tokens || []));
@@ -414,7 +417,7 @@ var Underline = Mark.create({
   }
 });
 var index_default7 = Underline;
-var Heading = Node.create({
+var Heading = core.Node.create({
   name: "heading",
   addOptions() {
     return {
@@ -442,7 +445,7 @@ var Heading = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     const hasLevel = this.options.levels.includes(node.attrs.level);
     const level = hasLevel ? node.attrs.level : this.options.levels[0];
-    return [`h${level}`, mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return [`h${level}`, core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   parseMarkdown: (token, helpers) => {
     return helpers.createNode(
@@ -487,7 +490,7 @@ var Heading = Node.create({
   },
   addInputRules() {
     return this.options.levels.map((level) => {
-      return textblockTypeInputRule({
+      return core.textblockTypeInputRule({
         find: new RegExp(`^(#{${Math.min(...this.options.levels)},${level}})\\s$`),
         type: this.type,
         getAttributes: {
@@ -506,7 +509,7 @@ var __export = (target, all) => {
 var ListItemName = "listItem";
 var TextStyleName = "textStyle";
 var bulletListInputRegex = /^\s*([-+*])\s$/;
-var BulletList = Node.create({
+var BulletList = core.Node.create({
   name: "bulletList",
   addOptions() {
     return {
@@ -524,7 +527,7 @@ var BulletList = Node.create({
     return [{ tag: "ul" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["ul", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["ul", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   markdownTokenName: "list",
   parseMarkdown: (token, helpers) => {
@@ -561,12 +564,12 @@ var BulletList = Node.create({
     };
   },
   addInputRules() {
-    let inputRule = wrappingInputRule({
+    let inputRule = core.wrappingInputRule({
       find: bulletListInputRegex,
       type: this.type
     });
     if (this.options.keepMarks || this.options.keepAttributes) {
-      inputRule = wrappingInputRule({
+      inputRule = core.wrappingInputRule({
         find: bulletListInputRegex,
         type: this.type,
         keepMarks: this.options.keepMarks,
@@ -650,7 +653,7 @@ var hoistBranchingNestedList = (state, dispatch, itemName, wrapperNames) => {
   const tr2 = state.tr;
   tr2.delete(nestedListPos, nestedListPos + nestedList.nodeSize);
   const mappedInsertPos = tr2.mapping.map(insertPos);
-  tr2.insert(mappedInsertPos, Fragment.from(items));
+  tr2.insert(mappedInsertPos, model.Fragment.from(items));
   tr2.setSelection(selection.map(tr2.doc, tr2.mapping));
   if (dispatch) {
     dispatch(tr2);
@@ -661,7 +664,7 @@ var handleDeleteBranchingNestedList = (editor, itemName, wrapperNames) => {
   return hoistBranchingNestedList(editor.state, editor.view.dispatch, itemName, wrapperNames);
 };
 var createBranchingListDeleteKeymap = (itemName, wrapperNames) => {
-  return Extension.create({
+  return core.Extension.create({
     name: `${itemName}BranchingDeleteKeymap`,
     priority: 101,
     addKeyboardShortcuts() {
@@ -878,7 +881,7 @@ function parseSameLineOrderedListText(text, helpers) {
     }
   ]);
 }
-var ListItem = Node.create({
+var ListItem = core.Node.create({
   name: "listItem",
   addOptions() {
     return {
@@ -897,7 +900,7 @@ var ListItem = Node.create({
     ];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["li", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["li", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   markdownTokenName: "list_item",
   parseMarkdown: (token, helpers) => {
@@ -956,7 +959,7 @@ var ListItem = Node.create({
     };
   },
   renderMarkdown: (node, h, ctx) => {
-    return renderNestedMarkdownContent(
+    return core.renderNestedMarkdownContent(
       node,
       h,
       (context) => {
@@ -1006,7 +1009,7 @@ __export(listHelpers_exports, {
 });
 var findListItemPos = (typeOrName, state) => {
   const { $from } = state.selection;
-  const nodeType = getNodeType(typeOrName, state.schema);
+  const nodeType = core.getNodeType(typeOrName, state.schema);
   let currentNode = null;
   let currentDepth = $from.depth;
   let currentPos = $from.pos;
@@ -1030,7 +1033,7 @@ var getNextListDepth = (typeOrName, state) => {
   if (!listItemPos) {
     return false;
   }
-  const [, depth] = getNodeAtPosition(state, typeOrName, listItemPos.$pos.pos + 4);
+  const [, depth] = core.getNodeAtPosition(state, typeOrName, listItemPos.$pos.pos + 4);
   return depth;
 };
 var hasListBefore = (editorState, name, parentListTypes) => {
@@ -1049,7 +1052,7 @@ var handleBackspace = (editor, name, parentListTypes) => {
   if (editor.state.selection.from !== editor.state.selection.to) {
     return false;
   }
-  if (!isNodeActive(editor.state, name) && hasListBefore(editor.state, name, parentListTypes)) {
+  if (!core.isNodeActive(editor.state, name) && hasListBefore(editor.state, name, parentListTypes)) {
     const { $anchor } = editor.state.selection;
     const $listPos = editor.state.doc.resolve($anchor.before() - 1);
     const listDescendants = [];
@@ -1065,10 +1068,10 @@ var handleBackspace = (editor, name, parentListTypes) => {
     const $lastItemPos = editor.state.doc.resolve($listPos.start() + lastItem.pos + 1);
     return editor.chain().cut({ from: $anchor.start() - 1, to: $anchor.end() + 1 }, $lastItemPos.end()).joinForward().run();
   }
-  if (!isNodeActive(editor.state, name)) {
+  if (!core.isNodeActive(editor.state, name)) {
     return false;
   }
-  if (!isAtStartOfNode(editor.state)) {
+  if (!core.isAtStartOfNode(editor.state)) {
     return false;
   }
   return editor.chain().liftListItem(name).run();
@@ -1096,10 +1099,10 @@ var nextListIsHigher = (typeOrName, state) => {
   return false;
 };
 var handleDelete = (editor, name) => {
-  if (!isNodeActive(editor.state, name)) {
+  if (!core.isNodeActive(editor.state, name)) {
     return false;
   }
-  if (!isAtEndOfNode(editor.state, name)) {
+  if (!core.isAtEndOfNode(editor.state, name)) {
     return false;
   }
   const { selection } = editor.state;
@@ -1143,7 +1146,7 @@ var listItemHasSubList = (typeOrName, state, node) => {
   if (!node) {
     return false;
   }
-  const nodeType = getNodeType(typeOrName, state.schema);
+  const nodeType = core.getNodeType(typeOrName, state.schema);
   let hasSubList = false;
   node.descendants((child) => {
     if (child.type === nodeType) {
@@ -1152,7 +1155,7 @@ var listItemHasSubList = (typeOrName, state, node) => {
   });
   return hasSubList;
 };
-var ListKeymap = Extension.create({
+var ListKeymap = core.Extension.create({
   name: "listKeymap",
   addOptions() {
     return {
@@ -1468,7 +1471,7 @@ function cssListStyleTypeToHtmlType(style) {
       return null;
   }
 }
-var OrderedList = Node.create({
+var OrderedList = core.Node.create({
   name: "orderedList",
   addOptions() {
     return {
@@ -1528,7 +1531,7 @@ var OrderedList = Node.create({
   },
   renderHTML({ HTMLAttributes }) {
     const { start, type, ...attributesWithoutType } = HTMLAttributes;
-    const attrs = mergeAttributes(this.options.HTMLAttributes, attributesWithoutType);
+    const attrs = core.mergeAttributes(this.options.HTMLAttributes, attributesWithoutType);
     if (start !== 1) {
       attrs.start = start;
     }
@@ -1621,7 +1624,7 @@ var OrderedList = Node.create({
   },
   addProseMirrorPlugins() {
     return [
-      new Plugin({
+      new state.Plugin({
         props: {
           handlePaste: (view, event) => {
             var _a, _b;
@@ -1655,14 +1658,14 @@ var OrderedList = Node.create({
       const hasDefaultType = !node.attrs.type || node.attrs.type === "1";
       return hasDefaultType && node.childCount + node.attrs.start === +match[1];
     };
-    let inputRule = wrappingInputRule({
+    let inputRule = core.wrappingInputRule({
       find: orderedListInputRegex,
       type: this.type,
       getAttributes: (match) => ({ start: +match[1] }),
       joinPredicate
     });
     if (this.options.keepMarks || this.options.keepAttributes) {
-      inputRule = wrappingInputRule({
+      inputRule = core.wrappingInputRule({
         find: orderedListInputRegex,
         type: this.type,
         keepMarks: this.options.keepMarks,
@@ -1676,7 +1679,7 @@ var OrderedList = Node.create({
   }
 });
 var inputRegex2 = /^\s*(\[([( |x])?\])\s$/;
-var TaskItem = Node.create({
+var TaskItem = core.Node.create({
   name: "taskItem",
   addOptions() {
     return {
@@ -1716,7 +1719,7 @@ var TaskItem = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     return [
       "li",
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+      core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         "data-type": this.name
       }),
       [
@@ -1752,7 +1755,7 @@ var TaskItem = Node.create({
     var _a;
     const checkedChar = ((_a = node.attrs) == null ? void 0 : _a.checked) ? "x" : " ";
     const prefix = `- [${checkedChar}] `;
-    return renderNestedMarkdownContent(node, h, prefix);
+    return core.renderNestedMarkdownContent(node, h, prefix);
   },
   addExtensions() {
     if (!this.options.nested) {
@@ -1836,7 +1839,7 @@ var TaskItem = Node.create({
           checkbox.checked = updatedNode.attrs.checked;
           updateA11Y(updatedNode);
           const extensionAttributes = editor.extensionManager.attributes;
-          const newHTMLAttributes = getRenderedAttributes(updatedNode, extensionAttributes);
+          const newHTMLAttributes = core.getRenderedAttributes(updatedNode, extensionAttributes);
           const newKeys = new Set(Object.keys(newHTMLAttributes));
           const staticAttrs = this.options.HTMLAttributes;
           prevRenderedAttributeKeys.forEach((key) => {
@@ -1867,7 +1870,7 @@ var TaskItem = Node.create({
   },
   addInputRules() {
     return [
-      wrappingInputRule({
+      core.wrappingInputRule({
         find: inputRegex2,
         type: this.type,
         getAttributes: (match) => ({
@@ -1877,7 +1880,7 @@ var TaskItem = Node.create({
     ];
   }
 });
-var TaskList = Node.create({
+var TaskList = core.Node.create({
   name: "taskList",
   addOptions() {
     return {
@@ -1900,7 +1903,7 @@ var TaskList = Node.create({
   renderHTML({ HTMLAttributes }) {
     return [
       "ul",
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { "data-type": this.name }),
+      core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { "data-type": this.name }),
       0
     ];
   },
@@ -1923,7 +1926,7 @@ var TaskList = Node.create({
     },
     tokenize(src, tokens, lexer) {
       const parseTaskListContent = (content) => {
-        const nestedResult = parseIndentedBlocks(
+        const nestedResult = core.parseIndentedBlocks(
           content,
           {
             itemPattern: /^(\s*)([-+*])\s+\[([ xX])\]\s+(.*)$/,
@@ -1958,7 +1961,7 @@ var TaskList = Node.create({
         }
         return lexer.blockTokens(content);
       };
-      const result = parseIndentedBlocks(
+      const result = core.parseIndentedBlocks(
         src,
         {
           itemPattern: /^(\s*)([-+*])\s+\[([ xX])\]\s+(.*)$/,
@@ -2008,7 +2011,7 @@ var TaskList = Node.create({
     };
   }
 });
-Extension.create({
+core.Extension.create({
   name: "listKit",
   addExtensions() {
     const extensions = [];
@@ -3690,7 +3693,7 @@ var handleBackspace2 = (editor, type) => {
   return true;
 };
 var inputRegex3 = /^\s*>\s$/;
-var Blockquote = Node.create({
+var Blockquote = core.Node.create({
   name: "blockquote",
   addOptions() {
     return {
@@ -3704,7 +3707,7 @@ var Blockquote = Node.create({
     return [{ tag: "blockquote" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return /* @__PURE__ */ jsx("blockquote", { ...mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), children: /* @__PURE__ */ jsx("slot", {}) });
+    return /* @__PURE__ */ jsxRuntime.jsx("blockquote", { ...core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), children: /* @__PURE__ */ jsxRuntime.jsx("slot", {}) });
   },
   parseMarkdown: (token, helpers) => {
     var _a;
@@ -3754,7 +3757,7 @@ ${prefix}
   },
   addInputRules() {
     return [
-      wrappingInputRule({
+      core.wrappingInputRule({
         find: inputRegex3,
         type: this.type
       })
@@ -3762,7 +3765,7 @@ ${prefix}
   }
 });
 var index_default9 = Blockquote;
-var HardBreak = Node.create({
+var HardBreak = core.Node.create({
   name: "hardBreak",
   markdownTokenName: "br",
   addOptions() {
@@ -3779,7 +3782,7 @@ var HardBreak = Node.create({
     return [{ tag: "br" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["br", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+    return ["br", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
   },
   renderText() {
     return "\n";
@@ -3826,7 +3829,7 @@ var HardBreak = Node.create({
   }
 });
 var index_default10 = HardBreak;
-var HorizontalRule = Node.create({
+var HorizontalRule = core.Node.create({
   name: "horizontalRule",
   addOptions() {
     return {
@@ -3839,7 +3842,7 @@ var HorizontalRule = Node.create({
     return [{ tag: "hr" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["hr", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+    return ["hr", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
   },
   markdownTokenName: "hr",
   parseMarkdown: (token, helpers) => {
@@ -3850,14 +3853,14 @@ var HorizontalRule = Node.create({
   },
   addCommands() {
     return {
-      setHorizontalRule: () => ({ chain, state }) => {
-        if (!canInsertNode(state, state.schema.nodes[this.name])) {
+      setHorizontalRule: () => ({ chain, state: state$1 }) => {
+        if (!core.canInsertNode(state$1, state$1.schema.nodes[this.name])) {
           return false;
         }
-        const { selection } = state;
+        const { selection } = state$1;
         const { $to: $originTo } = selection;
         const currentChain = chain();
-        if (isNodeSelection(selection)) {
+        if (core.isNodeSelection(selection)) {
           currentChain.insertContentAt($originTo.pos, {
             type: this.name
           });
@@ -3870,18 +3873,18 @@ var HorizontalRule = Node.create({
             const posAfter = $to.end();
             if ($to.nodeAfter) {
               if ($to.nodeAfter.isTextblock) {
-                tr2.setSelection(TextSelection$1.create(tr2.doc, $to.pos + 1));
+                tr2.setSelection(state.TextSelection.create(tr2.doc, $to.pos + 1));
               } else if ($to.nodeAfter.isBlock) {
-                tr2.setSelection(NodeSelection$1.create(tr2.doc, $to.pos));
+                tr2.setSelection(state.NodeSelection.create(tr2.doc, $to.pos));
               } else {
-                tr2.setSelection(TextSelection$1.create(tr2.doc, $to.pos));
+                tr2.setSelection(state.TextSelection.create(tr2.doc, $to.pos));
               }
             } else {
               const nodeType = chainState.schema.nodes[this.options.nextNodeType] || $to.parent.type.contentMatch.defaultType;
               const node = nodeType == null ? void 0 : nodeType.create();
               if (node) {
                 tr2.insert(posAfter, node);
-                tr2.setSelection(TextSelection$1.create(tr2.doc, posAfter + 1));
+                tr2.setSelection(state.TextSelection.create(tr2.doc, posAfter + 1));
               }
             }
             tr2.scrollIntoView();
@@ -3893,7 +3896,7 @@ var HorizontalRule = Node.create({
   },
   addInputRules() {
     return [
-      nodeInputRule({
+      core.nodeInputRule({
         find: /^(?:---|—-|___\s|\*\*\*\s)$/,
         type: this.type
       })
@@ -3901,7 +3904,7 @@ var HorizontalRule = Node.create({
   }
 });
 var index_default11 = HorizontalRule;
-var TextAlign = Extension.create({
+var TextAlign = core.Extension.create({
   name: "textAlign",
   addOptions() {
     return {
@@ -5125,8 +5128,8 @@ function isValidLinkStructure(tokens) {
   return false;
 }
 function autolink(options) {
-  return new Plugin({
-    key: new PluginKey("autolink"),
+  return new state.Plugin({
+    key: new state.PluginKey("autolink"),
     appendTransaction: (transactions, oldState, newState) => {
       const docChanges = transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc);
       const preventAutolink = transactions.some(
@@ -5136,10 +5139,10 @@ function autolink(options) {
         return;
       }
       const { tr: tr2 } = newState;
-      const transform = combineTransactionSteps(oldState.doc, [...transactions]);
-      const changes = getChangedRanges(transform);
+      const transform = core.combineTransactionSteps(oldState.doc, [...transactions]);
+      const changes = core.getChangedRanges(transform);
       changes.forEach(({ newRange }) => {
-        const nodesInChangedRanges = findChildrenInRange(
+        const nodesInChangedRanges = core.findChildrenInRange(
           newState.doc,
           newRange,
           (node) => node.isTextblock
@@ -5193,7 +5196,7 @@ function autolink(options) {
             }
             return !newState.doc.rangeHasMark(link.from, link.to, newState.schema.marks.code);
           }).filter((link) => options.validate(link.value)).filter((link) => options.shouldAutoLink(link.value)).forEach((link) => {
-            if (getMarksBetween(link.from, link.to, newState.doc).some(
+            if (core.getMarksBetween(link.from, link.to, newState.doc).some(
               (item) => item.mark.type === options.type
             )) {
               return;
@@ -5216,8 +5219,8 @@ function autolink(options) {
   });
 }
 function clickHandler(options) {
-  return new Plugin({
-    key: new PluginKey("handleClickLink"),
+  return new state.Plugin({
+    key: new state.PluginKey("handleClickLink"),
     props: {
       handleClick: (view, pos, event) => {
         var _a, _b;
@@ -5250,7 +5253,7 @@ function clickHandler(options) {
           handled = commandResult;
         }
         if (options.openOnClick) {
-          const attrs = getAttributes(view.state, options.type.name);
+          const attrs = core.getAttributes(view.state, options.type.name);
           const href = (_a = link.href) != null ? _a : attrs.href;
           const target = (_b = link.target) != null ? _b : attrs.target;
           if (href) {
@@ -5264,8 +5267,8 @@ function clickHandler(options) {
   });
 }
 function pasteHandler(options) {
-  return new Plugin({
-    key: new PluginKey("handlePasteLink"),
+  return new state.Plugin({
+    key: new state.PluginKey("handlePasteLink"),
     props: {
       handlePaste: (view, _event, slice) => {
         const { shouldAutoLink } = options;
@@ -5320,7 +5323,7 @@ function isAllowedUri(uri, protocols) {
     )
   );
 }
-var Link = Mark.create({
+var Link = core.Mark.create({
   name: "link",
   priority: 1e3,
   keepOnSplit: false,
@@ -5425,9 +5428,9 @@ var Link = Mark.create({
       protocols: this.options.protocols,
       defaultProtocol: this.options.defaultProtocol
     })) {
-      return ["a", mergeAttributes(this.options.HTMLAttributes, { ...HTMLAttributes, href: "" }), 0];
+      return ["a", core.mergeAttributes(this.options.HTMLAttributes, { ...HTMLAttributes, href: "" }), 0];
     }
-    return ["a", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["a", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   markdownTokenName: "link",
   parseMarkdown: (token, helpers) => {
@@ -5474,7 +5477,7 @@ var Link = Mark.create({
   },
   addPasteRules() {
     return [
-      markPasteRule({
+      core.markPasteRule({
         find: (text) => {
           const foundLinks = [];
           if (text) {
@@ -5582,7 +5585,7 @@ var pasteRegexMatch = (text) => {
   }
   return matches;
 };
-var Code = Mark.create({
+var Code = core.Mark.create({
   name: "code",
   addOptions() {
     return {
@@ -5596,7 +5599,7 @@ var Code = Mark.create({
     return [{ tag: "code" }];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["code", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ["code", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   markdownTokenName: "codespan",
   parseMarkdown: (token, helpers) => {
@@ -5628,7 +5631,7 @@ var Code = Mark.create({
   },
   addInputRules() {
     return [
-      markInputRule({
+      core.markInputRule({
         find: inputRegexMatch,
         type: this.type
       })
@@ -5636,7 +5639,7 @@ var Code = Mark.create({
   },
   addPasteRules() {
     return [
-      markPasteRule({
+      core.markPasteRule({
         find: pasteRegexMatch,
         type: this.type
       })
@@ -5647,7 +5650,7 @@ var index_default14 = Code;
 var DEFAULT_TAB_SIZE = 4;
 var backtickInputRegex = /^```([a-z]+)?[\s\n]$/;
 var tildeInputRegex = /^~~~([a-z]+)?[\s\n]$/;
-var CodeBlock = Node.create({
+var CodeBlock = core.Node.create({
   name: "codeBlock",
   addOptions() {
     return {
@@ -5698,7 +5701,7 @@ var CodeBlock = Node.create({
   renderHTML({ node, HTMLAttributes }) {
     return [
       "pre",
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
+      core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
       [
         "code",
         {
@@ -5792,8 +5795,8 @@ var CodeBlock = Node.create({
           return false;
         }
         const tabSize = (_a = this.options.tabSize) != null ? _a : DEFAULT_TAB_SIZE;
-        const { state } = editor;
-        const { selection } = state;
+        const { state: state$1 } = editor;
+        const { selection } = state$1;
         const { $from, empty } = selection;
         if ($from.parent.type !== this.type) {
           return false;
@@ -5804,7 +5807,7 @@ var CodeBlock = Node.create({
             const { pos } = $from;
             const codeBlockStart = $from.start();
             const codeBlockEnd = $from.end();
-            const allText = state.doc.textBetween(codeBlockStart, codeBlockEnd, "\n", "\n");
+            const allText = state$1.doc.textBetween(codeBlockStart, codeBlockEnd, "\n", "\n");
             const lines = allText.split("\n");
             let currentLineIndex = 0;
             let charCount = 0;
@@ -5829,14 +5832,14 @@ var CodeBlock = Node.create({
             tr2.delete(lineStartPos, lineStartPos + spacesToRemove);
             const cursorPosInLine = pos - lineStartPos;
             if (cursorPosInLine <= spacesToRemove) {
-              tr2.setSelection(TextSelection$1.create(tr2.doc, lineStartPos));
+              tr2.setSelection(state.TextSelection.create(tr2.doc, lineStartPos));
             }
             return true;
           });
         }
         return editor.commands.command(({ tr: tr2 }) => {
           const { from, to } = selection;
-          const text = state.doc.textBetween(from, to, "\n", "\n");
+          const text = state$1.doc.textBetween(from, to, "\n", "\n");
           const lines = text.split("\n");
           const reverseIndentText = lines.map((line) => {
             var _a2;
@@ -5844,7 +5847,7 @@ var CodeBlock = Node.create({
             const spacesToRemove = Math.min(leadingSpaces.length, tabSize);
             return line.slice(spacesToRemove);
           }).join("\n");
-          tr2.replaceWith(from, to, state.schema.text(reverseIndentText));
+          tr2.replaceWith(from, to, state$1.schema.text(reverseIndentText));
           return true;
         });
       },
@@ -5874,8 +5877,8 @@ var CodeBlock = Node.create({
         if (!this.options.exitOnArrowDown) {
           return false;
         }
-        const { state } = editor;
-        const { selection, doc } = state;
+        const { state: state$1 } = editor;
+        const { selection, doc } = state$1;
         const { $from, empty } = selection;
         if (!empty || $from.parent.type !== this.type) {
           return false;
@@ -5891,7 +5894,7 @@ var CodeBlock = Node.create({
         const nodeAfter = doc.nodeAt(after);
         if (nodeAfter) {
           return editor.commands.command(({ tr: tr2 }) => {
-            tr2.setSelection(Selection$1.near(doc.resolve(after)));
+            tr2.setSelection(state.Selection.near(doc.resolve(after)));
             return true;
           });
         }
@@ -5901,14 +5904,14 @@ var CodeBlock = Node.create({
   },
   addInputRules() {
     return [
-      textblockTypeInputRule({
+      core.textblockTypeInputRule({
         find: backtickInputRegex,
         type: this.type,
         getAttributes: (match) => ({
           language: match[1]
         })
       }),
-      textblockTypeInputRule({
+      core.textblockTypeInputRule({
         find: tildeInputRegex,
         type: this.type,
         getAttributes: (match) => ({
@@ -5921,8 +5924,8 @@ var CodeBlock = Node.create({
     return [
       // this plugin creates a code block for pasted content from VS Code
       // we can also detect the copied code language
-      new Plugin({
-        key: new PluginKey("codeBlockVSCodeHandler"),
+      new state.Plugin({
+        key: new state.PluginKey("codeBlockVSCodeHandler"),
         props: {
           handlePaste: (view, event) => {
             if (!event.clipboardData) {
@@ -5943,7 +5946,7 @@ var CodeBlock = Node.create({
             tr2.replaceSelectionWith(this.type.create({ language }, textNode));
             if (tr2.selection.$from.parent.type !== this.type) {
               tr2.setSelection(
-                TextSelection$1.near(tr2.doc.resolve(Math.max(0, tr2.selection.from - 2)))
+                state.TextSelection.near(tr2.doc.resolve(Math.max(0, tr2.selection.from - 2)))
               );
             }
             tr2.setMeta("paste", true);
@@ -5957,7 +5960,7 @@ var CodeBlock = Node.create({
 });
 var index_default15 = CodeBlock;
 var inputRegex4 = /(?:^|\s)(!\[(.+|:?)]\((\S+)(?:(?:\s+)["'](\S+)["'])?\))$/;
-var Image = Node.create({
+var Image = core.Node.create({
   name: "image",
   addOptions() {
     return {
@@ -6001,7 +6004,7 @@ var Image = Node.create({
     ];
   },
   renderHTML({ HTMLAttributes }) {
-    return ["img", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
+    return ["img", core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
   },
   parseMarkdown: (token, helpers) => {
     return helpers.createNode("image", {
@@ -6025,7 +6028,7 @@ var Image = Node.create({
     return ({ node, getPos, HTMLAttributes, editor }) => {
       const el = document.createElement("img");
       el.draggable = false;
-      const mergedAttributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes);
+      const mergedAttributes = core.mergeAttributes(this.options.HTMLAttributes, HTMLAttributes);
       Object.entries(mergedAttributes).forEach(([key, value]) => {
         if (value != null) {
           switch (key) {
@@ -6041,7 +6044,7 @@ var Image = Node.create({
       if (mergedAttributes.src !== null) {
         el.src = mergedAttributes.src;
       }
-      const nodeView = new ResizableNodeView({
+      const nodeView = new core.ResizableNodeView({
         element: el,
         editor,
         node,
@@ -6097,7 +6100,7 @@ var Image = Node.create({
   },
   addInputRules() {
     return [
-      nodeInputRule({
+      core.nodeInputRule({
         find: inputRegex4,
         type: this.type,
         getAttributes: (match) => {
@@ -6136,7 +6139,7 @@ var ToolbarBtn = ({
   isActive = false,
   title,
   children
-}) => /* @__PURE__ */ jsx$1(
+}) => /* @__PURE__ */ jsxRuntime$1.jsx(
   "button",
   {
     type: "button",
@@ -6147,162 +6150,72 @@ var ToolbarBtn = ({
     children
   }
 );
-var EditorToolbar = ({ editor, onImageClick }) => {
+var ICON = 15;
+var EditorToolbar = ({
+  editor,
+  onImageClick,
+  showBinding
+}) => {
   if (!editor) return null;
-  return /* @__PURE__ */ jsxs("div", { className: "tecof-editor-toolbar", children: [
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
+  const editLink = () => {
+    const prev = editor.getAttributes("link")?.href || "";
+    const url = window.prompt("Ba\u011Flant\u0131 URL:", prev);
+    if (url === null) return;
+    if (url.trim() === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim(), target: "_blank" }).run();
+  };
+  return /* @__PURE__ */ jsxRuntime$1.jsxs("div", { className: "tecof-editor-toolbar", children: [
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleBold().run(), isActive: editor.isActive("bold"), title: "Kal\u0131n", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Bold, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleItalic().run(), isActive: editor.isActive("italic"), title: "\u0130talik", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Italic, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleUnderline().run(), isActive: editor.isActive("underline"), title: "Alt\u0131 \xE7izili", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Underline, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleStrike().run(), isActive: editor.isActive("strike"), title: "\xDCst\xFC \xE7izili", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Strikethrough, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleCode().run(), isActive: editor.isActive("code"), title: "Sat\u0131r i\xE7i kod", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Code, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-divider" }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor.isActive("heading", { level: 2 }), title: "Ba\u015Fl\u0131k 2", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Heading2, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor.isActive("heading", { level: 3 }), title: "Ba\u015Fl\u0131k 3", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Heading3, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleHeading({ level: 4 }).run(), isActive: editor.isActive("heading", { level: 4 }), title: "Ba\u015Fl\u0131k 4", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Heading4, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-divider" }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleBulletList().run(), isActive: editor.isActive("bulletList"), title: "Madde i\u015Faretli liste", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.List, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleOrderedList().run(), isActive: editor.isActive("orderedList"), title: "S\u0131ral\u0131 liste", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.ListOrdered, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-divider" }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().setTextAlign("left").run(), isActive: editor.isActive({ textAlign: "left" }), title: "Sola hizala", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.AlignLeft, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().setTextAlign("center").run(), isActive: editor.isActive({ textAlign: "center" }), title: "Ortala", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.AlignCenter, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().setTextAlign("right").run(), isActive: editor.isActive({ textAlign: "right" }), title: "Sa\u011Fa hizala", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.AlignRight, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-divider" }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleBlockquote().run(), isActive: editor.isActive("blockquote"), title: "Al\u0131nt\u0131", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Quote, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().toggleCodeBlock().run(), isActive: editor.isActive("codeBlock"), title: "Kod blo\u011Fu", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.SquareCode, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().setHorizontalRule().run(), title: "Yatay \xE7izgi", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Minus, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-divider" }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: editLink, isActive: editor.isActive("link"), title: "Ba\u011Flant\u0131", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Link, { size: ICON }) }),
+    onImageClick && /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: onImageClick, title: "G\xF6rsel ekle", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Image, { size: ICON }) }),
+    showBinding && // Insert a `{{ data.field }}` CMS reference at the cursor; the component
+    // resolves it against `puck.metadata.cmsData` at render time — same
+    // convention as the bindable text field.
+    /* @__PURE__ */ jsxRuntime$1.jsx(
+      chunkHOUGBQE3_js.CmsBindingButton,
       {
-        onClick: () => editor.chain().focus().toggleBold().run(),
-        isActive: editor.isActive("bold"),
-        title: "Bold",
-        children: /* @__PURE__ */ jsx$1("strong", { children: "B" })
+        onInsert: (token) => editor.chain().focus().insertContent(token).run()
       }
     ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleItalic().run(),
-        isActive: editor.isActive("italic"),
-        title: "Italic",
-        children: /* @__PURE__ */ jsx$1("em", { children: "I" })
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleUnderline().run(),
-        isActive: editor.isActive("underline"),
-        title: "Underline",
-        children: /* @__PURE__ */ jsx$1("span", { className: "tecof-underline", children: "U" })
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleStrike().run(),
-        isActive: editor.isActive("strike"),
-        title: "Strikethrough",
-        children: /* @__PURE__ */ jsx$1("span", { className: "tecof-line-through", children: "S" })
-      }
-    ),
-    /* @__PURE__ */ jsx$1("div", { className: "tecof-editor-divider" }),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-        isActive: editor.isActive("heading", { level: 2 }),
-        title: "Heading 2",
-        children: "H2"
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-        isActive: editor.isActive("heading", { level: 3 }),
-        title: "Heading 3",
-        children: "H3"
-      }
-    ),
-    /* @__PURE__ */ jsx$1("div", { className: "tecof-editor-divider" }),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleBulletList().run(),
-        isActive: editor.isActive("bulletList"),
-        title: "Bullet List",
-        children: "\u2022"
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleOrderedList().run(),
-        isActive: editor.isActive("orderedList"),
-        title: "Ordered List",
-        children: "1."
-      }
-    ),
-    /* @__PURE__ */ jsx$1("div", { className: "tecof-editor-divider" }),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().setTextAlign("left").run(),
-        isActive: editor.isActive({ textAlign: "left" }),
-        title: "Align Left",
-        children: "\u2630"
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().setTextAlign("center").run(),
-        isActive: editor.isActive({ textAlign: "center" }),
-        title: "Align Center",
-        children: "\u2630"
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().setTextAlign("right").run(),
-        isActive: editor.isActive({ textAlign: "right" }),
-        title: "Align Right",
-        children: "\u2630"
-      }
-    ),
-    /* @__PURE__ */ jsx$1("div", { className: "tecof-editor-divider" }),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => {
-          if (editor.isActive("link")) {
-            editor.chain().focus().unsetLink().run();
-          } else {
-            const url = window.prompt("URL:");
-            if (url) {
-              editor.chain().focus().setLink({ href: url, target: "_blank" }).run();
-            }
-          }
-        },
-        isActive: editor.isActive("link"),
-        title: "Link",
-        children: "\u{1F517}"
-      }
-    ),
-    onImageClick && /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: onImageClick,
-        isActive: false,
-        title: "Resim Ekle",
-        children: "\u{1F5BC}\uFE0F"
-      }
-    ),
-    /* @__PURE__ */ jsx$1(
-      ToolbarBtn,
-      {
-        onClick: () => editor.chain().focus().toggleBlockquote().run(),
-        isActive: editor.isActive("blockquote"),
-        title: "Blockquote",
-        children: "\u275D"
-      }
-    ),
-    /* @__PURE__ */ jsx$1("div", { className: "tecof-editor-divider" }),
-    /* @__PURE__ */ jsx$1(ToolbarBtn, { onClick: () => editor.chain().focus().undo().run(), title: "Undo", children: "\u21A9" }),
-    /* @__PURE__ */ jsx$1(ToolbarBtn, { onClick: () => editor.chain().focus().redo().run(), title: "Redo", children: "\u21AA" })
+    /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-divider" }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().unsetAllMarks().clearNodes().run(), title: "Bi\xE7imi temizle", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.RemoveFormatting, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().undo().run(), title: "Geri al", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Undo2, { size: ICON }) }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(ToolbarBtn, { onClick: () => editor.chain().focus().redo().run(), title: "Yinele", children: /* @__PURE__ */ jsxRuntime$1.jsx(lucideReact.Redo2, { size: ICON }) })
   ] });
 };
 var TipTapInstance = ({
   content,
   onUpdate,
   readOnly,
-  cdnUrl
+  cdnUrl,
+  showBinding
 }) => {
-  const isMountedRef = useRef(false);
-  const [mediaDrawerOpen, setMediaDrawerOpen] = useState(false);
-  const editor = useEditor({
+  const isMountedRef = react.useRef(false);
+  const [mediaDrawerOpen, setMediaDrawerOpen] = react.useState(false);
+  const editor = react$1.useEditor({
     extensions: createExtensions(),
     content: content || "",
     editable: !readOnly,
@@ -6313,14 +6226,14 @@ var TipTapInstance = ({
     },
     immediatelyRender: false
   });
-  useEffect(() => {
+  react.useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
   }, []);
-  const lastExternalContent = useRef(content);
-  useEffect(() => {
+  const lastExternalContent = react.useRef(content);
+  react.useEffect(() => {
     if (editor && content !== lastExternalContent.current) {
       lastExternalContent.current = content;
       const currentHtml = editor.getHTML();
@@ -6333,23 +6246,24 @@ var TipTapInstance = ({
       }
     }
   }, [content, editor]);
-  const handleImageSelect = useCallback((file) => {
+  const handleImageSelect = react.useCallback((file) => {
     if (!editor) return;
     const src = `${cdnUrl}/${file.name}`;
     const alt = file.meta?.originalName || file.name;
     editor.chain().focus().setImage({ src, alt }).run();
   }, [editor, cdnUrl]);
-  return /* @__PURE__ */ jsxs("div", { children: [
-    /* @__PURE__ */ jsx$1(
+  return /* @__PURE__ */ jsxRuntime$1.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntime$1.jsx(
       EditorToolbar,
       {
         editor,
-        onImageClick: readOnly ? void 0 : () => setMediaDrawerOpen(true)
+        onImageClick: readOnly ? void 0 : () => setMediaDrawerOpen(true),
+        showBinding: !readOnly && showBinding
       }
     ),
-    /* @__PURE__ */ jsx$1(EditorContent, { editor }),
-    /* @__PURE__ */ jsx$1(
-      MediaDrawer,
+    /* @__PURE__ */ jsxRuntime$1.jsx(react$1.EditorContent, { editor }),
+    /* @__PURE__ */ jsxRuntime$1.jsx(
+      chunkIS7WYFKP_js.MediaDrawer,
       {
         open: mediaDrawerOpen,
         onOpenChange: setMediaDrawerOpen,
@@ -6364,7 +6278,8 @@ var TipTapInstance = ({
 var EditorFieldImpl = ({
   value,
   onChange,
-  readOnly
+  readOnly,
+  bindable
 }) => {
   const {
     merchantInfo,
@@ -6372,12 +6287,13 @@ var EditorFieldImpl = ({
     error,
     activeTab: localActiveTab,
     setActiveTab: localSetActiveTab
-  } = useLanguages();
-  const globalLang = useActiveLanguage();
+  } = chunkHOUGBQE3_js.useLanguages();
+  const globalLang = chunkHOUGBQE3_js.useActiveLanguage();
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
-  const { cdnUrl } = useTecof();
-  const values = useMemo(() => {
+  const { cdnUrl, apiClient } = chunkFMV4YLE6_js.useTecof();
+  const showBinding = bindable !== false && !!apiClient;
+  const values = react.useMemo(() => {
     if (!merchantInfo) return value || [];
     const current = value || [];
     return merchantInfo.languages.map((code) => {
@@ -6385,11 +6301,11 @@ var EditorFieldImpl = ({
       return existing || { code, value: "" };
     });
   }, [value, merchantInfo]);
-  const valuesRef = useRef(values);
+  const valuesRef = react.useRef(values);
   valuesRef.current = values;
-  const onChangeRef = useRef(onChange);
+  const onChangeRef = react.useRef(onChange);
   onChangeRef.current = onChange;
-  const handleChange = useCallback((code, html) => {
+  const handleChange = react.useCallback((code, html) => {
     const current = valuesRef.current;
     const updated = [...current];
     const idx = updated.findIndex((v) => v.code === code);
@@ -6400,13 +6316,13 @@ var EditorFieldImpl = ({
     }
     onChangeRef.current(updated);
   }, []);
-  if (loading) return /* @__PURE__ */ jsx$1(FieldLoading, {});
-  if (error && !merchantInfo) return /* @__PURE__ */ jsx$1("div", { className: "tecof-lang-error", children: error });
+  if (loading) return /* @__PURE__ */ jsxRuntime$1.jsx(chunkHOUGBQE3_js.FieldLoading, {});
+  if (error && !merchantInfo) return /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-lang-error", children: error });
   if (!merchantInfo) return null;
   const { languages, defaultLanguage } = merchantInfo;
-  return /* @__PURE__ */ jsxs("div", { className: "tecof-lang-container tecof-editor-field", children: [
-    !globalLang && /* @__PURE__ */ jsx$1(
-      LanguageTabBar,
+  return /* @__PURE__ */ jsxRuntime$1.jsxs("div", { className: "tecof-lang-container tecof-editor-field", children: [
+    !globalLang && /* @__PURE__ */ jsxRuntime$1.jsx(
+      chunkHOUGBQE3_js.LanguageTabBar,
       {
         languages,
         defaultLanguage,
@@ -6417,13 +6333,14 @@ var EditorFieldImpl = ({
     languages.map((code) => {
       if (activeTab !== code) return null;
       const currentValue = values.find((v) => v.code === code)?.value || "";
-      return /* @__PURE__ */ jsx$1("div", { className: "tecof-editor-wrapper", children: /* @__PURE__ */ jsx$1(
+      return /* @__PURE__ */ jsxRuntime$1.jsx("div", { className: "tecof-editor-wrapper", children: /* @__PURE__ */ jsxRuntime$1.jsx(
         TipTapInstance,
         {
           content: currentValue,
           onUpdate: (html) => handleChange(code, html),
           readOnly,
-          cdnUrl: cdnUrl || ""
+          cdnUrl: cdnUrl || "",
+          showBinding
         }
       ) }, code);
     })
@@ -6431,6 +6348,6 @@ var EditorFieldImpl = ({
 };
 var EditorField_impl_default = EditorFieldImpl;
 
-export { EditorField_impl_default as default };
-//# sourceMappingURL=EditorField.impl-EG65RRZM.mjs.map
-//# sourceMappingURL=EditorField.impl-EG65RRZM.mjs.map
+module.exports = EditorField_impl_default;
+//# sourceMappingURL=EditorField.impl-W4C2AO5Z.js.map
+//# sourceMappingURL=EditorField.impl-W4C2AO5Z.js.map

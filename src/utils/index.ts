@@ -1,4 +1,5 @@
 import type { ThemeConfig, HSL, DeepPartialThemeConfig } from '../types';
+import { themeFontVarLines } from '../studio/theme/fonts';
 
 /* ─── Color Converters ─── */
 
@@ -91,6 +92,10 @@ export function generateCSSVariables(theme: ThemeConfig): string {
     lines.push(`  --theme-heading-${level}: ${scale}rem;`);
   }
 
+  // Per-font `--font-<id>` variables for the fonts in use (builtin + custom), so
+  // per-node `font-[<id>]` tokens resolve everywhere the theme vars are injected.
+  lines.push(...themeFontVarLines(theme));
+
   // Spacing
   lines.push(`  --theme-container-max-width: ${theme.spacing.containerMaxWidth}px;`);
   lines.push(`  --theme-section-padding-y: ${theme.spacing.sectionPaddingY}px;`);
@@ -145,6 +150,8 @@ export function getDefaultTheme(): ThemeConfig {
       fontWeightMedium: 500,
       fontWeightBold: 700,
     },
+    fonts: ['inter'],
+    customFonts: [],
     spacing: {
       containerMaxWidth: 1280,
       sectionPaddingY: 80,
@@ -206,6 +213,10 @@ export function mergeTheme(base: ThemeConfig, overrides: DeepPartialThemeConfig)
     typography: { ...base.typography, ...(overrides.typography ?? {}) },
     spacing: { ...base.spacing, ...(overrides.spacing ?? {}) },
     customTokens: { ...(base.customTokens ?? {}), ...(overrides.customTokens ?? {}) },
+    // Font selection is replaced wholesale when the override provides it (the
+    // theme editor always writes the full arrays), else inherited from base.
+    fonts: overrides.fonts ?? base.fonts,
+    customFonts: overrides.customFonts ?? base.customFonts,
   };
 
   // Deep-merge headingScale if provided

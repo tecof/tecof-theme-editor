@@ -1,7 +1,8 @@
 import { useTecof } from './chunk-JQGJZ4SL.mjs';
-import { createContext, useState, useMemo, useEffect, useContext, Component, useRef, useCallback } from 'react';
-import { jsx, jsxs } from 'react/jsx-runtime';
-import { Copy, Loader2, Languages } from 'lucide-react';
+import { createContext, useState, useMemo, useEffect, useContext, Component, useRef, useCallback, useLayoutEffect } from 'react';
+import { jsx, jsxs, Fragment } from 'react/jsx-runtime';
+import { createPortal } from 'react-dom';
+import { Braces, Copy, Loader2, Languages, ChevronLeft, Search, Database } from 'lucide-react';
 
 var merchantInfoCache = /* @__PURE__ */ new Map();
 var CACHE_TTL = 5 * 60 * 1e3;
@@ -104,6 +105,241 @@ var FieldErrorBoundary = class extends Component {
     }
     return this.props.children;
   }
+};
+var OPPOSITE = {
+  top: "bottom",
+  bottom: "top",
+  left: "right",
+  right: "left"
+};
+var parsePlacement = (placement) => {
+  const [side, align] = placement.split("-");
+  return { side, align: align ?? "center" };
+};
+function useFloating({
+  anchor,
+  open,
+  placement = "bottom-start",
+  offset = 6,
+  padding = 8
+}) {
+  const floatingRef = useRef(null);
+  const [pos, setPos] = useState({
+    top: -9999,
+    left: -9999,
+    side: parsePlacement(placement).side
+  });
+  const update = useCallback(() => {
+    const floating = floatingRef.current;
+    if (!anchor || !floating) return;
+    const a = anchor.getBoundingClientRect();
+    const fw = floating.offsetWidth;
+    const fh = floating.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const { side: preferred, align } = parsePlacement(placement);
+    const space = {
+      top: a.top - padding,
+      bottom: vh - a.bottom - padding,
+      left: a.left - padding,
+      right: vw - a.right - padding
+    };
+    const needed = (s) => (s === "top" || s === "bottom" ? fh : fw) + offset;
+    let side = preferred;
+    if (space[preferred] < needed(preferred) && space[OPPOSITE[preferred]] > space[preferred]) {
+      side = OPPOSITE[preferred];
+    }
+    let top = 0;
+    let left = 0;
+    if (side === "bottom") top = a.bottom + offset;
+    else if (side === "top") top = a.top - fh - offset;
+    else if (side === "right") left = a.right + offset;
+    else left = a.left - fw - offset;
+    if (side === "top" || side === "bottom") {
+      if (align === "start") left = a.left;
+      else if (align === "end") left = a.right - fw;
+      else left = a.left + (a.width - fw) / 2;
+    } else {
+      if (align === "start") top = a.top;
+      else if (align === "end") top = a.bottom - fh;
+      else top = a.top + (a.height - fh) / 2;
+    }
+    const clamp = (value, size, viewport) => Math.max(padding, Math.min(value, viewport - size - padding));
+    setPos({
+      top: clamp(top, fh, vh),
+      left: clamp(left, fw, vw),
+      side
+    });
+  }, [anchor, placement, offset, padding]);
+  useLayoutEffect(() => {
+    if (open) update();
+  }, [open, update]);
+  useEffect(() => {
+    if (!open || !anchor) return;
+    let frame = 0;
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, true);
+    window.addEventListener("resize", schedule);
+    const observer = new ResizeObserver(schedule);
+    if (floatingRef.current) observer.observe(floatingRef.current);
+    observer.observe(anchor);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, true);
+      window.removeEventListener("resize", schedule);
+      observer.disconnect();
+    };
+  }, [open, anchor, update]);
+  return {
+    floatingRef,
+    style: { position: "fixed", top: pos.top, left: pos.left },
+    side: pos.side,
+    update
+  };
+}
+var tokenFor = (shortcode) => `{{ data.${shortcode} }}`;
+var BindingPopover = ({
+  anchor,
+  onInsert,
+  onClose
+}) => {
+  const { apiClient } = useTecof();
+  const { floatingRef, style: floatingStyle } = useFloating({
+    anchor,
+    open: true,
+    placement: "bottom-end"
+  });
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeSlug, setActiveSlug] = useState(null);
+  const [query, setQuery] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.getCmsCollections();
+        if (cancelled) return;
+        if (res.success && Array.isArray(res.data)) setCollections(res.data);
+        else setError(res.message || "Koleksiyonlar y\xFCklenemedi");
+      } catch (e) {
+        if (!cancelled) setError(e?.message || "Ba\u011Flant\u0131 hatas\u0131");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiClient]);
+  useEffect(() => {
+    const onDown = (e) => {
+      if (!floatingRef.current?.contains(e.target) && !anchor.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [anchor, onClose, floatingRef]);
+  const active = collections.find((c) => c.slug === activeSlug) || null;
+  const filteredCollections = collections.filter(
+    (c) => !query.trim() || `${c.name} ${c.slug}`.toLowerCase().includes(query.toLowerCase())
+  );
+  const fields = active?.fields || [];
+  const filteredFields = fields.filter(
+    (f) => !query.trim() || `${f.name} ${f.shortcode}`.toLowerCase().includes(query.toLowerCase())
+  );
+  return createPortal(
+    /* @__PURE__ */ jsxs("div", { ref: floatingRef, className: "tecof-bind-popover", style: floatingStyle, role: "dialog", "aria-label": "CMS verisine ba\u011Fla", children: [
+      /* @__PURE__ */ jsx("div", { className: "tecof-bind-header", children: active ? /* @__PURE__ */ jsxs("button", { type: "button", className: "tecof-bind-back", onClick: () => {
+        setActiveSlug(null);
+        setQuery("");
+      }, children: [
+        /* @__PURE__ */ jsx(ChevronLeft, { size: 14 }),
+        " ",
+        active.name
+      ] }) : /* @__PURE__ */ jsx("span", { className: "tecof-bind-title", children: "CMS verisine ba\u011Fla" }) }),
+      /* @__PURE__ */ jsxs("div", { className: "tecof-bind-search", children: [
+        /* @__PURE__ */ jsx(Search, { size: 13 }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "text",
+            value: query,
+            onChange: (e) => setQuery(e.target.value),
+            placeholder: active ? "Alan ara\u2026" : "Koleksiyon ara\u2026",
+            className: "tecof-bind-search-input",
+            autoFocus: true
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "tecof-bind-list", children: loading ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: "Y\xFCkleniyor\u2026" }) : error ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: error }) : !active ? filteredCollections.length === 0 ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: "Koleksiyon yok" }) : filteredCollections.map((col) => /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tecof-bind-item",
+          onClick: () => {
+            setActiveSlug(col.slug);
+            setQuery("");
+          },
+          children: [
+            /* @__PURE__ */ jsx(Database, { size: 13 }),
+            /* @__PURE__ */ jsx("span", { className: "tecof-bind-item-label", children: col.name }),
+            /* @__PURE__ */ jsxs("span", { className: "tecof-bind-item-meta", children: [
+              col.fields?.length ?? 0,
+              " alan"
+            ] })
+          ]
+        },
+        col._id
+      )) : filteredFields.length === 0 ? /* @__PURE__ */ jsx("div", { className: "tecof-bind-empty", children: "Alan yok" }) : filteredFields.map((f) => /* @__PURE__ */ jsxs(
+        "button",
+        {
+          type: "button",
+          className: "tecof-bind-item",
+          onClick: () => {
+            onInsert(tokenFor(f.shortcode));
+            onClose();
+          },
+          children: [
+            /* @__PURE__ */ jsx(Braces, { size: 13 }),
+            /* @__PURE__ */ jsx("span", { className: "tecof-bind-item-label", children: f.name }),
+            /* @__PURE__ */ jsx("span", { className: "tecof-bind-item-meta", children: f.type })
+          ]
+        },
+        f.shortcode
+      )) })
+    ] }),
+    document.body
+  );
+};
+var CmsBindingButton = ({ onInsert, title = "CMS verisine ba\u011Fla" }) => {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef(null);
+  const close = useCallback(() => setOpen(false), []);
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(
+      "button",
+      {
+        ref: btnRef,
+        type: "button",
+        className: `tecof-bind-btn${open ? " is-active" : ""}`,
+        onClick: () => setOpen((o) => !o),
+        title,
+        "aria-label": title,
+        children: /* @__PURE__ */ jsx(Braces, { size: 14 })
+      }
+    ),
+    open && btnRef.current && /* @__PURE__ */ jsx(BindingPopover, { anchor: btnRef.current, onInsert, onClose: close })
+  ] });
 };
 var FieldLabel = ({
   label,
@@ -408,6 +644,6 @@ var createLanguageField = (options = {}) => {
   };
 };
 
-export { FieldErrorBoundary, FieldLabel, FieldLoading, LanguageField, LanguageProvider, LanguageTabBar, createLanguageField, useActiveLanguage, useLanguages };
-//# sourceMappingURL=chunk-GIQR5Q5A.mjs.map
-//# sourceMappingURL=chunk-GIQR5Q5A.mjs.map
+export { CmsBindingButton, FieldErrorBoundary, FieldLabel, FieldLoading, LanguageField, LanguageProvider, LanguageTabBar, createLanguageField, useActiveLanguage, useFloating, useLanguages };
+//# sourceMappingURL=chunk-CHDU3NV7.mjs.map
+//# sourceMappingURL=chunk-CHDU3NV7.mjs.map

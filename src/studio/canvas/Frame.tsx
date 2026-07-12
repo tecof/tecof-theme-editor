@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { isEmbedded, postToHost } from '../bridge';
+import { installCanvasInteractionGuard } from './overlayPortal';
 
 export interface FrameProps extends React.IframeHTMLAttributes<HTMLIFrameElement> {
   children: React.ReactNode;
@@ -145,6 +147,15 @@ export const Frame = ({
     let handleIframeKeyDown: ((e: KeyboardEvent) => void) | null = null;
     let handleScroll: (() => void) | null = null;
 
+    // Edit-mode interaction guard: in edit mode, links/buttons/forms inside the
+    // canvas are inert (native navigation & submit cancelled) unless they sit in
+    // an overlay portal — so a click selects the node instead of leaving the
+    // page being edited. Reads mode non-reactively (like the store reads below).
+    const uninstallGuard = installCanvasInteractionGuard(
+      doc,
+      () => useUiStore.getState().mode === 'edit'
+    );
+
     if (body) {
       body.className = 'tecof-canvas-body';
 
@@ -213,6 +224,7 @@ export const Frame = ({
         cancelAnimationFrame(rafId);
         rafId = null;
       }
+      uninstallGuard();
       if (body && handleBodyClick) {
         body.removeEventListener('click', handleBodyClick);
       }

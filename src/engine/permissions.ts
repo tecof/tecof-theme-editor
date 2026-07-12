@@ -55,5 +55,13 @@ export const getNodePermissions = (
     }
   }
 
+  // A per-instance lock (`_locked`, toggled from the Layers panel) overrides
+  // everything: the node can't be dragged, deleted, duplicated or edited. It
+  // stays *selectable* on purpose — that's how the user reaches the unlock
+  // toggle (and `updateProps` isn't permission-gated, so unlocking works).
+  if (node.props?._locked) {
+    merged = { ...merged, drag: false, delete: false, duplicate: false, edit: false };
+  }
+
   return merged;
 };

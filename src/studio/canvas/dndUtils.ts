@@ -11,22 +11,51 @@ export const TECOF_BLOCK_TYPE = 'application/tecof-block-type';
  * over the defaults. The generated id is applied LAST so neither defaultProps
  * nor overrides can smuggle in a stale id — inserting the same component twice
  * must never produce duplicate node ids.
+ *
+ * Declared `defaultChildren` are inlined into the matching slot props (as node
+ * arrays) so the component arrives pre-filled instead of a shell of empty slots;
+ * `insertNode`/`extractDefaultSlots` later unpacks those arrays into zones with
+ * fresh ids. `ancestorTypes` is internal — it carries the type chain so a slot
+ * default that references an ancestor type is skipped instead of recursing
+ * forever.
  */
 export function createNode(
   config: StudioConfig | undefined,
   type: string,
   overrideProps?: Record<string, unknown>,
+  ancestorTypes?: Set<string>,
 ): TecofNode {
   const compConfig = config?.components?.[type];
   const defaultProps = compConfig?.defaultProps || {};
-  return {
-    type,
-    props: {
-      ...JSON.parse(JSON.stringify(defaultProps)),
-      ...(overrideProps ? JSON.parse(JSON.stringify(overrideProps)) : {}),
-      id: generateId(),
-    },
+  const props: TecofNode['props'] = {
+    ...JSON.parse(JSON.stringify(defaultProps)),
+    ...(overrideProps ? JSON.parse(JSON.stringify(overrideProps)) : {}),
+    id: generateId(),
   };
+
+  const defaultChildren = compConfig?.defaultChildren;
+  if (defaultChildren && typeof defaultChildren === 'object') {
+    // Type chain so far (ancestors + this type) — a child whose type is already
+    // in the chain would recurse endlessly, so it's skipped.
+    const seen = new Set(ancestorTypes);
+    seen.add(type);
+    for (const [slotName, specs] of Object.entries(defaultChildren)) {
+      if (!Array.isArray(specs)) continue;
+      // defaultProps / overrides win: never overwrite slot content already there.
+      const existing = props[slotName];
+      if (Array.isArray(existing) && existing.length > 0) continue;
+      const children: TecofNode[] = [];
+      for (const spec of specs) {
+        const childType = typeof spec === 'string' ? spec : spec?.type;
+        if (!childType || seen.has(childType)) continue;
+        const childProps = typeof spec === 'string' ? undefined : spec?.props;
+        children.push(createNode(config, childType, childProps, seen));
+      }
+      if (children.length > 0) props[slotName] = children;
+    }
+  }
+
+  return { type, props };
 }
 
 /**

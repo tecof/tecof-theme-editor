@@ -4,7 +4,7 @@ import { useStudio } from '../context';
 import { usePermissions } from '../usePermissions';
 import { findNodeById, getParentId } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
-import { Trash2, ChevronRight, ChevronDown, Layout, Box, Copy } from 'lucide-react';
+import { Trash2, ChevronRight, ChevronDown, Layout, Box, Copy, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { readDragData, writeDragData } from '../canvas/dndUtils';
 import type { TecofDocument, TecofNode } from '../../types';
@@ -73,6 +73,12 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
   const customName = typeof node.props._layerName === 'string' ? node.props._layerName : '';
   const displayLabel = customName || label;
   const perms = usePermissions(node.props.id);
+  // Per-instance layer state (persisted on the node): hidden = omitted from the
+  // published page + faded in the canvas; locked = all edits gated (see
+  // getNodePermissions). Toggles below are never permission-gated, so a locked
+  // node can always be unlocked.
+  const isHidden = node.props._hidden === true;
+  const isLocked = node.props._locked === true;
 
   // Canvas'ta yapılan seçimi ağaçta görünür kıl.
   useEffect(() => {
@@ -267,7 +273,7 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
         onKeyDown={handleRowKeyDown}
         className={`tecof-layer-row${isSelected ? ' is-selected' : ''}${
           dragOverPos === 'inside' ? ' is-drop-inside' : ''
-        }`}
+        }${isHidden ? ' is-hidden' : ''}${isLocked ? ' is-locked' : ''}`}
         role="treeitem"
         tabIndex={0}
         aria-selected={isSelected}
@@ -329,6 +335,34 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
         </div>
 
         <div className="tecof-layer-row-actions">
+          {/* Hide + lock toggles are ALWAYS shown (never permission-gated) so a
+              locked/hidden node can always be toggled back. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              updateProps(node.props.id, { _hidden: !isHidden });
+            }}
+            className={`tecof-layer-toggle${isHidden ? ' is-active' : ''}`}
+            title={isHidden ? 'Göster' : 'Gizle'}
+            aria-label={`${displayLabel} — ${isHidden ? 'göster' : 'gizle'}`}
+            aria-pressed={isHidden}
+          >
+            {isHidden ? <EyeOff size={12} /> : <Eye size={12} />}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              updateProps(node.props.id, { _locked: !isLocked });
+            }}
+            className={`tecof-layer-toggle${isLocked ? ' is-active' : ''}`}
+            title={isLocked ? 'Kilidi aç' : 'Kilitle'}
+            aria-label={`${displayLabel} — ${isLocked ? 'kilidi aç' : 'kilitle'}`}
+            aria-pressed={isLocked}
+          >
+            {isLocked ? <Lock size={12} /> : <Unlock size={12} />}
+          </button>
           {perms.duplicate !== false && (
             <button
               type="button"

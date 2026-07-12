@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import type { TecofRenderProps, TecofNode } from '../types';
 import { compileStyles, mergeClassName } from '../studio/style/compileStyles';
 import { STYLES_PROP } from '../studio/style/types';
@@ -6,6 +6,8 @@ import { ANIMATION_CSS } from '../studio/style/animationCss';
 import { collectDocumentClasses } from '../studio/style/compileStyles';
 import { generateStyleCss } from '../studio/style/cssGenerator';
 import { resolveTheme } from '../studio/theme/theme';
+import { themeGoogleFontsHref, themeFontFaceCss } from '../studio/theme/fonts';
+import { initScrollEffects } from '../studio/style/scrollEffects';
 import { generateCSSVariables } from '../utils';
 import { migrateDocument } from '../engine/migrate';
 
@@ -54,6 +56,10 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
   const context = useContext(RenderContext);
   if (!context) return null;
 
+  // Nodes hidden from the Layers panel are omitted from the published page (they
+  // stay in the document so they can be re-enabled in the editor).
+  if (node.props?._hidden) return null;
+
   const componentConfig = context.config.components[node.type];
   if (!componentConfig) return null;
 
@@ -101,6 +107,14 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
  * No API fetch, no provider required, zero @puckeditor/core dependency.
  */
 export const TecofRender = ({ data, config, className, cmsData }: TecofRenderProps) => {
+  // Scroll interactions (reveal-on-scroll + parallax) — client only. The runtime
+  // watches for late-added nodes itself, so a single mount is enough. Declared
+  // before any early return so the hook order stays stable.
+  useEffect(() => {
+    const handle = initScrollEffects(typeof document !== 'undefined' ? document : null);
+    return () => handle.destroy();
+  }, []);
+
   if (!data) return null;
 
   // Upgrade old saved data to the current schema so published pages render
@@ -144,10 +158,17 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
   // variables (Tema panel + config.theme defaults) must exist here too, or
   // every `var(--theme-color-*)` reference — theme swatches picked in the
   // style editor, components reading the central theme — resolves to nothing.
-  const themeCss = generateCSSVariables(resolveTheme(rootProps, config.theme));
+  const resolvedTheme = resolveTheme(rootProps, config.theme);
+  const themeCss = generateCSSVariables(resolvedTheme);
+  // Fonts: the Google Fonts stylesheet link + `@font-face` rules for uploaded
+  // custom fonts, so the published page loads exactly the fonts the theme uses.
+  const googleFontsHref = themeGoogleFontsHref(resolvedTheme);
+  const fontFaceCss = themeFontFaceCss(resolvedTheme);
 
   return (
     <RenderContext.Provider value={contextValue}>
+      {googleFontsHref && <link rel="stylesheet" href={googleFontsHref} />}
+      {fontFaceCss && <style data-tecof-font-faces>{fontFaceCss}</style>}
       <style data-tecof-theme>{themeCss}</style>
       {/* Entrance-animation keyframes for the `anim` style control (ThemeVars-style
           <style> injection). Emitted once per page; harmless when unused. */}

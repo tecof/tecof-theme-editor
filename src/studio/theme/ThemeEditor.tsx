@@ -1,8 +1,21 @@
+import { useRef, useState } from 'react';
+import { Trash2, UploadCloud } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
+import { useTecof } from '../../components/TecofProvider';
 import { ColorField } from '../../components/fields/ColorField';
-import type { ThemeColors, ThemeConfig } from '../../types';
+import type { ThemeColors, ThemeConfig, CustomFont } from '../../types';
 import { resolveTheme, THEME_PROP } from './theme';
+import { FontSelect } from './FontSelect';
+import { findFontByStack, getBuiltinFont, fontIdFromFamily, type ThemeFont } from './fonts';
+
+/** Map a font filename extension to the `@font-face` `format()` hint. */
+const FONT_FORMATS: Record<string, string> = {
+  woff2: 'woff2',
+  woff: 'woff',
+  ttf: 'truetype',
+  otf: 'opentype',
+};
 
 /* ─── Field metadata ─── */
 
@@ -44,18 +57,6 @@ const NumberRow = ({ label, value, onChange }: { label: string; value: number; o
   </label>
 );
 
-const TextRow = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => (
-  <label className="tecof-theme-row tecof-theme-row-stack">
-    <span className="tecof-theme-row-label">{label}</span>
-    <input
-      type="text"
-      className="tecof-theme-text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </label>
-);
-
 /* ─── Component ─── */
 
 /**
@@ -79,6 +80,62 @@ export const ThemeEditor = () => {
     patch({ ...theme, spacing: { ...theme.spacing, [key]: value } });
   const setTypography = (key: keyof ThemeConfig['typography'], value: number | string) =>
     patch({ ...theme, typography: { ...theme.typography, [key]: value } as ThemeConfig['typography'] });
+
+  const { apiClient, cdnUrl } = useTecof();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [fontError, setFontError] = useState<string | null>(null);
+
+  // Apply a picked font to a theme family and register a builtin in `theme.fonts`
+  // so its `--font-<id>` var + Google Fonts link load. Additive on purpose: a
+  // per-node font selection also lives in `theme.fonts`, so recomputing from just
+  // the two theme families would drop those. (Custom fonts load via @font-face.)
+  const setFont = (key: 'fontFamily' | 'headingFontFamily', font: ThemeFont) => {
+    const typography = { ...theme.typography, [key]: font.stack };
+    const fonts = theme.fonts ?? [];
+    const nextFonts = font.kind === 'builtin' && !fonts.includes(font.id) ? [...fonts, font.id] : fonts;
+    patch({ ...theme, typography, fonts: nextFonts });
+  };
+
+  const handleFontFile = async (file: File) => {
+    if (!apiClient) return;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!FONT_FORMATS[ext]) {
+      setFontError('Desteklenmeyen biçim (woff2/woff/ttf/otf)');
+      return;
+    }
+    setUploading(true);
+    setFontError(null);
+    try {
+      const res = await apiClient.uploadFile(file, 'fonts');
+      const uploaded = Array.isArray(res?.data) ? res.data[0] : null;
+      const name = uploaded?.name;
+      if (!res?.success || !name) throw new Error('upload failed');
+      const family = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Custom Font';
+      const id = fontIdFromFamily(family);
+      const next: CustomFont = { id, family, src: `${cdnUrl || ''}/${name}`, format: FONT_FORMATS[ext] };
+      const customFonts = [...(theme.customFonts ?? []).filter((f) => f.id !== id), next];
+      patch({ ...theme, customFonts });
+    } catch {
+      setFontError('Yükleme başarısız, tekrar deneyin');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeCustomFont = (id: string) => {
+    const customFonts = (theme.customFonts ?? []).filter((f) => f.id !== id);
+    // Dropping a custom font that a family still points at falls back to system.
+    const stacks = { fontFamily: theme.typography.fontFamily, headingFontFamily: theme.typography.headingFontFamily };
+    const typography = { ...theme.typography };
+    for (const key of ['fontFamily', 'headingFontFamily'] as const) {
+      const f = findFontByStack(stacks[key], theme.customFonts);
+      if (f?.kind === 'custom' && f.id === id) {
+        typography[key] = getBuiltinFont('system')!.stack;
+      }
+    }
+    patch({ ...theme, customFonts, typography });
+  };
 
   const resetTheme = () => setRootProps({ [THEME_PROP]: undefined });
 
@@ -107,14 +164,73 @@ export const ThemeEditor = () => {
       {/* Typography */}
       <div className="tecof-theme-section">
         <div className="tecof-theme-section-title">Tipografi</div>
-        <TextRow label="Yazı tipi" value={theme.typography.fontFamily} onChange={(v) => setTypography('fontFamily', v)} />
-        <TextRow label="Başlık yazı tipi" value={theme.typography.headingFontFamily} onChange={(v) => setTypography('headingFontFamily', v)} />
+        <FontSelect
+          label="Yazı tipi"
+          value={theme.typography.fontFamily}
+          customFonts={theme.customFonts}
+          onSelect={(font) => setFont('fontFamily', font)}
+        />
+        <FontSelect
+          label="Başlık yazı tipi"
+          value={theme.typography.headingFontFamily}
+          customFonts={theme.customFonts}
+          onSelect={(font) => setFont('headingFontFamily', font)}
+        />
         <NumberRow label="Temel boyut (px)" value={theme.typography.baseFontSize} onChange={(v) => setTypography('baseFontSize', v)} />
         <NumberRow label="Satır yüksekliği" value={theme.typography.lineHeight} onChange={(v) => setTypography('lineHeight', v)} />
         <NumberRow label="Kalınlık — normal" value={theme.typography.fontWeightNormal} onChange={(v) => setTypography('fontWeightNormal', v)} />
         <NumberRow label="Kalınlık — orta" value={theme.typography.fontWeightMedium} onChange={(v) => setTypography('fontWeightMedium', v)} />
         <NumberRow label="Kalınlık — kalın" value={theme.typography.fontWeightBold} onChange={(v) => setTypography('fontWeightBold', v)} />
       </div>
+
+      {/* Custom fonts */}
+      {apiClient && (
+        <div className="tecof-theme-section">
+          <div className="tecof-theme-section-title">Özel Fontlar</div>
+          {(theme.customFonts ?? []).length > 0 && (
+            <div className="tecof-font-list">
+              {(theme.customFonts ?? []).map((f) => (
+                <div key={f.id} className="tecof-font-list-row">
+                  <span className="tecof-font-list-name" style={{ fontFamily: `'${f.family}', sans-serif` }}>
+                    {f.family}
+                  </span>
+                  <span className="tecof-font-list-meta">{f.format}</span>
+                  <button
+                    type="button"
+                    className="tecof-font-list-del"
+                    title="Fontu kaldır"
+                    aria-label={`${f.family} fontunu kaldır`}
+                    onClick={() => removeCustomFont(f.id)}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".woff2,.woff,.ttf,.otf"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFontFile(file);
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            className="tecof-font-upload"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <UploadCloud size={14} />
+            {uploading ? 'Yükleniyor…' : 'Font dosyası yükle'}
+          </button>
+          {fontError && <div className="tecof-font-error" role="alert">{fontError}</div>}
+        </div>
+      )}
 
       {/* Spacing & radius */}
       <div className="tecof-theme-section">

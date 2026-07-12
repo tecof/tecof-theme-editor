@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type React from 'react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
 import { findNodeById, getParentId } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
@@ -152,6 +153,13 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
   const [axis, setAxis] = useState<Axis>('y');
   const [isDragOver, setIsDragOver] = useState(false);
 
+  /** Clears the shared drop-hover state, but only if THIS target owns it. */
+  const clearDropHover = useCallback(() => {
+    if (!selfId) return;
+    const ui = useUiStore.getState();
+    if (ui.dropHover?.targetId === selfId) ui.setDropHover(null);
+  }, [selfId]);
+
   // A drag can end while the pointer is outside this target (or the target can
   // unmount mid-drag); make sure the rAF scroll loop never outlives the hook.
   useEffect(() => {
@@ -192,6 +200,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
         autoScrollerRef.current.stop();
         setPosition(null);
         setIsDragOver(false);
+        clearDropHover();
         return;
       }
 
@@ -219,11 +228,20 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
             : e.clientY - rect.top < rect.height / 2;
         setAxis(dropAxis);
         setPosition(before ? 'before' : 'after');
+        // Publish for the drag-time alignment guides (change-guarded in the store).
+        if (selfId) {
+          useUiStore.getState().setDropHover({
+            targetId: selfId,
+            zoneKey,
+            position: before ? 'before' : 'after',
+            axis: dropAxis,
+          });
+        }
       } else {
         setIsDragOver(true);
       }
     },
-    [locked, positional, checkValid],
+    [locked, positional, checkValid, clearDropHover, selfId, zoneKey],
   );
 
   const onDragLeave = useCallback((e: React.DragEvent) => {
@@ -231,7 +249,8 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
     autoScrollerRef.current.stop();
     setPosition(null);
     setIsDragOver(false);
-  }, []);
+    clearDropHover();
+  }, [clearDropHover]);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -244,6 +263,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
       const droppedPosition = position;
       setPosition(null);
       setIsDragOver(false);
+      clearDropHover();
 
       if (!valid) {
         // Let the drop bubble to an outer target that may accept it. The
@@ -269,7 +289,7 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
       }
       endDrag();
     },
-    [locked, positional, index, getIndex, zoneKey, config, selfId, position, checkValid, moveNode, insertNode, endDrag],
+    [locked, positional, index, getIndex, zoneKey, config, selfId, position, checkValid, clearDropHover, moveNode, insertNode, endDrag],
   );
 
   return { position, axis, isDragOver, onDragOver, onDragLeave, onDrop };

@@ -8,16 +8,14 @@ import {
   Paintbrush,
   Trash2,
 } from 'lucide-react';
-import { useEditorStore } from '../../engine/store';
+import { useEditorStore, hasClipboardContent } from '../../engine/store';
 import { useUiStore, type ContextMenuState } from '../uiStore';
 import { findNodeById, getParentId } from '../../engine/zones';
 import { serializeNodeSubtree } from '../../engine/operations';
-import { generateId } from '../../engine/ids';
 import { copyNodeStyles, pasteNodeStyles, isEmptyStyles } from '../style/styleClipboard';
 import { STYLES_PROP, type NodeStyles } from '../style/types';
 import { useStudio } from '../context';
 import { usePermissions } from '../usePermissions';
-import type { TecofNode } from '../../types';
 
 /** Distance kept between the menu and the window edge when clamping. */
 const EDGE_MARGIN = 8;
@@ -63,11 +61,14 @@ const Menu = ({ menu, onClose }: MenuProps) => {
   const selectNode = useEditorStore((s) => s.selectNode);
   const removeNode = useEditorStore((s) => s.removeNode);
   const duplicateNode = useEditorStore((s) => s.duplicateNode);
-  const insertNode = useEditorStore((s) => s.insertNode);
+  const copyNode = useEditorStore((s) => s.copyNode);
+  const pasteClipboard = useEditorStore((s) => s.pasteClipboard);
   const updateProps = useEditorStore((s) => s.updateProps);
   const styleClipboard = useUiStore((s) => s.styleClipboard);
-  const nodeClipboard = useUiStore((s) => s.nodeClipboard);
-  const setNodeClipboard = useUiStore((s) => s.setNodeClipboard);
+  // Paste availability: the engine clipboard OR its cross-page localStorage
+  // mirror — sections copied on another page/tab paste here too.
+  const clipboardInMemory = useEditorStore((s) => s.clipboard != null);
+  const canPaste = clipboardInMemory || hasClipboardContent();
   const perms = usePermissions(menu.nodeId);
 
   const nodeDetails = findNodeById(documentState, menu.nodeId);
@@ -192,25 +193,18 @@ const Menu = ({ menu, onClose }: MenuProps) => {
   };
 
   const handleCopy = () => {
-    // Zone-merged snapshot: slot children are folded back into the props so the
-    // clipboard entry is self-contained (survives page/zone changes).
-    const snapshot = serializeNodeSubtree(documentState, menu.nodeId);
-    if (snapshot) setNodeClipboard(snapshot);
+    // The ENGINE clipboard (same one behind ⌘C/⌘V): self-contained payload with
+    // the node's descendant zones, mirrored to localStorage — so a section
+    // copied here can be pasted on another page or tab.
+    copyNode(menu.nodeId);
     onClose();
   };
 
   const handlePaste = () => {
-    if (!nodeClipboard) return;
-    // Deep-clone: insertNode/extractDefaultSlots MUTATE the inserted node
-    // (slot arrays are emptied into zones), and the clipboard must stay intact
-    // for repeated pastes. A fresh root id avoids colliding with the source;
-    // nested slot children get fresh ids from extractDefaultSlots.
-    const clone = JSON.parse(JSON.stringify(nodeClipboard)) as TecofNode;
-    const newId = generateId();
-    clone.props.id = newId;
-    // Insert right below the right-clicked node, in its own list.
-    insertNode(clone, nodeDetails.path.zoneKey, nodeDetails.path.index + 1);
-    selectNode(newId);
+    if (!canPaste) return;
+    // Insert right below the right-clicked node, in its own list. The engine
+    // clones with fresh ids and selects the pasted root itself.
+    pasteClipboard(nodeDetails.path.zoneKey, nodeDetails.path.index + 1);
     onClose();
   };
 
@@ -347,7 +341,7 @@ const Menu = ({ menu, onClose }: MenuProps) => {
           <MenuItem
             icon={<ClipboardPaste size={14} />}
             label="Yapıştır"
-            disabled={!nodeClipboard}
+            disabled={!canPaste}
             onSelect={handlePaste}
           />
           <MenuItem

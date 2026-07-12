@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Copy,
   ClipboardPaste,
@@ -22,6 +22,9 @@ import {
 import type { NodeStyles, StyleProps, Breakpoint, StateVariant } from './types';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
+import { useStudio } from '../context';
+import { resolveTheme, THEME_PROP } from '../theme/theme';
+import { getBuiltinFont, fontIdFromVarToken } from '../theme/fonts';
 import { cloneStyles, isEmptyStyles } from './styleClipboard';
 import { ColorPicker } from './ColorPicker';
 import { SpacingBox, SPACING_BOX_IDS } from './SpacingBox';
@@ -235,6 +238,38 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
     }
   };
 
+  // ── Per-node font family: dynamic custom-font options + auto-load ──
+  const { config } = useStudio();
+  const rootProps = useEditorStore((s) => s.document.root?.props);
+  const setRootProps = useEditorStore((s) => s.setRootProps);
+  const theme = resolveTheme(rootProps, config.theme);
+
+  const customFontOptions = useMemo(
+    () => (theme.customFonts ?? []).map((c) => ({ label: c.family, value: `[var(--font-${c.id})]` })),
+    [theme.customFonts],
+  );
+
+  // Merge uploaded custom fonts into the (static) font-family control's options.
+  const effectiveControl = (control: StyleControl): StyleControl =>
+    control.id === 'fontFamily' && customFontOptions.length
+      ? { ...control, options: [...control.options, ...customFontOptions] }
+      : control;
+
+  // Picking a builtin font per-node registers its id in the theme's font set so
+  // its `--font-<id>` var (and Google Fonts link) get emitted. Custom fonts
+  // already emit their var + @font-face, so they need no registration.
+  const ensureFontLoaded = (tokenValue: string) => {
+    const id = fontIdFromVarToken(tokenValue);
+    if (!id || !getBuiltinFont(id) || (theme.fonts ?? []).includes(id)) return;
+    const current = (rootProps?.[THEME_PROP] as Record<string, unknown>) ?? {};
+    setRootProps({ [THEME_PROP]: { ...current, fonts: [...(theme.fonts ?? []), id] } });
+  };
+
+  const handleControlChange = (controlId: string, v: string) => {
+    setLayerValue(controlId, v);
+    if (controlId === 'fontFamily') ensureFontLoaded(v);
+  };
+
   /* ── Tab + accordion UI state (module-persisted) ── */
   const [tab, setTabState] = useState<StyleTabKey>(panelUi.tab);
   const [openGroups, setOpenGroups] = useState(panelUi.open);
@@ -343,15 +378,17 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
       {/* Active layer summary: one removable chip per set property. */}
       {activeControls.length > 0 && (
         <div className="tecof-style-chips">
-          {activeControls.map((control) => (
+          {activeControls.map((control) => {
+            const ec = effectiveControl(control);
+            return (
             <span key={control.id} className="tecof-style-chip">
               <button
                 type="button"
                 className="tecof-style-chip-label"
-                title={`${control.label}: ${valueLabel(control, layer[control.id]!)} — kontrole git`}
+                title={`${ec.label}: ${valueLabel(ec, layer[control.id]!)} — kontrole git`}
                 onClick={() => jumpToControl(control)}
               >
-                {control.label}: {valueLabel(control, layer[control.id]!)}
+                {ec.label}: {valueLabel(ec, layer[control.id]!)}
               </button>
               <button
                 type="button"
@@ -363,7 +400,8 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
                 ×
               </button>
             </span>
-          ))}
+            );
+          })}
           <button
             type="button"
             className="tecof-style-chip-clear"
@@ -444,10 +482,10 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
                     // Keyed by layer so per-row local state (custom input drafts,
                     // picker open state) resets when switching breakpoint/state.
                     key={`${bp}:${state}:${control.id}`}
-                    control={control}
+                    control={effectiveControl(control)}
                     value={layer[control.id] || ''}
                     inherited={inheritedLayer[control.id]}
-                    onChange={(v) => setLayerValue(control.id, v)}
+                    onChange={(v) => handleControlChange(control.id, v)}
                   />
                 ))}
               </div>
