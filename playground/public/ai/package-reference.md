@@ -422,6 +422,36 @@ Değer tipi: `mapProp` tarafından üretilen herhangi bir değer (varsayılan: h
 
 ---
 
+### ApiListField — Repeat Zone için API Liste Kaynağı
+
+Host'un kendi async `fetchList`'i ile beslenen **liste** kaynağı — bir slot'un `repeatSource`'una bağlanır ve öğe şablonu her satır için tekrarlanır (bkz. [Repeat Zone](#repeat-zone-öğe-şablonu--repeatsource)). `ExternalField` tek kayıt seçer; `ApiListField` listenin kendisini akıtır.
+
+```tsx
+import { createApiListField } from "@tecof/theme-editor";
+
+fields: {
+  source: createApiListField({
+    label: "Ürünler",
+    fetchList: async ({ query, limit }) =>
+      fetch(`/api/products?q=${query ?? ""}&limit=${limit ?? 8}`).then((r) => r.json()),
+    itemSchema: [{ key: "name", label: "Ad", type: "text" }], // opsiyonel
+  }),
+  card: { type: "slot", repeatSource: "source" },
+}
+```
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| `fetchList` | `({ query?, limit? }) => Promise<any[]>` | — (zorunlu) | Satırları getirir; editörde ve yayında (client) çalışır |
+| `itemSchema` | `{ key, label?, type? }[]` | ilk satırdan çıkarım | `{ }` popover'ındaki öğe alanları |
+| `showQuery` | `boolean` | `true` | Arama/filtre metin girişi |
+| `showLimit` | `boolean` | `true` | Kayıt adedi girişi |
+| `defaultLimit` | `number` | yok | Yeni değerde ön-dolu limit |
+
+**Değer Tipi (`ApiListFieldValue`):** `{ query?: string; limit?: number }` — dokümana yalnızca fetch parametreleri kaydedilir, satırlar render anında çözülür (oturum-içi cache + eş zamanlı istek tekleme).
+
+---
+
 ### CmsCollectionField — Koleksiyon Bağlama
 
 Bir bileşeni CMS koleksiyonuna bağlar; koleksiyon seçer, limit/sıralama ayarlar ve bileşenin "slot"larını koleksiyon alanlarına eşler (liste/tekrar eden içerik için).
@@ -542,6 +572,79 @@ render: ({ puck }) => puck.renderDropZone({ zone: "cols", orientation: "horizont
 
 > Hem editörde hem `TecofRender` ile yayınlanan sayfada aynı düzen uygulanır.
 
+### Repeat Zone (Öğe Şablonu) — `repeatSource`
+
+Bir `slot` alanına `repeatSource` verildiğinde o slot bir **öğe şablonuna** dönüşür: kart bir kez elementlerle tasarlanır, veri listesindeki **her satır için tekrar** render edilir (Webflow Collection List / Shopify blocks modeli). Şablon içindeki alanlar satır verisine `{{ item.<alan> }}` token'ları ile bağlanır — metin/textarea alanlarındaki `{ }` bağlama butonu şablon içindeyken **"Öğe alanları"** bölümünü gösterir.
+
+```tsx
+components: {
+  ProductGrid: {
+    label: "Ürün Izgarası",
+    fields: {
+      items: createRepeaterField({           // veri kaynağı: repeater satırları
+        label: "Ürünler",
+        subFields: { name: { type: "text" }, price: { type: "text" } },
+      }),
+      card: {
+        type: "slot",
+        orientation: "horizontal",
+        repeatSource: "items",               // ← bu slot 'items' için tekrarlanır
+      },
+    },
+    render: ({ card, className }) => <section className={className}>{card}</section>,
+  },
+}
+```
+
+Şablondaki bir Text elementinin `text` prop'u `"{{ item.name }}"`, fiyat satırı `"Fiyat: {{ item.price }} TL"` olabilir. **Tam token** (`"{{ item.image }}"`) ham değeri olduğu gibi geçirir (görsel/link nesneleri bozulmaz); metin içine gömülü token string olarak enterpolasyon yapılır. Özel yollar: `{{ item._index }}` (0-tabanlı), `{{ item._position }}` (1-tabanlı).
+
+**Veri kaynağı nereden gelirse gelsin çalışır** — `repeatSource`'un gösterdiği prop'un değerine göre satırlar otomatik çözülür:
+
+- **RepeaterField / dizi prop** — satırlar dokümanda kayıtlıdır (yukarıdaki örnek).
+- **`createApiListField` (önerilen API yolu)** — host'un `fetchList`'i ile herhangi bir API; satırlar hem editörde (şablon + ghost'lar canlı veriyle) hem yayında kütüphane tarafından çekilir, render kodu gerekmez:
+
+```tsx
+fields: {
+  source: createApiListField({
+    label: "Ürünler",
+    fetchList: async ({ query, limit }) =>
+      fetch(`/api/products?q=${query ?? ""}&limit=${limit ?? 8}`).then((r) => r.json()),
+    // Opsiyonel: binding popover'ındaki öğe alanları (verilmezse ilk satırdan çıkarılır)
+    itemSchema: [
+      { key: "name",  label: "Ürün Adı", type: "text" },
+      { key: "price", label: "Fiyat",    type: "text" },
+      { key: "image", label: "Görsel",   type: "image" },
+    ],
+    defaultLimit: 8,
+  }),
+  card: { type: "slot", orientation: "horizontal", repeatSource: "source" },
+}
+```
+
+  Alan değeri yalnızca fetch parametreleridir (`{ query, limit }`); Inspector'da arama + adet girişi, yenile butonu ve canlı kayıt önizlemesi görünür. Sonuçlar parametre bazında cache'lenir (eş zamanlı istekler teklenir); `clearRepeatRowsCache()` ile temizlenir, `resolveRepeatRows()` ile React dışında (örn. SSR ısındırma) çözülür.
+
+- **`createCmsCollectionField`** — değeri (`collectionSlug`/`limit`/`sort`) bir repeat slot'a bağlanırsa satırlar CMS koleksiyonundan otomatik çekilir. Bunun için ağaçta `<TecofProvider>` olmalıdır (editörde her zaman var; provider'sız tam statik yayında satırlar boş kalır — o senaryoda `repeatItems` geçin).
+- **Manuel `repeatItems`** — bileşen veriyi kendisi çekip render sırasında geçer (tam kontrol):
+
+```tsx
+render: ({ puck }) => {
+  const { rows } = useMyProducts();
+  return puck.renderDropZone({ zone: "card", repeatItems: rows });
+},
+```
+
+**Editörde:** şablon ilk satırın verisiyle **bir kez düzenlenebilir** görünür; kalan satırlar etkileşimsiz, hafif soluk **ghost kopyalar** olarak şablonun devamında akar (`display: contents` — grid/flex düzeni yayınla birebir). Yayında (`TecofRender`) döngü gerçek veriyle döner; satır yoksa şablon **hiç render edilmez** (canlı sitede asla ham `{{ item.* }}` görünmez).
+
+| Option (`slot`) | Tip | Açıklama |
+|---|---|---|
+| `repeatSource` | `string` | Veri kaynağı prop'unun adı (dizi, `createApiListField` veya `createCmsCollectionField` değeri); slot'u öğe şablonuna çevirir |
+| `itemSchema` | `{ key, label?, type? }[]` | Bağlama popover'ındaki öğe alanları (verilmezse kaynak alanın `itemSchema`'sından, o da yoksa ilk satırdan çıkarılır) |
+| `renderDropZone({ repeatItems })` | `any[]` | Satırları render anında geçme (manuel yol) — editörde ghost'lar da bu veriyle çizilir |
+
+Bileşen içinden satıra programatik erişim için `useRepeatItem()` hook'u (`{ item, index, count }`), host tarafı özel çözümleme için `resolveItemTokens(props, item, index)`, satırları React dışında çözmek için `resolveRepeatRows(value, sourceFieldDef, apiClient?)` ve cache temizliği için `clearRepeatRowsCache()` export edilir.
+
+> Not: Şablon içinde canvas'ta çift tıkla satır-içi düzenleme, çözülmüş metni **literal değer** olarak yazar ve token bağını koparır — bağlı alanları Inspector'dan düzenleyin (Inspector her zaman ham token'ı gösterir).
+
 ### Bölüm Şablonları — `config.templates`
 
 "Bölüm Ekle" penceresindeki **Şablonlar** sekmesinde gösterilen, tek tıkla eklenen hazır bölümler. Şablon bir **alt ağaç**tır (kök node + zones) ve eklenirken tüm id'ler **taze üretilir**, yani aynı şablonu defalarca ekleyebilirsiniz.
@@ -598,6 +701,39 @@ components: {
 | Option (`ComponentConfig`) | Tip | Default | Açıklama |
 |--------|-----|---------|----------|
 | `inline` | `boolean` | `false` | Editör wrapper div'ini kaldırır; bileşen `puck.dragRef`'i kök elemanına eklemelidir |
+
+### Etkileşimli Kontroller — `puck.registerOverlayPortal`
+
+**Düzenleme modunda** canvas her tıklamayı editöre yönlendirir: tıklama node'u seçer, çift tıklama satır içi metin düzenlemeyi başlatır, sürükleme node'u taşır. Ayrıca link/buton/form'ların **native davranışı** (navigasyon, form submit) bilinçli olarak iptal edilir — böylece bir sekme başlığına tıklamak sizi düzenlediğiniz sayfadan başka bir adrese götürmez. (**Önizleme modunda** canvas canlı site gibi davranır; her şey normal çalışır.)
+
+Bileşeninizin kendi etkileşimli parçaları (sekme başlıkları, slider okları, akordeon toggle'ları) düzenleme modunda da çalışmalıysa, o elemanı `puck.registerOverlayPortal` ile işaretleyin. Bir React ref callback'i olarak tasarlanmıştır (`null`'a toleranslı):
+
+```tsx
+render: ({ puck, tabs }) => (
+  <div>
+    {tabs.map((tab, i) => (
+      <button
+        key={i}
+        ref={puck.registerOverlayPortal}   // bu buton edit-mode'da canlı kalır
+        onClick={() => setActive(i)}
+      >
+        {tab.title}
+      </button>
+    ))}
+    {/* ... */}
+  </div>
+)
+```
+
+Portal olarak işaretlenen eleman (ve tüm alt elemanları) editörün node handler'larından muaf tutulur: tıklama seçim yapmaz, çift tıklama düzenleme başlatmaz, sürükleme node'u taşımaz ve native davranışı iptal edilmez.
+
+> **Not:** JS ile yapılan yönlendirmeler (ör. `<button onClick={() => router.push(...)}>`) native olmadığı için bu koruma tarafından iptal *edilemez*. Bu tür bileşenler `puck.isEditing` / `editMode` prop'unu kontrol etmeli **veya** kontrolü overlay portal olarak işaretlemelidir.
+
+| `puck` alanı | Tip | Açıklama |
+|--------|-----|----------|
+| `registerOverlayPortal` | `(el: HTMLElement \| null) => () => void` | Elemanı edit-mode'da canlı bırakır; ref callback olarak kullanılabilir. Temizleyici bir fonksiyon döner |
+| `isEditing` | `boolean` | Editör düzenleme modunda mı (`editMode` prop'u ile aynı) |
+| `dragRef` | `(el: HTMLElement \| null) => void` | Yalnızca `inline` bileşenlerde: sürükleme tutamacı ref'i |
 
 ---
 
@@ -754,6 +890,7 @@ Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, ins
 - **Boşluk (box-model) overlay'i** — Bir öğenin üzerine gelince **padding (yeşil)** içeride, **margin (amber)** dışarıda devtools tarzı renkli gösterilir.
 - **Yan yana slot düzeni** — `slot` alanlarına `orientation: 'horizontal'` verilerek çocuklar yan yana dizilir; sürükle-bırak drop yönü (sol/sağ ↔ üst/alt) otomatik algılanır.
 - **Ok tuşuyla gezinme** — Seçili node'dan kardeşlerine ↑/↓/←/→ ile geçiş.
+- **Dokunmatik sürükle-bırak** — Tablet/telefonda bir bileşene, palet bloğuna veya katman satırına **basılı tutup** (~300ms) sürükleyin: aynı drop kuralları, hizalama kılavuzları ve otomatik kaydırma ile taşıma/ekleme; katman panelinde üst/alt sıralama ve (zone'lu satırlarda) ortaya bırakarak "içine taşıma". Erken parmak hareketi kaydırma olarak kalır; fare native DnD yolunu kullanır. Ek kurulum gerekmez.
 - **Görsel blok paleti** — Sol panelde bileşenler, varsa render önizleme görselleriyle (lazy yüklenir).
 - **Çökme dayanıklılığı** — Bir bileşenin render hatası tüm canvas'ı düşürmez; node bazında error boundary ile izole edilir, prop düzeltilince kendiliğinden toparlanır.
 - **Global dil** — Çoklu dilli içerikte dil, üst bardaki tek seçiciden (merchant-info) değiştirilir. Alanlar yalnızca aktif dili düzenler; alan-içi dil sekmeleri Studio'da gizlenir (provider yoksa eski sekmeli mod geçerlidir — geriye uyum). Bkz. `studio/language/LanguageContext`.

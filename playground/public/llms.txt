@@ -2,7 +2,7 @@
 
 > React tabanlı Tecof görsel sayfa editörü, yayın renderer'ı, API istemcisi ve gelişmiş içerik alanları için Türkçe geliştirici dokümantasyonu.
 
-Belgelenen paket: `@tecof/theme-editor@0.0.57`.
+Belgelenen paket: `@tecof/theme-editor@0.0.60`.
 Editör ve public renderer aynı `StudioConfig` nesnesini kullanmalıdır.
 Bilinmeyen API'ler varsayılmamalı; tam bağlam için önce AI rehberi veya ilgili referans okunmalıdır.
 
@@ -17,7 +17,7 @@ Bilinmeyen API'ler varsayılmamalı; tam bağlam için önce AI rehberi veya ilg
 - [Studio arayüzü](/#/studio): Canvas, paneller, autosave, önizleme ve editör prop’ları.
 - [Bileşen config’i](/#/bilesen-config): Component registry, dinamik alanlar ve drop kuralları.
 - [Alan bileşenleri](/#/alanlar): Yerleşik ve gelişmiş field factory referansı.
-- [Slotlar ve şablonlar](/#/slotlar-sablonlar): Zone modeli, yatay slot ve bölüm şablonları.
+- [Slotlar ve şablonlar](/#/slotlar-sablonlar): Zone modeli, yatay slot, repeat zone (öğe şablonu) ve bölüm şablonları.
 - [Tailwind stil editörü](/#/tailwind-stil): Token modeli, responsive varyantlar ve safelist.
 - [Canlı tema](/#/tema): Renk, tipografi, spacing ve CSS değişkenleri.
 

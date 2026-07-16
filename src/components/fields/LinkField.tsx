@@ -83,8 +83,9 @@ export const LinkField = ({
   /* ── Tab Management ── */
 
   const values = useMemo<LocalizedLinkFieldValue[]>(() => {
-    if (!merchantInfo) return value || [];
-    const current = value || [];
+    // AI-written data can leave a bare string here — never let .find crash the field
+    const current = Array.isArray(value) ? value : [];
+    if (!merchantInfo) return current;
     return merchantInfo.languages.map(code => {
       const existing = current.find(v => v.code === code);
       return existing || { code, value: { url: '' } };

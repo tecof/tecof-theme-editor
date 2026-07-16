@@ -208,8 +208,9 @@ export const LanguageField = ({
 
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
-    if (!merchantInfo) return value || [];
-    const current = value || [];
+    // AI-written data can leave a bare string here — never let .find crash the field
+    const current = Array.isArray(value) ? value : [];
+    if (!merchantInfo) return current;
     return merchantInfo.languages.map(code => {
       const existing = current.find(v => v.code === code);
       return existing || { code, value: '' };

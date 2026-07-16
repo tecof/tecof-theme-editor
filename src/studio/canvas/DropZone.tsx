@@ -8,6 +8,9 @@ import { isValidDrop } from '../../engine/rules';
 import { NodeRenderer } from './NodeRenderer';
 import { AddSectionButton } from './AddSectionButton';
 import { useDropTarget } from './useDropTarget';
+import { RepeatGhosts } from './RepeatGhosts';
+import { RepeatItemContext } from '../../components/RepeatItemContext';
+import { useRepeatRows, type RepeatSourceFieldDef } from '../../components/useRepeatRows';
 
 export const ParentNodeContext = createContext<string | null>(null);
 
@@ -17,9 +20,17 @@ export interface DropZoneProps {
   style?: React.CSSProperties;
   /** Lay children out side-by-side (row) instead of stacked (column). */
   orientation?: 'vertical' | 'horizontal';
+  /**
+   * Repeat rows: when an array, this zone is an ITEM TEMPLATE — its children are
+   * edited once, bound to the first row (`{{ item.* }}` tokens resolve against
+   * it), and the remaining rows show as non-interactive ghost previews after the
+   * template. Set automatically for slot fields declared with `repeatSource`;
+   * components can pass runtime rows via `puck.renderDropZone({ repeatItems })`.
+   */
+  repeatItems?: any[];
 }
 
-export const DropZone = ({ zone, className, style, orientation = 'vertical' }: DropZoneProps) => {
+export const DropZone = ({ zone, className, style, orientation = 'vertical', repeatItems }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const { config, readOnly } = useStudio();
@@ -50,6 +61,9 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical' }: D
     getIndex: () => items.length,
   });
 
+  const isRepeat = Array.isArray(repeatItems);
+  const repeatRows = isRepeat ? repeatItems : [];
+
   const dropzoneClassName = [
     'tecof-dropzone',
     orientation === 'horizontal' ? 'is-horizontal' : '',
@@ -57,6 +71,7 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical' }: D
     isDragOver ? 'is-dragover' : '',
     isDragActive ? 'is-drag-active' : '',
     isDropDenied ? 'is-drop-denied' : '',
+    isRepeat ? 'is-repeat' : '',
     className,
   ]
     .filter(Boolean)
@@ -101,36 +116,88 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical' }: D
         // just at the root. During an active drag they're suppressed — the drop
         // indicators own positioning then. `openAddSection` targets this zone,
         // so the modal filters to the types this slot actually accepts.
-        <>
-          {!readOnly && !isDragActive && (
-            <AddSectionButton
-              index={0}
-              orientation={orientation}
-              slot
-              onClick={(idx) => openAddSection({ zoneKey, index: idx })}
-            />
-          )}
-          {items.map((item, index) => (
-            <React.Fragment key={item.props.id}>
-              <NodeRenderer node={item} index={index} zoneKey={zoneKey} />
+        (() => {
+          const template = (
+            <>
               {!readOnly && !isDragActive && (
                 <AddSectionButton
-                  index={index + 1}
+                  index={0}
                   orientation={orientation}
                   slot
                   onClick={(idx) => openAddSection({ zoneKey, index: idx })}
                 />
               )}
-            </React.Fragment>
-          ))}
-        </>
+              {items.map((item, index) => (
+                <React.Fragment key={item.props.id}>
+                  <NodeRenderer node={item} index={index} zoneKey={zoneKey} />
+                  {!readOnly && !isDragActive && (
+                    <AddSectionButton
+                      index={index + 1}
+                      orientation={orientation}
+                      slot
+                      onClick={(idx) => openAddSection({ zoneKey, index: idx })}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </>
+          );
+
+          if (!isRepeat) return template;
+
+          // Repeat template: the real nodes are edited bound to the FIRST row
+          // (when data exists), and each remaining row renders as a static
+          // ghost copy after them — the canvas mirrors the published loop.
+          return (
+            <>
+              {repeatRows.length > 0 ? (
+                <RepeatItemContext.Provider
+                  value={{ item: repeatRows[0], index: 0, count: repeatRows.length }}
+                >
+                  {template}
+                </RepeatItemContext.Provider>
+              ) : (
+                template
+              )}
+              <RepeatGhosts rows={repeatRows} nodes={items} />
+            </>
+          );
+        })()
       )}
     </div>
   );
 };
 
+/**
+ * Editor-side repeat slot with a DYNAMIC source: rows may be a plain array or
+ * resolved asynchronously (api-list `fetchList`, CMS collection binding) via
+ * `useRepeatRows` — so the canvas template + ghosts preview REAL data.
+ */
+export const EditorRepeatSlot = ({
+  zone,
+  orientation,
+  value,
+  sourceFieldDef,
+}: {
+  zone: string;
+  orientation?: 'vertical' | 'horizontal';
+  value: unknown;
+  sourceFieldDef?: RepeatSourceFieldDef;
+}) => {
+  const rows = useRepeatRows(value, sourceFieldDef);
+  return <DropZone zone={zone} orientation={orientation} repeatItems={rows as any[]} />;
+};
+
 // Helper for puck.renderDropZone
-export const renderDropZone = ({ zone, className, style, orientation }: DropZoneProps) => {
-  return <DropZone zone={zone} className={className} style={style} orientation={orientation} />;
+export const renderDropZone = ({ zone, className, style, orientation, repeatItems }: DropZoneProps) => {
+  return (
+    <DropZone
+      zone={zone}
+      className={className}
+      style={style}
+      orientation={orientation}
+      repeatItems={repeatItems}
+    />
+  );
 };
 export default DropZone;

@@ -1,6 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useStudio } from '../context';
-import { ParentNodeContext, renderDropZone } from './DropZone';
+import { EditorRepeatSlot, ParentNodeContext, renderDropZone } from './DropZone';
+import { RepeatItemContext } from '../../components/RepeatItemContext';
+import { resolveItemTokens } from '../../utils/itemTokens';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
@@ -155,6 +157,15 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     selfId: node.props.id,
   });
 
+  // Inside a repeat template the canvas edits the first data row: resolve
+  // `{{ item.* }}` tokens in the displayed props so the template previews real
+  // content. The INSPECTOR keeps showing the raw tokens (it reads the store).
+  const repeatCtx = useContext(RepeatItemContext);
+  const displayProps = useMemo(
+    () => (repeatCtx ? resolveItemTokens(node.props, repeatCtx.item, repeatCtx.index) : node.props),
+    [node.props, repeatCtx]
+  );
+
   const label = componentConfig?.label || node.type;
   // Hidden nodes (Layers panel eye toggle) render faded + non-live in edit mode
   // so the user can still reach them; in preview they're omitted entirely below.
@@ -170,7 +181,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
 
   // Compile the node's structured Tailwind styles and pass them as `className`
   // so the component applies them to its root (same prop flows in production).
-  const styleClassName = compileStyles(node.props[STYLES_PROP]);
+  const styleClassName = compileStyles(displayProps[STYLES_PROP]);
 
   // Hook order: must run before the missing-component early return below.
   const { setRef: dragRef, nodeRef: inlineNodeRef } = useInlineDragRef({
@@ -205,8 +216,8 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   if (isHidden && mode === 'preview') return null;
 
   const componentProps = {
-    ...node.props,
-    className: mergeClassName(node.props.className, styleClassName),
+    ...displayProps,
+    className: mergeClassName(displayProps.className, styleClassName),
     puck: {
       dragRef: componentConfig.inline ? dragRef : undefined,
       renderDropZone,
@@ -223,7 +234,20 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   if (componentConfig.fields) {
     Object.entries(componentConfig.fields).forEach(([fieldName, fieldDef]: [string, any]) => {
       if (fieldDef && fieldDef.type === 'slot') {
-        componentProps[fieldName] = renderDropZone({ zone: fieldName, orientation: fieldDef.orientation });
+        // `repeatSource` slots always render in repeat mode so the zone shows its
+        // template affordances even before any data rows exist. Rows may be a
+        // plain array or an async source (api-list / CMS) — EditorRepeatSlot
+        // resolves both, so the canvas previews real data.
+        componentProps[fieldName] = fieldDef.repeatSource ? (
+          <EditorRepeatSlot
+            zone={fieldName}
+            orientation={fieldDef.orientation}
+            value={displayProps[fieldDef.repeatSource]}
+            sourceFieldDef={componentConfig.fields?.[fieldDef.repeatSource]}
+          />
+        ) : (
+          renderDropZone({ zone: fieldName, orientation: fieldDef.orientation })
+        );
       }
     });
   }

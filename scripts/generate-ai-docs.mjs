@@ -18,7 +18,7 @@ const pageLinks = [
   ['Studio arayüzü', 'studio', 'Canvas, paneller, autosave, önizleme ve editör prop’ları.'],
   ['Bileşen config’i', 'bilesen-config', 'Component registry, dinamik alanlar ve drop kuralları.'],
   ['Alan bileşenleri', 'alanlar', 'Yerleşik ve gelişmiş field factory referansı.'],
-  ['Slotlar ve şablonlar', 'slotlar-sablonlar', 'Zone modeli, yatay slot ve bölüm şablonları.'],
+  ['Slotlar ve şablonlar', 'slotlar-sablonlar', 'Zone modeli, yatay slot, repeat zone (öğe şablonu) ve bölüm şablonları.'],
   ['Tailwind stil editörü', 'tailwind-stil', 'Token modeli, responsive varyantlar ve safelist.'],
   ['Canlı tema', 'tema', 'Renk, tipografi, spacing ve CSS değişkenleri.'],
   ['Public render', 'render', 'TecofRender, CMS data ve TecofPicture kullanımı.'],

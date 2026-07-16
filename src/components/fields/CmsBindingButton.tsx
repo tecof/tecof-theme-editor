@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFloating } from '../../utils/useFloating';
-import { Braces, ChevronLeft, Database, Search } from 'lucide-react';
+import { Braces, ChevronLeft, Database, Repeat, Search } from 'lucide-react';
 import { useTecof } from '../TecofProvider';
+import { useRepeatScope } from './repeatScope';
 
 /* ─── Types ─── */
 
@@ -27,6 +28,9 @@ export interface CmsBindingButtonProps {
 
 /** Builds the reference token a component resolves against its CMS item data. */
 const tokenFor = (shortcode: string) => `{{ data.${shortcode} }}`;
+
+/** Builds the token a repeat-zone template resolves against its current row. */
+const itemTokenFor = (key: string) => `{{ item.${key} }}`;
 
 /* ─── Popover ─── */
 
@@ -93,6 +97,13 @@ const BindingPopover = ({
     (f) => !query.trim() || `${f.name} ${f.shortcode}`.toLowerCase().includes(query.toLowerCase())
   );
 
+  // Inside a repeat-zone template the row's own fields come first: they insert
+  // `{{ item.key }}` tokens that resolve per repeated row (not per CMS page).
+  const repeatScope = useRepeatScope();
+  const itemFields = (repeatScope?.schema ?? []).filter(
+    (f) => !query.trim() || `${f.label ?? ''} ${f.key}`.toLowerCase().includes(query.toLowerCase())
+  );
+
   return createPortal(
     <div ref={floatingRef} className="tecof-bind-popover" style={floatingStyle} role="dialog" aria-label="CMS verisine bağla">
       <div className="tecof-bind-header">
@@ -118,27 +129,49 @@ const BindingPopover = ({
       </div>
 
       <div className="tecof-bind-list">
+        {/* Repeat-item fields need no API: they stay available even while the
+            CMS collections load or when the host has no CMS at all. */}
+        {!active && itemFields.length > 0 && (
+          <>
+            <div className="tecof-bind-section">Öğe alanları</div>
+            {itemFields.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                className="tecof-bind-item"
+                onClick={() => { onInsert(itemTokenFor(f.key)); onClose(); }}
+              >
+                <Repeat size={13} />
+                <span className="tecof-bind-item-label">{f.label || f.key}</span>
+                <span className="tecof-bind-item-meta">{f.type || ''}</span>
+              </button>
+            ))}
+            <div className="tecof-bind-section">CMS koleksiyonları</div>
+          </>
+        )}
         {loading ? (
           <div className="tecof-bind-empty">Yükleniyor…</div>
         ) : error ? (
           <div className="tecof-bind-empty">{error}</div>
         ) : !active ? (
-          filteredCollections.length === 0 ? (
-            <div className="tecof-bind-empty">Koleksiyon yok</div>
-          ) : (
-            filteredCollections.map((col) => (
-              <button
-                key={col._id}
-                type="button"
-                className="tecof-bind-item"
-                onClick={() => { setActiveSlug(col.slug); setQuery(''); }}
-              >
-                <Database size={13} />
-                <span className="tecof-bind-item-label">{col.name}</span>
-                <span className="tecof-bind-item-meta">{col.fields?.length ?? 0} alan</span>
-              </button>
-            ))
-          )
+          <>
+            {filteredCollections.length === 0 ? (
+              <div className="tecof-bind-empty">Koleksiyon yok</div>
+            ) : (
+              filteredCollections.map((col) => (
+                <button
+                  key={col._id}
+                  type="button"
+                  className="tecof-bind-item"
+                  onClick={() => { setActiveSlug(col.slug); setQuery(''); }}
+                >
+                  <Database size={13} />
+                  <span className="tecof-bind-item-label">{col.name}</span>
+                  <span className="tecof-bind-item-meta">{col.fields?.length ?? 0} alan</span>
+                </button>
+              ))
+            )}
+          </>
         ) : filteredFields.length === 0 ? (
           <div className="tecof-bind-empty">Alan yok</div>
         ) : (

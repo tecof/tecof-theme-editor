@@ -7,6 +7,7 @@ import { isValidDrop } from '../../engine/rules';
 import { Trash2, ChevronRight, ChevronDown, Layout, Box, Copy, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { readDragData, writeDragData } from '../canvas/dndUtils';
+import { computeLayerDropPos, type LayerDropPos } from '../canvas/touchDragModel';
 import type { TecofDocument, TecofNode } from '../../types';
 
 interface TreeNodeProps {
@@ -15,7 +16,7 @@ interface TreeNodeProps {
 }
 
 /** Drop position relative to a row: reorder above/below, or into a child zone. */
-type DropPos = 'top' | 'bottom' | 'inside';
+type DropPos = LayerDropPos;
 
 const getLayerRowStyle = (depth: number) =>
   ({ '--tecof-layer-indent': `${depth * 12 + 8}px` }) as React.CSSProperties;
@@ -138,15 +139,12 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const relativeY = e.clientY - rect.top;
     // Orta üçte-birlik bant, zone'u olan node'larda "içine bırak" hedefi olur.
-    let pos: DropPos;
-    if (insideZoneKey && relativeY > rect.height / 3 && relativeY < (rect.height * 2) / 3) {
-      pos = 'inside';
-    } else {
-      pos = relativeY < rect.height / 2 ? 'top' : 'bottom';
-    }
+    const pos = computeLayerDropPos(
+      e.currentTarget.getBoundingClientRect(),
+      e.clientY,
+      !!insideZoneKey
+    );
 
     if (!isDropAllowed(e, pos)) {
       e.dataTransfer.dropEffect = 'none';
@@ -156,16 +154,25 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
     setDragOverPos(pos);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Satır içindeki çocuk elemanlara (etiket, ikon, butonlar) geçiş de
+    // dragleave üretir — gösterge ancak satır GERÇEKTEN terk edilince silinir.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
     setDragOverPos(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const position = dragOverPos;
     setDragOverPos(null);
-    if (!position) return;
+    // Pozisyonu state'ten değil bırakma koordinatından hesapla: dragover state'i
+    // (çocuk-eleman dragleave'leri, re-render zamanlaması) bırakma anında boş
+    // kalabiliyordu ve drop sessizce yutuluyordu.
+    const position = computeLayerDropPos(
+      e.currentTarget.getBoundingClientRect(),
+      e.clientY,
+      !!insideZoneKey
+    );
 
     const { draggedId } = getDragInfo(e);
     if (!draggedId || draggedId === node.props.id) return;
@@ -253,10 +260,12 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
 
   return (
     <div className="tecof-layer-node">
-      {dragOverPos === 'top' && <div className="tecof-drop-line sm" />}
       <div
         ref={rowRef}
         draggable={perms.drag !== false && !renaming}
+        // Dokunmatik DnD delegasyonu (TouchDragLayer): satırı kaynak/hedef yapar.
+        data-tecof-layer-id={node.props.id}
+        data-tecof-layer-inside={insideZoneKey || undefined}
         onDragStart={(e) => {
           writeDragData(e, { nodeId: node.props.id });
           e.dataTransfer.effectAllowed = 'move';
@@ -271,8 +280,13 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
         onMouseLeave={() => hoverNode(null)}
         onClick={handleRowClick}
         onKeyDown={handleRowKeyDown}
+        // Drop göstergeleri satır sınıflarıyla, layout-nötr çizilir (::before/
+        // ::after) — eski akış-içi .tecof-drop-line div'i satırları kaydırıp
+        // dragover/dragleave flicker'ına ve yutulan drop'lara yol açıyordu.
         className={`tecof-layer-row${isSelected ? ' is-selected' : ''}${
           dragOverPos === 'inside' ? ' is-drop-inside' : ''
+        }${dragOverPos === 'top' ? ' is-drop-top' : ''}${
+          dragOverPos === 'bottom' ? ' is-drop-bottom' : ''
         }${isHidden ? ' is-hidden' : ''}${isLocked ? ' is-locked' : ''}`}
         role="treeitem"
         tabIndex={0}
@@ -393,8 +407,6 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
           )}
         </div>
       </div>
-
-      {dragOverPos === 'bottom' && <div className="tecof-drop-line sm" />}
 
       {/* Render child zones recursively */}
       {expanded && childZoneKeys.map((zoneKey) => {

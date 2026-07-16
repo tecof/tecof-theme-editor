@@ -6,7 +6,7 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
 ## Paket kimliği
 
 - Paket: `@tecof/theme-editor`
-- Belgelenen sürüm: `0.0.45`
+- Belgelenen sürüm: `0.0.60`
 - Çalışma zamanı: React 18 veya React 19
 - Amaç: Tecof mağaza ve içerik sayfaları için görsel Studio editörü, yayın
   renderer'ı, API istemcisi ve gelişmiş alan bileşenleri
@@ -32,8 +32,13 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
    kısıtlar `config.permissions` → `component.permissions` →
    `component.resolvePermissions` sırasıyla birleştirilir (bkz.
    `docs/PERMISSIONS.md`).
-8. Native HTML5 drag-and-drop dokunmatik cihazlarda tam edit deneyimi sunmaz.
-   Public renderer responsive çalışmaya devam eder.
+8. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
+   ayrı bir katmanla çalışır: bir canvas node'una, palet bloğuna veya katman
+   paneli satırına **basılı tutmak** (~300ms) sürüklemeyi başlatır; erken
+   hareket kaydırma sayılır. Canvas node taşıma, palet→canvas ekleme ve katman
+   panelinde sıralama (üst/alt + zone'lu satırda ortaya bırakınca "içine")
+   desteklenir. Fare, native HTML5 DnD yolunu kullanmaya devam eder. Ek
+   kurulum gerekmez.
 9. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
    ilgili kaynak okunmalıdır.
 
@@ -149,11 +154,57 @@ Gelişmiş alan factory'leri:
 - `createRepeaterField`: Tekrarlanan satırlar
 - `createCmsCollectionField`: CMS koleksiyon ve alan eşleme
 - `createIconField`: İkon seçimi
-- `createExternalField`: Üçüncü taraf listeden kayıt seçimi
+- `createExternalField`: Üçüncü taraf listeden TEK kayıt seçimi
+- `createApiListField`: Repeat zone için API LİSTE kaynağı (host `fetchList`)
 
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render
 sırasında ham kayıt `cmsData` prop'u ile verilmelidir.
+
+## Repeat zone (öğe şablonu)
+
+Bir `slot` alanına `repeatSource` verildiğinde slot bir **öğe şablonuna**
+dönüşür: zone'un çocukları veri listesindeki her satır için tekrarlanır
+(ürün kartı, koleksiyon listesi vb.).
+
+```tsx
+fields: {
+  items: createRepeaterField({ label: "Ürünler", subFields: { /* ... */ } }),
+  card:  { type: "slot", orientation: "horizontal", repeatSource: "items" },
+}
+```
+
+Kurallar:
+
+1. `repeatSource`, veri kaynağı **kardeş prop'un adıdır**. Prop'un değerine
+   göre satırlar otomatik çözülür: dizi (RepeaterField) olduğu gibi;
+   `createApiListField` değeri host'un `fetchList`'i ile; `createCmsCollectionField`
+   değeri (`collectionSlug`) `<TecofProvider>` API client'ı ile çekilir
+   (provider yoksa CMS satırları boş kalır). Sonuçlar parametre bazında
+   cache'lenir; `clearRepeatRowsCache()` temizler, `resolveRepeatRows()` React
+   dışında çözer. Alternatif: bileşen satırları render anında
+   `puck.renderDropZone({ zone, repeatItems: rows })` ile geçebilir.
+2. Şablon içindeki prop'lar satıra `{{ item.<yol> }}` token'ları ile bağlanır.
+   Prop değeri **tek başına token** ise ham değer olduğu gibi geçer (görsel /
+   link nesneleri bozulmaz); metne gömülü token string'e çevrilir. Özel
+   yollar: `{{ item._index }}` (0 tabanlı), `{{ item._position }}` (1 tabanlı).
+3. `{{ item.* }}` token'larını `{{ data.* }}`'dan farklı olarak **kütüphane
+   çözer** (hem editör canvas'ı hem `TecofRender`); host tarafında ek iş
+   gerekmez.
+4. Editörde şablon **ilk satırın verisiyle bir kez** düzenlenir; kalan
+   satırlar etkileşimsiz ghost kopya olarak görünür. Yayında satır yoksa
+   şablon hiç render edilmez (ham token asla sızmaz).
+5. Inspector'daki `{ }` bağlama butonu şablon içindeyken "Öğe alanları"
+   bölümü gösterir. Alan listesi sırasıyla: slot'un `itemSchema`'sı → kaynak
+   alanın `itemSchema`'sı (`createApiListField({ itemSchema })`) → çözülen ilk
+   satırdan otomatik çıkarım (API/CMS satırları canvas'ta yüklendikten sonra
+   da çalışır). Yalnızca manuel `repeatItems` yolunda `itemSchema`
+   bildirilmesi gerekir.
+6. İlgili export'lar: `useRepeatItem()` (şablon bileşeni içinde `{ item,
+   index, count }`), `resolveItemTokens(değer, item, index)`,
+   `findRepeatScope(doc, config, nodeId)`, `ItemSchemaField` tipi.
+7. Canvas'ta bağlı bir metne çift tıklayıp satır içi düzenleme yapmak token'ı
+   literal değerle ezer; bağlı alanlar Inspector'dan düzenlenmelidir.
 
 ## TecofEditor önemli prop'ları
 
@@ -246,6 +297,15 @@ Editörden parent'a:
 1. Editör ve renderer'ın aynı config'i kullandığını kontrol et.
 2. Kaydedilmiş `type` değerinin registry'de bulunduğunu kontrol et.
 3. Type değiştiyse migration ekle.
+
+### Repeat şablonu yayında boş görünüyor
+
+1. `repeatSource` prop'unun gerçekten bir **dizi** taşıdığını kontrol et —
+   yayında satır yoksa şablon bilinçli olarak hiç render edilmez.
+2. Veri API'den geliyorsa bileşenin `puck.renderDropZone({ zone, repeatItems })`
+   çağrısına satırları geçtiğini kontrol et.
+3. Token yolunun satır nesnesindeki alan adıyla eşleştiğini kontrol et
+   (`{{ item.name }}` ↔ `row.name`).
 
 ### iframe mesajları çalışmıyor
 

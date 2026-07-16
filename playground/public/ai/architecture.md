@@ -43,8 +43,11 @@ Editör, tamamen headless (UI'dan bağımsız) ve test edilebilir bir mimariyle 
 > kendi varyantını kullanır). Drop kuralları `engine/rules.ts` (`isValidDrop`) ile
 > doğrulanır; geçersiz bırakmalar `dropEffect='none'` ile reddedilir.
 >
-> **Açık iş:** Native DnD dokunmatik cihazlarda çalışmaz → tablet/mobil editleme
-> için pointer-event tabanlı bir DnD katmanı henüz eklenmedi (yol haritasında).
+> **Dokunmatik (uygulandı):** Native DnD dokunmatik cihazlarda çalışmadığı için
+> pointer-event tabanlı bir ikinci katman eklendi: `studio/canvas/TouchDragLayer.tsx`
+> (long-press ile başlar, aynı `data-tecof-*` DOM sözleşmesini hit-test eder,
+> aynı `engine/rules.ts` doğrulamasını ve `uiStore.dropHover` kılavuzlarını
+> kullanır). Fare sürüklemeleri native HTML5 yolunda kalır.
 
 - **Uygulama (özet):**
   - Sol paneldeki bloklar ve canvas/layers node'ları `draggable` olarak işaretlenir;
@@ -94,29 +97,38 @@ Geçiş güvenli olmak zorundadır.
 
 | Alan | Modül | Not |
 |---|---|---|
-| Engine / state | `engine/store.ts` | zustand+immer; **patch-bazlı history** (50 adım, 500ms coalesce), çoklu seçim, clipboard |
+| Engine / state | `engine/store.ts` | zustand+immer; **patch-bazlı history** (50 adım, 500ms coalesce), çoklu seçim, clipboard (**sayfalar/sekmeler arası** — localStorage mirror `tecof:clipboard:v1`; context menu de aynı clipboard'ı kullanır, `hasClipboardContent()`). Stil panosu da mirror'lı: `tecof:style-clipboard:v1` (uiStore) |
 | Ağaç işlemleri | `engine/operations.ts`, `engine/zones.ts` | `findNodeById` **O(1) WeakMap cache**; bulk remove/duplicate |
 | Drop kuralları | `engine/rules.ts` | `isValidDrop` / `canDropInto` / `canAcceptMoreItems` (opt-in: `acceptsChildren`, `maxItems`, `allowedParents`) |
-| İzinler / feature toggle | `engine/permissions.ts`, `store.permissionResolver` | `getNodePermissions` (global < component < `resolvePermissions`); **motor seviyesinde** delete/duplicate/drag gating (her call-site otomatik), `edit` → Inspector readOnly; UI için `usePermissions` |
+| İzinler / feature toggle | `engine/permissions.ts`, `store.permissionResolver` | `getNodePermissions` (global < component < `resolvePermissions` < **instance `_locked`**); **motor seviyesinde** delete/duplicate/drag gating (her call-site otomatik), `edit` → Inspector readOnly; UI için `usePermissions`. Kilitli node seçilebilir kalır (kilit açmak için); `updateProps` edit-gated değil |
+| Katman kilit & gizle | `studio/panels/LayersTree.tsx` | Her satırda daima-görünür kilit/gizle toggle'ı → `_locked`/`_hidden` (updateProps). Kilit izin sistemini yeniden kullanır; gizli node edit'te soluk (`NodeRenderer` `is-hidden`), preview'da ve yayında (`TecofRender`) atlanır |
 | Canvas | `studio/canvas/*` | iframe `Frame` (artımlı stil sync), `NodeRenderer`, `useDropTarget` (**eksen-duyarlı drop**: dikey/yatay), `useInlineEdit`, `NodeErrorBoundary` |
-| Slot düzeni | `studio/canvas/DropZone.tsx` | `orientation: 'vertical' \| 'horizontal'` — yatay slot + otomatik drop ekseni; `data-tecof-orientation` |
-| Stil editörü | `studio/style/*` | Tailwind token modeli + arbitrary değerler + **breakpoint-bazlı state** (`md:hover`) + **canlı tema renkleri** (`--theme-color-*`) + miras placeholder; safelist (`getSafelist`, `collectDocumentClasses`) — bkz. `docs/TAILWIND.md` |
+| Slot düzeni | `studio/canvas/DropZone.tsx` | `orientation: 'vertical' \| 'horizontal'` — yatay slot + otomatik drop ekseni; `data-tecof-orientation`. Dolu slotta item araları/başı/sonu **hover-reveal "+" ekleme** (`AddSectionButton` `slot`+orientation; layout-nötr; `openAddSection({ zoneKey, index })` → zone-filtreli modal) — artık root dışında da her pozisyona tıkla-ekle |
+| Stil editörü | `studio/style/*` | Tailwind token modeli + arbitrary değerler + **breakpoint-bazlı state** (`md:hover`) + **canlı tema renkleri** (`--theme-color-*`) + **per-node font** (`font-[var(--font-*)]`) + miras placeholder; safelist (`getSafelist`, `collectDocumentClasses`) — bkz. `docs/TAILWIND.md` |
+| Scroll etkileşimleri | `studio/style/scrollEffects.ts` | `reveal` (görününce) + `parallax` kontrolleri → custom `tecof-reveal`/`tecof-parallax` class'ları; runtime IntersectionObserver + rAF parallax (iframe-güvenli, reduced-motion güvenli, `html.tecof-has-js` progressive-enhancement kapısı). CSS `animationCss.ts` + `styles.css`. Yayın `TecofRender`, editör `Canvas` (yalnız preview) |
 | Tema editörü | `studio/theme/*` | `ThemeEditor` (Inspector "Tema" sekmesi) + `ThemeVars` (canlı CSS değişkeni enjeksiyonu); tema `root.props._tecofTheme`'de |
+| Font sistemi | `studio/theme/fonts.ts`, `FontSelect.tsx` | Küratörlü Google/sistem registry + `FontSelect` (önizlemeli seçici) + özel `@font-face` upload; canlı yükleme `ThemeVars` (`<link>`+`@font-face`), yayın `TecofRender`. Per-node: `tokens.ts` `fontFamily` kontrolü (`[var(--font-<id>)]`) → `cssGenerator` `font-family: var(--font-<id>)`; `StyleEditor` seçince fontu `theme.fonts`'a ekler. `--font-<id>` değişkenleri `generateCSSVariables`'da |
 | Komut paleti | `studio/command/CommandPalette.tsx` | ⌘K; eylemler + bileşen ekleme, fuzzy arama, klavye gezinme |
+| Sütun grid kılavuzu | `studio/canvas/GridOverlay.tsx`, `studio/topbar/GridControl.tsx` | Webflow tarzı açılır-kapanır hizalama grid'i; `uiStore` (`gridVisible/gridColumns/gridGap`), iframe içinde `position:fixed` overlay (tema container'ına hizalı), TopBar toggle+ayar popover'ı, `G` kısayolu, preview'da gizli |
+| Akıllı hizalama kılavuzları | `studio/canvas/DragGuides.tsx`, `dragGuideModel.ts` | Sürükleme sırasında: zone genişliğinde ekleme çizgisi + container kenar çizgileri + komşulara px mesafe rozetleri (iki eksen). `useDropTarget` → `uiStore.dropHover` (change-guard'lı) → iframe içi overlay; geometri saf `computeDragGuides`/`pickNeighbourEdges`; dragleave/drop/dragend'de temizlenir |
 | Overlay | `studio/overlay/SelectionOverlay.tsx` | Seçim/hover outline + toolbar + breadcrumb + **boşluk (padding/margin) overlay'i** (hover) |
+| Resize handles | `studio/overlay/ResizeHandles.tsx` | Genişlik/yükseklik sürükleme (SpacingDragHandles deseni: pointer capture, pointerup'ta tek yazım `w-[Npx]`/`h-[Npx]`, Esc iptal). Global `resizeEnabled` toggle (TopBar + `R`) + per-component `resizable:false` opt-out; açıkken SelectionOverlay spacing→resize handle'a geçer |
 | Köprü | `studio/bridge.ts` | `postToHost` / `isEmbedded` / origin doğrulama (`hostOrigin`) |
 | Field host | `studio/fields-host/FieldRenderer.tsx` | Puck-uyumlu: text/textarea (**CMS veri bağlama** `bindable`), select, number, radio, array, object, slot, custom(`render`); `readOnly` (statik + nested) |
 | Dinamik alanlar | `studio/fields-host/useResolvedFields.ts`, `resolve.ts` | `resolveFields` (koşullu alan) + `resolveData` (türetilmiş prop + `readOnly`); async + stale-drop; **diff-guard'lı** geri yazma (`diffProps`, idempotent → tek yazımda durur) |
 | External data field | `components/fields/ExternalField.tsx` | Jenerik host `fetchList` (Tecof CMS'ten bağımsız) → aranabilir modal seçici; `mapProp`/`mapRow`/`getItemSummary`; `type: 'external'` (FieldRenderer) |
 | Veri migrasyonu | `engine/migrate.ts` | `migrateDocument`: `renameComponents` → `transformProps` (rename sonrası tipe göre, id korunur) → custom `migrate`; `version` damgası (`root.props._schemaVersion`) ile idempotent; TecofStudio (yükleme) + TecofRender (yayın) yolunda |
 | Şablonlar | `studio/panels/AddSectionModal.tsx` | `config.templates` (`SectionTemplate`) → tek tıkla alt ağaç ekleme (`store.insertPayload`, taze id) |
+| AI bölüm üretimi | `studio/ai/*` | Host-pluggable: `config.ai.complete({system, prompt})` — LLM çağrısı host'ta, **prompt (bileşen kataloğu) + savunmacı parse/doğrulama** (fence toleransı, uydurma tip reddi, id temizliği, derinlik sınırı) kütüphanede. ⌘K → "AI ile bölüm üret" → doğrulanmış folded node standart `insertNode` yolundan eklenir (taze id, tek undo). `config.ai` yoksa AI UI'ı hiç görünmez |
+| Bileşen varyantları | `types` `ComponentConfig.variants`, `AddSectionModal`, `Inspector` | İsimli prop preset'leri ({label, props}). Modal'da her varyant kendi kartı (kendi props'uyla canlı önizleme; saved-components `onSelect(type, customProps)` yolundan eklenir), Inspector'da chip switcher (`_variant` işaretiyle aktif takibi; uygulama updateProps → undoable) |
+| Dokunmatik DnD | `studio/canvas/TouchDragLayer.tsx`, `touchDragModel.ts` | Pointer-event katmanı: long-press (300ms, 8px tolerans) → `beginDrag`; parmak takibi + iframe koordinat çevirisi + `elementFromPoint` hit-test (`data-tecof-id`/`data-tecof-zone`, en içteki geçerli hedef kazanır — native ile aynı semantik, saf mantık `touchDragModel.ts`'te). Pozisyonel hedefler `uiStore.dropHover` üzerinden DragGuides'ı, konteyner hedefler `.is-touch-dragover` sınıfını kullanır; bırakma `moveNode`/`insertNode`. Ghost host dokümanda; autoscroll parmağın üstünde olduğu kaba göre iframe scrollingElement veya katman panelinin scroll kabı; Esc/pointercancel iptal. Kaynaklar: canvas node, palet (`data-tecof-block-type`), katman satırı (`data-tecof-layer-id`). Katman satırları hedef olarak da çalışır: `computeLayerDropPos` (üst/alt yarı + zone'lu satırda orta-üçte-bir "içine"), fare yoluyla AYNI `is-drop-top/bottom/inside` satır sınıfları. Fare native HTML5 yolunda kalır |
+| Repeat zone (öğe şablonu) | `utils/itemTokens.ts`, `components/RepeatItemContext.ts`, `engine/repeat.ts`, `canvas/RepeatGhosts.tsx` | `slot` alanına `repeatSource` (kardeş dizi prop) veya render-anı `renderDropZone({ repeatItems })` → zone çocukları satır başına tekrarlanır; `{{ item.* }}` prop token'ları satırla çözülür (`resolveItemTokens`, referans-koruyan; tam token ham değer geçirir). Editör: şablon ilk satıra bağlı düzenlenir, kalan satırlar statik ghost (`display:contents`, inert); yayın: satır yoksa çıktı yok. Inspector `findRepeatScope` ile `{ }` popover'ına "Öğe alanları" (slot `itemSchema` ?? kaynak alan `itemSchema` ?? satırdan `inferItemSchema`) sağlar; bileşen içi erişim `useRepeatItem()`. **Faz 2 — dinamik kaynaklar:** `components/useRepeatRows.ts` (dizi ↔ `createApiListField` `fetchList` ↔ CMS `collectionSlug`→`getCmsCollectionItems`; oturum cache + inflight tekleme + `clearRepeatRowsCache`/`resolveRepeatRows`/`peekRepeatRows`), `fields/ApiListField.tsx` (değer = `{query,limit}`, inspector'da arama/limit/yenile + canlı önizleme); renderer'larda `RepeatSlotZone`/`EditorRepeatSlot`/`GhostRepeatSlot` sarmalayıcıları, CMS için `useTecofOptional` (provider'sız statik yayında boş) |
+| Slot varsayılan çocuk | `studio/canvas/dndUtils.ts` `createNode` | `ComponentConfig.defaultChildren` (slot → çocuk tipleri) → eklenen bileşenin slotlarını recursive (cycle-guard'lı) doldurur; `extractDefaultSlots` insert'te zone'lara taze id ile açar. defaultProps ile dolu slotları atlar |
+| Overlay portal | `studio/canvas/overlayPortal.ts` | `registerOverlayPortal` (`puck.registerOverlayPortal`) → belirli kontrolleri (tab/slider/accordion) edit-mode'da canlı bırakır; `installCanvasInteractionGuard` (Frame'de) → edit-mode'da portal-dışı link/buton/form'un native navigasyon+submit'ini **capture fazında** iptal eder (seçim akışı bozulmadan). Preview modunda pasif |
 | Build | `tsup.config.ts` | `splitting: true` → ağır field'lar (Monaco/TipTap/FilePond) ayrı chunk |
 
 ### Bilinen Boşluklar / Yol Haritası
 
-- Dokunmatik (pointer-event) DnD — mobil/tablet editleme.
-- **Overlay Portals** (`registerOverlayPortal` muadili) — editör içinde belirli
-  elemanları etkileşimli bırakma + edit-mode'da link/buton tıklamasını engelleme.
 - Editör arayüzü i18n (şu an sabit Türkçe).
 - Autosave + `beforeunload` koruması.
 

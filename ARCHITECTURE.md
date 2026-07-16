@@ -43,8 +43,11 @@ Editör, tamamen headless (UI'dan bağımsız) ve test edilebilir bir mimariyle 
 > kendi varyantını kullanır). Drop kuralları `engine/rules.ts` (`isValidDrop`) ile
 > doğrulanır; geçersiz bırakmalar `dropEffect='none'` ile reddedilir.
 >
-> **Açık iş:** Native DnD dokunmatik cihazlarda çalışmaz → tablet/mobil editleme
-> için pointer-event tabanlı bir DnD katmanı henüz eklenmedi (yol haritasında).
+> **Dokunmatik (uygulandı):** Native DnD dokunmatik cihazlarda çalışmadığı için
+> pointer-event tabanlı bir ikinci katman eklendi: `studio/canvas/TouchDragLayer.tsx`
+> (long-press ile başlar, aynı `data-tecof-*` DOM sözleşmesini hit-test eder,
+> aynı `engine/rules.ts` doğrulamasını ve `uiStore.dropHover` kılavuzlarını
+> kullanır). Fare sürüklemeleri native HTML5 yolunda kalır.
 
 - **Uygulama (özet):**
   - Sol paneldeki bloklar ve canvas/layers node'ları `draggable` olarak işaretlenir;
@@ -118,13 +121,14 @@ Geçiş güvenli olmak zorundadır.
 | Şablonlar | `studio/panels/AddSectionModal.tsx` | `config.templates` (`SectionTemplate`) → tek tıkla alt ağaç ekleme (`store.insertPayload`, taze id) |
 | AI bölüm üretimi | `studio/ai/*` | Host-pluggable: `config.ai.complete({system, prompt})` — LLM çağrısı host'ta, **prompt (bileşen kataloğu) + savunmacı parse/doğrulama** (fence toleransı, uydurma tip reddi, id temizliği, derinlik sınırı) kütüphanede. ⌘K → "AI ile bölüm üret" → doğrulanmış folded node standart `insertNode` yolundan eklenir (taze id, tek undo). `config.ai` yoksa AI UI'ı hiç görünmez |
 | Bileşen varyantları | `types` `ComponentConfig.variants`, `AddSectionModal`, `Inspector` | İsimli prop preset'leri ({label, props}). Modal'da her varyant kendi kartı (kendi props'uyla canlı önizleme; saved-components `onSelect(type, customProps)` yolundan eklenir), Inspector'da chip switcher (`_variant` işaretiyle aktif takibi; uygulama updateProps → undoable) |
+| Dokunmatik DnD | `studio/canvas/TouchDragLayer.tsx`, `touchDragModel.ts` | Pointer-event katmanı: long-press (300ms, 8px tolerans) → `beginDrag`; parmak takibi + iframe koordinat çevirisi + `elementFromPoint` hit-test (`data-tecof-id`/`data-tecof-zone`, en içteki geçerli hedef kazanır — native ile aynı semantik, saf mantık `touchDragModel.ts`'te). Pozisyonel hedefler `uiStore.dropHover` üzerinden DragGuides'ı, konteyner hedefler `.is-touch-dragover` sınıfını kullanır; bırakma `moveNode`/`insertNode`. Ghost host dokümanda; autoscroll parmağın üstünde olduğu kaba göre iframe scrollingElement veya katman panelinin scroll kabı; Esc/pointercancel iptal. Kaynaklar: canvas node, palet (`data-tecof-block-type`), katman satırı (`data-tecof-layer-id`). Katman satırları hedef olarak da çalışır: `computeLayerDropPos` (üst/alt yarı + zone'lu satırda orta-üçte-bir "içine"), fare yoluyla AYNI `is-drop-top/bottom/inside` satır sınıfları. Fare native HTML5 yolunda kalır |
+| Repeat zone (öğe şablonu) | `utils/itemTokens.ts`, `components/RepeatItemContext.ts`, `engine/repeat.ts`, `canvas/RepeatGhosts.tsx` | `slot` alanına `repeatSource` (kardeş dizi prop) veya render-anı `renderDropZone({ repeatItems })` → zone çocukları satır başına tekrarlanır; `{{ item.* }}` prop token'ları satırla çözülür (`resolveItemTokens`, referans-koruyan; tam token ham değer geçirir). Editör: şablon ilk satıra bağlı düzenlenir, kalan satırlar statik ghost (`display:contents`, inert); yayın: satır yoksa çıktı yok. Inspector `findRepeatScope` ile `{ }` popover'ına "Öğe alanları" (slot `itemSchema` ?? kaynak alan `itemSchema` ?? satırdan `inferItemSchema`) sağlar; bileşen içi erişim `useRepeatItem()`. **Faz 2 — dinamik kaynaklar:** `components/useRepeatRows.ts` (dizi ↔ `createApiListField` `fetchList` ↔ CMS `collectionSlug`→`getCmsCollectionItems`; oturum cache + inflight tekleme + `clearRepeatRowsCache`/`resolveRepeatRows`/`peekRepeatRows`), `fields/ApiListField.tsx` (değer = `{query,limit}`, inspector'da arama/limit/yenile + canlı önizleme); renderer'larda `RepeatSlotZone`/`EditorRepeatSlot`/`GhostRepeatSlot` sarmalayıcıları, CMS için `useTecofOptional` (provider'sız statik yayında boş) |
 | Slot varsayılan çocuk | `studio/canvas/dndUtils.ts` `createNode` | `ComponentConfig.defaultChildren` (slot → çocuk tipleri) → eklenen bileşenin slotlarını recursive (cycle-guard'lı) doldurur; `extractDefaultSlots` insert'te zone'lara taze id ile açar. defaultProps ile dolu slotları atlar |
 | Overlay portal | `studio/canvas/overlayPortal.ts` | `registerOverlayPortal` (`puck.registerOverlayPortal`) → belirli kontrolleri (tab/slider/accordion) edit-mode'da canlı bırakır; `installCanvasInteractionGuard` (Frame'de) → edit-mode'da portal-dışı link/buton/form'un native navigasyon+submit'ini **capture fazında** iptal eder (seçim akışı bozulmadan). Preview modunda pasif |
 | Build | `tsup.config.ts` | `splitting: true` → ağır field'lar (Monaco/TipTap/FilePond) ayrı chunk |
 
 ### Bilinen Boşluklar / Yol Haritası
 
-- Dokunmatik (pointer-event) DnD — mobil/tablet editleme.
 - Editör arayüzü i18n (şu an sabit Türkçe).
 - Autosave + `beforeunload` koruması.
 

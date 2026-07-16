@@ -2210,10 +2210,34 @@
   flex: 1;
 }
 
+.tecof-repeater-grip-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 3px;
+  margin: -5px -1px;
+  border-radius: var(--tecof-radius-sm);
+  cursor: grab;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.tecof-repeater-grip-handle:hover {
+  background-color: var(--tecof-bg);
+}
+
+.tecof-repeater-grip-handle:hover .tecof-repeater-grip {
+  color: var(--tecof-text-muted);
+}
+
+.tecof-repeater-grip-handle:active {
+  cursor: grabbing;
+}
+
 .tecof-repeater-grip {
   color: var(--tecof-border-strong);
   flex-shrink: 0;
-  cursor: grab;
+  display: block;
 }
 
 .tecof-repeater-row-index {
@@ -2347,6 +2371,22 @@
   color: var(--tecof-accent-hover);
   border-color: var(--tecof-primary-400);
   background: var(--tecof-accent-subtle);
+}
+
+/* ── Drag & Drop States ── */
+
+.tecof-repeater-row.dragging {
+  opacity: 0.4;
+  border-style: dashed;
+  border-color: var(--tecof-accent);
+}
+
+.tecof-repeater-row.drop-before {
+  box-shadow: 0 -3px 0 0 var(--tecof-accent);
+}
+
+.tecof-repeater-row.drop-after {
+  box-shadow: 0 3px 0 0 var(--tecof-accent);
 }
 
 /* ─── CmsCollectionField ─── */
@@ -3384,6 +3424,7 @@
 }
 
 .tecof-layer-row {
+  position: relative; /* drop göstergeleri (::before/::after) satıra demirler */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3394,7 +3435,29 @@
   border-radius: var(--tecof-radius-sm);
   font-size: 13px;
   transition: background 0.15s ease, color 0.15s ease;
+  -webkit-touch-callout: none;
 }
+
+/* Layout-NÖTR reorder çizgileri: akışta yer kaplamazlar, satırları kaydırmazlar
+   (akış-içi .tecof-drop-line bunun yerine kullanılıyordu ve dragover sırasında
+   layout'u oynatıp drop hedefini kaçırıyordu). Fare (React state) ve dokunmatik
+   (TouchDragLayer, imperative) aynı sınıfları kullanır. */
+.tecof-layer-row.is-drop-top::before,
+.tecof-layer-row.is-drop-bottom::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--tecof-accent);
+  box-shadow: 0 0 0 1px var(--tecof-surface), 0 1px 4px var(--tecof-accent-ring);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tecof-layer-row.is-drop-top::before { top: -1px; }
+.tecof-layer-row.is-drop-bottom::after { bottom: -1px; }
 
 .tecof-layer-row:hover { background: var(--tecof-bg); }
 
@@ -3765,6 +3828,14 @@
   box-shadow: inset 0 0 0 2px var(--tecof-accent);
 }
 
+/* Touch DnD container affordance: same visual as .is-dragover, but toggled
+   imperatively by TouchDragLayer (pointer events can't reach the DropZone's
+   React state). Also applies to the canvas root while a touch drag hovers it. */
+.is-touch-dragover {
+  box-shadow: inset 0 0 0 2px var(--tecof-accent);
+  background: var(--tecof-accent-subtle);
+}
+
 /* Empty-zone hint is a real click-to-add button: hidden until the zone is
    hovered (or a drag is active), then clickable to open the Add Section modal
    targeted at this zone. */
@@ -3978,6 +4049,13 @@
 }
 
 /* Drag ghost preview (follows cursor during DnD) */
+/* Long-press drag sources: suppress the iOS link/image callout so holding a
+   node or palette block starts a drag instead of the native preview sheet. */
+.tecof-node-wrapper,
+.tecof-block-btn {
+  -webkit-touch-callout: none;
+}
+
 .tecof-drag-ghost {
   position: fixed;
   top: -1000px;
@@ -6728,6 +6806,101 @@
   text-align: center;
   font-size: 12px;
   color: var(--tecof-text-subtle);
+}
+
+/* ─── ApiListField (repeat zone API kaynağı) ─── */
+
+.tecof-apilist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tecof-apilist-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tecof-apilist-controls .tecof-input-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tecof-apilist-limit {
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.tecof-apilist-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-surface);
+  color: var(--tecof-text-subtle);
+  cursor: pointer;
+}
+
+.tecof-apilist-refresh:hover {
+  color: var(--tecof-accent-text);
+  border-color: var(--tecof-accent);
+}
+
+.tecof-apilist-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--tecof-text-subtle);
+}
+
+.tecof-apilist-count {
+  font-weight: 600;
+  color: var(--tecof-accent-text);
+}
+
+.tecof-apilist-row {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border: 1px solid var(--tecof-border);
+  border-radius: 999px;
+  background: var(--tecof-surface-2);
+}
+
+.tecof-bind-section {
+  padding: 6px 10px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tecof-text-subtle);
+}
+
+/* ─── Repeat zone (item template) ─── */
+
+/* Ghost previews of the repeat rows after the first: `display: contents` keeps
+   the ghost's children in the SAME flex/grid flow as the editable template, so
+   the canvas layout matches the published loop. pointer-events/user-select
+   inherit through, keeping every ghost fully inert (also invisible to native
+   drag hit-testing — drops fall through to the zone itself). */
+.tecof-repeat-ghost {
+  display: contents;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* No box on display:contents — dim the ghost's top-level children instead. */
+.tecof-repeat-ghost > * {
+  opacity: 0.55;
 }
 
 /* ─── Section Template cards (Add Section modal) ─── */

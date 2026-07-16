@@ -11,6 +11,7 @@ import { AddSectionModal } from '../panels/AddSectionModal';
 import { CanvasStyleInjector } from './CanvasStyleInjector';
 import { GridOverlay } from './GridOverlay';
 import { DragGuides } from './DragGuides';
+import { TouchDragLayer } from './TouchDragLayer';
 import { createNode } from './dndUtils';
 import { isValidDrop } from '../../engine/rules';
 import { resolveTheme } from '../theme/theme';
@@ -220,6 +221,8 @@ export const Canvas = () => {
           )}
           {/* Drag-time smart alignment guides (renders nothing while idle). */}
           {mode !== 'preview' && <DragGuides />}
+          {/* Touch/pen drag-and-drop (native HTML5 DnD is mouse-only). */}
+          {mode !== 'preview' && !readOnly && <TouchDragLayer />}
           {contentWithLayout}
         </Frame>
       </div>

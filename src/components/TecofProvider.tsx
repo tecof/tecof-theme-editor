@@ -39,4 +39,13 @@ export function useTecof(): TecofContextValue {
   return ctx;
 }
 
+/**
+ * Provider-optional variant for features that DEGRADE instead of break without
+ * a `<TecofProvider>` — e.g. repeat zones resolving CMS collection rows only
+ * when an API client exists (published pages may render fully static).
+ */
+export function useTecofOptional(): TecofContextValue | null {
+  return useContext(TecofContext);
+}
+
 export default TecofProvider;

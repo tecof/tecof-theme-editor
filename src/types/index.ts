@@ -140,6 +140,20 @@ export interface FieldOption {
 }
 
 /**
+ * One bindable field of a repeat-zone item, offered in the `{ }` binding popover
+ * as a `{{ item.<key> }}` token. Declared explicitly via a slot field's
+ * `itemSchema`, or inferred from the first row of its `repeatSource` array.
+ */
+export interface ItemSchemaField {
+  /** Property path on the row object (dot paths allowed, e.g. `meta.title`). */
+  key: string;
+  /** Display name in the binding popover (defaults to the key). */
+  label?: string;
+  /** Loose type hint shown as meta text (e.g. `text`, `image`, `list`). */
+  type?: string;
+}
+
+/**
  * Configuration for a single editable field. Covers the built-in field types
  * plus a `render` escape hatch for fully custom fields. The `type` discriminant
  * is optional/loose on purpose so legacy configs keep compiling.
@@ -186,6 +200,22 @@ export interface FieldConfig {
    * indicator and the published layout.
    */
   orientation?: 'vertical' | 'horizontal';
+  /**
+   * For `slot` fields: marks this zone as a REPEAT TEMPLATE. Names a sibling prop
+   * whose array value drives the repetition — e.g. a RepeaterField's rows or a
+   * list fetched into a prop. The zone's children are designed once in the editor
+   * and rendered once per row on publish; `{{ item.<key> }}` tokens inside the
+   * template resolve against the current row. Components can instead pass rows at
+   * render time via `puck.renderDropZone({ zone, repeatItems })` (e.g. API data).
+   */
+  repeatSource?: string;
+  /**
+   * For repeat `slot` fields: the bindable item fields offered by the `{ }`
+   * binding popover inside this template. Optional — when omitted, the schema is
+   * inferred from the first row of the `repeatSource` array. Declare it when rows
+   * arrive only at render time (`repeatItems`) or to curate/label the list.
+   */
+  itemSchema?: ItemSchemaField[];
   /**
    * For `text` / `textarea` fields: show the CMS data-binding button that inserts
    * a `{{ data.field }}` reference. Defaults to `true`; set `false` to hide it.

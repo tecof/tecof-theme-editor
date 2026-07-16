@@ -39,6 +39,20 @@ export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types'
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
 
+/* ─── Repeat Zones (item templates) ─── */
+// A `slot` field with `repeatSource` repeats its children once per data row;
+// `{{ item.* }}` prop tokens resolve against the current row. `useRepeatItem()`
+// reads the row inside a template component; `resolveItemTokens` is the same
+// resolver the renderers use (exposed for host-side custom rendering).
+export { RepeatItemContext, useRepeatItem } from './components/RepeatItemContext';
+export type { RepeatItemInfo } from './components/RepeatItemContext';
+export { resolveItemTokens, inferItemSchema } from './utils/itemTokens';
+export { findRepeatScope } from './engine/repeat';
+export type { RepeatScope } from './engine/repeat';
+export { createApiListField } from './components/fields/ApiListField';
+export type { ApiListFieldOptions, ApiListFieldValue } from './components/fields/ApiListField';
+export { useRepeatRows, resolveRepeatRows, clearRepeatRowsCache } from './components/useRepeatRows';
+
 /* ─── Fonts ─── */
 // The Tema panel picks/loads fonts automatically, and TecofRender injects the
 // Google Fonts <link> + custom @font-face into published pages. These helpers are
@@ -89,5 +103,6 @@ export type {
   ResolveFieldsContext,
   ResolveDataResult,
   MigrationConfig,
+  ItemSchemaField,
 } from './types';
 export type { TecofPictureProps } from './components/TecofPicture';

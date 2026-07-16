@@ -48,6 +48,9 @@ export const BlockThumb = ({
       type="button"
       onClick={() => onAdd(type)}
       draggable={true}
+      // Touch DnD delegation hook: the pointer-event layer (TouchDragLayer)
+      // recognises palette sources by this attribute. Tap-to-add still works.
+      data-tecof-block-type={type}
       onDragStart={(e) => {
         setHovered(false);
         onDragStart(e, type, label);

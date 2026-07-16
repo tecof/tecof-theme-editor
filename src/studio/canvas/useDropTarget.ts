@@ -47,7 +47,7 @@ type Axis = 'x' | 'y';
  * own flex/grid styling, or the style editor — gets side-by-side reordering for
  * free, with no extra configuration.
  */
-const getDropAxis = (wrapperEl: HTMLElement): Axis => {
+export const getDropAxis = (wrapperEl: HTMLElement): Axis => {
   // Non-inline nodes sit inside a `.tecof-node` wrapper; inline nodes render
   // without one and live directly in the layout container, so climbing via
   // closest('.tecof-node') would find an ANCESTOR node's wrapper and read the

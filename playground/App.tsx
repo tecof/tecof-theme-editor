@@ -195,6 +195,60 @@ const Slide = {
     </figure>
   ),
 };`,
+  repeatZone: `const ProductGrid = {
+  label: "Ürün Izgarası",
+  fields: {
+    // Veri kaynağı: repeater satırları (veya API — aşağıya bakın)
+    items: createRepeaterField({
+      label: "Ürünler",
+      subFields: {
+        name: { type: "text", label: "Ad" },
+        price: { type: "text", label: "Fiyat" },
+        image: createUploadField({ label: "Görsel", allowMultiple: false }),
+      },
+    }),
+    // Bu slot 'items' dizisi için TEKRARLANIR: kart bir kez tasarlanır,
+    // her satır için render edilir.
+    card: {
+      type: "slot",
+      label: "Kart şablonu",
+      orientation: "horizontal",
+      repeatSource: "items",
+    },
+  },
+  render: ({ card, className }) => (
+    <section className={className}>{card}</section>
+  ),
+};
+
+// Şablondaki elementlerin prop'ları satıra token'la bağlanır:
+//   Text.text  = "{{ item.name }}"            → ham değer
+//   Text.text  = "Fiyat: {{ item.price }} TL" → string enterpolasyon
+//   Image.data = "{{ item.image }}"           → görsel nesnesi bozulmadan geçer
+
+// ── API kaynağı (çoklu / harici) ──
+const ApiProductGrid = {
+  label: "API Ürünleri",
+  fields: {
+    card: {
+      type: "slot",
+      label: "Kart şablonu",
+      // Satırlar render anında geldiği için bağlanabilir alanları bildirin:
+      itemSchema: [
+        { key: "name",  label: "Ürün Adı", type: "text" },
+        { key: "price", label: "Fiyat",    type: "text" },
+        { key: "image", label: "Görsel",   type: "image" },
+      ],
+    },
+  },
+  render: ({ puck }) => {
+    const { rows } = useMyProducts(); // host'un kendi fetch'i
+    return puck.renderDropZone({ zone: "card", repeatItems: rows });
+  },
+};
+
+// Şablon bileşeni içinde satıra programatik erişim:
+//   const repeat = useRepeatItem(); // { item, index, count } | null`,
   fields: `import {
   createLanguageField,
   createEditorField,
@@ -1020,10 +1074,11 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
     navTitle: 'Slotlar & şablonlar',
     description: 'İç içe içerik bölgeleri oluşturun ve tekrar kullanılabilir bölüm şablonları sunun.',
     icon: Layers3,
-    keywords: ['slot', 'zone', 'template', 'section', 'orientation', 'nested', 'slider', 'carousel'],
+    keywords: ['slot', 'zone', 'template', 'section', 'orientation', 'nested', 'slider', 'carousel', 'repeat', 'repeatSource', 'item', 'öğe şablonu', 'koleksiyon', 'ürün kartı'],
     toc: [
       { id: 'zone-modeli', label: 'Zone modeli' },
       { id: 'orientation', label: 'Dikey ve yatay slot' },
+      { id: 'repeat-zone', label: 'Repeat zone (öğe şablonu)' },
       { id: 'slider-deseni', label: 'Slider / carousel deseni' },
       { id: 'sablonlar', label: 'Bölüm şablonları' },
       { id: 'id-guvenligi', label: 'ID güvenliği' },
@@ -1046,6 +1101,44 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
             editör drop eksenini sol/sağ olarak hesaplar ve public render aynı düzeni korur.
           </p>
           <CodeBlock code={codeSamples.slot} title="Grid.tsx" />
+        </section>
+        <section id="repeat-zone">
+          <h2>Repeat zone (öğe şablonu)</h2>
+          <p>
+            Bir slot alanına <code>repeatSource</code> verildiğinde slot bir <strong>öğe
+            şablonuna</strong> dönüşür: kart bir kez elementlerle tasarlanır, veri
+            listesindeki her satır için tekrarlanır (ürün ızgarası, koleksiyon listesi,
+            SSS vb.). Şablondaki prop’lar satıra <code>{'{{ item.alan }}'}</code>{' '}
+            token’larıyla bağlanır — metin alanlarındaki <code>{'{ }'}</code> bağlama
+            butonu şablon içindeyken “Öğe alanları” bölümünü gösterir.
+          </p>
+          <CodeBlock code={codeSamples.repeatZone} title="ProductGrid.tsx" />
+          <ul>
+            <li>
+              <strong>Tam token ham değer geçirir:</strong> <code>{'"{{ item.image }}"'}</code>{' '}
+              görsel nesnesini bozmadan iletir; metne gömülü token string’e çevrilir.
+              Özel yollar: <code>{'{{ item._index }}'}</code> (0 tabanlı),{' '}
+              <code>{'{{ item._position }}'}</code> (1 tabanlı).
+            </li>
+            <li>
+              <strong>Editörde</strong> şablon ilk satırın verisiyle bir kez düzenlenir;
+              kalan satırlar etkileşimsiz, hafif soluk ghost kopyalar olarak aynı
+              flex/grid akışında görünür.
+            </li>
+            <li>
+              <strong>Yayında</strong> döngü gerçek veriyle döner; satır yoksa şablon hiç
+              render edilmez — canlı sitede asla ham token görünmez.
+            </li>
+            <li>
+              <code>{'{{ item.* }}'}</code> token’larını <code>{'{{ data.* }}'}</code>’dan
+              farklı olarak <strong>kütüphane çözer</strong>; host tarafında ek iş gerekmez.
+            </li>
+          </ul>
+          <Callout type="warning" title="Satır içi düzenleme">
+            Canvas’ta bağlı bir metne çift tıklayıp düzenlemek token’ı literal değerle
+            ezer ve bağı koparır. Bağlı alanları Inspector’dan düzenleyin — Inspector her
+            zaman ham token’ı gösterir.
+          </Callout>
         </section>
         <section id="slider-deseni">
           <h2>Slider / carousel deseni</h2>

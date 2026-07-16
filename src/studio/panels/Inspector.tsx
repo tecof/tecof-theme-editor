@@ -2,6 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { ChevronUp, Lock } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { findNodeById, getParentId } from '../../engine/zones';
+import { findRepeatScope } from '../../engine/repeat';
+import { inferItemSchema } from '../../utils/itemTokens';
+import { RepeatScopeContext } from '../../components/fields/repeatScope';
+import { peekRepeatRows, useRepeatRowsTick } from '../../components/useRepeatRows';
 import { useStudio } from '../context';
 import { usePermissions } from '../usePermissions';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
@@ -44,6 +48,23 @@ export const Inspector = () => {
     activeNodeInfo?.node ?? null,
     activeNodeInfo?.componentConfig
   );
+
+  // When the selected node lives inside a repeat-zone template, its `{ }`
+  // binding popovers also offer the repeat item's fields (`{{ item.* }}`) —
+  // declared via the slot's/source field's `itemSchema`, or inferred from the
+  // first data row (incl. async api-list/CMS rows already resolved by the
+  // canvas — `repeatRowsTick` re-runs the memo when such a fetch lands).
+  const repeatRowsTick = useRepeatRowsTick();
+  const repeatScope = useMemo(() => {
+    if (!selectedId) return null;
+    const scope = findRepeatScope(documentState, config, selectedId);
+    if (!scope) return null;
+    const sample =
+      scope.sample ?? peekRepeatRows(scope.sourceValue, scope.sourceFieldDef)?.[0] ?? null;
+    const schema = scope.itemSchema?.length ? scope.itemSchema : inferItemSchema(sample);
+    return schema.length > 0 ? { schema } : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, documentState, config, repeatRowsTick]);
   // Slot fields are on-canvas drag-drop only, never shown in the inspector.
   const editableFields = useMemo(
     () =>
@@ -162,20 +183,22 @@ export const Inspector = () => {
               Bu bileşenin düzenlenebilir alanı bulunmuyor.
             </div>
           ) : (
-            editableFields.map(([fieldName, fieldDef]) => (
-              <FieldRenderer
-                key={fieldName}
-                name={fieldName}
-                definition={fieldDef}
-                value={node.props[fieldName]}
-                onChange={(newVal) => updateProps(selectedId, { [fieldName]: newVal })}
-                readOnly={
-                  fieldsReadOnly ||
-                  resolved.readOnly[fieldName] === true ||
-                  fieldDef?.readOnly === true
-                }
-              />
-            ))
+            <RepeatScopeContext.Provider value={repeatScope}>
+              {editableFields.map(([fieldName, fieldDef]) => (
+                <FieldRenderer
+                  key={fieldName}
+                  name={fieldName}
+                  definition={fieldDef}
+                  value={node.props[fieldName]}
+                  onChange={(newVal) => updateProps(selectedId, { [fieldName]: newVal })}
+                  readOnly={
+                    fieldsReadOnly ||
+                    resolved.readOnly[fieldName] === true ||
+                    fieldDef?.readOnly === true
+                  }
+                />
+              ))}
+            </RepeatScopeContext.Provider>
           )}
         </div>
       </div>
