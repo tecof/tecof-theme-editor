@@ -3628,19 +3628,27 @@
   overscroll-behavior: contain;
 }
 
+/* Stage: layout footprint of the SCALED canvas (keeps flex centering and the
+   container's scrollbars honest); the viewport inside is laid out at the real
+   design width and shrunk with transform. */
+.tecof-canvas-stage {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
 .tecof-canvas-viewport {
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Genişlik/ölçek Canvas tarafından inline verilir; transform BİLEREK
+     transition almaz — overlay ölçümleri animasyon ortasında yakalanmasın. */
   box-shadow: var(--tecof-shadow-lg);
   border-radius: 0;
   overflow: hidden;
   background: var(--tecof-surface);
 }
 
-.tecof-canvas-viewport.is-tablet { width: 768px; border-radius: var(--tecof-radius-lg); }
-.tecof-canvas-viewport.is-mobile { width: 375px; border-radius: var(--tecof-radius-lg); }
+.tecof-canvas-viewport.is-tablet { border-radius: var(--tecof-radius-lg); }
+.tecof-canvas-viewport.is-mobile { border-radius: var(--tecof-radius-lg); }
 
 .tecof-canvas-frame { width: 100%; height: 100%; border: none; background: var(--tecof-surface); }
 
@@ -3996,6 +4004,101 @@
 }
 .tecof-grid-caret:hover,
 .tecof-grid-caret.is-active { color: var(--tecof-text); background: var(--tecof-border); }
+/* ─── Viewport genişlik seçici (TopBar) ─── */
+
+.tecof-vpwidth {
+  position: relative;
+  display: inline-flex;
+  margin-left: 6px;
+}
+
+.tecof-vpwidth-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tecof-text-subtle);
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tecof-vpwidth-chip:hover,
+.tecof-vpwidth-chip.is-active {
+  color: var(--tecof-accent-text);
+  border-color: var(--tecof-accent);
+}
+
+.tecof-vpwidth-zoom {
+  font-weight: 500;
+  color: var(--tecof-accent-text);
+}
+
+.tecof-vpwidth-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10002;
+  width: 176px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  box-shadow: var(--tecof-shadow-lg);
+}
+
+.tecof-vpwidth-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--tecof-text-soft);
+  background: transparent;
+  border: none;
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tecof-vpwidth-item:hover { background: var(--tecof-surface-2); }
+.tecof-vpwidth-item.is-active {
+  background: var(--tecof-accent-subtle);
+  color: var(--tecof-accent-text);
+}
+
+.tecof-vpwidth-item-px {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tecof-text-subtle);
+}
+
+.tecof-vpwidth-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 4px;
+  border-top: 1px solid var(--tecof-border);
+  margin-top: 4px;
+}
+
+.tecof-vpwidth-custom .tecof-input-number { width: 76px; }
+
+.tecof-vpwidth-custom-hint {
+  font-size: 10px;
+  color: var(--tecof-text-subtle);
+  white-space: nowrap;
+}
+
 .tecof-grid-popover {
   z-index: 10002;
   width: 184px;

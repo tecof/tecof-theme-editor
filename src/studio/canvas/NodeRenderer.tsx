@@ -138,10 +138,15 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
         '.tecof-canvas-viewport iframe'
       );
       const iframeRect = iframe?.getBoundingClientRect();
+      // Fit-scale: iframe içi koordinatlar GERÇEK px — host'a çevirirken ölçekle.
+      const scale =
+        iframe && iframeRect && iframe.clientWidth > 0
+          ? iframeRect.width / iframe.clientWidth
+          : 1;
       setContextMenu({
         nodeId: node.props.id,
-        x: e.clientX + (iframeRect?.left ?? 0),
-        y: e.clientY + (iframeRect?.top ?? 0),
+        x: e.clientX * scale + (iframeRect?.left ?? 0),
+        y: e.clientY * scale + (iframeRect?.top ?? 0),
       });
     },
     [locked, selectNode, node.props.id, setContextMenu]

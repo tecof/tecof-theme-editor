@@ -95,19 +95,25 @@ export const TouchDragLayer = () => {
       return null;
     };
 
-    const getIframeRect = (): DOMRect | null =>
-      hostDoc
-        .querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe')
-        ?.getBoundingClientRect() ?? null;
+    /** Iframe'in host rect'i + fit-scale oranı (görünen / layout genişliği). */
+    const getIframeMetrics = (): { rect: DOMRect; scale: number } | null => {
+      const iframe = hostDoc.querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe');
+      if (!iframe) return null;
+      const rect = iframe.getBoundingClientRect();
+      const scale = iframe.clientWidth > 0 ? rect.width / iframe.clientWidth : 1;
+      return { rect, scale };
+    };
 
-    /** Event client coords → host-viewport coords (iframe events get offset). */
+    const getIframeRect = (): DOMRect | null => getIframeMetrics()?.rect ?? null;
+
+    /** Event client coords → host-viewport coords (iframe events get offset + scale). */
     const toHostPoint = (e: PointerEvent): { x: number; y: number } => {
       if ((e.target as Node | null)?.ownerDocument !== iframeDoc) {
         return { x: e.clientX, y: e.clientY };
       }
-      const rect = getIframeRect();
-      return rect
-        ? { x: e.clientX + rect.left, y: e.clientY + rect.top }
+      const metrics = getIframeMetrics();
+      return metrics
+        ? { x: e.clientX * metrics.scale + metrics.rect.left, y: e.clientY * metrics.scale + metrics.rect.top }
         : { x: e.clientX, y: e.clientY };
     };
 
@@ -227,8 +233,9 @@ export const TouchDragLayer = () => {
     /** Resolve the drop target under the finger via iframe hit-testing. */
     const resolveTarget = (hostPoint: { x: number; y: number }): TouchDropTarget | null => {
       layerRowCandidate = null;
-      const rect = getIframeRect();
-      if (!rect || !tracking) return null;
+      const metrics = getIframeMetrics();
+      if (!metrics || !tracking) return null;
+      const { rect, scale } = metrics;
       if (
         hostPoint.x < rect.left ||
         hostPoint.x > rect.right ||
@@ -239,7 +246,11 @@ export const TouchDragLayer = () => {
         return resolveLayerTarget(hostPoint);
       }
 
-      const point = { x: hostPoint.x - rect.left, y: hostPoint.y - rect.top };
+      // Host px → iframe'in GERÇEK (layout) px'i: fit-scale'e böl.
+      const point = {
+        x: (hostPoint.x - rect.left) / scale,
+        y: (hostPoint.y - rect.top) / scale,
+      };
       const hit = iframeDoc.elementFromPoint(point.x, point.y);
       if (!hit) return null;
 
@@ -426,8 +437,8 @@ export const TouchDragLayer = () => {
       } else {
         hostScroller.stop();
         hostScrollEl = null;
-        const rect = getIframeRect();
-        if (rect) scroller.update(point.y - rect.top);
+        const metrics = getIframeMetrics();
+        if (metrics) scroller.update((point.y - metrics.rect.top) / metrics.scale);
       }
 
       publishTarget(target);

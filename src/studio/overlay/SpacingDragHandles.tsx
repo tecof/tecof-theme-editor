@@ -17,6 +17,13 @@ export interface Coords {
   width: number;
   height: number;
   box?: BoxModel;
+  /**
+   * Canvas fit scale the node was measured under (1 = unscaled). `top/left/
+   * width/height` are OVERLAY (host) px — already scaled; `box` values are the
+   * element's REAL px (for value math/labels). Painting box geometry multiplies
+   * by this; converting a host pointer delta to real px divides by it.
+   */
+  scale?: number;
 }
 
 export type SpacingAxis = 'x' | 'y';
@@ -230,8 +237,11 @@ export const SpacingDragHandles = ({ nodeId, coords, onDragAxisChange }: Spacing
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
+    // Pointer deltası HOST px'idir; canvas fit-scale ile küçültülmüşse aynı
+    // parmak hareketi daha büyük GERÇEK px'e karşılık gelir — ölçeğe böl.
+    const scale = coords.scale || 1;
     const delta =
-      d.edge.axis === 'y' ? e.clientY - d.startClientY : e.clientX - d.startClientX;
+      (d.edge.axis === 'y' ? e.clientY - d.startClientY : e.clientX - d.startClientX) / scale;
     const valuePx = Math.max(0, Math.round(d.startPx + d.edge.dir * delta));
     const moved = d.moved || delta !== 0;
     if (valuePx === d.valuePx && moved === d.moved) return;

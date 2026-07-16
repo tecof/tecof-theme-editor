@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useEditorStore } from '../../engine/store';
+import { ViewportWidthControl } from './ViewportWidthControl';
 import { useUiStore } from '../uiStore';
 import { useActiveLanguage } from '../language/LanguageContext';
 import { collectTranslationGaps } from '../language/translationCoverage';
@@ -174,6 +175,9 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
             <Smartphone size={16} />
           </button>
         </div>
+
+        {/* Masaüstü tasarım genişliği + sığdırma yüzdesi (yalnız desktop'ta). */}
+        <ViewportWidthControl />
 
         <div className="tecof-topbar-divider" />
 

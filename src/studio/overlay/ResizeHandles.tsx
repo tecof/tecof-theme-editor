@@ -98,8 +98,11 @@ export const ResizeHandles = ({ nodeId, coords, onResizeChange }: ResizeHandlesP
     const el = e.currentTarget;
     el.setPointerCapture(e.pointerId);
     captureRef.current = { el, pointerId: e.pointerId };
-    const startW = Math.round(coords.width);
-    const startH = Math.round(coords.height);
+    // coords overlay (host) px'idir; yazılacak w/h GERÇEK sayfa px'i olmalı —
+    // canvas fit-scale'e bölerek gerçek boyuta çevrilir.
+    const scale = coords.scale || 1;
+    const startW = Math.round(coords.width / scale);
+    const startH = Math.round(coords.height / scale);
     const next: DragState = {
       corner,
       startW,
@@ -118,8 +121,9 @@ export const ResizeHandles = ({ nodeId, coords, onResizeChange }: ResizeHandlesP
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
-    const dx = e.clientX - d.startClientX;
-    const dy = e.clientY - d.startClientY;
+    const scale = coords.scale || 1;
+    const dx = (e.clientX - d.startClientX) / scale;
+    const dy = (e.clientY - d.startClientY) / scale;
     const w = d.corner === 's' ? d.w : Math.max(MIN_SIZE, d.startW + dx);
     const h = d.corner === 'e' ? d.h : Math.max(MIN_SIZE, d.startH + dy);
     const moved = d.moved || dx !== 0 || dy !== 0;

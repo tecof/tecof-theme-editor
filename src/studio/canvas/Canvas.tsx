@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { initScrollEffects } from '../style/scrollEffects';
@@ -19,6 +19,9 @@ import { LayoutTemplate, Plus } from 'lucide-react';
 import { postToHost } from '../bridge';
 import type { SectionTemplate } from '../../types';
 
+/** Fixed layout widths per viewport; desktop comes from `uiStore.desktopWidth`. */
+const VIEWPORT_WIDTHS = { tablet: 768, mobile: 375 } as const;
+
 export const Canvas = () => {
   const content = useEditorStore((state) => state.document.content);
   const viewport = useEditorStore((state) => state.viewport);
@@ -31,6 +34,42 @@ export const Canvas = () => {
   const insertNode = useEditorStore((state) => state.insertNode);
   const insertPayload = useEditorStore((state) => state.insertPayload);
   const selectNode = useEditorStore((state) => state.selectNode);
+
+  // ── Gerçek-genişlik canvas + sığdırma (fit-scale) ──
+  // Sayfa, seçili viewport'un GERÇEK genişliğinde (desktop: uiStore.desktopWidth)
+  // layout edilir; kullanılabilir alandan genişse CSS transform ile küçültülerek
+  // sığdırılır. Böylece paneller ne kadar yer kaplarsa kaplasın site kendini
+  // gerçek masaüstü breakpoint'inde render eder — "laptop'ta tablet gibi
+  // görünme" sorunu biter. Overlay'ler ölçeği iframe rect/clientWidth oranından
+  // türetir; TopBar için ayrıca uiStore.canvasScale'e yayınlanır.
+  const desktopWidth = useUiStore((s) => s.desktopWidth);
+  const setCanvasScale = useUiStore((s) => s.setCanvasScale);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerSize, setContainerSize] = useState<{ w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const designWidth = viewport === 'desktop' ? desktopWidth : VIEWPORT_WIDTHS[viewport];
+  // Container 24px padding taşır; ölçüler content-box'a göre.
+  const CONTAINER_PAD = 48;
+  const availW = Math.max(0, (containerSize?.w ?? 0) - CONTAINER_PAD);
+  const scale =
+    containerSize && availW > 0 && availW < designWidth
+      ? Math.max(0.2, availW / designWidth)
+      : 1;
+
+  useEffect(() => {
+    setCanvasScale(scale);
+    return () => setCanvasScale(1);
+  }, [scale, setCanvasScale]);
 
   // Modal hedefi UI store'da: boş DropZone'lar da (Canvas dışından) açabilsin.
   const addSectionTarget = useUiStore((s) => s.addSectionTarget);
@@ -203,8 +242,27 @@ export const Canvas = () => {
     : renderedContent;
 
   return (
-    <div className="tecof-canvas-container" onMouseDown={handleCanvasShellClick}>
-      <div className={viewportClassName}>
+    <div
+      ref={containerRef}
+      className="tecof-canvas-container"
+      onMouseDown={handleCanvasShellClick}
+    >
+      {/* Stage: layout alanı ÖLÇEKLENMİŞ boyuttadır (scrollbar/ortalamayı doğru
+          tutar); içindeki viewport gerçek tasarım genişliğinde layout edilip
+          transform ile sığdırılır. */}
+      <div
+        className="tecof-canvas-stage"
+        style={{ width: Math.round(designWidth * scale), height: '100%' }}
+      >
+        <div
+          className={viewportClassName}
+          style={{
+            width: designWidth,
+            height: scale < 1 ? `${(100 / scale).toFixed(4)}%` : '100%',
+            transform: scale < 1 ? `scale(${scale})` : undefined,
+            transformOrigin: 'top left',
+          }}
+        >
         <Frame className="tecof-canvas-frame">
           {/* Stil token'larının CSS'i host Tailwind build'ine bağımlı değil —
               iframe içine canlı üretilir (cssGenerator.ts). */}
@@ -225,6 +283,7 @@ export const Canvas = () => {
           {mode !== 'preview' && !readOnly && <TouchDragLayer />}
           {contentWithLayout}
         </Frame>
+        </div>
       </div>
 
       <AddSectionModal

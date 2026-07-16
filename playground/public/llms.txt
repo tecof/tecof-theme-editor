@@ -2,7 +2,7 @@
 
 > React tabanlı Tecof görsel sayfa editörü, yayın renderer'ı, API istemcisi ve gelişmiş içerik alanları için Türkçe geliştirici dokümantasyonu.
 
-Belgelenen paket: `@tecof/theme-editor@0.0.60`.
+Belgelenen paket: `@tecof/theme-editor@0.0.61`.
 Editör ve public renderer aynı `StudioConfig` nesnesini kullanmalıdır.
 Bilinmeyen API'ler varsayılmamalı; tam bağlam için önce AI rehberi veya ilgili referans okunmalıdır.
 

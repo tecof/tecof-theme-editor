@@ -103,6 +103,12 @@ interface UiState {
   /** Resize mode: when on, the selected node shows width/height resize handles
    * (instead of the spacing handles). Editor aid, session-only. */
   resizeEnabled: boolean;
+  /** Design width (CSS px) the DESKTOP viewport renders the page at. The canvas
+   * iframe is laid out at this exact width and scale-fitted into the available
+   * area, so the page sees a REAL desktop breakpoint even on small screens. */
+  desktopWidth: number;
+  /** Current canvas fit scale (1 = %100), published by Canvas for the TopBar. */
+  canvasScale: number;
   /** Live drop hover for the drag-time alignment guides; null = idle. */
   dropHover: DropHoverState | null;
   /** Whether the "AI ile bölüm üret" modal is open (only reachable when the
@@ -125,6 +131,8 @@ interface UiState {
   setGridColumns: (n: number) => void;
   setGridGap: (px: number) => void;
   toggleResize: () => void;
+  setDesktopWidth: (px: number) => void;
+  setCanvasScale: (scale: number) => void;
   setDropHover: (hover: DropHoverState | null) => void;
   setAiModalOpen: (open: boolean) => void;
 }
@@ -143,6 +151,8 @@ export const useUiStore = create<UiState>((set) => ({
   gridColumns: 12,
   gridGap: 24,
   resizeEnabled: false,
+  desktopWidth: 1440,
+  canvasScale: 1,
   dropHover: null,
   aiModalOpen: false,
 
@@ -165,6 +175,10 @@ export const useUiStore = create<UiState>((set) => ({
   setGridColumns: (n) => set({ gridColumns: Math.max(1, Math.min(24, Math.round(n) || 1)) }),
   setGridGap: (px) => set({ gridGap: Math.max(0, Math.round(px) || 0) }),
   toggleResize: () => set((s) => ({ resizeEnabled: !s.resizeEnabled })),
+  setDesktopWidth: (px) => set({ desktopWidth: Math.max(320, Math.min(3840, Math.round(px) || 1440)) }),
+  // Scale updates fire from a ResizeObserver — only notify on real change.
+  setCanvasScale: (scale) =>
+    set((s) => (Math.abs(s.canvasScale - scale) < 0.001 ? s : { canvasScale: scale })),
   // Dragover fires continuously; only notify subscribers on a real change so the
   // guides don't re-render every pointer move over the same position.
   setDropHover: (hover) =>
