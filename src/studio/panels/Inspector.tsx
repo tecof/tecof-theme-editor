@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronUp, Lock } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
-import { findNodeById, getParentId } from '../../engine/zones';
+import { findNodeById, getParentId, getDescendants } from '../../engine/zones';
 import { findRepeatScope } from '../../engine/repeat';
 import { inferItemSchema } from '../../utils/itemTokens';
 import { RepeatScopeContext } from '../../components/fields/repeatScope';
 import { peekRepeatRows, useRepeatRowsTick } from '../../components/useRepeatRows';
+import type { TecofNode } from '../../types';
 import { useStudio } from '../context';
 import { usePermissions } from '../usePermissions';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
@@ -13,6 +14,167 @@ import { useResolvedFields } from '../fields-host/useResolvedFields';
 import { StyleEditor } from '../style/StyleEditor';
 import { ThemeEditor } from '../theme/ThemeEditor';
 import { STYLES_PROP } from '../style/types';
+
+/**
+ * Renders the editable content fields (plus the variant switcher) for ONE node.
+ *
+ * Self-contained: it resolves its OWN dynamic fields, permissions and repeat
+ * scope, so it can be listed many times in the aggregate ("section") view
+ * without breaking the rules of hooks. Every `onChange` targets THIS node's id,
+ * so editing a descendant straight from the section panel just works.
+ */
+const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
+  const documentState = useEditorStore((state) => state.document);
+  const updateProps = useEditorStore((state) => state.updateProps);
+  const { config, readOnly } = useStudio();
+  const perms = usePermissions(nodeId);
+  const fieldsReadOnly = readOnly || perms.edit === false;
+
+  const info = useMemo(() => {
+    const details = findNodeById(documentState, nodeId);
+    if (!details) return null;
+    return { node: details.node, componentConfig: config.components[details.node.type] };
+  }, [nodeId, documentState, config]);
+
+  // Dynamic fields + read-only map (see useResolvedFields); static for the rest.
+  const resolved = useResolvedFields(info?.node ?? null, info?.componentConfig);
+
+  // Offer the enclosing repeat item's fields (`{{ item.* }}`) to `{ }` popovers.
+  const repeatRowsTick = useRepeatRowsTick();
+  const repeatScope = useMemo(() => {
+    const scope = findRepeatScope(documentState, config, nodeId);
+    if (!scope) return null;
+    const sample =
+      scope.sample ?? peekRepeatRows(scope.sourceValue, scope.sourceFieldDef)?.[0] ?? null;
+    const schema = scope.itemSchema?.length ? scope.itemSchema : inferItemSchema(sample);
+    return schema.length > 0 ? { schema } : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodeId, documentState, config, repeatRowsTick]);
+
+  // Slot fields are on-canvas drag-drop only, never shown in the inspector.
+  const editableFields = useMemo(
+    () => Object.entries(resolved.fields).filter(([, fieldDef]) => fieldDef?.type !== 'slot'),
+    [resolved.fields]
+  );
+
+  if (!info) return null;
+  const { node, componentConfig } = info;
+
+  const variantEntries = Object.entries(componentConfig?.variants ?? {});
+  const activeVariant = typeof node.props._variant === 'string' ? node.props._variant : null;
+
+  return (
+    <>
+      {variantEntries.length > 0 && (
+        <div className="tecof-variant-switcher" role="group" aria-label="Varyant">
+          <span className="tecof-variant-label">Varyant</span>
+          <div className="tecof-variant-chips">
+            {variantEntries.map(([key, variant]) => (
+              <button
+                key={key}
+                type="button"
+                className={`tecof-variant-chip${activeVariant === key ? ' is-active' : ''}`}
+                disabled={fieldsReadOnly}
+                title={`${variant.label} varyantını uygula`}
+                onClick={() => updateProps(nodeId, { ...variant.props, _variant: key })}
+              >
+                {variant.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {editableFields.length === 0 ? (
+        <div className="tecof-inspector-empty-fields">
+          Bu bileşenin düzenlenebilir alanı bulunmuyor.
+        </div>
+      ) : (
+        <RepeatScopeContext.Provider value={repeatScope}>
+          {editableFields.map(([fieldName, fieldDef]) => (
+            <FieldRenderer
+              key={fieldName}
+              name={fieldName}
+              definition={fieldDef}
+              value={node.props[fieldName]}
+              onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
+              readOnly={
+                fieldsReadOnly ||
+                resolved.readOnly[fieldName] === true ||
+                fieldDef?.readOnly === true
+              }
+            />
+          ))}
+        </RepeatScopeContext.Provider>
+      )}
+    </>
+  );
+};
+
+/**
+ * One collapsible row in the aggregate ("section") view: a header (collapse
+ * toggle + selectable label + lock badge) wrapping the node's field set. Depth
+ * drives indentation so the nesting reads like the layer tree. Hovering the row
+ * highlights the node on the canvas; clicking the label selects it (which, for
+ * a leaf, narrows the panel back to just that element).
+ */
+const SectionGroup: React.FC<{
+  id: string;
+  node: TecofNode;
+  depth: number;
+  collapsed: boolean;
+  onToggle: (id: string) => void;
+}> = ({ id, node, depth, collapsed, onToggle }) => {
+  const { config } = useStudio();
+  const selectNode = useEditorStore((state) => state.selectNode);
+  const hoverNode = useEditorStore((state) => state.hoverNode);
+  const perms = usePermissions(id);
+  const label = config.components[node.type]?.label || node.type;
+  const locked = perms.edit === false;
+
+  return (
+    <div
+      className={`tecof-field-group${depth === 0 ? ' is-section-root' : ''}${
+        collapsed ? ' is-collapsed' : ''
+      }`}
+      style={{ '--tecof-group-depth': depth } as React.CSSProperties}
+      onMouseEnter={() => hoverNode(id)}
+      onMouseLeave={() => hoverNode(null)}
+    >
+      <div className="tecof-field-group-header">
+        <button
+          type="button"
+          className="tecof-field-group-toggle"
+          onClick={() => onToggle(id)}
+          aria-expanded={!collapsed}
+          title={collapsed ? 'Genişlet' : 'Daralt'}
+        >
+          {collapsed ? (
+            <ChevronRight size={13} aria-hidden="true" />
+          ) : (
+            <ChevronDown size={13} aria-hidden="true" />
+          )}
+        </button>
+        <button
+          type="button"
+          className="tecof-field-group-label"
+          onClick={() => selectNode(id)}
+          title="Bu öğeyi seç"
+        >
+          <span className="tecof-field-group-name">{label}</span>
+          {depth === 0 && <span className="tecof-field-group-tag">bu bölüm</span>}
+          {locked && (
+            <Lock size={11} className="tecof-field-group-lock" aria-label="Kilitli" />
+          )}
+        </button>
+      </div>
+      {!collapsed && (
+        <div className="tecof-field-group-body">
+          <NodeFieldSet nodeId={id} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Inspector = () => {
   const documentState = useEditorStore((state) => state.document);
@@ -27,6 +189,14 @@ export const Inspector = () => {
   const fieldsReadOnly = readOnly || perms.edit === false;
   const [tab, setTab] = useState<'content' | 'style'>('content');
   const [rootTab, setRootTab] = useState<'page' | 'theme'>('page');
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const toggleCollapsed = (id: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   // Find active selected node details memoized to prevent expensive lookup on every render
   const activeNodeInfo = useMemo(() => {
@@ -42,37 +212,16 @@ export const Inspector = () => {
     };
   }, [selectedId, documentState, config]);
 
-  // Resolve dynamic fields + read-only map (resolveFields/resolveData). Called
-  // unconditionally (hook rules); returns static fields for plain components.
-  const resolved = useResolvedFields(
-    activeNodeInfo?.node ?? null,
-    activeNodeInfo?.componentConfig
+  // Every element inside the selected node (empty for leaves). When non-empty,
+  // the content tab becomes the aggregate "section" view: the section's own
+  // fields plus every descendant's, each in a collapsible group — so a whole
+  // section can be edited from one panel. Selecting a single element narrows
+  // back to just its fields.
+  const descendants = useMemo(
+    () => (selectedId ? getDescendants(documentState, selectedId) : []),
+    [selectedId, documentState]
   );
-
-  // When the selected node lives inside a repeat-zone template, its `{ }`
-  // binding popovers also offer the repeat item's fields (`{{ item.* }}`) —
-  // declared via the slot's/source field's `itemSchema`, or inferred from the
-  // first data row (incl. async api-list/CMS rows already resolved by the
-  // canvas — `repeatRowsTick` re-runs the memo when such a fetch lands).
-  const repeatRowsTick = useRepeatRowsTick();
-  const repeatScope = useMemo(() => {
-    if (!selectedId) return null;
-    const scope = findRepeatScope(documentState, config, selectedId);
-    if (!scope) return null;
-    const sample =
-      scope.sample ?? peekRepeatRows(scope.sourceValue, scope.sourceFieldDef)?.[0] ?? null;
-    const schema = scope.itemSchema?.length ? scope.itemSchema : inferItemSchema(sample);
-    return schema.length > 0 ? { schema } : null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, documentState, config, repeatRowsTick]);
-  // Slot fields are on-canvas drag-drop only, never shown in the inspector.
-  const editableFields = useMemo(
-    () =>
-      Object.entries(resolved.fields).filter(
-        ([, fieldDef]) => fieldDef?.type !== 'slot'
-      ),
-    [resolved.fields]
-  );
+  const isAggregate = descendants.length > 0;
 
   // 1. Component selected state
   if (selectedId) {
@@ -87,15 +236,20 @@ export const Inspector = () => {
     const { node, label } = activeNodeInfo;
     const parentId = getParentId(documentState, selectedId);
 
-    // Design-system variants: named prop presets declared on the component.
-    // Applying one merges its props over the node (undoable) and records the
-    // key in `_variant` so the active chip stays highlighted. User edits after
-    // applying may diverge from the preset — the chip shows the last APPLIED
-    // variant, which is the honest signal.
-    const variantEntries = Object.entries(activeNodeInfo.componentConfig?.variants ?? {});
-    const activeVariant = typeof node.props._variant === 'string' ? node.props._variant : null;
-    const applyVariant = (key: string, props: Record<string, unknown>) =>
-      updateProps(selectedId, { ...props, _variant: key });
+    // Section view rows: the selected node (depth 0) then its whole subtree.
+    const groups: { id: string; node: TecofNode; depth: number }[] = isAggregate
+      ? [{ id: selectedId, node, depth: 0 }, ...descendants]
+      : [];
+    const allCollapsed = groups.length > 0 && groups.every((g) => collapsed.has(g.id));
+    const setAllCollapsed = (collapse: boolean) =>
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        for (const g of groups) {
+          if (collapse) next.add(g.id);
+          else next.delete(g.id);
+        }
+        return next;
+      });
 
     return (
       <div className="tecof-inspector">
@@ -154,51 +308,36 @@ export const Inspector = () => {
               Salt okunur — bu bileşen düzenlemeye kilitli.
             </div>
           )}
-          {tab === 'content' && variantEntries.length > 0 && (
-            <div className="tecof-variant-switcher" role="group" aria-label="Varyant">
-              <span className="tecof-variant-label">Varyant</span>
-              <div className="tecof-variant-chips">
-                {variantEntries.map(([key, variant]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`tecof-variant-chip${activeVariant === key ? ' is-active' : ''}`}
-                    disabled={fieldsReadOnly}
-                    title={`${variant.label} varyantını uygula`}
-                    onClick={() => applyVariant(key, variant.props)}
-                  >
-                    {variant.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
           {tab === 'style' ? (
             <StyleEditor
               value={node.props[STYLES_PROP]}
               onChange={(next) => updateProps(selectedId, { [STYLES_PROP]: next })}
             />
-          ) : editableFields.length === 0 ? (
-            <div className="tecof-inspector-empty-fields">
-              Bu bileşenin düzenlenebilir alanı bulunmuyor.
-            </div>
-          ) : (
-            <RepeatScopeContext.Provider value={repeatScope}>
-              {editableFields.map(([fieldName, fieldDef]) => (
-                <FieldRenderer
-                  key={fieldName}
-                  name={fieldName}
-                  definition={fieldDef}
-                  value={node.props[fieldName]}
-                  onChange={(newVal) => updateProps(selectedId, { [fieldName]: newVal })}
-                  readOnly={
-                    fieldsReadOnly ||
-                    resolved.readOnly[fieldName] === true ||
-                    fieldDef?.readOnly === true
-                  }
+          ) : isAggregate ? (
+            <>
+              <div className="tecof-aggregate-bar">
+                <span className="tecof-aggregate-count">İçindeki {descendants.length} öğe</span>
+                <button
+                  type="button"
+                  className="tecof-aggregate-toggle-all"
+                  onClick={() => setAllCollapsed(!allCollapsed)}
+                >
+                  {allCollapsed ? 'Tümünü genişlet' : 'Tümünü daralt'}
+                </button>
+              </div>
+              {groups.map((group) => (
+                <SectionGroup
+                  key={group.id}
+                  id={group.id}
+                  node={group.node}
+                  depth={group.depth}
+                  collapsed={collapsed.has(group.id)}
+                  onToggle={toggleCollapsed}
                 />
               ))}
-            </RepeatScopeContext.Provider>
+            </>
+          ) : (
+            <NodeFieldSet nodeId={selectedId} />
           )}
         </div>
       </div>

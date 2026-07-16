@@ -3611,6 +3611,109 @@
 .tecof-inspector-empty-icon { margin-bottom: 8px; opacity: 0.6; }
 .tecof-inspector-empty-fields { color: var(--tecof-text-subtle); font-size: 12px; text-align: center; margin-top: 16px; }
 
+/* ── Inspector — aggregate "section" view (all inner elements' fields) ── */
+.tecof-aggregate-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tecof-aggregate-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tecof-text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tecof-aggregate-toggle-all {
+  background: transparent;
+  border: none;
+  color: var(--tecof-accent-text);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--tecof-radius-sm);
+  transition: var(--tecof-transition);
+}
+.tecof-aggregate-toggle-all:hover { background: var(--tecof-accent-subtle); }
+
+.tecof-field-group {
+  margin-left: calc(var(--tecof-group-depth, 0) * 12px);
+  border: 1px solid var(--tecof-border-subtle);
+  border-radius: var(--tecof-radius);
+  background: var(--tecof-surface);
+  overflow: hidden;
+}
+.tecof-field-group.is-section-root { border-color: var(--tecof-accent-border); }
+.tecof-field-group.is-collapsed { background: transparent; }
+
+.tecof-field-group-header {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--tecof-surface-2);
+  border-bottom: 1px solid var(--tecof-border-subtle);
+}
+.tecof-field-group.is-collapsed .tecof-field-group-header { border-bottom-color: transparent; }
+
+.tecof-field-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 30px;
+  flex: none;
+  border: none;
+  background: transparent;
+  color: var(--tecof-text-subtle);
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+.tecof-field-group-toggle:hover { color: var(--tecof-text); }
+
+.tecof-field-group-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 0;
+  border: none;
+  background: transparent;
+  color: var(--tecof-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.tecof-field-group-label:hover .tecof-field-group-name { color: var(--tecof-accent-text); }
+.tecof-field-group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: var(--tecof-transition);
+}
+.tecof-field-group-tag {
+  flex: none;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tecof-accent-text);
+  background: var(--tecof-accent-subtle);
+  padding: 1px 5px;
+  border-radius: var(--tecof-radius-pill);
+}
+.tecof-field-group-lock { flex: none; color: var(--tecof-text-subtle); }
+
+.tecof-field-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 12px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    Studio — Canvas
    ═══════════════════════════════════════════════════════════════════ */

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findNodeById, getParentId, getBreadcrumbs } from '../zones';
+import { findNodeById, getParentId, getBreadcrumbs, getDescendants } from '../zones';
 import type { TecofDocument } from '../../types';
 
 const makeDoc = (): TecofDocument => ({
@@ -54,6 +54,36 @@ describe('findNodeById (cached index)', () => {
     };
     expect(findNodeById(docB, 'c1')).toBeNull();
     expect(findNodeById(docB, 'x1')).not.toBeNull();
+  });
+
+  it('flattens a subtree depth-first with depths (getDescendants)', () => {
+    const doc = makeDoc();
+    // Container c1 -> Row r1 (depth 1) -> Button b1 (depth 2).
+    expect(getDescendants(doc, 'c1')).toEqual([
+      { id: 'r1', node: doc.zones['c1:content'][0], depth: 1 },
+      { id: 'b1', node: doc.zones['r1:items'][0], depth: 2 },
+    ]);
+    // Leaf / childless nodes yield an empty list.
+    expect(getDescendants(doc, 'b1')).toEqual([]);
+    expect(getDescendants(doc, 's1')).toEqual([]);
+  });
+
+  it('does not leak across id-prefix collisions (getDescendants)', () => {
+    // `p1` must not pick up `p10:*` zones — the trailing colon guards this.
+    const doc: TecofDocument = {
+      root: { props: {} },
+      content: [
+        { type: 'Box', props: { id: 'p1' } },
+        { type: 'Box', props: { id: 'p10' } },
+      ],
+      zones: {
+        'p1:content': [{ type: 'Text', props: { id: 't1' } }],
+        'p10:content': [{ type: 'Text', props: { id: 't10' } }],
+      },
+    };
+    expect(getDescendants(doc, 'p1')).toEqual([
+      { id: 't1', node: doc.zones['p1:content'][0], depth: 1 },
+    ]);
   });
 
   it('keeps getParentId / getBreadcrumbs working', () => {

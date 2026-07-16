@@ -101,6 +101,36 @@ export const getDescendantZoneKeys = (
 };
 
 /**
+ * Flattens a node's entire subtree into a depth-first list of its descendants
+ * (the node itself is NOT included). Direct children are `depth: 1`, their
+ * children `depth: 2`, and so on — so the caller can indent by depth.
+ *
+ * Children live in `doc.zones["<parentId>:<slotName>"]`. The trailing colon in
+ * the prefix guards against id-prefix collisions (`Foo-1:` never matches
+ * `Foo-12:...`). Slot order follows the zones object's key order; item order
+ * within a slot is preserved. Used by the Inspector's aggregate ("section")
+ * view to surface every inner element's fields from one panel.
+ */
+export const getDescendants = (
+  doc: TecofDocument,
+  id: string
+): { id: string; node: TecofNode; depth: number }[] => {
+  const out: { id: string; node: TecofNode; depth: number }[] = [];
+  const walk = (parentId: string, depth: number) => {
+    const prefix = `${parentId}:`;
+    for (const [zoneKey, items] of Object.entries(doc.zones)) {
+      if (!zoneKey.startsWith(prefix)) continue;
+      for (const child of items) {
+        out.push({ id: child.props.id, node: child, depth });
+        walk(child.props.id, depth + 1);
+      }
+    }
+  };
+  walk(id, 1);
+  return out;
+};
+
+/**
  * Resolves the parent ID of a node by ID.
  */
 export const getParentId = (doc: TecofDocument, id: string): string | null => {
