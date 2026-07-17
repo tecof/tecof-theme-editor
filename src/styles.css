@@ -3179,11 +3179,19 @@
   flex: none;
 }
 
+/* Topbar orta grup kontrolleri tek yükseklikte hizalanır (viewports,
+   vpwidth chip'i, mode toggle, dil seçici) — bkz. --tecof-topbar-ctrl-h. */
+.tecof-topbar {
+  --tecof-topbar-ctrl-h: 28px;
+}
+
 .tecof-topbar-viewports {
   display: flex;
   align-items: center;
   background: var(--tecof-bg);
-  padding: 3px;
+  height: var(--tecof-topbar-ctrl-h, 28px);
+  box-sizing: border-box;
+  padding: 2px;
   border-radius: var(--tecof-radius);
   gap: 2px;
 }
@@ -3193,7 +3201,8 @@
   border: none;
   outline: none;
   cursor: pointer;
-  padding: 6px 12px;
+  height: 100%;
+  padding: 0 10px;
   border-radius: var(--tecof-radius-sm);
   color: var(--tecof-text-muted);
   display: flex;
@@ -3241,6 +3250,14 @@
   cursor: not-allowed;
 }
 
+/* Topbar'daki ikon butonları da kontrol yüksekliğine oturur (compact). */
+.tecof-topbar .tecof-icon-btn {
+  height: var(--tecof-topbar-ctrl-h, 28px);
+  width: var(--tecof-topbar-ctrl-h, 28px);
+  box-sizing: border-box;
+  padding: 0;
+}
+
 .tecof-topbar-divider {
   width: 1px;
   height: 20px;
@@ -3277,6 +3294,32 @@
 /* ═══════════════════════════════════════════════════════════════════
    Studio — Left Panel (Blocks + Layers)
    ═══════════════════════════════════════════════════════════════════ */
+/* Panel hep mount kalır; kapanınca genişlik 0'a yumuşakça iner. İçerideki
+   panel sabit genişlikte kaldığı için içerik sıkışmaz, sadece kırpılır.
+   `visibility` geçiş bitince düşer: kapalıyken odak/tab sırasından çıkar. */
+.tecof-left-panel-wrap {
+  width: 0;
+  height: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: width 0.24s ease, visibility 0s linear 0.24s;
+}
+
+.tecof-left-panel-wrap.is-open {
+  width: 280px;
+  visibility: visible;
+  transition: width 0.24s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-left-panel-wrap,
+  .tecof-block-cat-items,
+  .tecof-block-cat-chevron {
+    transition: none;
+  }
+}
+
 .tecof-left-panel {
   width: 280px;
   flex-shrink: 0;
@@ -3359,12 +3402,76 @@
   gap: 8px;
 }
 
+.tecof-block-cat.is-collapsed { gap: 0; }
+
+/* Accordion başlığı: tıklanır, sayaç + dönen chevron taşır. */
 .tecof-block-cat-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
   font-size: 11px;
   font-weight: 700;
   color: var(--tecof-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+
+.tecof-block-cat-title:hover { color: var(--tecof-text); }
+
+.tecof-block-cat-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tecof-block-cat-count {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tecof-text-subtle);
+  background: var(--tecof-bg);
+  padding: 1px 6px;
+  border-radius: var(--tecof-radius-pill);
+}
+
+.tecof-block-cat-chevron {
+  flex: none;
+  color: var(--tecof-text-subtle);
+  transition: transform 0.18s ease;
+}
+
+.tecof-block-cat.is-collapsed .tecof-block-cat-chevron { transform: rotate(-90deg); }
+
+/* Yumuşak aç/kapa: 1fr↔0fr grid satırı (yükseklik ölçümü gerektirmez). */
+.tecof-block-cat-items {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.tecof-block-cat.is-collapsed .tecof-block-cat-items { grid-template-rows: 0fr; }
+
+.tecof-block-cat-items > .tecof-block-grid {
+  overflow: hidden;
+  min-height: 0;
+  visibility: visible;
+  transition: visibility 0s linear;
+}
+
+/* Kapalıyken içerik odak/tab sırasından da çıkar (animasyon bitince). */
+.tecof-block-cat.is-collapsed .tecof-block-cat-items > .tecof-block-grid {
+  visibility: hidden;
+  transition: visibility 0s linear 0.2s;
 }
 
 .tecof-block-grid {
@@ -3643,7 +3750,8 @@
   border: 1px solid var(--tecof-border-subtle);
   border-radius: var(--tecof-radius);
   background: var(--tecof-surface);
-  overflow: hidden;
+  /* overflow: hidden KULLANMA — grup içindeki popover'lar ({ } bağlama,
+     renk seçici, select) kırpılıyordu; köşeler header'da yuvarlanır. */
 }
 .tecof-field-group.is-section-root { border-color: var(--tecof-accent-border); }
 .tecof-field-group.is-collapsed { background: transparent; }
@@ -3654,6 +3762,10 @@
   gap: 2px;
   background: var(--tecof-surface-2);
   border-bottom: 1px solid var(--tecof-border-subtle);
+  border-radius: calc(var(--tecof-radius) - 1px) calc(var(--tecof-radius) - 1px) 0 0;
+}
+.tecof-field-group.is-collapsed .tecof-field-group-header {
+  border-radius: calc(var(--tecof-radius) - 1px);
 }
 .tecof-field-group.is-collapsed .tecof-field-group-header { border-bottom-color: transparent; }
 
@@ -4119,7 +4231,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  height: var(--tecof-topbar-ctrl-h, 28px);
+  box-sizing: border-box;
+  padding: 0 8px;
   font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -4728,7 +4842,9 @@
   display: flex;
   align-items: center;
   background: var(--tecof-bg);
-  padding: 3px;
+  height: var(--tecof-topbar-ctrl-h, 28px);
+  box-sizing: border-box;
+  padding: 2px;
   border-radius: var(--tecof-radius);
   gap: 2px;
 }
@@ -4741,7 +4857,8 @@
   border: none;
   outline: none;
   cursor: pointer;
-  padding: 6px 12px;
+  height: 100%;
+  padding: 0 10px;
   border-radius: var(--tecof-radius-sm);
   color: var(--tecof-text-muted);
   font-size: 12px;
@@ -4767,7 +4884,7 @@
   background: var(--tecof-bg);
   border-radius: var(--tecof-radius);
   padding: 0 24px 0 10px;
-  height: 32px;
+  height: var(--tecof-topbar-ctrl-h, 28px);
 }
 
 .tecof-lang-switcher-icon {

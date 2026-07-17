@@ -55,7 +55,6 @@ export const TecofStudio = ({
 
   const leftPanelOpen = useUiStore((state) => state.leftPanelOpen);
   const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
-  const toggleLeftPanel = useUiStore((state) => state.toggleLeftPanel);
   const toggleRightPanel = useUiStore((state) => state.toggleRightPanel);
   const mode = useUiStore((state) => state.mode);
 
@@ -569,11 +568,16 @@ export const TecofStudio = ({
           )}
 
           <div className="tecof-studio-workspace-container">
-            {leftPanelOpen ? (
+            {/* Sol panel hep mount kalır: kapanınca genişlik 0'a yumuşak
+                animasyonla iner (içerik sabit genişlikte, sadece kırpılır) ve
+                visibility ile odak/erişilebilirlik dışına çıkar. Açma butonu
+                TopBar'da olduğu için rail'e gerek yok — tamamen kapanır. */}
+            <div
+              className={`tecof-left-panel-wrap${leftPanelOpen ? ' is-open' : ''}`}
+              aria-hidden={!leftPanelOpen}
+            >
               <LeftPanel />
-            ) : (
-              <PanelRail side="left" onExpand={toggleLeftPanel} />
-            )}
+            </div>
             <div className="tecof-studio-workspace">
               <Canvas />
               <SelectionOverlay />

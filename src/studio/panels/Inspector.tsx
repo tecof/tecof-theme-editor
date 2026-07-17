@@ -24,32 +24,42 @@ import { STYLES_PROP } from '../style/types';
  * so editing a descendant straight from the section panel just works.
  */
 const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
-  const documentState = useEditorStore((state) => state.document);
   const updateProps = useEditorStore((state) => state.updateProps);
   const { config, readOnly } = useStudio();
   const perms = usePermissions(nodeId);
   const fieldsReadOnly = readOnly || perms.edit === false;
 
+  // Subscribe to THIS node only (immer keeps untouched nodes' references
+  // stable), so typing in one aggregate group never re-renders the others.
+  const node = useEditorStore((state) => findNodeById(state.document, nodeId)?.node ?? null);
+
   const info = useMemo(() => {
-    const details = findNodeById(documentState, nodeId);
-    if (!details) return null;
-    return { node: details.node, componentConfig: config.components[details.node.type] };
-  }, [nodeId, documentState, config]);
+    if (!node) return null;
+    return { node, componentConfig: config.components[node.type] };
+  }, [node, config]);
 
   // Dynamic fields + read-only map (see useResolvedFields); static for the rest.
   const resolved = useResolvedFields(info?.node ?? null, info?.componentConfig);
 
   // Offer the enclosing repeat item's fields (`{{ item.* }}`) to `{ }` popovers.
+  // The narrow subscription is the OWNER node of the enclosing repeat scope:
+  // its reference changes when the rows/source change or this node is moved
+  // into/out of a template, which is exactly when the scope must recompute.
   const repeatRowsTick = useRepeatRowsTick();
+  const repeatOwnerNode = useEditorStore((state) => {
+    const scope = findRepeatScope(state.document, config, nodeId);
+    return scope ? findNodeById(state.document, scope.ownerId)?.node ?? null : null;
+  });
   const repeatScope = useMemo(() => {
-    const scope = findRepeatScope(documentState, config, nodeId);
+    if (!repeatOwnerNode) return null;
+    const scope = findRepeatScope(useEditorStore.getState().document, config, nodeId);
     if (!scope) return null;
     const sample =
       scope.sample ?? peekRepeatRows(scope.sourceValue, scope.sourceFieldDef)?.[0] ?? null;
     const schema = scope.itemSchema?.length ? scope.itemSchema : inferItemSchema(sample);
     return schema.length > 0 ? { schema } : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, documentState, config, repeatRowsTick]);
+  }, [nodeId, repeatOwnerNode, config, repeatRowsTick]);
 
   // Slot fields are on-canvas drag-drop only, never shown in the inspector.
   const editableFields = useMemo(
@@ -58,10 +68,11 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
   );
 
   if (!info) return null;
-  const { node, componentConfig } = info;
+  const { componentConfig } = info;
 
   const variantEntries = Object.entries(componentConfig?.variants ?? {});
-  const activeVariant = typeof node.props._variant === 'string' ? node.props._variant : null;
+  const activeVariant =
+    typeof info.node.props._variant === 'string' ? info.node.props._variant : null;
 
   return (
     <>
@@ -95,7 +106,7 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
               key={fieldName}
               name={fieldName}
               definition={fieldDef}
-              value={node.props[fieldName]}
+              value={info.node.props[fieldName]}
               onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
               readOnly={
                 fieldsReadOnly ||
@@ -116,14 +127,18 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
  * drives indentation so the nesting reads like the layer tree. Hovering the row
  * highlights the node on the canvas; clicking the label selects it (which, for
  * a leaf, narrows the panel back to just that element).
+ *
+ * Memoized: the Inspector re-renders on every document change, but a group only
+ * needs to when ITS row props change — each NodeFieldSet subscribes to its own
+ * node, so edits elsewhere skip the whole subtree.
  */
-const SectionGroup: React.FC<{
+const SectionGroup = React.memo<{
   id: string;
   node: TecofNode;
   depth: number;
   collapsed: boolean;
   onToggle: (id: string) => void;
-}> = ({ id, node, depth, collapsed, onToggle }) => {
+}>(({ id, node, depth, collapsed, onToggle }) => {
   const { config } = useStudio();
   const selectNode = useEditorStore((state) => state.selectNode);
   const hoverNode = useEditorStore((state) => state.hoverNode);
@@ -174,7 +189,8 @@ const SectionGroup: React.FC<{
       )}
     </div>
   );
-};
+});
+SectionGroup.displayName = 'SectionGroup';
 
 export const Inspector = () => {
   const documentState = useEditorStore((state) => state.document);
@@ -190,13 +206,18 @@ export const Inspector = () => {
   const [tab, setTab] = useState<'content' | 'style'>('content');
   const [rootTab, setRootTab] = useState<'page' | 'theme'>('page');
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-  const toggleCollapsed = (id: string) =>
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  // Stable reference so the memoized SectionGroup rows don't re-render on
+  // every Inspector render.
+  const toggleCollapsed = React.useCallback(
+    (id: string) =>
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }),
+    []
+  );
 
   // Find active selected node details memoized to prevent expensive lookup on every render
   const activeNodeInfo = useMemo(() => {
@@ -218,8 +239,8 @@ export const Inspector = () => {
   // section can be edited from one panel. Selecting a single element narrows
   // back to just its fields.
   const descendants = useMemo(
-    () => (selectedId ? getDescendants(documentState, selectedId) : []),
-    [selectedId, documentState]
+    () => (selectedId ? getDescendants(documentState, selectedId, config) : []),
+    [selectedId, documentState, config]
   );
   const isAggregate = descendants.length > 0;
 

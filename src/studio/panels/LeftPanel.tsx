@@ -3,9 +3,22 @@ import { useStudio } from '../context';
 import { useEditorStore } from '../../engine/store';
 import { LayersTree } from './LayersTree';
 import { BlockThumb } from './BlockThumb';
-import { Layers, Grid, Search, Eye, EyeOff } from 'lucide-react';
+import { Layers, Grid, Search, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
+
+/** Kapalı tutulan blok kategorileri — oturumlar arası hatırlanır. */
+const CAT_COLLAPSE_KEY = 'tecof:blocks:collapsed-cats:v1';
+
+const readCollapsedCats = (): Record<string, boolean> => {
+  try {
+    const raw = window.localStorage.getItem(CAT_COLLAPSE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
 
 export const LeftPanel = () => {
   const { config } = useStudio();
@@ -16,6 +29,20 @@ export const LeftPanel = () => {
   const [activeTab, setActiveTab] = useState<'blocks' | 'layers'>('blocks');
   const [searchQuery, setSearchQuery] = useState('');
   const [showPreviews, setShowPreviews] = useState(false);
+  // Accordion: hangi kategoriler kapalı — kullanıcının tercihi localStorage'da.
+  const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>(readCollapsedCats);
+
+  const toggleCategory = (title: string) => {
+    setCollapsedCats((prev) => {
+      const next = { ...prev, [title]: !prev[title] };
+      try {
+        window.localStorage.setItem(CAT_COLLAPSE_KEY, JSON.stringify(next));
+      } catch {
+        /* private mode / quota — tercih sadece bu oturumda kalır */
+      }
+      return next;
+    });
+  };
 
   // Extract all categories and their components from config
   const categories = config.categories || {};
@@ -113,29 +140,46 @@ export const LeftPanel = () => {
               if (filteredTypes.length === 0) return null;
 
               const previewMode = /element/i.test(catTitle) ? 'element' : 'section';
+              // Arama yaparken accordion durumu yok sayılır: eşleşen her şey görünür.
+              const isCollapsed = !searchQuery && collapsedCats[catTitle] === true;
 
               return (
-                <div key={catTitle} className="tecof-block-cat">
-                  <div className="tecof-block-cat-title">{catTitle}</div>
-                  <div className="tecof-block-grid">
-                    {filteredTypes.map((type) => {
-                      const compConfig = components[type] || {};
-                      const label = compConfig.label || type;
+                <div
+                  key={catTitle}
+                  className={`tecof-block-cat${isCollapsed ? ' is-collapsed' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="tecof-block-cat-title"
+                    onClick={() => toggleCategory(catTitle)}
+                    aria-expanded={!isCollapsed}
+                    title={isCollapsed ? 'Kategoriyi genişlet' : 'Kategoriyi daralt'}
+                  >
+                    <span className="tecof-block-cat-name">{catTitle}</span>
+                    <span className="tecof-block-cat-count">{filteredTypes.length}</span>
+                    <ChevronDown size={13} className="tecof-block-cat-chevron" aria-hidden="true" />
+                  </button>
+                  <div className="tecof-block-cat-items" aria-hidden={isCollapsed}>
+                    <div className="tecof-block-grid">
+                      {filteredTypes.map((type) => {
+                        const compConfig = components[type] || {};
+                        const label = compConfig.label || type;
 
-                      return (
-                        <BlockThumb
-                          key={type}
-                          type={type}
-                          label={label}
-                          config={config}
-                          previewMode={previewMode}
-                          showPreview={showPreviews}
-                          onAdd={handleAddBlock}
-                          onDragStart={handleBlockDragStart}
-                          onDragEnd={endDrag}
-                        />
-                      );
-                    })}
+                        return (
+                          <BlockThumb
+                            key={type}
+                            type={type}
+                            label={label}
+                            config={config}
+                            previewMode={previewMode}
+                            showPreview={showPreviews}
+                            onAdd={handleAddBlock}
+                            onDragStart={handleBlockDragStart}
+                            onDragEnd={endDrag}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               );

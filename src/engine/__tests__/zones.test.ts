@@ -68,6 +68,48 @@ describe('findNodeById (cached index)', () => {
     expect(getDescendants(doc, 's1')).toEqual([]);
   });
 
+  it('orders sibling slots by field declaration, not zones-key order (getDescendants)', () => {
+    // Zones record key order drifts over time (move/undo/paste re-create keys
+    // at the END) — with a config the declared slot order must win.
+    const doc: TecofDocument = {
+      root: { props: {} },
+      content: [{ type: 'Hero', props: { id: 'h1' } }],
+      zones: {
+        // Deliberately "wrong" record order: bottomSlot key was re-created last
+        // in real life but appears FIRST here.
+        'h1:bottomSlot': [{ type: 'Text', props: { id: 'bottom-child' } }],
+        'h1:topSlot': [{ type: 'Text', props: { id: 'top-child' } }],
+      },
+    };
+    const config = {
+      components: {
+        Hero: {
+          fields: {
+            title: { type: 'text' },
+            topSlot: { type: 'slot' },
+            bottomSlot: { type: 'slot' },
+          },
+        },
+      },
+    };
+    expect(getDescendants(doc, 'h1', config).map((d) => d.id)).toEqual([
+      'top-child',
+      'bottom-child',
+    ]);
+    // Without a config the record order is the only signal (backwards compat).
+    expect(getDescendants(doc, 'h1').map((d) => d.id)).toEqual(['bottom-child', 'top-child']);
+    // Zones not declared as slot fields still show up (appended, record order).
+    const legacyDoc: TecofDocument = {
+      ...doc,
+      zones: { ...doc.zones, 'h1:legacyZone': [{ type: 'Text', props: { id: 'legacy-child' } }] },
+    };
+    expect(getDescendants(legacyDoc, 'h1', config).map((d) => d.id)).toEqual([
+      'top-child',
+      'bottom-child',
+      'legacy-child',
+    ]);
+  });
+
   it('does not leak across id-prefix collisions (getDescendants)', () => {
     // `p1` must not pick up `p10:*` zones — the trailing colon guards this.
     const doc: TecofDocument = {

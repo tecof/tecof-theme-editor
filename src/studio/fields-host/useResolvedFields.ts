@@ -39,7 +39,9 @@ export const useResolvedFields = (
 
   const nodeId = node?.props.id ?? null;
   // Stable dependency for prop changes without re-running on unrelated renders.
-  const propsKey = node ? JSON.stringify(node.props) : '';
+  // Only dynamic components pay the stringify cost — the common (static) case
+  // renders in the aggregate view many times per keystroke and must stay flat.
+  const propsKey = dynamic && node ? JSON.stringify(node.props) : '';
 
   // Result keyed by node id: until the effect resolves the CURRENT node we fall
   // back to its static fields, so a previous node's result never leaks through.

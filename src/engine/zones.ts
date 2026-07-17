@@ -100,6 +100,11 @@ export const getDescendantZoneKeys = (
   return acc;
 };
 
+/** Minimal config shape for slot-order lookups (matches `Config`). */
+interface SlotOrderConfig {
+  components?: Record<string, { fields?: Record<string, any> } | undefined>;
+}
+
 /**
  * Flattens a node's entire subtree into a depth-first list of its descendants
  * (the node itself is NOT included). Direct children are `depth: 1`, their
@@ -107,26 +112,46 @@ export const getDescendantZoneKeys = (
  *
  * Children live in `doc.zones["<parentId>:<slotName>"]`. The trailing colon in
  * the prefix guards against id-prefix collisions (`Foo-1:` never matches
- * `Foo-12:...`). Slot order follows the zones object's key order; item order
- * within a slot is preserved. Used by the Inspector's aggregate ("section")
- * view to surface every inner element's fields from one panel.
+ * `Foo-12:...`). Item order within a slot is preserved. Sibling SLOT order
+ * follows the component's field declaration when `config` is given: the zones
+ * record's key order drifts over time (move/undo/paste/duplicate re-create keys
+ * at the END of the record), so it cannot represent the visual order. Zones not
+ * declared as slot fields (legacy data) are appended in record order. Used by
+ * the Inspector's aggregate ("section") view to surface every inner element's
+ * fields from one panel.
  */
 export const getDescendants = (
   doc: TecofDocument,
-  id: string
+  id: string,
+  config?: SlotOrderConfig
 ): { id: string; node: TecofNode; depth: number }[] => {
   const out: { id: string; node: TecofNode; depth: number }[] = [];
-  const walk = (parentId: string, depth: number) => {
+  const walk = (parentId: string, parentType: string | null, depth: number) => {
     const prefix = `${parentId}:`;
-    for (const [zoneKey, items] of Object.entries(doc.zones)) {
-      if (!zoneKey.startsWith(prefix)) continue;
-      for (const child of items) {
+    const ordered: string[] = [];
+    const seen = new Set<string>();
+    const fields = parentType ? config?.components?.[parentType]?.fields : undefined;
+    if (fields) {
+      for (const [name, fieldDef] of Object.entries<any>(fields)) {
+        if (fieldDef?.type !== 'slot') continue;
+        const zoneKey = `${parentId}:${name}`;
+        if (doc.zones[zoneKey]) {
+          ordered.push(zoneKey);
+          seen.add(zoneKey);
+        }
+      }
+    }
+    for (const zoneKey of Object.keys(doc.zones)) {
+      if (zoneKey.startsWith(prefix) && !seen.has(zoneKey)) ordered.push(zoneKey);
+    }
+    for (const zoneKey of ordered) {
+      for (const child of doc.zones[zoneKey]) {
         out.push({ id: child.props.id, node: child, depth });
-        walk(child.props.id, depth + 1);
+        walk(child.props.id, child.type, depth + 1);
       }
     }
   };
-  walk(id, 1);
+  walk(id, findNodeById(doc, id)?.node.type ?? null, 1);
   return out;
 };
 
