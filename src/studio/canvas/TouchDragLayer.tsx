@@ -282,12 +282,15 @@ export const TouchDragLayer = () => {
 
         const candidateId = candidate.getAttribute('data-tecof-id');
         if (candidate === nodeEl && candidateId && candidateId !== selfId) {
-          const zoneKey = parseZoneAttr(candidate.getAttribute('data-tecof-zone'));
+          // Wrapperless: zone + index from the document (the node root only
+          // carries data-tecof-id now), not DOM attrs.
+          const nodePath = findNodeById(doc, candidateId)?.path;
+          const zoneKey = nodePath?.zoneKey;
           if (isValidTouchDrop(cfg, doc, payload, zoneKey, candidateId)) {
             const axis = getDropAxis(candidate);
             return {
               zoneKey,
-              index: Number(candidate.getAttribute('data-tecof-index') ?? 0),
+              index: nodePath?.index ?? 0,
               positional: {
                 targetId: candidateId,
                 axis,

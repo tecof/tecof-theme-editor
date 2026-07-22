@@ -4464,7 +4464,7 @@
 }
 
 /* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin. */
-.tecof-studio-root .tecof-node-wrapper[data-tecof-shared="true"] {
+.tecof-studio-root .tecof-node-wrapper.is-shared {
   outline: 1px dashed rgba(139, 92, 246, 0.55);
   outline-offset: -1px;
 }

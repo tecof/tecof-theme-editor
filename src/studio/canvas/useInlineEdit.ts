@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { findNodeById } from '../../engine/zones';
 import { useActiveLanguage } from '../language/LanguageContext';
@@ -104,18 +104,18 @@ const resolveMatch = (
 };
 
 /**
- * Hook providing the inline-edit double-click handler for a node.
- *
- * @param node    The node being rendered.
- * @param locked  When true (read-only / preview) editing is disabled.
- * @returns `{ onDoubleClick }` to spread on the node wrapper element.
+ * Runs double-click inline text editing for a node, given the raw event.
+ * Node-agnostic entry point: resolves the editable element + prop from the DOM
+ * (`data-tecof-prop` / text match), makes it contentEditable, and commits back
+ * via the store. Used by the delegated canvas edit listener (canvasEdit) — and,
+ * as a thin wrapper, the legacy per-node hook below.
  */
-export const useInlineEdit = (node: TecofNode, locked: boolean) => {
-  // Studio'nun global "düzenlenen dil" seçimi (TopBar); provider dışında null.
-  const activeLanguage = useActiveLanguage()?.activeLanguage ?? null;
-
-  const onDoubleClick = useCallback(
-    (e: React.MouseEvent | MouseEvent) => {
+export function runInlineEditFromEvent(
+  e: React.MouseEvent | MouseEvent,
+  node: TecofNode,
+  activeLanguage: string | null,
+  locked: boolean
+): void {
       if (locked) return;
       // Overlay portals keep their own interaction in edit mode; never start
       // inline editing from inside one.
@@ -250,9 +250,15 @@ export const useInlineEdit = (node: TecofNode, locked: boolean) => {
       ownerDoc.addEventListener('mousedown', handleOutsideMouseDown, true);
       document.addEventListener('mousedown', handleOutsideMouseDown, true);
       ownerWin?.addEventListener('blur', handleWindowBlur);
-    },
+}
+
+/** Legacy per-node hook — thin wrapper over {@link runInlineEditFromEvent}. */
+export const useInlineEdit = (node: TecofNode, locked: boolean) => {
+  // Studio'nun global "düzenlenen dil" seçimi (TopBar); provider dışında null.
+  const activeLanguage = useActiveLanguage()?.activeLanguage ?? null;
+  const onDoubleClick = useCallback(
+    (e: React.MouseEvent | MouseEvent) => runInlineEditFromEvent(e, node, activeLanguage, locked),
     [node, locked, activeLanguage]
   );
-
   return { onDoubleClick };
 };

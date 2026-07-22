@@ -3,6 +3,7 @@ import type { StudioConfig } from '../../types';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
+import { findNodeById } from '../../engine/zones';
 import { readDragData, createNode, createAutoScroller } from './dndUtils';
 import { getDropAxis } from './useDropTarget';
 import { nodeContentRect } from './nodeRect';
@@ -83,12 +84,15 @@ function installNativeDrop(
       if (!candidate) return null;
       const candidateId = candidate.getAttribute('data-tecof-id');
       if (candidate === nodeEl && candidateId && candidateId !== selfId) {
-        const zoneKey = parseZoneAttr(candidate.getAttribute('data-tecof-zone'));
+        // Wrapperless: the node's zone + index come from the document (the node
+        // root only carries data-tecof-id, set by the observer), not DOM attrs.
+        const path = findNodeById(docModel, candidateId)?.path;
+        const zoneKey = path?.zoneKey;
         if (isValidTouchDrop(config, docModel, payload, zoneKey, candidateId)) {
           const axis = getDropAxis(candidate);
           return {
             zoneKey,
-            index: Number(candidate.getAttribute('data-tecof-index') ?? 0),
+            index: path?.index ?? 0,
             positional: {
               targetId: candidateId,
               axis,

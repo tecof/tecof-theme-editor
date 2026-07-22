@@ -6,7 +6,6 @@ import { resolveItemTokens } from '../../utils/itemTokens';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
-import { useInlineEdit } from './useInlineEdit';
 import { NodeErrorBoundary } from './NodeErrorBoundary';
 import { postToHost, isEmbedded } from '../bridge';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
@@ -92,41 +91,9 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     [selectNode, toggleSelect, node.props.id, node.type, locked]
   );
 
-  const setContextMenu = useUiStore((s) => s.setContextMenu);
-
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      if (locked) return;
-      if (isInsideOverlayPortal(e.target)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      selectNode(node.props.id);
-      // This event fires INSIDE the canvas iframe, so its client coords are in
-      // the iframe's viewport. The menu renders in the parent document —
-      // translate by the iframe's position there (same technique as
-      // SelectionOverlay's coordinate mapping).
-      const iframe = document.querySelector<HTMLIFrameElement>(
-        '.tecof-canvas-viewport iframe'
-      );
-      const iframeRect = iframe?.getBoundingClientRect();
-      // Fit-scale: iframe içi koordinatlar GERÇEK px — host'a çevirirken ölçekle.
-      const scale =
-        iframe && iframeRect && iframe.clientWidth > 0
-          ? iframeRect.width / iframe.clientWidth
-          : 1;
-      setContextMenu({
-        nodeId: node.props.id,
-        x: e.clientX * scale + (iframeRect?.left ?? 0),
-        y: e.clientY * scale + (iframeRect?.top ?? 0),
-      });
-    },
-    [locked, selectNode, node.props.id, setContextMenu]
-  );
-
-  const { onDoubleClick } = useInlineEdit(node, locked);
-
-  // Drop (target + indicator) is handled by the delegated CanvasNativeDrop +
-  // DragGuides now; nodes no longer carry per-node drop handlers.
+  // Double-click (inline edit), right-click (context menu) and drop (target +
+  // indicator) are all delegated now (CanvasEditDelegation / CanvasNativeDrop /
+  // DragGuides) — nodes no longer carry those per-node handlers.
 
   // Inside a repeat template the canvas edits the first data row: resolve
   // `{{ item.* }}` tokens in the displayed props so the template previews real
@@ -167,8 +134,6 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     handleMouseEnter,
     handleMouseLeave,
     handleClick,
-    onDoubleClick,
-    onContextMenu: handleContextMenu,
   });
 
   if (!componentConfig) {
@@ -187,16 +152,20 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // per-node hook that also exists on published pages). In edit mode `_startHidden`
   // nodes stay visible (dashed) so they're editable; preview hides them like live.
   const ixClasses = interactionNodeClasses(displayProps, { editing: !locked });
-  // Non-inline nodes carry the delegation marker so `canvasInteractions` can
-  // resolve them from the rendered component root (inline nodes wire their own
-  // handlers via useInlineDragRef, so they opt out).
-  const markerClass = componentConfig.inline ? '' : ` ${NODE_MARKER_CLASS}`;
+  // Non-inline nodes render WRAPPERLESS: the component root itself carries the
+  // delegation marker (canvasInteractions resolves nodes from it), the wrapper
+  // state classes (`tecof-node-wrapper` + is-readonly/is-dragging/is-hidden for the
+  // grab cursor / drag fade / hidden outline), and the shared marker. Inline nodes
+  // wire all of this via useInlineDragRef instead, so they opt out here.
+  const editorClasses = componentConfig.inline
+    ? ''
+    : ` ${NODE_MARKER_CLASS} ${wrapperClassName}${node.props.sharedComponentId ? ' is-shared' : ''}`;
 
   const componentProps = {
     ...displayProps,
     className: mergeClassName(
       displayProps.className,
-      `${styleClassName} ${ixClasses}${markerClass}`.trim()
+      `${styleClassName} ${ixClasses}${editorClasses}`.trim()
     ),
     puck: {
       dragRef: componentConfig.inline ? dragRef : undefined,
@@ -238,35 +207,15 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // props here ran on every render of every node.
   const errorResetKey = node.props;
 
+  // WRAPPERLESS: the rendered component IS the node — no `.tecof-node` /
+  // `.tecof-node-wrapper` divs. Identity/state live on the component's className
+  // (+ data-tecof-id set by the drag observer); select/hover/drag/drop/dblclick/
+  // contextmenu are all delegated. Editor DOM now matches the published DOM.
   return (
     <ParentNodeContext.Provider value={node.props.id}>
-      {componentConfig.inline ? (
-        <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
-          {componentConfig.render(componentProps)}
-        </NodeErrorBoundary>
-      ) : (
-        <div className="tecof-node">
-          {/* Select, hover, drag SOURCE and now the drop TARGET + indicator all
-              moved off the wrapper: select/hover/drag → delegated canvasInteractions
-              (Frame), drop → delegated CanvasNativeDrop, drop line → DragGuides. The
-              wrapper stays only for identity (data-tecof-*) + dblclick/contextmenu
-              until the wrapper itself is removed (step 4b). */}
-          <div
-            className={wrapperClassName}
-            data-tecof-id={node.props.id}
-            data-tecof-type={node.type}
-            data-tecof-index={index}
-            data-tecof-zone={zoneKey || 'root'}
-            data-tecof-shared={node.props.sharedComponentId ? 'true' : undefined}
-            onDoubleClick={onDoubleClick}
-            onContextMenu={handleContextMenu}
-          >
-            <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
-              {componentConfig.render(componentProps)}
-            </NodeErrorBoundary>
-          </div>
-        </div>
-      )}
+      <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
+        {componentConfig.render(componentProps)}
+      </NodeErrorBoundary>
     </ParentNodeContext.Provider>
   );
 };

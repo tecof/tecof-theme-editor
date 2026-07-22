@@ -81,14 +81,17 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
   const onOver = (e: MouseEvent) => {
     if (!isEditMode()) return;
     const target = e.target as Element | null;
-    const nodeEl = target?.closest?.('[data-tecof-id]');
+    // Innermost node — matched by the marker class (non-inline, synchronous) OR
+    // data-tecof-id (inline). Only `.tecof-el` (non-inline) is handled here; inline
+    // nodes own their hover via useInlineDragRef.
+    const nodeEl = target?.closest?.(`.${NODE_MARKER_CLASS}, [data-tecof-id]`);
     const store = useEditorStore.getState();
     if (!nodeEl) {
       if (store.selection.hoveredId !== null) store.hoverNode(null); // whitespace
       return;
     }
-    if (!nodeEl.classList.contains('tecof-node-wrapper')) return; // inline → its own
-    const id = nodeEl.getAttribute('data-tecof-id');
+    if (!nodeEl.classList.contains(NODE_MARKER_CLASS)) return; // inline → its own
+    const id = nodeIdFromEl(nodeEl);
     if (id && store.selection.hoveredId !== id) store.hoverNode(id);
   };
 
@@ -109,11 +112,18 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
   // removed.
   const win = doc.defaultView;
   let markRaf = 0;
+  // Mark every non-inline node root: `draggable` (native drag source) + a
+  // `data-tecof-id` mirror of its `tecof-node-<id>` class, so the `[data-tecof-id]`
+  // contract (measurement, drop resolution, inline-edit, context menu) keeps
+  // working now that the wrapper — which used to carry it — is gone.
   const markDraggable = () => {
     markRaf = 0;
-    doc
-      .querySelectorAll(`.${NODE_MARKER_CLASS}:not([draggable])`)
-      .forEach((el) => el.setAttribute('draggable', 'true'));
+    doc.querySelectorAll(`.${NODE_MARKER_CLASS}:not([data-tecof-id])`).forEach((el) => {
+      const id = nodeIdFromEl(el);
+      if (!id) return;
+      el.setAttribute('data-tecof-id', id);
+      el.setAttribute('draggable', 'true');
+    });
   };
   const scheduleMark = () => {
     if (markRaf || !win) return;

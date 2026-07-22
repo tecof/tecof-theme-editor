@@ -8,6 +8,7 @@ import { useStudio } from '../context';
 import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
 import { CanvasNativeDrop } from './canvasDrop';
+import { CanvasEditDelegation } from './canvasEdit';
 import { AddSectionButton } from './AddSectionButton';
 import { AddSectionModal } from '../panels/AddSectionModal';
 import { CanvasStyleInjector } from './CanvasStyleInjector';
@@ -281,6 +282,8 @@ export const Canvas = () => {
           {mode !== 'preview' && !readOnly && <TouchDragLayer />}
           {/* Delegated native (mouse) drop — replaces per-node/per-zone useDropTarget. */}
           {mode !== 'preview' && !readOnly && <CanvasNativeDrop />}
+          {/* Delegated inline-edit (dblclick) + context menu — replaces per-node handlers. */}
+          {mode !== 'preview' && !readOnly && <CanvasEditDelegation />}
           {contentWithLayout}
         </Frame>
         </div>

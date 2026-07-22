@@ -45,8 +45,6 @@ export const unionBounds = (rects: readonly RectBounds[]): RectBounds | null => 
   return u;
 };
 
-const WRAPPER_CLASS = 'tecof-node-wrapper';
-
 export interface NodeMeasurement {
   /** Tight bounds of the rendered component (union of its root elements). */
   rect: DOMRect;
@@ -59,30 +57,16 @@ export interface NodeMeasurement {
   primary: Element;
 }
 
-/** Measure a node element: the component-tight rect + the element for box-model reads. */
-export const measureNode = (el: Element): NodeMeasurement => {
-  if (!el.classList.contains(WRAPPER_CLASS)) {
-    return { rect: el.getBoundingClientRect(), primary: el };
-  }
-  const bounds: RectBounds[] = [];
-  let primary: Element = el;
-  let primaryArea = -1;
-  for (const child of Array.from(el.children)) {
-    const r = child.getBoundingClientRect();
-    bounds.push(r);
-    const area = r.width * r.height;
-    if (area > primaryArea) {
-      primaryArea = area;
-      primary = child;
-    }
-  }
-  const u = unionBounds(bounds);
-  if (!u) return { rect: el.getBoundingClientRect(), primary: el };
-  return {
-    rect: new DOMRect(u.left, u.top, u.right - u.left, u.bottom - u.top),
-    primary,
-  };
-};
+/**
+ * Measure a node element. Nodes now render WRAPPERLESS — the element carrying the
+ * node identity IS the component's own root — so we measure it directly (no more
+ * measuring a full-width wrapper's children). Multi-root components expose only
+ * their marked root; that root is what's measured.
+ */
+export const measureNode = (el: Element): NodeMeasurement => ({
+  rect: el.getBoundingClientRect(),
+  primary: el,
+});
 
 /** The component-tight measurement rect for a node element. */
 export const nodeContentRect = (el: Element): DOMRect => measureNode(el).rect;
