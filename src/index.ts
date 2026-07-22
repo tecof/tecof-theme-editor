@@ -21,6 +21,44 @@ export { IconField, createIconField } from './components/fields';
 export { ExternalField, createExternalField } from './components/fields';
 export { FieldErrorBoundary } from './components/fields';
 
+/* ─── E-ticaret Seçicileri ───
+   Merchant'ın panelindeki gerçek kayıtlardan seçim yaptırır; slug/id elle
+   yazmayı bitirir. Saklanan değer yayında tek başına render edilebilir. */
+export {
+  createCategoryField,
+  createCategoryListField,
+  createProductField,
+  createProductListField,
+  createBrandField,
+  createBrandListField,
+  createTagField,
+  createTagListField,
+  createAttributeField,
+  createAttributeListField,
+  createVariantTypeField,
+  createVariantField,
+  createFlashSaleField,
+  createCampaignField,
+  createDiscountField,
+} from './components/fields';
+export type {
+  EcommerceFieldOptions,
+  EcommerceOption,
+  EcommerceSource,
+  VariantFieldOptions,
+  VariantFieldValue,
+  ProductFieldOptions,
+  ProductFieldValue,
+  BrandFieldValue,
+  CategoryFieldValue,
+  TagFieldValue,
+  AttributeFieldValue,
+  VariantTypeFieldValue,
+  FlashSaleFieldValue,
+  CampaignFieldValue,
+  DiscountFieldValue,
+} from './components/fields';
+
 /* ─── API Client ─── */
 export { TecofApiClient } from './api';
 
@@ -52,6 +90,16 @@ export type {
   InteractionAction,
   InteractionRegistry,
 } from './studio/interactions/types';
+
+/* ─── Dark mode (Tailwind `.dark` class strategy) ─── */
+// Opt-in via `config.darkMode`. A `.dark` class on <html> swaps the
+// `--theme-color-*` variable VALUES (generateCSSVariables emits a `:root.dark {}`
+// block), so page content keeps its exact classes and NOTHING is added to the
+// Tailwind safelist. TecofRender wires the runtime + emits the config script
+// automatically; `initDarkMode` is for hosts that render pages themselves, and
+// `darkModeHeadScript` is inlined in <head> for zero flash-of-wrong-theme.
+export { initDarkMode, darkModeHeadScript, DARK_MODE_STORAGE_KEY } from './studio/theme/darkMode';
+export type { DarkModeConfig, DarkModeHandle, ColorScheme, DarkModeDefault } from './studio/theme/darkMode';
 
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
@@ -104,6 +152,7 @@ export {
   hslToHex,
   lighten,
   darken,
+  deriveDarkColors,
   generateCSSVariables,
   getDefaultTheme,
   mergeTheme,

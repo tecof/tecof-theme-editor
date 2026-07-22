@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
 import { generateCSSVariables } from '../../utils';
 import { resolveTheme, THEME_STYLE_ID } from './theme';
@@ -22,10 +23,20 @@ const FONT_FACE_ID = 'tecof-font-faces';
 export const ThemeVars = () => {
   const rootProps = useEditorStore((s) => s.document.root?.props);
   const { config } = useStudio();
+  // Viewport is a dep so vars + the `.dark` class re-apply after the canvas iframe
+  // is (re)created on a viewport switch.
+  const viewport = useEditorStore((s) => s.viewport);
+  const previewColorScheme = useUiStore((s) => s.previewColorScheme);
+  const darkEnabled = !!config.darkMode;
 
   useEffect(() => {
     const theme = resolveTheme(rootProps, config.theme);
-    const css = generateCSSVariables(theme);
+    // Canvas (iframe) carries the `:root.dark {}` override block; the HOST document
+    // stays single-mode so editor chrome / modal previews never interact with — or
+    // clobber — a host app that itself uses a `.dark` class. When dark mode is off,
+    // both strings are byte-identical to the pre-dark output.
+    const canvasCss = generateCSSVariables(theme, { dark: darkEnabled });
+    const hostCss = darkEnabled ? generateCSSVariables(theme) : canvasCss;
     const googleHref = themeGoogleFontsHref(theme);
     const fontFaceCss = themeFontFaceCss(theme);
 
@@ -56,17 +67,24 @@ export const ThemeVars = () => {
       if (el.href !== href) el.href = href;
     };
 
-    const apply = (doc: Document | null | undefined) => {
+    const apply = (doc: Document | null | undefined, css: string) => {
       if (!doc?.head) return;
       ensureStyle(doc, THEME_STYLE_ID, css);
       ensureStyle(doc, FONT_FACE_ID, fontFaceCss);
       ensureGoogleLink(doc, googleHref);
     };
 
-    apply(document);
+    apply(document, hostCss);
     const iframe = document.querySelector('.tecof-canvas-viewport iframe') as HTMLIFrameElement | null;
-    apply(iframe?.contentDocument);
-  }, [rootProps, config.theme]);
+    const canvasDoc = iframe?.contentDocument;
+    apply(canvasDoc, canvasCss);
+    // Live dark preview: toggle the `.dark` class the `:root.dark` block keys off,
+    // ONLY on the canvas document — never the host root, so a host app that uses
+    // `.dark` for its own chrome stays untouched. Disabled/light always clears it.
+    if (canvasDoc?.documentElement) {
+      canvasDoc.documentElement.classList.toggle('dark', darkEnabled && previewColorScheme === 'dark');
+    }
+  }, [rootProps, config.theme, darkEnabled, previewColorScheme, viewport]);
 
   return null;
 };

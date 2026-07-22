@@ -8577,3 +8577,153 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   padding: 12px 10px;
   border-top: 1px solid var(--tecof-border-subtle);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   E-ticaret seçicileri (marka / etiket / özellik / flaş satış / kupon)
+   Modal kabuğu ExternalField'ın cmdk sınıflarını yeniden kullanır;
+   burada yalnız e-ticarete özgü parçalar tanımlanır.
+   ═══════════════════════════════════════════════════════════════════ */
+.tecof-ecom-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Liste satırları iki satır metin + rozet taşıdığı için panel biraz daha uzun. */
+.tecof-ecom-panel {
+  max-height: 68vh;
+}
+
+/* Renk kutucuğu — satır ikonunun yerine geçer (renk özelliği/varyant değeri). */
+.tecof-ecom-swatch {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--tecof-radius-xs);
+  border: 1px solid var(--tecof-border-strong);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Durum rozeti — flaş satış/kampanya/kupon aktiflik durumu. */
+.tecof-ecom-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 2px 7px;
+  border-radius: var(--tecof-radius-pill);
+  border: var(--tecof-line);
+  background: var(--tecof-surface-2);
+  color: var(--tecof-text-muted);
+  white-space: nowrap;
+}
+
+.tecof-ecom-badge.is-success {
+  background: var(--tecof-success-bg);
+  border-color: var(--tecof-success);
+  color: var(--tecof-success-text);
+}
+
+.tecof-ecom-badge.is-warning {
+  background: var(--tecof-warning-bg);
+  border-color: var(--tecof-warning);
+  color: var(--tecof-warning-text);
+}
+
+.tecof-ecom-badge.is-danger {
+  background: var(--tecof-danger-bg);
+  border-color: var(--tecof-danger-border);
+  color: var(--tecof-danger-text);
+}
+
+/* Çoklu seçimde sıra = temanın render sırası; bu yüzden liste taşınabilir. */
+.tecof-ecom-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tecof-ecom-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px 5px 9px;
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+}
+
+.tecof-ecom-chip-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tecof-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tecof-ecom-chip-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tecof-ecom-chip-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--tecof-text-muted);
+  border-radius: var(--tecof-radius-xs);
+  cursor: pointer;
+}
+
+.tecof-ecom-chip-actions button:hover:not(:disabled) {
+  background: var(--tecof-surface);
+  color: var(--tecof-text);
+}
+
+.tecof-ecom-chip-actions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Varyant seçicide ikinci adımın geri dönüş başlığı. */
+.tecof-ecom-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border: none;
+  border-bottom: var(--tecof-line);
+  background: transparent;
+  color: var(--tecof-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tecof-ecom-back:hover {
+  color: var(--tecof-text);
+}
+
+.tecof-ecom-note {
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--tecof-warning-text);
+  background: var(--tecof-warning-bg);
+  border-radius: var(--tecof-radius-sm);
+}

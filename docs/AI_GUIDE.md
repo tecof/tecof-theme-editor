@@ -157,6 +157,35 @@ Gelişmiş alan factory'leri:
 - `createExternalField`: Üçüncü taraf listeden TEK kayıt seçimi
 - `createApiListField`: Repeat zone için API LİSTE kaynağı (host `fetchList`)
 
+E-ticaret seçicileri (mağazanın kendi kayıtlarından seçim):
+
+- `createCategoryField` / `createCategoryListField`: Kategori (ağaç, girintili)
+- `createProductField` / `createProductListField`: Ürün (sunucu taraflı arama)
+- `createBrandField` / `createBrandListField`: Marka
+- `createTagField` / `createTagListField`: Etiket
+- `createAttributeField` / `createAttributeListField`: Ürün özelliği (renk/beden)
+- `createVariantTypeField`: Varyant tipi tanımı
+- `createVariantField`: Ürün → varyant (iki adımlı)
+- `createFlashSaleField`: Flaş satış (tarih/rozet/renk snapshot'ı ile)
+- `createCampaignField`: Pazarlama kampanyası
+- `createDiscountField`: Kupon / indirim kodu
+
+Bu alanlar seçimi bir **snapshot** olarak saklar: `id` + `slug` + ad ve
+render için gereken alanlar (tarih, renk, kod…). İki sebeple:
+etiket/kupon/flaş satış kayıtlarının storefront (secretKey) ucu YOKTUR, yani
+yayınlanan sayfa kaydı yeniden okuyamaz; ayrıca ürün listeleme ucu markayı ve
+etiketi **ObjectId**, kategoriyi **slug** ile filtreler — yalnız slug saklamak
+marka/etiket filtresini sessizce çalışmaz hâle getirir.
+
+Seçicilerin listesi merchant uçlarından gelir ve **JWT + `x-merchant-id`**
+ister; `TecofApiClient` mağaza kimliğini `merchant-info`'dan bir kez çözüp
+header'a ekler. Kimlik çözülemezse liste boş gösterilmez, HATA basılır —
+"kaydım yok" ile "yetkim yok" karışmasın.
+
+Snapshot **seçim anında donar**: panelde kampanyanın tarihi ya da markanın adı
+sonradan değişirse sayfa eski değeri göstermeye devam eder; merchant alanı
+yeniden seçmelidir.
+
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render
 sırasında ham kayıt `cmsData` prop'u ile verilmelidir.

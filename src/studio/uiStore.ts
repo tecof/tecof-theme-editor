@@ -114,6 +114,11 @@ interface UiState {
   /** Whether the "AI ile bölüm üret" modal is open (only reachable when the
    * host wires `config.ai`). */
   aiModalOpen: boolean;
+  /** Which color scheme the canvas previews. Editor aid, session-only (NOT part
+   * of the document / undo / publish): ThemeVars toggles the `.dark` class on the
+   * canvas + host roots so authors can design the dark palette live. Only surfaced
+   * when the host enables `config.darkMode`. */
+  previewColorScheme: 'light' | 'dark';
 
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
@@ -135,6 +140,8 @@ interface UiState {
   setCanvasScale: (scale: number) => void;
   setDropHover: (hover: DropHoverState | null) => void;
   setAiModalOpen: (open: boolean) => void;
+  setPreviewColorScheme: (scheme: 'light' | 'dark') => void;
+  togglePreviewColorScheme: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -155,6 +162,7 @@ export const useUiStore = create<UiState>((set) => ({
   canvasScale: 1,
   dropHover: null,
   aiModalOpen: false,
+  previewColorScheme: 'light',
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
@@ -198,4 +206,7 @@ export const useUiStore = create<UiState>((set) => ({
       return { dropHover: hover };
     }),
   setAiModalOpen: (open) => set({ aiModalOpen: open }),
+  setPreviewColorScheme: (scheme) => set({ previewColorScheme: scheme }),
+  togglePreviewColorScheme: () =>
+    set((s) => ({ previewColorScheme: s.previewColorScheme === 'dark' ? 'light' : 'dark' })),
 }));

@@ -9,6 +9,7 @@ import { resolveTheme } from '../studio/theme/theme';
 import { themeGoogleFontsHref, themeFontFaceCss } from '../studio/theme/fonts';
 import { initScrollEffects } from '../studio/style/scrollEffects';
 import { initInteractions } from '../studio/interactions/runtime';
+import { initDarkMode } from '../studio/theme/darkMode';
 import { collectInteractionRegistry, interactionNodeClasses } from '../studio/interactions/registry';
 import { INTERACTIONS_CSS } from '../studio/interactions/css';
 import { generateCSSVariables } from '../utils';
@@ -178,19 +179,26 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
  * No API fetch, no provider required, zero @puckeditor/core dependency.
  */
 export const TecofRender = ({ data, config, className, cmsData }: TecofRenderProps) => {
-  // Runtime effects (reveal-on-scroll + parallax + when-then interactions) —
-  // client only, mounted once. Both watch/delegate for late-added nodes, and
-  // interactions read their config from the `<script data-tecof-interactions>`
-  // rendered below. Declared before any early return so hook order stays stable.
+  // Dark mode is opt-in per host (`config.darkMode`); when absent, no runtime, no
+  // `<script>`, no `:root.dark` CSS. Normalise `true` → default options.
+  const darkModeEnabled = !!config.darkMode;
+
+  // Runtime effects (reveal-on-scroll + parallax + when-then interactions + dark
+  // mode) — client only, mounted once. Each watches/delegates for late-added
+  // nodes and reads its config from the matching `<script data-tecof-*>` rendered
+  // below. Declared before any early return so hook order stays stable.
   useEffect(() => {
     const root = typeof document !== 'undefined' ? document : null;
     const scroll = initScrollEffects(root);
     const interactions = initInteractions(root);
+    // initDarkMode reads the `<script data-tecof-darkmode>` config emitted below.
+    const dark = darkModeEnabled ? initDarkMode(root) : null;
     return () => {
       scroll.destroy();
       interactions.destroy();
+      dark?.destroy();
     };
-  }, []);
+  }, [darkModeEnabled]);
 
   if (!data) return null;
 
@@ -244,7 +252,18 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
   // every `var(--theme-color-*)` reference — theme swatches picked in the
   // style editor, components reading the central theme — resolves to nothing.
   const resolvedTheme = resolveTheme(rootProps, config.theme);
-  const themeCss = generateCSSVariables(resolvedTheme);
+  // The `:root.dark {}` override block ships only when the host enables dark mode.
+  const themeCss = generateCSSVariables(resolvedTheme, { dark: darkModeEnabled });
+
+  // Dark-mode runtime config, serialised for `initDarkMode` (same channel as the
+  // interactions registry). `<` escaped so a string value can't break the tag.
+  const darkModeJson = darkModeEnabled
+    ? JSON.stringify(
+        typeof config.darkMode === 'object' && config.darkMode
+          ? { defaultMode: config.darkMode.defaultMode ?? 'system', storageKey: config.darkMode.storageKey }
+          : { defaultMode: 'system' },
+      ).replace(/</g, '\\u003c')
+    : '';
   // Fonts: the Google Fonts stylesheet link + `@font-face` rules for uploaded
   // custom fonts, so the published page loads exactly the fonts the theme uses.
   const googleFontsHref = themeGoogleFontsHref(resolvedTheme);
@@ -267,6 +286,16 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
           type="application/json"
           data-tecof-interactions
           dangerouslySetInnerHTML={{ __html: interactionRegistryJson }}
+        />
+      )}
+      {/* Dark-mode config for the runtime (initDarkMode reads this). Only emitted
+          when the host enables config.darkMode. For zero flash-of-wrong-theme,
+          hosts also inline `darkModeHeadScript()` in their <head>. */}
+      {darkModeJson && (
+        <script
+          type="application/json"
+          data-tecof-darkmode
+          dangerouslySetInnerHTML={{ __html: darkModeJson }}
         />
       )}
       <div className={className}>

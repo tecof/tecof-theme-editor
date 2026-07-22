@@ -28,6 +28,43 @@ export type { IconFieldProps, IconFieldOptions } from './IconField';
 export { ExternalField, createExternalField } from './ExternalField';
 export type { ExternalFieldProps, ExternalFieldConfig } from './ExternalField';
 
+/* E-ticaret seçicileri — marka/etiket/özellik/varyant/flaş satış/kampanya/kupon */
+export {
+  createCategoryField,
+  createCategoryListField,
+  createProductField,
+  createProductListField,
+  createBrandField,
+  createBrandListField,
+  createTagField,
+  createTagListField,
+  createAttributeField,
+  createAttributeListField,
+  createVariantTypeField,
+  createVariantField,
+  createFlashSaleField,
+  createCampaignField,
+  createDiscountField,
+  readLang,
+} from './ecommerce';
+export type {
+  EcommerceFieldOptions,
+  EcommerceOption,
+  EcommerceSource,
+  VariantFieldOptions,
+  VariantFieldValue,
+  ProductFieldOptions,
+  ProductFieldValue,
+  BrandFieldValue,
+  CategoryFieldValue,
+  TagFieldValue,
+  AttributeFieldValue,
+  VariantTypeFieldValue,
+  FlashSaleFieldValue,
+  CampaignFieldValue,
+  DiscountFieldValue,
+} from './ecommerce';
+
 export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';
 export { FieldLabel } from './FieldLabel';

@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
-import { Trash2, UploadCloud } from 'lucide-react';
+import { Trash2, UploadCloud, Sparkles } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { useStudio } from '../context';
 import { useTecof } from '../../components/TecofProvider';
 import { ColorField } from '../../components/fields/ColorField';
 import type { ThemeColors, ThemeConfig, CustomFont } from '../../types';
+import { deriveDarkColors } from '../../utils';
 import { resolveTheme, THEME_PROP } from './theme';
 import { FontSelect } from './FontSelect';
 import { findFontByStack, getBuiltinFont, fontIdFromFamily, type ThemeFont } from './fonts';
@@ -73,9 +74,16 @@ export const ThemeEditor = () => {
   // editor's built-ins.
   const theme = resolveTheme(rootProps, config.theme);
 
+  const darkModeEnabled = !!config.darkMode;
+
   const patch = (next: ThemeConfig) => setRootProps({ [THEME_PROP]: next });
   const setColor = (key: keyof ThemeColors, value: string) =>
     patch({ ...theme, colors: { ...theme.colors, [key]: value } });
+  // Dark palette edits mirror light ones, but a missing key falls back to the
+  // light value both here (the swatch) and at render time.
+  const setDarkColor = (key: keyof ThemeColors, value: string) =>
+    patch({ ...theme, darkColors: { ...(theme.darkColors ?? {}), [key]: value } });
+  const seedDarkPalette = () => patch({ ...theme, darkColors: deriveDarkColors(theme.colors) });
   const setSpacing = (key: keyof ThemeConfig['spacing'], value: number) =>
     patch({ ...theme, spacing: { ...theme.spacing, [key]: value } });
   const setTypography = (key: keyof ThemeConfig['typography'], value: number | string) =>
@@ -160,6 +168,34 @@ export const ThemeEditor = () => {
           </div>
         ))}
       </div>
+
+      {/* Dark-mode colors — only when the host enables config.darkMode. The
+          `.dark` class (toggled by the ☀️/🌙 button in the TopBar for preview,
+          and by the visitor's toggle on publish) swaps to these values. */}
+      {darkModeEnabled && (
+        <div className="tecof-theme-section">
+          <div className="tecof-theme-section-title">Koyu Mod Renkleri</div>
+          <button type="button" className="tecof-font-upload" onClick={seedDarkPalette} title="Açık paletten otomatik koyu palet üret">
+            <Sparkles size={14} />
+            Koyu palet üret
+          </button>
+          {COLOR_FIELDS.map(({ key, label }) => (
+            <div key={key} className="tecof-theme-row">
+              <span className="tecof-theme-row-label">{label}</span>
+              <div className="tecof-theme-color">
+                <ColorField
+                  field={{}}
+                  name={`theme-dark-${key}`}
+                  id={`theme-dark-${key}`}
+                  value={theme.darkColors?.[key] ?? theme.colors[key]}
+                  onChange={(v) => setDarkColor(key, v)}
+                  showReset={false}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Typography */}
       <div className="tecof-theme-section">

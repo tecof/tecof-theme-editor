@@ -67,6 +67,15 @@ export interface CustomFont {
 
 export interface ThemeConfig {
   colors: ThemeColors;
+  /**
+   * Dark-mode palette. Only the keys you set override `colors`; the rest fall
+   * back to their light value. Emitted as a `:root.dark { --theme-color-* }`
+   * block by `generateCSSVariables(theme, { dark: true })`, and ONLY when the
+   * host enables `config.darkMode` — otherwise ignored entirely. Edited per-theme
+   * in the studio's Tema panel (or auto-derived from `colors` via
+   * `deriveDarkColors`).
+   */
+  darkColors?: Partial<ThemeColors>;
   typography: ThemeTypography;
   spacing: ThemeSpacing;
   customTokens?: Record<string, string>;
@@ -78,6 +87,8 @@ export interface ThemeConfig {
 
 export interface DeepPartialThemeConfig {
   colors?: Partial<ThemeColors>;
+  /** Dark-mode palette override (see {@link ThemeConfig.darkColors}). */
+  darkColors?: Partial<ThemeColors>;
   typography?: Partial<ThemeTypography> & {
     headingScale?: Partial<ThemeTypography['headingScale']>;
   };
@@ -464,6 +475,24 @@ export interface StudioConfig {
   ai?: {
     complete: (req: { system: string; prompt: string }) => Promise<string>;
   };
+  /**
+   * Developer on/off switch for Tailwind-style dark mode (optional — no
+   * `darkMode` config means no dark UI, no dark CSS, and no runtime, so themes
+   * that don't need it pay nothing). Strategy: a `.dark` class on `<html>` swaps
+   * the `--theme-color-*` variable VALUES under a `:root.dark {}` block, so page
+   * content keeps its exact classes (`bg-[var(--theme-color-primary)]`) and
+   * NOTHING has to be added to the Tailwind safelist. Pass `true` for defaults,
+   * or an object to tune the first-visit scheme + persistence key. The dark color
+   * VALUES are edited per-theme in the Tema panel (`theme.darkColors`).
+   */
+  darkMode?:
+    | boolean
+    | {
+        /** First-visit scheme when the visitor has no saved choice. Default `'system'`. */
+        defaultMode?: 'light' | 'dark' | 'system';
+        /** localStorage key persisting the visitor's toggle choice. Default `'tecof-color-scheme'`. */
+        storageKey?: string;
+      };
   /** Allow host-specific extra props without breaking typing. */
   [key: string]: any;
 }
@@ -536,6 +565,8 @@ export interface TecofRenderProps {
 /* ─── Merchant Info ─── */
 
 export interface MerchantInfoData {
+  /** Mağaza kimliği — `/api/merchant/*` uçları bunu `x-merchant-id` header'ında ister. */
+  merchantId?: string;
   /** Available language codes (e.g. ["tr", "en", "de"]) */
   languages: string[];
   /** Default language code (e.g. "tr") */

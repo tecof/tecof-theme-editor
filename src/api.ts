@@ -450,6 +450,205 @@ export class TecofApiClient {
     }
   }
 
+  /* ═══════════════════════════════════════════════════════════════════
+     E-ticaret veri kaynakları — editör içi seçiciler (create*Field)
+     ═══════════════════════════════════════════════════════════════════
+
+     Uçlar İKİ ailededir ve bu bir tercih değil, backend'in gerçeği:
+
+       • PUBLIC  (/api/store/ecommerce/*, secretKey)  → marka, kategori, ürün.
+         Vitrinin de kullandığı uçlar; yalnız `status: active` kayıtları döner
+         ve çok dilli alanlar İSTENEN DİLE ÇEVRİLMİŞ (düz string) gelir.
+       • MERCHANT (/api/merchant/ecommerce/*, JWT)    → etiket, özellik,
+         varyant tipi, flaş satış, kampanya, kupon. Bunların storefront
+         karşılığı YOKTUR.
+
+     Merchant uçları JWT ister; `TecofStudio` mount olurken
+     `apiClient.setAccessToken(...)` çağırdığı için editörde sorun değildir.
+     Yayınlanmış sayfada token yoktur — bu yüzden seçicilerin prop'a yazdığı
+     değer, tema render'ının ek istek atmasına gerek kalmayacak kadar bilgi
+     (ad, slug, tarih, renk…) taşır. Bkz. fields/ecommerce/sources.ts.
+
+     Liste uçlarının ortak yanıtı: { success, totalData, data: [...] }.
+
+     ⚠ ARAMA: _crud tabanlı uçlarda (`tags`, `attributes`, `variant-types`,
+     `discounts`, `brands`) `?search=` düz metin BEKLENMEZ — backend onu
+     `{alan: değer}` sözlüğü sanar ve sessizce yok sayar. Üstelik çok dilli
+     `name` bir DİZİ olduğu için regex'lenemez. Bu yüzden seçiciler listeyi
+     bir kez çekip aramayı İSTEMCİ TARAFINDA yapar (bu listeler onlarca
+     kayıtlıktır, binlerce değil). `flash-sales` ve `campaigns` kendi
+     `search` filtresini uygular ama tutarlılık için orada da aynı yol
+     izlenir. */
+
+  /**
+   * Merchant uçları için ZORUNLU kimlik.
+   *
+   * `/api/merchant/*` rotaları merchantId'yi JWT'den DEĞİL, `x-merchant-id`
+   * header'ından okur (`AuthSrc.getMerchantId`) ve `authorizeRole(["user"])`
+   * middleware'i bu alanı doldurmaz. Header gitmezse sorgu
+   * `{ merchantId: null }` ile çalışır: yanıt HTTP 200 + `success: true` +
+   * `data: []` olur — yani hata gibi görünmez, liste sessizce boş gelir.
+   * Bu yüzden kimlik istekten ÖNCE çözülür ve çözülemezse gerçek bir hata
+   * döndürülür.
+   */
+  private merchantId?: string;
+  private merchantIdRequest?: Promise<string | undefined>;
+
+  /** Kimlik dışarıdan biliniyorsa (host zaten çekmişse) doğrudan verilebilir. */
+  setMerchantId(id?: string): void {
+    this.merchantId = id;
+  }
+
+  /** merchant-info'dan bir kez çözer; eşzamanlı çağrılar aynı isteği paylaşır. */
+  private async ensureMerchantId(): Promise<string | undefined> {
+    if (this.merchantId) return this.merchantId;
+    if (!this.merchantIdRequest) {
+      this.merchantIdRequest = this.getMerchantInfo()
+        .then((res) => {
+          const id = (res.data as { merchantId?: string } | undefined)?.merchantId;
+          this.merchantId = id ? String(id) : undefined;
+          return this.merchantId;
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          this.merchantIdRequest = undefined;
+        });
+    }
+    return this.merchantIdRequest;
+  }
+
+  /**
+   * Ortak GET + JSON zarfı.
+   *
+   * `merchantScoped` verilen uçlar `x-merchant-id` olmadan çağrılmaz; kimlik
+   * çözülemezse boş liste yerine HATA döner ki merchant "kaydım yok" sanmasın.
+   */
+  private async getJson<T>(
+    path: string,
+    errorMessage: string,
+    options: { merchantScoped?: boolean } = {}
+  ): Promise<ApiResponse<T[]>> {
+    try {
+      const headers = { ...this.headers };
+      if (options.merchantScoped) {
+        const merchantId = await this.ensureMerchantId();
+        if (!merchantId) {
+          return {
+            success: false,
+            message: 'Mağaza kimliği çözülemedi — editör oturumunu yenileyin.',
+            data: [],
+          } as ApiResponse<T[]>;
+        }
+        headers['X-Merchant-ID'] = merchantId;
+      }
+
+      const res = await fetch(`${this.apiUrl}${path}`, { method: 'GET', headers });
+      const json = await res.json().catch(() => null);
+
+      /* HTTP hatası JSON gövdesiyle gelmiş olabilir (401 gibi); success
+         alanına güvenmek yerine durum kodunu da kontrol et. */
+      if (!res.ok && json?.success !== true) {
+        return {
+          success: false,
+          message: json?.message || `${errorMessage} (HTTP ${res.status})`,
+          data: [],
+        } as ApiResponse<T[]>;
+      }
+      /* Gövde JSON değilse (proxy/HTML hata sayfası) ham metni kullanıcıya
+         yansıtma — sabit mesaj daha anlaşılır. */
+      if (!json || typeof json !== 'object' || !('success' in json)) {
+        return { success: false, message: errorMessage, data: [] } as ApiResponse<T[]>;
+      }
+      return json;
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : errorMessage,
+        data: [],
+      } as ApiResponse<T[]>;
+    }
+  }
+
+  /** Markalar — PUBLIC uç: yalnız aktif markalar, `name` çevrilmiş string. */
+  async getEcommerceBrands(locale = 'tr'): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/store/ecommerce/brands?locale=${encodeURIComponent(locale)}`,
+      'Markalar yüklenemedi'
+    );
+  }
+
+  /** Kategori ağacı — PUBLIC uç (çocuklar `children` altında iç içe). */
+  async getEcommerceCategories(locale = 'tr'): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/store/ecommerce/categories?locale=${encodeURIComponent(locale)}`,
+      'Kategoriler yüklenemedi'
+    );
+  }
+
+  /** Ürün araması — PUBLIC uç. Varyant seçici de bunu kullanır. */
+  async getEcommerceProducts(
+    params: { locale?: string; search?: string; limit?: number; category?: string } = {}
+  ): Promise<ApiResponse<any[]>> {
+    const qs = new URLSearchParams();
+    qs.set('locale', params.locale || 'tr');
+    qs.set('limit', String(params.limit ?? 24));
+    if (params.search) qs.set('search', params.search);
+    if (params.category) qs.set('category', params.category);
+    return this.getJson<any>(`/api/store/ecommerce/products?${qs}`, 'Ürünler yüklenemedi');
+  }
+
+  /** Etiketler — MERCHANT uç (vitrinde karşılığı yok). */
+  async getEcommerceTags(limit = 200): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(`/api/merchant/ecommerce/tags?limit=${limit}`, 'Etiketler yüklenemedi', {
+      merchantScoped: true,
+    });
+  }
+
+  /** Ürün özellikleri (renk/beden gibi filtrelenebilir alanlar) — MERCHANT uç. */
+  async getEcommerceAttributes(limit = 200): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/merchant/ecommerce/attributes?limit=${limit}`,
+      'Özellikler yüklenemedi',
+      { merchantScoped: true }
+    );
+  }
+
+  /** Varyant tipleri (Renk, Beden…) — MERCHANT uç. */
+  async getEcommerceVariantTypes(limit = 200): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/merchant/ecommerce/variant-types?limit=${limit}`,
+      'Varyant tipleri yüklenemedi',
+      { merchantScoped: true }
+    );
+  }
+
+  /** Flaş satışlar — MERCHANT uç. Kayıtlara `status` (efektif durum) eklenir. */
+  async getEcommerceFlashSales(limit = 100): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/merchant/ecommerce/flash-sales?limit=${limit}`,
+      'Flaş satışlar yüklenemedi',
+      { merchantScoped: true }
+    );
+  }
+
+  /** Pazarlama kampanyaları — MERCHANT uç. Kayıtlara `effectiveStatus` eklenir. */
+  async getEcommerceCampaigns(limit = 100): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/merchant/ecommerce/campaigns?limit=${limit}`,
+      'Kampanyalar yüklenemedi',
+      { merchantScoped: true }
+    );
+  }
+
+  /** Kuponlar / indirim kodları — MERCHANT uç. */
+  async getEcommerceDiscounts(limit = 200): Promise<ApiResponse<any[]>> {
+    return this.getJson<any>(
+      `/api/merchant/ecommerce/discounts?limit=${limit}`,
+      'Kuponlar yüklenemedi',
+      { merchantScoped: true }
+    );
+  }
+
   /** CDN base URL (defaults to apiUrl if not set) */
   get cdnUrl(): string {
     return this.customCdnUrl || this.apiUrl;

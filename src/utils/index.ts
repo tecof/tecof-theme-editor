@@ -1,4 +1,4 @@
-import type { ThemeConfig, HSL, DeepPartialThemeConfig } from '../types';
+import type { ThemeConfig, ThemeColors, HSL, DeepPartialThemeConfig } from '../types';
 import { themeFontVarLines } from '../studio/theme/fonts';
 
 /* ─── Color Converters ─── */
@@ -68,10 +68,58 @@ export function darken(hex: string, amount: number): string {
   return hslToHex(h, s, Math.max(0, l - amount));
 }
 
+/* ─── Dark palette derivation ─── */
+
+const clampL = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+/**
+ * Derives a sensible dark palette from a light one — powers the Tema panel's
+ * "Koyu palet üret" button so authors start from a working dark theme instead of
+ * eleven blanks. Neutral (low-saturation) colours invert their lightness so
+ * surfaces go dark and text goes light; saturated brand/semantic colours keep
+ * their hue and are lightness-tuned to stay readable on a dark background. The
+ * result is a full {@link ThemeColors}; every key still has a fallback to the
+ * light value at render time, so hand-tuning any single colour is safe.
+ */
+export function deriveDarkColors(light: ThemeColors): ThemeColors {
+  const isNeutral = (hex: string) => hexToHsl(hex).s < 12;
+  // Neutral → invert lightness into a clamped dark band (surfaces + light text).
+  const invert = (hex: string, lo: number, hi: number, satCap: number): string => {
+    const { h, s, l } = hexToHsl(hex);
+    return hslToHex(h, Math.min(s, satCap), clampL(100 - l, lo, hi));
+  };
+  const surface = (hex: string, lo: number, hi: number) => invert(hex, lo, hi, 14);
+  const onDark = (hex: string, lo: number, hi: number) => invert(hex, lo, hi, 24);
+  // Brand/semantic → keep hue+saturation, lift dark colours so they read on dark.
+  const brand = (hex: string): string => {
+    const { h, s, l } = hexToHsl(hex);
+    return hslToHex(h, s, clampL(l < 50 ? l + 12 : l, 45, 78));
+  };
+
+  return {
+    background: surface(light.background, 3, 10),
+    foreground: onDark(light.foreground, 90, 99),
+    card: surface(light.card, 6, 13),
+    cardForeground: onDark(light.cardForeground, 90, 99),
+    muted: surface(light.muted, 12, 20),
+    mutedForeground: onDark(light.mutedForeground, 58, 72),
+    border: surface(light.border, 15, 24),
+    secondary: isNeutral(light.secondary) ? surface(light.secondary, 12, 20) : brand(light.secondary),
+    primary: isNeutral(light.primary) ? onDark(light.primary, 88, 98) : brand(light.primary),
+    accent: isNeutral(light.accent) ? surface(light.accent, 14, 22) : brand(light.accent),
+    destructive: brand(light.destructive),
+  };
+}
+
 /* ─── CSS Variable Generation ─── */
 
-export function generateCSSVariables(theme: ThemeConfig): string {
+export function generateCSSVariables(theme: ThemeConfig, opts?: { dark?: boolean }): string {
   const lines: string[] = [':root {'];
+
+  // When dark mode is enabled, declare the base scheme so native controls
+  // (scrollbars, form widgets) match. Omitted when dark is off so the output is
+  // byte-identical to before for single-mode themes.
+  if (opts?.dark) lines.push('  color-scheme: light;');
 
   // Colors
   for (const [key, value] of Object.entries(theme.colors)) {
@@ -113,6 +161,24 @@ export function generateCSSVariables(theme: ThemeConfig): string {
   }
 
   lines.push('}');
+
+  // Dark override block: same 11 color vars, resolved to `darkColors[key]` (with
+  // a per-key fallback to the light value), scoped to `:root.dark`. `.dark`
+  // (specificity 0,2,0) beats the base `:root` (0,1,0) regardless of order, so
+  // toggling the class flips only the VALUES — page classes never change and the
+  // Tailwind safelist is untouched. Emitted only when the host enables dark mode.
+  if (opts?.dark) {
+    const dark = (theme.darkColors ?? {}) as Record<string, string | undefined>;
+    lines.push('');
+    lines.push(':root.dark {');
+    lines.push('  color-scheme: dark;');
+    for (const [key, value] of Object.entries(theme.colors)) {
+      const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+      lines.push(`  --theme-color-${cssKey}: ${dark[key] ?? value};`);
+    }
+    lines.push('}');
+  }
+
   return lines.join('\n');
 }
 
@@ -131,6 +197,23 @@ export function getDefaultTheme(): ThemeConfig {
       border: '#e4e4e7',
       card: '#ffffff',
       cardForeground: '#09090b',
+      destructive: '#ef4444',
+    },
+    // Sensible zinc dark baseline so enabling `config.darkMode` yields a working
+    // dark theme out of the box; authors refine it in the Tema panel (or click
+    // "Koyu palet üret" to re-derive from their own light colours). Ignored
+    // entirely unless dark mode is enabled.
+    darkColors: {
+      primary: '#fafafa',
+      secondary: '#27272a',
+      accent: '#60a5fa',
+      background: '#09090b',
+      foreground: '#fafafa',
+      muted: '#27272a',
+      mutedForeground: '#a1a1aa',
+      border: '#27272a',
+      card: '#18181b',
+      cardForeground: '#fafafa',
       destructive: '#ef4444',
     },
     typography: {
@@ -210,6 +293,9 @@ function isObject(item: unknown): item is Record<string, unknown> {
 export function mergeTheme(base: ThemeConfig, overrides: DeepPartialThemeConfig): ThemeConfig {
   const result: ThemeConfig = {
     colors: { ...base.colors, ...(overrides.colors ?? {}) },
+    // Dark palette merges per-key like colors (theme package default ← page
+    // override). Enumerated explicitly because mergeTheme drops unknown fields.
+    darkColors: { ...(base.darkColors ?? {}), ...(overrides.darkColors ?? {}) },
     typography: { ...base.typography, ...(overrides.typography ?? {}) },
     spacing: { ...base.spacing, ...(overrides.spacing ?? {}) },
     customTokens: { ...(base.customTokens ?? {}), ...(overrides.customTokens ?? {}) },

@@ -310,6 +310,11 @@ export const RepeaterField = ({
         row[key] = [];
       } else if (ft === 'color') {
         row[key] = '#000000';
+      } else if (ft === 'ecommerce') {
+        /* Seçici alanların değeri bir NESNE (ya da çoklu modda dizi); boş
+           string verilseydi "seçili ama boş" gibi görünürdü — temizle düğmesi
+           çıkar, özet boş kalırdı. */
+        row[key] = (fieldDef as any)?.multiple ? [] : undefined;
       } else {
         row[key] = '';
       }

@@ -6,9 +6,10 @@ import { useActiveLanguage } from '../language/LanguageContext';
 import { collectTranslationGaps } from '../language/translationCoverage';
 import {
   Monitor, Tablet, Smartphone, Undo2, Redo2, Save, Check,
-  PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown, Scaling,
+  PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown, Scaling, Sun, Moon,
 } from 'lucide-react';
 import { GridControl } from './GridControl';
+import { useStudio } from '../context';
 
 interface TopBarProps {
   onSave: () => Promise<void>;
@@ -113,6 +114,12 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
   const resizeEnabled = useUiStore((state) => state.resizeEnabled);
   const toggleResize = useUiStore((state) => state.toggleResize);
 
+  const { config } = useStudio();
+  const darkModeEnabled = !!config.darkMode;
+  const previewColorScheme = useUiStore((state) => state.previewColorScheme);
+  const togglePreviewColorScheme = useUiStore((state) => state.togglePreviewColorScheme);
+  const darkPreview = previewColorScheme === 'dark';
+
   return (
     <div className="tecof-topbar">
       {/* Left: panel toggle + title */}
@@ -213,6 +220,20 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
         >
           <Scaling size={16} />
         </button>
+
+        {/* Dark preview toggle — only when the host enables config.darkMode.
+            Drives ThemeVars' `.dark` class so the canvas previews the dark palette. */}
+        {darkModeEnabled && (
+          <button
+            type="button"
+            onClick={togglePreviewColorScheme}
+            className={`tecof-icon-btn${darkPreview ? ' is-active' : ''}`}
+            title={darkPreview ? 'Açık modu önizle' : 'Koyu modu önizle'}
+            aria-pressed={darkPreview}
+          >
+            {darkPreview ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+        )}
       </div>
 
       {/* Right: language + undo/redo + save + right panel toggle */}

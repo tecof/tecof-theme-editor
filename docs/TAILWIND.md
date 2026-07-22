@@ -249,7 +249,56 @@ ile üretimde çıkan birebir aynıdır, **safelist doğru kurulduğu sürece**.
 
 ---
 
-## 7. Hızlı kontrol listesi
+## 7. Karanlık mod (dark mode) — geliştirici aç/kapa
+
+Karanlık mod **opsiyoneldir ve geliştiricinin genel ayarında açılır**
+(`config.darkMode`). Anahtar yoksa: hiç dark UI, hiç dark CSS, hiç runtime —
+karanlık moda ihtiyacı olmayan tema hiçbir bedel ödemez.
+
+```tsx
+<TecofStudio config={{
+  // ...
+  darkMode: true,                      // varsayılanlarla aç
+  // veya ince ayar:
+  // darkMode: { defaultMode: 'system', storageKey: 'shop-scheme' },
+}} />
+```
+
+**Strateji (Tailwind `.dark` class):** `<html>` üzerindeki `.dark` class'ı,
+`--theme-color-*` değişkenlerinin **DEĞERLERİNİ** takas eder. `generateCSSVariables`
+karanlık mod açıkken ikinci bir blok basar:
+
+```css
+:root      { --theme-color-background: #ffffff; /* … */ }
+:root.dark { --theme-color-background: #09090b; /* … */ }
+```
+
+Sayfa içeriği class'larını **hiç değiştirmez** (`bg-[var(--theme-color-primary)]`
+aynı kalır); sadece `var()` çözümlenen değer değişir. Bu yüzden **`dark:` varyantı
+yoktur ve safelist'e hiçbir şey eklemeniz gerekmez** — self-hosted CSS mimarisiyle
+sorunsuz çalışmasının sebebi budur.
+
+- **Koyu renk değerleri** Tema panelinde düzenlenir (`theme.darkColors`) veya
+  "Koyu palet üret" ile açık paletten otomatik türetilir (`deriveDarkColors`).
+  Girilmeyen her anahtar açık moddaki değerine düşer.
+- **Editörde önizleme:** TopBar'daki ☀️/🌙 düğmesi canvas'ı koyu palette çevirir
+  (yalnız `config.darkMode` açıkken görünür; session-only, dokümana/undo'ya yazmaz).
+- **Yayında ziyaretçi düğmesi:** Sayfanıza `class="tecof-darkmode-toggle"` taşıyan
+  herhangi bir buton koyun — runtime tıklamayı **delege** dinler, `.dark`'ı çevirir
+  ve seçimi `localStorage`'a yazar. `TecofRender` runtime'ı + config `<script>`'ini
+  otomatik kurar.
+- **FOUC (yanlış-tema flaşı) yok:** `TecofRender` `<head>` üretmediği için, sıfır
+  flaş isteyen host `<head>`'e `darkModeHeadScript(config)` çıktısını inline bir
+  `<script>` olarak koyar (class'ı boyamadan önce ayarlar).
+- **İlk şema:** `defaultMode` — `'system'` (OS'i takip eder, varsayılan), `'light'`
+  veya `'dark'`. Ziyaretçinin kayıtlı seçimi her zaman kazanır.
+
+Kendi `<head>`'ini kuran host'lar için ihraçlar: `initDarkMode(document)`,
+`darkModeHeadScript(config)`, `deriveDarkColors(light)`, `DARK_MODE_STORAGE_KEY`.
+
+---
+
+## 8. Hızlı kontrol listesi
 
 - [ ] Host `@theme`'de `--color-primary-50…950` tanımlı.
 - [ ] `safelist: getSafelist()` host Tailwind config'ine eklendi (preset + tema renkleri + bp×state).
@@ -257,6 +306,7 @@ ile üretimde çıkan birebir aynıdır, **safelist doğru kurulduğu sürece**.
 - [ ] `@tecof/theme-editor/dist/styles.css` layout'a import edildi (editör chrome'u).
 - [ ] Arbitrary değer kullanılacaksa `collectDocumentClasses(pageData)` ile dinamik safelist eklendi (§3b).
 - [ ] `TecofRender` ile üretim render'ı, editörle aynı `compileStyles` akışını kullanıyor (otomatik).
+- [ ] Karanlık mod isteniyorsa `config.darkMode` açıldı; sıfır flaş için `<head>`'e `darkModeHeadScript()` konuldu (§7).
 
 ---
 
