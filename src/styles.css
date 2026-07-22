@@ -8455,3 +8455,45 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   color: var(--tecof-text-muted);
   margin-top: 2px;
 }
+
+/* ── Symbols (reusable component instances) ─────────────────────────────── */
+.tecof-symbol-banner {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: var(--tecof-radius);
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: var(--tecof-text);
+}
+.tecof-symbol-banner > svg { flex: none; margin-top: 1px; color: rgb(139, 92, 246); }
+.tecof-symbol-banner-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tecof-symbol-banner-text strong { font-size: 12px; font-weight: 700; }
+.tecof-symbol-banner-text span { font-size: 11px; color: var(--tecof-text-muted); line-height: 1.4; }
+
+/* Per-field link/unlink toggle for a symbol instance. */
+.tecof-field-block { position: relative; }
+.tecof-field-block.is-symbol { padding-right: 22px; }
+.tecof-field-sync {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--tecof-text-muted);
+  cursor: pointer;
+  border-radius: var(--tecof-radius-sm);
+  opacity: 0.55;
+  transition: var(--tecof-transition);
+}
+.tecof-field-sync:hover:not(:disabled) { opacity: 1; background: var(--tecof-surface); color: var(--tecof-text); }
+.tecof-field-sync.is-detached { opacity: 1; color: rgb(139, 92, 246); }
+.tecof-field-sync:disabled { opacity: 0.3; cursor: not-allowed; }

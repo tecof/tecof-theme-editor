@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronRight, Lock, Component, Link2, Link2Off } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { findNodeById, getParentId, getDescendants } from '../../engine/zones';
+import { findSymbolRoot, findSymbolInstanceRoots, symbolOverridesOf } from '../../engine/symbols';
 import { findRepeatScope } from '../../engine/repeat';
 import { inferItemSchema } from '../../utils/itemTokens';
 import { RepeatScopeContext } from '../../components/fields/repeatScope';
@@ -34,6 +35,17 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
   // Subscribe to THIS node only (immer keeps untouched nodes' references
   // stable), so typing in one aggregate group never re-renders the others.
   const node = useEditorStore((state) => findNodeById(state.document, nodeId)?.node ?? null);
+
+  // Symbol membership (primitive selectors → no extra re-renders). When this node
+  // is a symbol instance, edits sync to every other instance and each field gets a
+  // link/unlink toggle to pin it to this instance.
+  const toggleSymbolOverride = useEditorStore((state) => state.toggleSymbolOverride);
+  const symbolId = useEditorStore((state) => findSymbolRoot(state.document, nodeId)?.symbolId ?? null);
+  const symbolCount = useEditorStore((state) => {
+    const root = findSymbolRoot(state.document, nodeId);
+    return root ? findSymbolInstanceRoots(state.document, root.symbolId).length : 0;
+  });
+  const overrides = symbolOverridesOf(node);
 
   const info = useMemo(() => {
     if (!node) return null;
@@ -78,6 +90,18 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
 
   return (
     <>
+      {symbolId && (
+        <div className="tecof-symbol-banner">
+          <Component size={13} aria-hidden="true" />
+          <div className="tecof-symbol-banner-text">
+            <strong>Symbol örneği · {symbolCount} kullanım</strong>
+            <span>
+              Düzenlemeler tüm kullanımlara yayılır. Bir alanı yalnız bu örneğe özel yapmak için
+              yanındaki bağlantı simgesine tıkla.
+            </span>
+          </div>
+        </div>
+      )}
       {variantEntries.length > 0 && (
         <div className="tecof-variant-switcher" role="group" aria-label="Varyant">
           <span className="tecof-variant-label">Varyant</span>
@@ -104,18 +128,35 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
       ) : (
         <RepeatScopeContext.Provider value={repeatScope}>
           {editableFields.map(([fieldName, fieldDef]) => (
-            <FieldRenderer
-              key={fieldName}
-              name={fieldName}
-              definition={fieldDef}
-              value={info.node.props[fieldName]}
-              onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
-              readOnly={
-                fieldsReadOnly ||
-                resolved.readOnly[fieldName] === true ||
-                fieldDef?.readOnly === true
-              }
-            />
+            <div key={fieldName} className={`tecof-field-block${symbolId ? ' is-symbol' : ''}`}>
+              <FieldRenderer
+                name={fieldName}
+                definition={fieldDef}
+                value={info.node.props[fieldName]}
+                onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
+                readOnly={
+                  fieldsReadOnly ||
+                  resolved.readOnly[fieldName] === true ||
+                  fieldDef?.readOnly === true
+                }
+              />
+              {symbolId && (
+                <button
+                  type="button"
+                  className={`tecof-field-sync${overrides.includes(fieldName) ? ' is-detached' : ''}`}
+                  onClick={() => toggleSymbolOverride(nodeId, fieldName)}
+                  disabled={fieldsReadOnly}
+                  title={
+                    overrides.includes(fieldName)
+                      ? 'Bu alan yalnız bu örneğe özel. Symbol ile yeniden bağlamak için tıkla.'
+                      : 'Symbol ile bağlı — düzenlersen tüm örneklere yayılır. Yalnız bu örneğe özel yapmak için tıkla.'
+                  }
+                  aria-label={overrides.includes(fieldName) ? 'Symbol ile bağla' : 'Bu örneğe özel yap'}
+                >
+                  {overrides.includes(fieldName) ? <Link2Off size={13} /> : <Link2 size={13} />}
+                </button>
+              )}
+            </div>
           ))}
         </RepeatScopeContext.Provider>
       )}

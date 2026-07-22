@@ -56,6 +56,21 @@ export type {
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
 
+/* ─── Symbols (reusable component instances) ─── */
+// Nodes sharing a `sharedComponentId` are instances of one symbol; editing one
+// mirrors onto the others live in the editor (minus per-instance
+// `_symbolOverrides`). `planSymbolSync` is the pure propagation planner — reuse
+// it e.g. to dereference/sync instances server-side on save.
+export {
+  planSymbolSync,
+  findSymbolRoot,
+  findSymbolInstanceRoots,
+  symbolInfo,
+  SYMBOL_ID_PROP,
+  SYMBOL_OVERRIDES_PROP,
+} from './engine/symbols';
+export type { SymbolSync, SymbolPathStep } from './engine/symbols';
+
 /* ─── Repeat Zones (item templates) ─── */
 // A `slot` field with `repeatSource` repeats its children once per data row;
 // `{{ item.* }}` prop tokens resolve against the current row. `useRepeatItem()`

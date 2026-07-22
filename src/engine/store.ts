@@ -6,6 +6,15 @@ import { cloneDocument, createEmptyDocument, parseDocument } from './document';
 import { findNodeById } from './zones';
 import * as ops from './operations';
 import type { ClipboardPayload } from './operations';
+import {
+  planSymbolSync,
+  findSymbolRoot,
+  findSymbolInstanceRoots,
+  symbolRelativePath,
+  resolveSymbolPath,
+  symbolOverridesOf,
+  SYMBOL_OVERRIDES_PROP,
+} from './symbols';
 
 // History is patch-based (see below), so immer must have patch support turned on.
 // enableMapSet is a no-op for our plain-object document but is cheap insurance in
@@ -152,6 +161,12 @@ interface EditorActions {
   duplicateNodes: (ids?: string[]) => void;
   updateProps: (id: string, patch: Record<string, any>) => void;
   setRootProps: (patch: Record<string, any>) => void;
+  /**
+   * Toggle whether a field is pinned to THIS symbol instance (override) or synced
+   * with the symbol. Re-linking (removing an override) snaps the field back to the
+   * symbol's current value (pulled from a sibling instance).
+   */
+  toggleSymbolOverride: (id: string, key: string) => void;
 
   // Clipboard (copy/cut/paste). `id` defaults to the primary selection.
   copyNode: (id?: string) => void;
@@ -404,7 +419,48 @@ export const useEditorStore = create<EditorStore>()(
       set((state) => {
         // Coalesce rapid edits to the SAME node into a single undo step so that
         // typing into a text field doesn't flood the history one keystroke at a time.
-        commit(state, (doc) => ops.updateProps(doc, id, patch), id);
+        commit(
+          state,
+          (doc) => {
+            // Symbols: an edit to one instance mirrors onto the corresponding node
+            // in every other instance (minus overridden keys). Plan first (reads the
+            // pre-edit structure), then apply source + siblings in ONE commit → one
+            // undo step reverts them all.
+            const syncs = planSymbolSync(doc, id, patch);
+            ops.updateProps(doc, id, patch);
+            for (const s of syncs) ops.updateProps(doc, s.targetId, s.patch);
+          },
+          id
+        );
+      }),
+
+    toggleSymbolOverride: (id, key) =>
+      set((state) => {
+        commit(state, (doc) => {
+          const res = findNodeById(doc, id);
+          if (!res) return;
+          const cur = symbolOverridesOf(res.node);
+          const wasOverridden = cur.includes(key);
+          res.node.props[SYMBOL_OVERRIDES_PROP] = wasOverridden
+            ? cur.filter((k) => k !== key)
+            : [...cur, key];
+          // Re-linking: pull the field's shared value from a sibling instance so it
+          // snaps back to what the symbol currently shows.
+          if (!wasOverridden) return;
+          const root = findSymbolRoot(doc, id);
+          if (!root) return;
+          const path = symbolRelativePath(doc, root.rootId, id);
+          if (!path) return;
+          for (const instanceRoot of findSymbolInstanceRoots(doc, root.symbolId)) {
+            if (instanceRoot === root.rootId) continue;
+            const sibId = resolveSymbolPath(doc, instanceRoot, path);
+            const sib = sibId ? findNodeById(doc, sibId) : null;
+            if (sib && sib.node.type === res.node.type && key in sib.node.props) {
+              res.node.props[key] = sib.node.props[key];
+              break;
+            }
+          }
+        });
       }),
 
     setRootProps: (patch) =>
