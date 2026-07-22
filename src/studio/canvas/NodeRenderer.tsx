@@ -6,8 +6,6 @@ import { resolveItemTokens } from '../../utils/itemTokens';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
-import { setDragGhost } from './dragGhost';
-import { writeDragData } from './dndUtils';
 import { useInlineEdit } from './useInlineEdit';
 import { useDropTarget } from './useDropTarget';
 import { NodeErrorBoundary } from './NodeErrorBoundary';
@@ -17,7 +15,6 @@ import { STYLES_PROP } from '../style/types';
 import { interactionNodeClasses } from '../interactions/registry';
 import { NODE_MARKER_CLASS } from './canvasInteractions';
 import { useInlineDragRef } from './useInlineDragRef';
-import { usePermissions } from '../usePermissions';
 import { registerOverlayPortal, isInsideOverlayPortal } from './overlayPortal';
 
 export interface NodeRendererProps {
@@ -56,10 +53,6 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // components receive editMode=false so their links & buttons are clickable.
   const locked = studioReadOnly || mode === 'preview';
   const componentConfig = config.components[node.type];
-  // Drag affordance also respects the node's `drag` permission (engine still
-  // enforces moveNode regardless; this just stops the drag from starting).
-  const perms = usePermissions(node.props.id);
-  const dragLocked = locked || perms.drag === false;
 
   const selectNode = useEditorStore((state) => state.selectNode);
   const toggleSelect = useEditorStore((state) => state.toggleSelect);
@@ -322,23 +315,11 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             data-tecof-index={index}
             data-tecof-zone={zoneKey || 'root'}
             data-tecof-shared={node.props.sharedComponentId ? 'true' : undefined}
-            draggable={!dragLocked}
-            onDragStart={(e) => {
-              // Dragging from inside an overlay portal must not move the node.
-              if (isInsideOverlayPortal(e.target)) {
-                e.preventDefault();
-                return;
-              }
-              writeDragData(e, { nodeId: node.props.id });
-              e.dataTransfer.effectAllowed = 'move';
-              setDragGhost(e, label);
-              beginDrag({ id: node.props.id });
-            }}
-            onDragEnd={() => {
-              endDrag();
-            }}
-            /* Select + hover moved to delegated canvasInteractions (installed in
-               Frame); the non-inline wrapper no longer needs per-node handlers. */
+            /* Select, hover and the drag SOURCE (draggable + dragstart) moved to
+               delegated canvasInteractions (installed in Frame): an observer sets
+               `draggable` on the rendered `.tecof-el` and a delegated dragstart
+               gates on edit-mode/portal/permission. The drop TARGET stays here for
+               now (useDropTarget). */
             onDoubleClick={onDoubleClick}
             onContextMenu={handleContextMenu}
             onDragOver={onDragOver}

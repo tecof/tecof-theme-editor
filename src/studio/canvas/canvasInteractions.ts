@@ -21,6 +21,7 @@ import { useEditorStore } from '../../engine/store';
 import { findNodeById } from '../../engine/zones';
 import { isEmbedded, postToHost } from '../bridge';
 import { isInsideOverlayPortal } from './overlayPortal';
+import { writeDragData } from './dndUtils';
 
 /**
  * Stable marker class on a NON-INLINE node's rendered root — the delegation
@@ -98,12 +99,80 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
     if (store.selection.hoveredId !== null) store.hoverNode(null);
   };
 
+  // ── Drag SOURCE ──
+  // Native drag needs the `draggable` attribute on the element, which
+  // className-only components can't set themselves — an observer sets it on every
+  // `.tecof-el` (rAF-throttled; ahead of the first mousedown, so the first drag
+  // works). dragstart is delegated (gates: edit-mode, overlay portals, drag
+  // permission), so the wrapper no longer carries drag handlers. The drop TARGET
+  // still lives on the wrapper (useDropTarget) — it moves here when the wrapper is
+  // removed.
+  const win = doc.defaultView;
+  let markRaf = 0;
+  const markDraggable = () => {
+    markRaf = 0;
+    doc
+      .querySelectorAll(`.${NODE_MARKER_CLASS}:not([draggable])`)
+      .forEach((el) => el.setAttribute('draggable', 'true'));
+  };
+  const scheduleMark = () => {
+    if (markRaf || !win) return;
+    markRaf = win.requestAnimationFrame(markDraggable);
+  };
+  markDraggable();
+  const mo = win ? new win.MutationObserver(scheduleMark) : null;
+  if (mo && doc.body) mo.observe(doc.body, { childList: true, subtree: true });
+
+  const onDragStart = (e: DragEvent) => {
+    const el = (e.target as Element | null)?.closest?.(`.${NODE_MARKER_CLASS}`) as HTMLElement | null;
+    if (!el) return; // inline nodes drag via useInlineDragRef
+    if (!isEditMode() || isInsideOverlayPortal(e.target)) {
+      e.preventDefault();
+      return;
+    }
+    const id = nodeIdFromEl(el);
+    if (!id) {
+      e.preventDefault();
+      return;
+    }
+    const store = useEditorStore.getState();
+    const node = findNodeById(store.document, id)?.node ?? null;
+    if (node && store.permissionResolver?.(node).drag === false) {
+      e.preventDefault(); // node is drag-locked (perms or _locked)
+      return;
+    }
+    writeDragData(e, { nodeId: id });
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    // Drag ghost — a small label chip created in the iframe document.
+    const owner = el.ownerDocument;
+    const ghost = owner.createElement('div');
+    ghost.className = 'tecof-drag-ghost';
+    ghost.textContent = node?.type ?? id;
+    owner.body.appendChild(ghost);
+    try {
+      e.dataTransfer?.setDragImage(ghost, 14, 14);
+    } catch {
+      /* setDragImage may be unsupported */
+    }
+    const gwin = owner.defaultView ?? win;
+    gwin?.requestAnimationFrame(() => gwin.requestAnimationFrame(() => ghost.remove()));
+    store.beginDrag({ id });
+  };
+
+  const onDragEnd = () => useEditorStore.getState().endDrag();
+
   doc.addEventListener('click', onClick);
   doc.addEventListener('mouseover', onOver);
   doc.addEventListener('mouseout', onOut);
+  doc.addEventListener('dragstart', onDragStart);
+  doc.addEventListener('dragend', onDragEnd);
   return () => {
     doc.removeEventListener('click', onClick);
     doc.removeEventListener('mouseover', onOver);
     doc.removeEventListener('mouseout', onOut);
+    doc.removeEventListener('dragstart', onDragStart);
+    doc.removeEventListener('dragend', onDragEnd);
+    mo?.disconnect();
+    if (markRaf && win) win.cancelAnimationFrame(markRaf);
   };
 }
