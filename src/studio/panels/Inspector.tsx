@@ -18,6 +18,31 @@ import { STYLES_PROP } from '../style/types';
 import { InteractionsEditor } from '../interactions/InteractionsEditor';
 import { INTERACTIONS_PROP, START_HIDDEN_PROP } from '../interactions/types';
 
+/** Collapsible group wrapping a component's fields (config.fieldsGroups). */
+const FieldAccordion: React.FC<{
+  name: string;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}> = ({ name, collapsed, onToggle, children }) => (
+  <div className={`tecof-field-accordion${collapsed ? ' is-collapsed' : ''}`}>
+    <button
+      type="button"
+      className="tecof-field-accordion-header"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+    >
+      {collapsed ? (
+        <ChevronRight size={13} aria-hidden="true" />
+      ) : (
+        <ChevronDown size={13} aria-hidden="true" />
+      )}
+      <span className="tecof-field-accordion-name">{name}</span>
+    </button>
+    {!collapsed && <div className="tecof-field-accordion-body">{children}</div>}
+  </div>
+);
+
 /**
  * Renders the editable content fields (plus the variant switcher) for ONE node.
  *
@@ -46,6 +71,16 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
     return root ? findSymbolInstanceRoots(state.document, root.symbolId).length : 0;
   });
   const overrides = symbolOverridesOf(node);
+
+  // Collapsed state for config.fieldsGroups accordions (all expanded by default).
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  const toggleGroup = (name: string) =>
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
 
   const info = useMemo(() => {
     if (!node) return null;
@@ -88,6 +123,52 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
   const activeVariant =
     typeof info.node.props._variant === 'string' ? info.node.props._variant : null;
 
+  // Field grouping (config.fieldsGroups): fields listed in a group render under a
+  // collapsible header (in the given order); anything not in a group stays flat
+  // after the groups. No/empty fieldsGroups → every field flat (the default).
+  const fieldMap = new Map(editableFields);
+  const groups = componentConfig?.fieldsGroups?.length
+    ? componentConfig.fieldsGroups
+        .map((g) => ({ name: g.name, fields: (g.fields ?? []).filter((fn) => fieldMap.has(fn)) }))
+        .filter((g) => g.fields.length > 0)
+    : null;
+  const groupedNames = new Set(groups?.flatMap((g) => g.fields) ?? []);
+  const leftover = groups ? editableFields.filter(([fn]) => !groupedNames.has(fn)) : [];
+
+  const renderField = (fieldName: string) => {
+    const fieldDef = fieldMap.get(fieldName);
+    if (!fieldDef) return null;
+    return (
+      <div key={fieldName} className={`tecof-field-block${symbolId ? ' is-symbol' : ''}`}>
+        <FieldRenderer
+          name={fieldName}
+          definition={fieldDef}
+          value={info.node.props[fieldName]}
+          onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
+          readOnly={
+            fieldsReadOnly || resolved.readOnly[fieldName] === true || fieldDef?.readOnly === true
+          }
+        />
+        {symbolId && (
+          <button
+            type="button"
+            className={`tecof-field-sync${overrides.includes(fieldName) ? ' is-detached' : ''}`}
+            onClick={() => toggleSymbolOverride(nodeId, fieldName)}
+            disabled={fieldsReadOnly}
+            title={
+              overrides.includes(fieldName)
+                ? 'Bu alan yalnız bu örneğe özel. Symbol ile yeniden bağlamak için tıkla.'
+                : 'Symbol ile bağlı — düzenlersen tüm örneklere yayılır. Yalnız bu örneğe özel yapmak için tıkla.'
+            }
+            aria-label={overrides.includes(fieldName) ? 'Symbol ile bağla' : 'Bu örneğe özel yap'}
+          >
+            {overrides.includes(fieldName) ? <Link2Off size={13} /> : <Link2 size={13} />}
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       {symbolId && (
@@ -127,37 +208,23 @@ const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
         </div>
       ) : (
         <RepeatScopeContext.Provider value={repeatScope}>
-          {editableFields.map(([fieldName, fieldDef]) => (
-            <div key={fieldName} className={`tecof-field-block${symbolId ? ' is-symbol' : ''}`}>
-              <FieldRenderer
-                name={fieldName}
-                definition={fieldDef}
-                value={info.node.props[fieldName]}
-                onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
-                readOnly={
-                  fieldsReadOnly ||
-                  resolved.readOnly[fieldName] === true ||
-                  fieldDef?.readOnly === true
-                }
-              />
-              {symbolId && (
-                <button
-                  type="button"
-                  className={`tecof-field-sync${overrides.includes(fieldName) ? ' is-detached' : ''}`}
-                  onClick={() => toggleSymbolOverride(nodeId, fieldName)}
-                  disabled={fieldsReadOnly}
-                  title={
-                    overrides.includes(fieldName)
-                      ? 'Bu alan yalnız bu örneğe özel. Symbol ile yeniden bağlamak için tıkla.'
-                      : 'Symbol ile bağlı — düzenlersen tüm örneklere yayılır. Yalnız bu örneğe özel yapmak için tıkla.'
-                  }
-                  aria-label={overrides.includes(fieldName) ? 'Symbol ile bağla' : 'Bu örneğe özel yap'}
+          {groups && groups.length > 0 ? (
+            <>
+              {groups.map((g) => (
+                <FieldAccordion
+                  key={g.name}
+                  name={g.name}
+                  collapsed={collapsedGroups.has(g.name)}
+                  onToggle={() => toggleGroup(g.name)}
                 >
-                  {overrides.includes(fieldName) ? <Link2Off size={13} /> : <Link2 size={13} />}
-                </button>
-              )}
-            </div>
-          ))}
+                  {g.fields.map(renderField)}
+                </FieldAccordion>
+              ))}
+              {leftover.map(([fieldName]) => renderField(fieldName))}
+            </>
+          ) : (
+            editableFields.map(([fieldName]) => renderField(fieldName))
+          )}
         </RepeatScopeContext.Provider>
       )}
     </>

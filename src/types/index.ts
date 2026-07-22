@@ -290,6 +290,15 @@ export interface ComponentVariant {
   props: Record<string, any>;
 }
 
+/**
+ * An Inspector field group: a `name` (accordion header) and the ordered `fields`
+ * (prop names) it contains. See {@link ComponentConfig.fieldsGroups}.
+ */
+export interface FieldGroup {
+  name: string;
+  fields: string[];
+}
+
 export interface ComponentConfig {
   /** Display name in the component picker. */
   label?: string;
@@ -297,6 +306,14 @@ export interface ComponentConfig {
   category?: string;
   /** Editable fields for this component, keyed by prop name. */
   fields?: Record<string, FieldConfig>;
+  /**
+   * Optional accordion grouping for the Inspector fields. Each group's `fields`
+   * (prop names) render together under a collapsible header, in the given order;
+   * any field not listed in a group renders flat after the groups. When
+   * `fieldsGroups` is absent or empty the Inspector shows every field flat (the
+   * default), so this is purely additive.
+   */
+  fieldsGroups?: FieldGroup[];
   /** Default props applied when the component is inserted. */
   defaultProps?: Record<string, any>;
   /**

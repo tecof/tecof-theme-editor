@@ -8501,3 +8501,43 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-field-sync:hover:not(:disabled) { opacity: 1; background: var(--tecof-surface); color: var(--tecof-text); }
 .tecof-field-sync.is-detached { opacity: 1; color: rgb(139, 92, 246); }
 .tecof-field-sync:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Inspector field groups (config.fieldsGroups → accordion) ───────────── */
+.tecof-field-accordion {
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.tecof-field-accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 10px;
+  background: var(--tecof-bg);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tecof-text);
+  text-align: left;
+  transition: var(--tecof-transition);
+}
+.tecof-field-accordion-header:hover { background: var(--tecof-surface); }
+.tecof-field-accordion-header > svg { flex: none; color: var(--tecof-text-muted); }
+.tecof-field-accordion-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tecof-field-accordion-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 10px;
+  border-top: 1px solid var(--tecof-border-subtle);
+}
