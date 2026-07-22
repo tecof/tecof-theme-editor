@@ -4,6 +4,7 @@ import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { isEmbedded, postToHost } from '../bridge';
 import { installCanvasInteractionGuard } from './overlayPortal';
+import { installCanvasInteractions } from './canvasInteractions';
 
 export interface FrameProps extends React.IframeHTMLAttributes<HTMLIFrameElement> {
   children: React.ReactNode;
@@ -156,6 +157,15 @@ export const Frame = ({
       () => useUiStore.getState().mode === 'edit'
     );
 
+    // Delegated node SELECT (replaces the per-node wrapper onClick) — resolves the
+    // node from the rendered component's `.tecof-el` marker. Edit-mode only, same
+    // as the guard. Bubble-phase, so it composes with the capture-phase guard and
+    // the whitespace-deselect body click below.
+    const uninstallInteractions = installCanvasInteractions(
+      doc,
+      () => useUiStore.getState().mode === 'edit'
+    );
+
     if (body) {
       body.className = 'tecof-canvas-body';
 
@@ -225,6 +235,7 @@ export const Frame = ({
         rafId = null;
       }
       uninstallGuard();
+      uninstallInteractions();
       if (body && handleBodyClick) {
         body.removeEventListener('click', handleBodyClick);
       }

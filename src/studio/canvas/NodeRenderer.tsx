@@ -15,6 +15,7 @@ import { postToHost, isEmbedded } from '../bridge';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
 import { STYLES_PROP } from '../style/types';
 import { interactionNodeClasses } from '../interactions/registry';
+import { NODE_MARKER_CLASS } from './canvasInteractions';
 import { useInlineDragRef } from './useInlineDragRef';
 import { usePermissions } from '../usePermissions';
 import { registerOverlayPortal, isInsideOverlayPortal } from './overlayPortal';
@@ -230,10 +231,17 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // per-node hook that also exists on published pages). In edit mode `_startHidden`
   // nodes stay visible (dashed) so they're editable; preview hides them like live.
   const ixClasses = interactionNodeClasses(displayProps, { editing: !locked });
+  // Non-inline nodes carry the delegation marker so `canvasInteractions` can
+  // resolve them from the rendered component root (inline nodes wire their own
+  // handlers via useInlineDragRef, so they opt out).
+  const markerClass = componentConfig.inline ? '' : ` ${NODE_MARKER_CLASS}`;
 
   const componentProps = {
     ...displayProps,
-    className: mergeClassName(displayProps.className, `${styleClassName} ${ixClasses}`.trim()),
+    className: mergeClassName(
+      displayProps.className,
+      `${styleClassName} ${ixClasses}${markerClass}`.trim()
+    ),
     puck: {
       dragRef: componentConfig.inline ? dragRef : undefined,
       renderDropZone,
@@ -331,7 +339,8 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             }}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
-            onClick={handleClick}
+            /* onClick moved to delegated canvasInteractions (installed in Frame);
+               the wrapper no longer needs a per-node select handler. */
             onDoubleClick={onDoubleClick}
             onContextMenu={handleContextMenu}
             onDragOver={onDragOver}
