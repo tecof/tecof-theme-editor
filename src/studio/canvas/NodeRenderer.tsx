@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useRef } from 'react';
+import React, { useCallback, useContext, useMemo } from 'react';
 import { useStudio } from '../context';
 import { EditorRepeatSlot, ParentNodeContext, renderDropZone } from './DropZone';
 import { RepeatItemContext } from '../../components/RepeatItemContext';
@@ -7,7 +7,6 @@ import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
 import { useInlineEdit } from './useInlineEdit';
-import { useDropTarget } from './useDropTarget';
 import { NodeErrorBoundary } from './NodeErrorBoundary';
 import { postToHost, isEmbedded } from '../bridge';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
@@ -22,29 +21,6 @@ export interface NodeRendererProps {
   index: number;
   zoneKey?: string;
 }
-
-const getInlineIndicatorStyle = (
-  el: HTMLElement,
-  axis: 'x' | 'y',
-  position: 'before' | 'after'
-): React.CSSProperties => {
-  const r = el.getBoundingClientRect();
-  return axis === 'x'
-    ? {
-        position: 'fixed',
-        top: r.top,
-        height: r.height,
-        width: 3,
-        left: position === 'before' ? r.left - 5 : r.right + 2,
-      }
-    : {
-        position: 'fixed',
-        left: r.left,
-        width: r.width,
-        height: 3,
-        top: position === 'before' ? r.top - 5 : r.bottom + 2,
-      };
-};
 
 export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const { config, metadata, readOnly: studioReadOnly } = useStudio();
@@ -149,13 +125,8 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
 
   const { onDoubleClick } = useInlineEdit(node, locked);
 
-  const { position, axis, onDragOver, onDragLeave, onDrop } = useDropTarget({
-    zoneKey,
-    positional: true,
-    index,
-    locked,
-    selfId: node.props.id,
-  });
+  // Drop (target + indicator) is handled by the delegated CanvasNativeDrop +
+  // DragGuides now; nodes no longer carry per-node drop handlers.
 
   // Inside a repeat template the canvas edits the first data row: resolve
   // `{{ item.* }}` tokens in the displayed props so the template previews real
@@ -184,7 +155,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const styleClassName = compileStyles(displayProps[STYLES_PROP]);
 
   // Hook order: must run before the missing-component early return below.
-  const { setRef: dragRef, nodeRef: inlineNodeRef } = useInlineDragRef({
+  const { setRef: dragRef } = useInlineDragRef({
     node,
     index,
     zoneKey,
@@ -198,15 +169,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     handleClick,
     onDoubleClick,
     onContextMenu: handleContextMenu,
-    onDragOver,
-    onDragLeave,
-    onDrop,
   });
-
-  // The wrapper is display:contents (no box), so the drop indicator can't anchor
-  // to it — it's positioned with fixed coords measured from the rendered
-  // component (the wrapper's single child), exactly like the inline path.
-  const wrapperRef = useRef<HTMLDivElement>(null);
 
   if (!componentConfig) {
     return (
@@ -278,53 +241,25 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   return (
     <ParentNodeContext.Provider value={node.props.id}>
       {componentConfig.inline ? (
-        <>
-          {/* Inline nodes have no positioned `.tecof-node` wrapper to anchor the
-              absolute indicator, so we place it with fixed coords measured from
-              the node's own element — layout (flex/grid columns) stays intact. */}
-          {position && inlineNodeRef.current && (
-            <div
-              className="tecof-drop-indicator"
-              style={getInlineIndicatorStyle(inlineNodeRef.current, axis, position)}
-            />
-          )}
-          <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
-            {componentConfig.render(componentProps)}
-          </NodeErrorBoundary>
-        </>
+        <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
+          {componentConfig.render(componentProps)}
+        </NodeErrorBoundary>
       ) : (
         <div className="tecof-node">
-          {/* Fixed-coord indicator measured from the rendered component (the
-              wrapper is display:contents, so it has no box to anchor to). `axis`
-              decides horizontal vs vertical bar, `position` which edge it hugs. */}
-          {position && wrapperRef.current?.firstElementChild && (
-            <div
-              className="tecof-drop-indicator"
-              style={getInlineIndicatorStyle(
-                wrapperRef.current.firstElementChild as HTMLElement,
-                axis,
-                position
-              )}
-            />
-          )}
+          {/* Select, hover, drag SOURCE and now the drop TARGET + indicator all
+              moved off the wrapper: select/hover/drag → delegated canvasInteractions
+              (Frame), drop → delegated CanvasNativeDrop, drop line → DragGuides. The
+              wrapper stays only for identity (data-tecof-*) + dblclick/contextmenu
+              until the wrapper itself is removed (step 4b). */}
           <div
-            ref={wrapperRef}
             className={wrapperClassName}
             data-tecof-id={node.props.id}
             data-tecof-type={node.type}
             data-tecof-index={index}
             data-tecof-zone={zoneKey || 'root'}
             data-tecof-shared={node.props.sharedComponentId ? 'true' : undefined}
-            /* Select, hover and the drag SOURCE (draggable + dragstart) moved to
-               delegated canvasInteractions (installed in Frame): an observer sets
-               `draggable` on the rendered `.tecof-el` and a delegated dragstart
-               gates on edit-mode/portal/permission. The drop TARGET stays here for
-               now (useDropTarget). */
             onDoubleClick={onDoubleClick}
             onContextMenu={handleContextMenu}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
           >
             <NodeErrorBoundary label={label} type={node.type} resetKey={errorResetKey}>
               {componentConfig.render(componentProps)}

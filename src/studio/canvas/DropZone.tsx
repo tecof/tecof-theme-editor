@@ -7,7 +7,6 @@ import { findNodeById } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
 import { NodeRenderer } from './NodeRenderer';
 import { AddSectionButton } from './AddSectionButton';
-import { useDropTarget } from './useDropTarget';
 import { RepeatGhosts } from './RepeatGhosts';
 import { RepeatItemContext } from '../../components/RepeatItemContext';
 import { useRepeatRows, type RepeatSourceFieldDef } from '../../components/useRepeatRows';
@@ -55,12 +54,8 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
     return !isValidDrop(config, draggedType, zoneKey, doc);
   }, [dragPayload, config, zoneKey]);
 
-  const { isDragOver, onDragOver, onDragLeave, onDrop } = useDropTarget({
-    zoneKey,
-    locked: readOnly,
-    getIndex: () => items.length,
-  });
-
+  // Drop is handled by the delegated CanvasNativeDrop (this zone carries
+  // data-tecof-zone); the is-touch-dragover affordance is set imperatively.
   const isRepeat = Array.isArray(repeatItems);
   const repeatRows = isRepeat ? repeatItems : [];
 
@@ -68,7 +63,6 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
     'tecof-dropzone',
     orientation === 'horizontal' ? 'is-horizontal' : '',
     items.length === 0 ? 'is-empty' : '',
-    isDragOver ? 'is-dragover' : '',
     isDragActive ? 'is-drag-active' : '',
     isDropDenied ? 'is-drop-denied' : '',
     isRepeat ? 'is-repeat' : '',
@@ -80,9 +74,6 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
   return (
     <div
       className={dropzoneClassName}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
       style={style}
       data-tecof-zone={zoneKey}
       data-tecof-orientation={orientation}
@@ -100,7 +91,7 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
             }}
             title="Bu alana bileşen ekle"
           >
-            {isDragOver ? (
+            {isDragActive ? (
               'Buraya Bırakın'
             ) : (
               <>

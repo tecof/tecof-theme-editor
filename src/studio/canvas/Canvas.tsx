@@ -7,7 +7,7 @@ import { collectInteractionRegistry } from '../interactions/registry';
 import { useStudio } from '../context';
 import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
-import { useDropTarget } from './useDropTarget';
+import { CanvasNativeDrop } from './canvasDrop';
 import { AddSectionButton } from './AddSectionButton';
 import { AddSectionModal } from '../panels/AddSectionModal';
 import { CanvasStyleInjector } from './CanvasStyleInjector';
@@ -85,17 +85,8 @@ export const Canvas = () => {
         isValidDrop(config, type, addSectionTarget.zoneKey, useEditorStore.getState().document)
     : undefined;
 
-  const {
-    isDragOver: isRootDragOver,
-    onDragOver: handleRootDragOver,
-    onDragLeave: handleRootDragLeave,
-    onDrop: handleRootDrop,
-  } = useDropTarget({
-    // Root content has no zone key.
-    zoneKey: undefined,
-    locked: readOnly,
-    getIndex: () => content.length,
-  });
+  // Root drop is handled by the delegated CanvasNativeDrop (root carries
+  // data-tecof-zone="root"); the is-touch-dragover affordance is set imperatively.
 
   // Drag can end anywhere (Escape, drop outside, dragend on the source); make
   // sure a stale drop-hover never survives it — the guides key off this state.
@@ -175,7 +166,6 @@ export const Canvas = () => {
   const rootClassName = [
     'tecof-canvas-root',
     content.length === 0 ? 'is-empty' : '',
-    isRootDragOver ? 'is-dragover' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -190,9 +180,6 @@ export const Canvas = () => {
   const renderedContent = (
     <div
       className={rootClassName}
-      onDragOver={handleRootDragOver}
-      onDragLeave={handleRootDragLeave}
-      onDrop={handleRootDrop}
       onClick={handleRootClick}
       data-tecof-zone="root"
     >
@@ -202,12 +189,8 @@ export const Canvas = () => {
             <LayoutTemplate size={22} strokeWidth={1.8} />
           </span>
           <span className="tecof-canvas-empty-kicker">Root</span>
-          <p className="tecof-canvas-empty-title">
-            {isRootDragOver ? 'Bırakmaya hazır' : 'Canvas boş'}
-          </p>
-          <p className="tecof-canvas-empty-sub">
-            {isRootDragOver ? 'Bileşen ana akışa eklenecek' : 'İlk bölümü ekleyin'}
-          </p>
+          <p className="tecof-canvas-empty-title">Canvas boş</p>
+          <p className="tecof-canvas-empty-sub">İlk bölümü ekleyin</p>
           {!readOnly && (
             <button
               type="button"
@@ -296,6 +279,8 @@ export const Canvas = () => {
           {mode !== 'preview' && <DragGuides />}
           {/* Touch/pen drag-and-drop (native HTML5 DnD is mouse-only). */}
           {mode !== 'preview' && !readOnly && <TouchDragLayer />}
+          {/* Delegated native (mouse) drop — replaces per-node/per-zone useDropTarget. */}
+          {mode !== 'preview' && !readOnly && <CanvasNativeDrop />}
           {contentWithLayout}
         </Frame>
         </div>

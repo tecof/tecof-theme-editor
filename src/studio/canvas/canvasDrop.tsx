@@ -47,7 +47,7 @@ function installNativeDrop(
   let dragOverZone: Element | null = null;
 
   const clearZone = () => {
-    dragOverZone?.classList.remove('is-dragover');
+    dragOverZone?.classList.remove('is-touch-dragover');
     dragOverZone = null;
   };
   const clearAll = () => {
@@ -135,7 +135,7 @@ function installNativeDrop(
       if (zoneEl !== dragOverZone) {
         clearZone();
         if (zoneEl) {
-          zoneEl.classList.add('is-dragover');
+          zoneEl.classList.add('is-touch-dragover');
           dragOverZone = zoneEl;
         }
       }

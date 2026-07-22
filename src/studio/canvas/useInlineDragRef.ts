@@ -28,9 +28,6 @@ interface UseInlineDragRefOptions {
   handleClick(e: MouseEvent | React.MouseEvent): void;
   onDoubleClick(e: MouseEvent | React.MouseEvent): void;
   onContextMenu?(e: MouseEvent | React.MouseEvent): void;
-  onDragOver(e: DragEvent | React.DragEvent): void;
-  onDragLeave(e: DragEvent | React.DragEvent): void;
-  onDrop(e: DragEvent | React.DragEvent): void;
 }
 
 /** Every event the inline root listens to — add/remove stays symmetric. */
@@ -42,9 +39,6 @@ const BOUND_EVENTS = [
   'contextmenu',
   'dragstart',
   'dragend',
-  'dragover',
-  'dragleave',
-  'drop',
 ] as const;
 
 /**
@@ -78,9 +72,6 @@ export function useInlineDragRef(options: UseInlineDragRefOptions) {
       click: (e) => callbacksRef.current.handleClick(e as MouseEvent),
       dblclick: (e) => callbacksRef.current.onDoubleClick(e as MouseEvent),
       contextmenu: (e) => callbacksRef.current.onContextMenu?.(e as MouseEvent),
-      dragover: (e) => callbacksRef.current.onDragOver(e as DragEvent),
-      dragleave: (e) => callbacksRef.current.onDragLeave(e as DragEvent),
-      drop: (e) => callbacksRef.current.onDrop(e as DragEvent),
       dragstart: (e) => {
         const de = e as DragEvent;
         const meta = metaRef.current;
