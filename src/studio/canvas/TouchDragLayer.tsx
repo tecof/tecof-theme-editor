@@ -4,6 +4,7 @@ import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
 import { createAutoScroller, createNode } from './dndUtils';
 import { getDropAxis } from './useDropTarget';
+import { nodeContentRect } from './nodeRect';
 import { isInsideOverlayPortal } from './overlayPortal';
 import { findNodeById } from '../../engine/zones';
 import {
@@ -290,7 +291,7 @@ export const TouchDragLayer = () => {
               positional: {
                 targetId: candidateId,
                 axis,
-                position: computeDropPosition(axis, candidate.getBoundingClientRect(), point),
+                position: computeDropPosition(axis, nodeContentRect(candidate), point),
               },
             };
           }

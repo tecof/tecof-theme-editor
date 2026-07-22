@@ -4102,13 +4102,15 @@
   filter: saturate(0.6);
 }
 
+/* Editor node wrappers are layout-transparent (display:contents): the rendered
+   component becomes the direct child of its dropzone/parent, so it lays out
+   EXACTLY as it will on the published page (side-by-side in a row, natural
+   width, no injected wrapper box or forced full-width). Selection, drop
+   indicators and drag-guides measure the component element itself (see
+   nodeRect.ts); the drop indicator is positioned with fixed coords instead of
+   anchoring to this wrapper. */
 .tecof-node {
-  display: flex;
-  flex-direction: column;
-  position: relative; /* anchors the absolutely-positioned drop indicator */
-  /* No fixed width: a column dropzone stretches children via align-items:stretch,
-     a block root makes them full-width by default, and a row/grid dropzone lets
-     them size to content so they can sit side-by-side. */
+  display: contents;
 }
 
 /* Drag-reorder indicator. `is-y` = horizontal bar (column layouts, drops land
@@ -4131,17 +4133,17 @@
 .tecof-drop-indicator.is-x.is-before { left: -5px; }
 .tecof-drop-indicator.is-x.is-after { right: -5px; }
 
+/* Layout-transparent — see .tecof-node. Visual affordances (drag fade, hidden
+   outline) can't paint on a contents box, so they target the rendered component
+   child (`> *`) instead. */
 .tecof-node-wrapper {
-  position: relative;
-  transition: outline 0.15s ease-in-out;
-  cursor: grab;
+  display: contents;
 }
 
-.tecof-node-wrapper.is-readonly { cursor: default; }
-.tecof-node-wrapper.is-dragging { opacity: 0.4; }
+.tecof-node-wrapper.is-dragging > * { opacity: 0.4; }
 /* Hidden layer (eye toggle): faded + dashed outline in edit mode so it's still
    discoverable/selectable; omitted entirely in preview + on the published page. */
-.tecof-node-wrapper.is-hidden {
+.tecof-node-wrapper.is-hidden > * {
   opacity: 0.4;
   outline: 1px dashed var(--tecof-border);
   outline-offset: -1px;
@@ -4456,8 +4458,9 @@
   pointer-events: none;
 }
 
-/* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin */
-.tecof-studio-root .tecof-node-wrapper[data-tecof-shared="true"] {
+/* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin.
+   Wrapper display:contents olduğundan işaret render edilen bileşene (> *) çizilir. */
+.tecof-studio-root .tecof-node-wrapper[data-tecof-shared="true"] > * {
   outline: 1px dashed rgba(139, 92, 246, 0.55);
   outline-offset: -1px;
 }

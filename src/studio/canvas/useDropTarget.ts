@@ -7,6 +7,7 @@ import { findNodeById, getParentId } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
 import type { TecofDocument } from '../../types';
 import { createEventAutoScroller, createNode, readDragData } from './dndUtils';
+import { nodeContentRect } from './nodeRect';
 
 /**
  * Shared drag-over / drag-leave / drop wiring for every canvas drop target.
@@ -219,7 +220,9 @@ export const useDropTarget = (options: UseDropTargetOptions): UseDropTargetResul
       if (positional) {
         const el = e.currentTarget as HTMLElement;
         const dropAxis = getDropAxis(el);
-        const rect = el.getBoundingClientRect();
+        // The wrapper is display:contents (no box) — measure the rendered
+        // component so before/after splits on the component's real edges.
+        const rect = nodeContentRect(el);
         // "before" = the half nearer the start of the main axis (left for a row,
         // top for a column); "after" = the far half.
         const before =

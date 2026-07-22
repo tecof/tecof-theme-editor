@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useMemo, useRef } from 'react';
 import { useStudio } from '../context';
 import { EditorRepeatSlot, ParentNodeContext, renderDropZone } from './DropZone';
 import { RepeatItemContext } from '../../components/RepeatItemContext';
@@ -209,6 +209,11 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     onDrop,
   });
 
+  // The wrapper is display:contents (no box), so the drop indicator can't anchor
+  // to it — it's positioned with fixed coords measured from the rendered
+  // component (the wrapper's single child), exactly like the inline path.
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   if (!componentConfig) {
     return (
       <div className="tecof-node-missing">
@@ -288,13 +293,21 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
         </>
       ) : (
         <div className="tecof-node">
-          {/* Single absolutely-positioned indicator; `axis` decides whether it's a
-              horizontal bar (column layout) or a vertical bar (row/grid layout),
-              and `position` which edge it hugs. */}
-          {position && (
-            <div className={`tecof-drop-indicator is-${axis} is-${position}`} />
+          {/* Fixed-coord indicator measured from the rendered component (the
+              wrapper is display:contents, so it has no box to anchor to). `axis`
+              decides horizontal vs vertical bar, `position` which edge it hugs. */}
+          {position && wrapperRef.current?.firstElementChild && (
+            <div
+              className="tecof-drop-indicator"
+              style={getInlineIndicatorStyle(
+                wrapperRef.current.firstElementChild as HTMLElement,
+                axis,
+                position
+              )}
+            />
           )}
           <div
+            ref={wrapperRef}
             className={wrapperClassName}
             data-tecof-id={node.props.id}
             data-tecof-type={node.type}

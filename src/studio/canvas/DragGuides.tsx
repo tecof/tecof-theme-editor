@@ -7,6 +7,7 @@ import {
   type DragGuideModel,
   type GuideRect,
 } from './dragGuideModel';
+import { nodeContentRect } from './nodeRect';
 
 const toGuideRect = (r: DOMRect): GuideRect => ({
   top: r.top,
@@ -60,7 +61,7 @@ export const DragGuides = () => {
       return () => doc.removeEventListener('scroll', onScroll, true);
     }
 
-    const targetRect = target.getBoundingClientRect();
+    const targetRect = nodeContentRect(target);
     const lineAt =
       axis === 'y'
         ? position === 'before' ? targetRect.top : targetRect.bottom
@@ -73,7 +74,7 @@ export const DragGuides = () => {
     for (const node of list) {
       if (node.props.id === draggedId) continue;
       const el = doc.querySelector(`[data-tecof-id="${node.props.id}"]`);
-      if (el) siblings.push(toGuideRect(el.getBoundingClientRect()));
+      if (el) siblings.push(toGuideRect(nodeContentRect(el)));
     }
 
     const { prevEdge, nextEdge } = pickNeighbourEdges(axis, lineAt, siblings);
