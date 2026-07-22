@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useContext, useMemo } from 'react';
 import { TecofApiClient } from '../api';
 import type { TecofProviderProps } from '../types';

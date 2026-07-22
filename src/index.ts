@@ -1,3 +1,5 @@
+'use client';
+
 /* ─── Tecof Platform Components ─── */
 export { TecofProvider, useTecof } from './components/TecofProvider';
 export { TecofEditor } from './components/TecofEditor';
