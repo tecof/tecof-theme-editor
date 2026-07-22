@@ -8324,3 +8324,131 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   background: var(--tecof-bg);
   border-color: var(--tecof-border);
 }
+
+/* ── When-then interactions ──────────────────────────────────────────────
+   Runtime CSS mirror (canvas preview) of studio/interactions/css.ts. The
+   published page injects the same rules via TecofRender. */
+.tecof-fx-hidden { display: none !important; }
+.tecof-fx-starthidden { outline: 1px dashed rgba(99, 102, 241, 0.55); outline-offset: 2px; }
+
+/* Inspector → Etkileşim panel */
+.tecof-ix-editor { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px; }
+
+.tecof-ix-intro {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--tecof-text-soft);
+}
+.tecof-ix-intro svg { flex: none; margin-top: 1px; color: var(--tecof-accent-text); }
+
+.tecof-ix-empty {
+  font-size: 12px;
+  color: var(--tecof-text-muted);
+  padding: 6px 2px;
+}
+
+.tecof-ix-list { display: flex; flex-direction: column; gap: 10px; }
+
+.tecof-ix-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--tecof-bg);
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius);
+}
+
+.tecof-ix-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tecof-ix-row-index {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tecof-text-muted);
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius-pill);
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tecof-ix-row-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--tecof-text-muted);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: var(--tecof-radius-sm);
+  transition: var(--tecof-transition);
+}
+.tecof-ix-row-remove:hover:not(:disabled) { color: var(--tecof-danger-text); background: var(--tecof-danger-bg); }
+.tecof-ix-row-remove:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.tecof-ix-field { display: flex; flex-direction: column; gap: 4px; }
+.tecof-ix-label { font-size: 11px; font-weight: 600; color: var(--tecof-text-soft); }
+
+.tecof-ix-select,
+.tecof-ix-input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--tecof-text);
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius-sm);
+  padding: 7px 10px;
+  transition: var(--tecof-transition);
+}
+.tecof-ix-select:focus,
+.tecof-ix-input:focus { outline: none; border-color: var(--tecof-accent); box-shadow: var(--tecof-focus-ring); }
+.tecof-ix-select:disabled,
+.tecof-ix-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.tecof-ix-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tecof-accent-text);
+  background: var(--tecof-accent-subtle);
+  border: 1px dashed var(--tecof-accent-border);
+  border-radius: var(--tecof-radius);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+.tecof-ix-add:hover:not(:disabled) { background: var(--tecof-accent-subtle-hover); }
+.tecof-ix-add:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.tecof-ix-starthidden {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: var(--tecof-text);
+  cursor: pointer;
+  border-top: 1px solid var(--tecof-border-subtle);
+  padding-top: 10px;
+}
+.tecof-ix-starthidden input { margin-top: 2px; flex: none; }
+.tecof-ix-starthidden em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+  margin-top: 2px;
+}

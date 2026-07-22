@@ -80,6 +80,38 @@ describe('resolveRepeatRows', () => {
     ).resolves.toEqual([]);
   });
 
+  it('forwards active CMS filters to the api client and drops half-filled rows', async () => {
+    let receivedOpts: any = null;
+    const apiClient: any = {
+      getCmsCollectionItems: async (_slug: string, opts: any) => {
+        receivedOpts = opts;
+        return { success: true, data: rows };
+      },
+    };
+    const value = {
+      collectionSlug: 'urunler',
+      filters: [
+        { field: 'category', op: 'eq', value: 'mimari' }, // complete → sent
+        { field: '', op: 'eq', value: '' }, // still being edited → dropped
+      ],
+    };
+    await expect(resolveRepeatRows(value, undefined, apiClient)).resolves.toEqual(rows);
+    expect(receivedOpts.filters).toEqual([{ field: 'category', op: 'eq', value: 'mimari' }]);
+  });
+
+  it('keys the cache by filter set — changing a filter refetches, identical reuses', async () => {
+    let calls = 0;
+    const apiClient: any = {
+      getCmsCollectionItems: async () => (calls += 1, { success: true, data: rows }),
+    };
+    const base = { collectionSlug: 'urunler' };
+    await resolveRepeatRows({ ...base, filters: [{ field: 'a', op: 'eq', value: '1' }] }, undefined, apiClient);
+    await resolveRepeatRows({ ...base, filters: [{ field: 'a', op: 'eq', value: '2' }] }, undefined, apiClient);
+    expect(calls).toBe(2); // different filter value → distinct query
+    await resolveRepeatRows({ ...base, filters: [{ field: 'a', op: 'eq', value: '1' }] }, undefined, apiClient);
+    expect(calls).toBe(2); // identical filters → cache hit
+  });
+
   it('swallows fetch errors as empty rows (a failing API must not crash render)', async () => {
     const fieldDef = {
       fetchList: async () => {

@@ -73,7 +73,12 @@ const createExtensions = () => [
   Code,
   CodeBlock,
   TextAlign.configure({ types: ['heading', 'paragraph'] }),
-  Link.configure({ openOnClick: false, HTMLAttributes: { target: '_blank' } }),
+  // `rel` guards against reverse-tabnabbing on target=_blank links (and drops
+  // referrer). Set on HTMLAttributes so EVERY rendered link carries it.
+  Link.configure({
+    openOnClick: false,
+    HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer' },
+  }),
   Image.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: 'tecof-editor-image' } }),
 ];
 

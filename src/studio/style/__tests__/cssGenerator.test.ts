@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateStyleCss } from '../cssGenerator';
+import { STYLE_CONTROLS, importantClass } from '../tokens';
 
 describe('generateStyleCss', () => {
   it('generates spacing declarations from preset tokens', () => {
@@ -31,10 +32,28 @@ describe('generateStyleCss', () => {
     );
   });
 
-  it('wraps breakpoint-prefixed classes in media queries', () => {
+  it('wraps breakpoint-prefixed classes in desktop-first (max-width) media queries', () => {
     const css = generateStyleCss(['md:p-8!']);
-    expect(css).toContain('@media (min-width: 768px)');
+    expect(css).toContain('@media (max-width: 768px)');
     expect(css).toContain('.md\\:p-8\\! { padding: 2rem !important; }');
+  });
+
+  it('orders media blocks largest-first so the smaller breakpoint wins at narrow widths', () => {
+    // Input lists sm before md; output must still emit md (larger) before sm
+    // (smaller) so sm's rule wins where both max-width queries match (e.g. 375px).
+    const css = generateStyleCss(['sm:p-4!', 'md:p-8!']);
+    const mdIdx = css.indexOf('(max-width: 768px)');
+    const smIdx = css.indexOf('(max-width: 640px)');
+    expect(mdIdx).toBeGreaterThanOrEqual(0);
+    expect(smIdx).toBeGreaterThan(mdIdx);
+  });
+
+  it('keeps the base layer outside any media query', () => {
+    const css = generateStyleCss(['p-2!', 'md:p-8!']);
+    const baseIdx = css.indexOf('.p-2\\!');
+    const mediaIdx = css.indexOf('@media');
+    expect(baseIdx).toBeGreaterThanOrEqual(0);
+    expect(baseIdx).toBeLessThan(mediaIdx);
   });
 
   it('appends pseudo-classes for state variants', () => {
@@ -44,7 +63,7 @@ describe('generateStyleCss', () => {
 
   it('handles combined breakpoint + state variants', () => {
     const css = generateStyleCss(['md:hover:bg-red-500!']);
-    expect(css).toContain('@media (min-width: 768px)');
+    expect(css).toContain('@media (max-width: 768px)');
     expect(css).toContain('.md\\:hover\\:bg-red-500\\!:hover {');
   });
 
@@ -83,4 +102,80 @@ describe('generateStyleCss', () => {
   it('keeps font-weight (font-*) distinct from font-family (font-[…])', () => {
     expect(generateStyleCss(['font-bold!'])).toContain('font-weight: 700 !important;');
   });
+
+  it('emits per-side padding and margin', () => {
+    expect(generateStyleCss(['pt-4!'])).toContain('padding-top: 1rem !important;');
+    expect(generateStyleCss(['pb-2!'])).toContain('padding-bottom: 0.5rem !important;');
+    expect(generateStyleCss(['pl-[10px]!'])).toContain('padding-left: 10px !important;');
+    expect(generateStyleCss(['mr-8!'])).toContain('margin-right: 2rem !important;');
+  });
+
+  it('emits layout controls: position, z-index, overflow, flex-wrap', () => {
+    expect(generateStyleCss(['relative!'])).toContain('position: relative !important;');
+    expect(generateStyleCss(['z-10!'])).toContain('z-index: 10 !important;');
+    expect(generateStyleCss(['overflow-hidden!'])).toContain('overflow: hidden !important;');
+    expect(generateStyleCss(['flex-wrap!'])).toContain('flex-wrap: wrap !important;');
+  });
+
+  it('emits typography detail: tracking, transform, decoration', () => {
+    expect(generateStyleCss(['tracking-wide!'])).toContain('letter-spacing: 0.025em !important;');
+    expect(generateStyleCss(['uppercase!'])).toContain('text-transform: uppercase !important;');
+    expect(generateStyleCss(['underline!'])).toContain('text-decoration-line: underline !important;');
+    expect(generateStyleCss(['no-underline!'])).toContain('text-decoration-line: none !important;');
+  });
+
+  it('emits blur as a filter', () => {
+    expect(generateStyleCss(['blur!'])).toContain('filter: blur(8px) !important;');
+    expect(generateStyleCss(['blur-lg!'])).toContain('filter: blur(16px) !important;');
+  });
+
+  it('composes scale + rotate through CSS variables into one transform', () => {
+    const css = generateStyleCss(['scale-110!', 'rotate-6!']);
+    expect(css).toContain('--tc-scale: 1.1 !important;');
+    expect(css).toContain('--tc-rotate: 6deg !important;');
+    // Both classes emit the SAME composed transform referencing both vars, so
+    // whichever rule wins source-order still applies scale AND rotate.
+    expect(css).toContain('transform: rotate(var(--tc-rotate, 0)) scale(var(--tc-scale, 1)) !important;');
+  });
+
+  it('builds a gradient from direction + from/to stops', () => {
+    const css = generateStyleCss(['bg-gradient-to-r!', 'from-primary-600!', 'to-[#ff0000]!']);
+    expect(css).toContain(
+      'linear-gradient(to right, var(--tc-grad-from, transparent), var(--tc-grad-to, transparent))'
+    );
+    expect(css).toContain('--tc-grad-from: var(--color-primary-600, var(--tecof-primary-600)) !important;');
+    expect(css).toContain('--tc-grad-to: #ff0000 !important;');
+  });
+
+  it('wires the transition pair (transition-all + duration-N) via a duration var', () => {
+    const css = generateStyleCss(['transition-all!', 'duration-300!']);
+    expect(css).toContain('transition-property: all !important;');
+    expect(css).toContain('transition-duration: var(--tc-duration, 150ms) !important;');
+    expect(css).toContain('--tc-duration: 300ms !important;');
+  });
+});
+
+/**
+ * Coverage guard: every visible style control must actually produce CSS. This
+ * is exactly the class of bug that left ~20 controls silently dead (the UI
+ * emitted a class but `declarationsFor` had no case for it). Animation/scroll
+ * controls are excluded — their CSS ships from animationCss.ts / scrollEffects.ts,
+ * not generateStyleCss.
+ */
+describe('style control CSS coverage', () => {
+  const RUNTIME_CSS_CONTROLS = new Set(['anim', 'animDelay', 'reveal', 'parallax']);
+
+  for (const control of STYLE_CONTROLS) {
+    if (RUNTIME_CSS_CONTROLS.has(control.id)) continue;
+    it(`emits CSS for every preset of "${control.id}"`, () => {
+      for (const opt of control.options) {
+        if (!opt.value) continue; // the empty "—" option is a deliberate no-op
+        const cls = control.toClass(opt.value);
+        if (!cls) continue;
+        const classes = cls.split(' ').map(importantClass);
+        const css = generateStyleCss(classes);
+        expect(css, `${control.id}="${opt.value}" (${cls}) produced no CSS`).not.toBe('');
+      }
+    });
+  }
 });

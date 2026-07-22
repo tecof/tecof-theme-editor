@@ -79,6 +79,33 @@ const ITEMS: Record<string, string> = {
   start: 'flex-start', center: 'center', end: 'flex-end', stretch: 'stretch', baseline: 'baseline',
 };
 
+const TRACKING: Record<string, string> = {
+  tighter: '-0.05em', tight: '-0.025em', normal: '0em',
+  wide: '0.025em', wider: '0.05em', widest: '0.1em',
+};
+
+const BLUR: Record<string, string> = {
+  none: '0', sm: '4px', md: '8px', lg: '16px', xl: '24px',
+};
+
+/** Gradient direction token (`to-r`) → CSS `<side-or-corner>`. */
+const GRADIENT_DIRECTION: Record<string, string> = {
+  'to-r': 'to right', 'to-l': 'to left', 'to-b': 'to bottom', 'to-t': 'to top',
+  'to-br': 'to bottom right', 'to-tr': 'to top right',
+};
+
+/**
+ * Composed `transform` value. `scale` and `rotate` are separate emitted classes
+ * (`scale-110!`, `rotate-6!`) that each land in their OWN CSS rule, so writing
+ * `transform` directly would let the later rule clobber the earlier one — only
+ * one of the two would ever apply. Instead every transform control writes a CSS
+ * custom property and emits this SAME composed string (Tailwind's technique):
+ * the custom properties cascade independently, so scale + rotate combine
+ * correctly even when they live on different layers (e.g. rotate on base,
+ * scale on `hover`).
+ */
+const COMPOSED_TRANSFORM = 'rotate(var(--tc-rotate, 0)) scale(var(--tc-scale, 1))';
+
 /** Resolve a color TOKEN (not an arbitrary value) to a CSS color. */
 const colorValue = (token: string): string | null => {
   if (token === 'transparent') return 'transparent';
@@ -120,6 +147,14 @@ const declarationsFor = (controlId: string, value: string): Declaration[] | null
       return ITEMS[value] ? [['align-items', ITEMS[value]]] : null;
     case 'alignSelf':
       return [['align-self', value === 'start' ? 'flex-start' : value === 'end' ? 'flex-end' : value]];
+    case 'flexWrap':
+      return [['flex-wrap', value]];
+    case 'position':
+      return [['position', value]];
+    case 'zIndex':
+      return [['z-index', value]];
+    case 'overflow':
+      return [['overflow', value]];
     case 'gap': {
       const v = spaceValue(value);
       return v ? [['gap', v]] : null;
@@ -137,6 +172,10 @@ const declarationsFor = (controlId: string, value: string): Declaration[] | null
       const v = spaceValue(value);
       return v ? [['padding-top', v], ['padding-bottom', v]] : null;
     }
+    case 'pt': { const v = spaceValue(value); return v ? [['padding-top', v]] : null; }
+    case 'pb': { const v = spaceValue(value); return v ? [['padding-bottom', v]] : null; }
+    case 'pl': { const v = spaceValue(value); return v ? [['padding-left', v]] : null; }
+    case 'pr': { const v = spaceValue(value); return v ? [['padding-right', v]] : null; }
     case 'm': {
       const v = spaceValue(value);
       return v ? [['margin', v]] : null;
@@ -149,6 +188,10 @@ const declarationsFor = (controlId: string, value: string): Declaration[] | null
       const v = spaceValue(value);
       return v ? [['margin-top', v], ['margin-bottom', v]] : null;
     }
+    case 'mt': { const v = spaceValue(value); return v ? [['margin-top', v]] : null; }
+    case 'mb': { const v = spaceValue(value); return v ? [['margin-bottom', v]] : null; }
+    case 'ml': { const v = spaceValue(value); return v ? [['margin-left', v]] : null; }
+    case 'mr': { const v = spaceValue(value); return v ? [['margin-right', v]] : null; }
     case 'marginAlign':
       switch (value) {
         case 'auto': return [['margin', 'auto']];
@@ -206,6 +249,12 @@ const declarationsFor = (controlId: string, value: string): Declaration[] | null
       return [['text-align', value]];
     case 'leading':
       return LEADING[value] ? [['line-height', LEADING[value]]] : null;
+    case 'tracking':
+      return TRACKING[value] ? [['letter-spacing', TRACKING[value]]] : null;
+    case 'textTransform':
+      return [['text-transform', value === 'normal-case' ? 'none' : value]];
+    case 'decoration':
+      return [['text-decoration-line', value === 'no-underline' ? 'none' : value]];
 
     case 'radius':
       return RADII[value] ? [['border-radius', RADII[value]]] : null;
@@ -218,6 +267,29 @@ const declarationsFor = (controlId: string, value: string): Declaration[] | null
     case 'opacity': {
       const n = Number(value);
       return Number.isFinite(n) ? [['opacity', String(n / 100)]] : null;
+    }
+    case 'blur':
+      return [['filter', value === 'none' ? 'none' : `blur(${BLUR[value] ?? '0'})`]];
+    // Transforms write a custom property + the shared composed string so
+    // scale/rotate combine instead of overwriting each other — see COMPOSED_TRANSFORM.
+    case 'scale': {
+      const n = Number(value);
+      return Number.isFinite(n) ? [['--tc-scale', String(n / 100)], ['transform', COMPOSED_TRANSFORM]] : null;
+    }
+    case 'rotate':
+      return [['--tc-rotate', `${value}deg`], ['transform', COMPOSED_TRANSFORM]];
+    // Gradient: direction paints the linear-gradient; the two stops set the
+    // from/to custom properties it references (empty stops fall back to transparent).
+    case 'bgGradient':
+      return [['background-image',
+        `linear-gradient(${GRADIENT_DIRECTION[value] ?? 'to right'}, var(--tc-grad-from, transparent), var(--tc-grad-to, transparent))`]];
+    case 'gradientFrom': {
+      const v = raw ?? colorValue(value);
+      return v ? [['--tc-grad-from', v]] : null;
+    }
+    case 'gradientTo': {
+      const v = raw ?? colorValue(value);
+      return v ? [['--tc-grad-to', v]] : null;
     }
 
     default:
@@ -260,14 +332,55 @@ const resolveUtility = (utility: string): UtilityInfo | null => {
   return null;
 };
 
+/**
+ * Utilities that don't round-trip through the control→value model. The
+ * `transition` control emits a PAIR of classes (`transition-all duration-300`)
+ * that compileStyles splits apart, so neither half maps back to a single
+ * control. Duration flows through a CSS custom property so the two classes
+ * compose regardless of source order.
+ */
+const DURATION_RE = /^duration-(\d+)$/;
+const specialDeclarations = (utility: string): Declaration[] | null => {
+  if (utility === 'transition-all') {
+    return [
+      ['transition-property', 'all'],
+      ['transition-timing-function', 'cubic-bezier(0.4, 0, 0.2, 1)'],
+      ['transition-duration', 'var(--tc-duration, 150ms)'],
+    ];
+  }
+  const dur = DURATION_RE.exec(utility);
+  if (dur) return [['--tc-duration', `${dur[1]}ms`]];
+  return null;
+};
+
 /* ─── Selector / rule assembly ─── */
 
+/**
+ * Breakpoints are DESKTOP-FIRST (`max-width`): the `base` layer is the main
+ * (desktop) design and each breakpoint is an override that kicks in as the
+ * viewport SHRINKS. This is what makes the `mobile` viewport actually editable —
+ * the mobile canvas (375px) previews the `sm` layer, and `sm` (≤640px) genuinely
+ * applies there. With the old mobile-first `min-width` model nothing could target
+ * below the smallest breakpoint (640px), so mobile edits silently did nothing.
+ *
+ * Boundaries are inclusive of the canvas widths: tablet (768px) must match `md`,
+ * mobile (375px) must match `sm`. Because a narrow width matches EVERY larger
+ * breakpoint too (375px ≤ 640/768/1024/1280), the smaller override must win — so
+ * media blocks are emitted largest-first, smallest-last (see MEDIA_ORDER).
+ */
 const MEDIA: Record<string, string> = {
-  sm: '(min-width: 640px)',
-  md: '(min-width: 768px)',
-  lg: '(min-width: 1024px)',
-  xl: '(min-width: 1280px)',
+  sm: '(max-width: 640px)',
+  md: '(max-width: 768px)',
+  lg: '(max-width: 1024px)',
+  xl: '(max-width: 1280px)',
 };
+
+/**
+ * Emission order for `@media` blocks: largest max-width first so the smallest
+ * (narrowest) breakpoint comes last and wins at narrow widths, where several
+ * `max-width` queries match at once and CSS source order decides.
+ */
+const MEDIA_ORDER: string[] = [MEDIA.xl, MEDIA.lg, MEDIA.md, MEDIA.sm];
 
 const PSEUDO: Record<string, string> = {
   hover: ':hover', focus: ':focus', active: ':active',
@@ -323,8 +436,9 @@ export function generateStyleCss(classes: readonly string[]): string {
     const parsed = parseClass(cls);
     if (!parsed) continue;
     const info = resolveUtility(parsed.utility);
-    if (!info) continue;
-    const decls = declarationsFor(info.controlId, info.value);
+    const decls = info
+      ? declarationsFor(info.controlId, info.value)
+      : specialDeclarations(parsed.utility);
     if (!decls || decls.length === 0) continue;
 
     const selector = `.${escapeSelector(cls)}${parsed.pseudo ?? ''}`;
@@ -341,8 +455,10 @@ export function generateStyleCss(classes: readonly string[]): string {
   }
 
   const chunks = [...plain];
-  for (const [media, rules] of byMedia) {
-    chunks.push(`@media ${media} { ${rules.join(' ')} }`);
+  // Desktop-first: emit largest max-width first so narrower overrides win.
+  for (const media of MEDIA_ORDER) {
+    const rules = byMedia.get(media);
+    if (rules) chunks.push(`@media ${media} { ${rules.join(' ')} }`);
   }
   return chunks.join('\n');
 }

@@ -33,10 +33,18 @@ interface ApiListValue {
   limit?: number;
 }
 
+interface CmsCollectionFilterValue {
+  field: string;
+  op: string;
+  value: string;
+}
+
 interface CmsCollectionValue {
   collectionSlug: string;
   limit?: number;
   sort?: 'newest' | 'oldest' | 'custom';
+  /** Advanced `data.*` filters configured in CmsCollectionField. */
+  filters?: CmsCollectionFilterValue[];
 }
 
 const isCmsCollectionValue = (value: unknown): value is CmsCollectionValue =>
@@ -44,6 +52,16 @@ const isCmsCollectionValue = (value: unknown): value is CmsCollectionValue =>
   typeof value === 'object' &&
   typeof (value as CmsCollectionValue).collectionSlug === 'string' &&
   (value as CmsCollectionValue).collectionSlug.length > 0;
+
+/**
+ * Only complete filter rows are sent (mirrors the API client's own guard) — a
+ * half-filled row the user is still editing must not change the query or split
+ * the cache. Shared by the cache key and the fetch so they never drift.
+ */
+const activeFilters = (filters?: CmsCollectionFilterValue[]): CmsCollectionFilterValue[] =>
+  (filters ?? []).filter(
+    (f) => f.field && f.op && f.value !== '' && f.value !== undefined && f.value !== null
+  );
 
 /* ── Session cache + tiny subscription store ── */
 
@@ -101,7 +119,8 @@ const cacheKeyFor = (
     return `api:${v.query ?? ''}:${v.limit ?? ''}`;
   }
   if (isCmsCollectionValue(value)) {
-    return `cms:${value.collectionSlug}:${value.limit ?? ''}:${value.sort ?? ''}`;
+    const filters = JSON.stringify(activeFilters(value.filters));
+    return `cms:${value.collectionSlug}:${value.limit ?? ''}:${value.sort ?? ''}:${filters}`;
   }
   return null;
 };
@@ -143,6 +162,7 @@ const fetchRows = async (
       const res = await apiClient.getCmsCollectionItems(value.collectionSlug, {
         limit: value.limit,
         sort: value.sort,
+        filters: activeFilters(value.filters),
       });
       const data = res?.success ? res.data : null;
       const items = Array.isArray(data) ? data : (data?.items ?? []);

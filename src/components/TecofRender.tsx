@@ -8,6 +8,9 @@ import { generateStyleCss } from '../studio/style/cssGenerator';
 import { resolveTheme } from '../studio/theme/theme';
 import { themeGoogleFontsHref, themeFontFaceCss } from '../studio/theme/fonts';
 import { initScrollEffects } from '../studio/style/scrollEffects';
+import { initInteractions } from '../studio/interactions/runtime';
+import { collectInteractionRegistry, interactionNodeClasses } from '../studio/interactions/registry';
+import { INTERACTIONS_CSS } from '../studio/interactions/css';
 import { generateCSSVariables } from '../utils';
 import { migrateDocument } from '../engine/migrate';
 import { RepeatItemContext } from './RepeatItemContext';
@@ -119,9 +122,13 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
   // published site too (not only inside the editor canvas).
   const styleClassName = compileStyles(nodeProps[STYLES_PROP]);
 
+  // Interaction markers ride the className channel (published pages have no
+  // per-node DOM wrapper, so this is the only hook that reaches the element).
+  const ixClasses = interactionNodeClasses(nodeProps, { editing: false });
+
   const componentProps = {
     ...nodeProps,
-    className: mergeClassName(nodeProps.className, styleClassName),
+    className: mergeClassName(nodeProps.className, `${styleClassName} ${ixClasses}`.trim()),
     puck: {
       renderDropZone: RenderDropZone,
       isEditing: false,
@@ -171,12 +178,18 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
  * No API fetch, no provider required, zero @puckeditor/core dependency.
  */
 export const TecofRender = ({ data, config, className, cmsData }: TecofRenderProps) => {
-  // Scroll interactions (reveal-on-scroll + parallax) — client only. The runtime
-  // watches for late-added nodes itself, so a single mount is enough. Declared
-  // before any early return so the hook order stays stable.
+  // Runtime effects (reveal-on-scroll + parallax + when-then interactions) —
+  // client only, mounted once. Both watch/delegate for late-added nodes, and
+  // interactions read their config from the `<script data-tecof-interactions>`
+  // rendered below. Declared before any early return so hook order stays stable.
   useEffect(() => {
-    const handle = initScrollEffects(typeof document !== 'undefined' ? document : null);
-    return () => handle.destroy();
+    const root = typeof document !== 'undefined' ? document : null;
+    const scroll = initScrollEffects(root);
+    const interactions = initInteractions(root);
+    return () => {
+      scroll.destroy();
+      interactions.destroy();
+    };
   }, []);
 
   if (!data) return null;
@@ -218,6 +231,14 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
   // in `_tecofStyles` get their CSS generated right here (see cssGenerator.ts).
   const styleCss = generateStyleCss(collectDocumentClasses(doc));
 
+  // When-then interaction config, serialised for the runtime. `<` is escaped so a
+  // string value can never break out of the <script> tag.
+  const interactionRegistry = collectInteractionRegistry(doc);
+  const interactionRegistryJson =
+    Object.keys(interactionRegistry).length > 0
+      ? JSON.stringify(interactionRegistry).replace(/</g, '\\u003c')
+      : '';
+
   // Published-page counterpart of the studio's ThemeVars: the `--theme-*`
   // variables (Tema panel + config.theme defaults) must exist here too, or
   // every `var(--theme-color-*)` reference — theme swatches picked in the
@@ -238,6 +259,16 @@ export const TecofRender = ({ data, config, className, cmsData }: TecofRenderPro
           <style> injection). Emitted once per page; harmless when unused. */}
       <style data-tecof-animations>{ANIMATION_CSS}</style>
       {styleCss && <style data-tecof-styles>{styleCss}</style>}
+      {/* Interaction runtime CSS (the hidden state) + the source→actions registry
+          the runtime reads on mount. Omitted entirely when nothing uses it. */}
+      <style data-tecof-interactions-css>{INTERACTIONS_CSS}</style>
+      {interactionRegistryJson && (
+        <script
+          type="application/json"
+          data-tecof-interactions
+          dangerouslySetInnerHTML={{ __html: interactionRegistryJson }}
+        />
+      )}
       <div className={className}>
         {contentWithLayout}
       </div>

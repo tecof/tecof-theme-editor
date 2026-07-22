@@ -14,6 +14,7 @@ import { NodeErrorBoundary } from './NodeErrorBoundary';
 import { postToHost, isEmbedded } from '../bridge';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
 import { STYLES_PROP } from '../style/types';
+import { interactionNodeClasses } from '../interactions/registry';
 import { useInlineDragRef } from './useInlineDragRef';
 import { usePermissions } from '../usePermissions';
 import { registerOverlayPortal, isInsideOverlayPortal } from './overlayPortal';
@@ -220,9 +221,14 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // matching TecofRender. In edit mode they render faded (via `is-hidden`).
   if (isHidden && mode === 'preview') return null;
 
+  // Interaction markers ride the same className channel as styles (the only
+  // per-node hook that also exists on published pages). In edit mode `_startHidden`
+  // nodes stay visible (dashed) so they're editable; preview hides them like live.
+  const ixClasses = interactionNodeClasses(displayProps, { editing: !locked });
+
   const componentProps = {
     ...displayProps,
-    className: mergeClassName(displayProps.className, styleClassName),
+    className: mergeClassName(displayProps.className, `${styleClassName} ${ixClasses}`.trim()),
     puck: {
       dragRef: componentConfig.inline ? dragRef : undefined,
       renderDropZone,

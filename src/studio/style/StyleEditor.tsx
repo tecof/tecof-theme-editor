@@ -35,7 +35,12 @@ const hasProps = (props?: StyleProps): boolean =>
 
 type Viewport = 'desktop' | 'tablet' | 'mobile';
 
-/** TopBar viewport → the style breakpoint that canvas width most represents. */
+/**
+ * TopBar viewport → the (desktop-first, max-width) style breakpoint that canvas
+ * width edits. `base` is the all-screens desktop design; `mobile` edits `sm`
+ * (≤640px), which now genuinely applies at the 375px mobile canvas. See the
+ * MEDIA block in cssGenerator.ts for the desktop-first shrink-down model.
+ */
 const VIEWPORT_TO_BP: Record<Viewport, Breakpoint> = {
   desktop: 'base',
   tablet: 'md',
@@ -81,12 +86,15 @@ export interface StyleEditorProps {
   onChange: (next: NodeStyles) => void;
 }
 
-const BREAKPOINTS: { key: Breakpoint; label: string }[] = [
-  { key: 'base', label: 'Genel' },
-  { key: 'sm', label: 'sm' },
-  { key: 'md', label: 'md' },
-  { key: 'lg', label: 'lg' },
-  { key: 'xl', label: 'xl' },
+// Desktop-first (max-width): base is the main design; each breakpoint overrides
+// as the screen shrinks. Hints spell out the direction so `sm`/`md` don't read
+// as Tailwind's usual "and up".
+const BREAKPOINTS: { key: Breakpoint; label: string; hint: string }[] = [
+  { key: 'base', label: 'Genel', hint: 'Tüm ekranlar — ana (masaüstü) tasarım' },
+  { key: 'sm', label: 'sm', hint: '≤640px — mobil ve altı' },
+  { key: 'md', label: 'md', hint: '≤768px — tablet ve altı' },
+  { key: 'lg', label: 'lg', hint: '≤1024px ve altı' },
+  { key: 'xl', label: 'xl', hint: '≤1280px ve altı' },
 ];
 
 const STATES: { key: 'base' | StateVariant; label: string }[] = [
@@ -347,6 +355,7 @@ export const StyleEditor = ({ value, onChange }: StyleEditorProps) => {
                 type="button"
                 className={`tecof-style-seg-btn${bp === b.key ? ' is-active' : ''}`}
                 onClick={() => selectBp(b.key)}
+                title={b.hint}
               >
                 {b.label}
                 {overridden && <OverrideBadge title="Bu kırılımda özelleştirildi" />}

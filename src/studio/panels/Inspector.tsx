@@ -14,6 +14,8 @@ import { useResolvedFields } from '../fields-host/useResolvedFields';
 import { StyleEditor } from '../style/StyleEditor';
 import { ThemeEditor } from '../theme/ThemeEditor';
 import { STYLES_PROP } from '../style/types';
+import { InteractionsEditor } from '../interactions/InteractionsEditor';
+import { INTERACTIONS_PROP, START_HIDDEN_PROP } from '../interactions/types';
 
 /**
  * Renders the editable content fields (plus the variant switcher) for ONE node.
@@ -203,7 +205,7 @@ export const Inspector = () => {
   // A node with `edit: false` shows its fields but disables editing.
   const perms = usePermissions(selectedId);
   const fieldsReadOnly = readOnly || perms.edit === false;
-  const [tab, setTab] = useState<'content' | 'style'>('content');
+  const [tab, setTab] = useState<'content' | 'style' | 'interactions'>('content');
   const [rootTab, setRootTab] = useState<'page' | 'theme'>('page');
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   // Stable reference so the memoized SectionGroup rows don't re-render on
@@ -243,6 +245,22 @@ export const Inspector = () => {
     [selectedId, documentState, config]
   );
   const isAggregate = descendants.length > 0;
+
+  // Every OTHER node on the page — target candidates for interactions (scroll to,
+  // toggle a class on, show/hide). Labelled by component + a short id so repeats
+  // of the same type stay distinguishable.
+  const targetNodes = useMemo(() => {
+    const out: { id: string; label: string }[] = [];
+    const push = (node?: TecofNode) => {
+      const id = node?.props?.id;
+      if (typeof id !== 'string' || !id || id === selectedId) return;
+      const base = config.components[node.type]?.label || node.type;
+      out.push({ id, label: `${base} · ${id.slice(-4)}` });
+    };
+    for (const n of documentState.content ?? []) push(n);
+    for (const items of Object.values(documentState.zones ?? {})) for (const n of items) push(n);
+    return out;
+  }, [documentState, config, selectedId]);
 
   // 1. Component selected state
   if (selectedId) {
@@ -319,6 +337,16 @@ export const Inspector = () => {
           >
             Stil
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'interactions'}
+            className={`tecof-inspector-tab tecof-tip${tab === 'interactions' ? ' is-active' : ''}`}
+            data-tip="Tıklama/hover ile kaydırma, sınıf açma, panel gösterme"
+            onClick={() => setTab('interactions')}
+          >
+            Etkileşim
+          </button>
         </div>
 
         {/* Fields List / Style Editor */}
@@ -333,6 +361,15 @@ export const Inspector = () => {
             <StyleEditor
               value={node.props[STYLES_PROP]}
               onChange={(next) => updateProps(selectedId, { [STYLES_PROP]: next })}
+            />
+          ) : tab === 'interactions' ? (
+            <InteractionsEditor
+              interactions={node.props[INTERACTIONS_PROP]}
+              startHidden={node.props[START_HIDDEN_PROP]}
+              nodes={targetNodes}
+              readOnly={fieldsReadOnly}
+              onChange={(next) => updateProps(selectedId, { [INTERACTIONS_PROP]: next })}
+              onStartHiddenChange={(next) => updateProps(selectedId, { [START_HIDDEN_PROP]: next })}
             />
           ) : isAggregate ? (
             <>

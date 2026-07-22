@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { initScrollEffects } from '../style/scrollEffects';
+import { initInteractions } from '../interactions/runtime';
+import { collectInteractionRegistry } from '../interactions/registry';
 import { useStudio } from '../context';
 import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
@@ -118,6 +120,19 @@ export const Canvas = () => {
     return () => handle.destroy();
     // `viewport` is included because switching it remounts the iframe — we must
     // re-init the effects on the fresh document.
+  }, [mode, viewport]);
+
+  // When-then interactions run inside the canvas iframe ONLY in preview mode, so
+  // edit-mode clicks keep selecting nodes. The registry is read from the current
+  // document (non-reactive snapshot) — entering preview re-inits with fresh data.
+  useEffect(() => {
+    if (mode !== 'preview') return;
+    const iframe = document.querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe');
+    const doc = iframe?.contentDocument;
+    if (!doc) return;
+    const registry = collectInteractionRegistry(useEditorStore.getState().document);
+    const handle = initInteractions(doc, registry);
+    return () => handle.destroy();
   }, [mode, viewport]);
 
   const handleSelectComponent = (type: string, customProps?: Record<string, unknown>) => {

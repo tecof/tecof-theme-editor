@@ -38,6 +38,21 @@ export { compileStyles, collectStyleClasses, collectDocumentClasses, cn } from '
 export { STYLES_PROP } from './studio/style/types';
 export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';
 
+/* ─── When-then interactions ─── */
+// Declarative trigger→action behaviours stored on a node's `_interactions`.
+// TecofRender wires the runtime automatically; `initInteractions` is exposed for
+// hosts that render pages themselves. `collectInteractionRegistry` builds the
+// source→actions map (e.g. for SSR pre-serialisation).
+export { initInteractions } from './studio/interactions/runtime';
+export { collectInteractionRegistry } from './studio/interactions/registry';
+export { INTERACTIONS_PROP, START_HIDDEN_PROP } from './studio/interactions/types';
+export type {
+  Interaction,
+  InteractionTrigger,
+  InteractionAction,
+  InteractionRegistry,
+} from './studio/interactions/types';
+
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
 
