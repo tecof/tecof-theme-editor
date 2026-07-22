@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.68",
+    "version": "0.0.69",
     "description": "React theme editor and renderer library for Tecof projects",
     "keywords": [
         "react",
@@ -67,7 +67,7 @@
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.29.0",
-        "@tecof/theme-editor": "0.0.59",
+        "@tecof/theme-editor": "^0.0.69",
         "zod": "^4.4.3"
     },
     "devDependencies": {
