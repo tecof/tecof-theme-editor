@@ -9,7 +9,7 @@ import { Frame } from './Frame';
 import { NodeRenderer } from './NodeRenderer';
 import { CanvasNativeDrop } from './canvasDrop';
 import { CanvasEditDelegation } from './canvasEdit';
-import { AddSectionButton } from './AddSectionButton';
+import { InsertOverlay } from './InsertOverlay';
 import { AddSectionModal } from '../panels/AddSectionModal';
 import { CanvasStyleInjector } from './CanvasStyleInjector';
 import { GridOverlay } from './GridOverlay';
@@ -205,25 +205,13 @@ export const Canvas = () => {
         </div>
       ) : (
         <>
-          {!readOnly && (
-            <AddSectionButton
-              index={0}
-              onClick={(idx) => openAddSection({ index: idx })}
-            />
-          )}
+          {/* WRAPPERLESS: sections render as DIRECT children of the root zone —
+              the "+" insert affordances are painted out-of-flow by InsertOverlay
+              so editor DOM == published DOM (no interleaved divider elements). The
+              tail spacer gives the always-visible trailing "+" room to sit below
+              the last section without overlapping it. */}
           {content.map((item, index) => (
-            <React.Fragment key={item.props.id}>
-              <NodeRenderer node={item} index={index} />
-              {!readOnly && (
-                <AddSectionButton
-                  index={index + 1}
-                  // The trailing divider (below the last section) stays always
-                  // visible; in-between dividers keep the hover reveal.
-                  fixed={index === content.length - 1}
-                  onClick={(idx) => openAddSection({ index: idx })}
-                />
-              )}
-            </React.Fragment>
+            <NodeRenderer key={item.props.id} node={item} index={index} />
           ))}
           {!readOnly && <div className="tecof-canvas-root-tail" aria-hidden="true" />}
         </>
@@ -284,6 +272,9 @@ export const Canvas = () => {
           {mode !== 'preview' && !readOnly && <CanvasNativeDrop />}
           {/* Delegated inline-edit (dblclick) + context menu — replaces per-node handlers. */}
           {mode !== 'preview' && !readOnly && <CanvasEditDelegation />}
+          {/* Out-of-flow "+" insert affordances — replaces the in-flow AddSectionButton
+              dividers so slot/root DOM children stay exactly the published set. */}
+          {mode !== 'preview' && !readOnly && <InsertOverlay />}
           {contentWithLayout}
         </Frame>
         </div>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { isEmbedded, postToHost } from '../bridge';
-import { installCanvasInteractionGuard } from './overlayPortal';
+import { installCanvasInteractionGuard, isInsideOverlayPortal } from './overlayPortal';
 import { installCanvasInteractions } from './canvasInteractions';
 
 export interface FrameProps extends React.IframeHTMLAttributes<HTMLIFrameElement> {
@@ -171,7 +171,13 @@ export const Frame = ({
 
       handleBodyClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
-        if (!target.closest('.tecof-node-wrapper')) {
+        // Every node root (inline AND non-inline) carries the `tecof-node-wrapper`
+        // class post-wrapperless — it's applied to the component root now, not a
+        // wrapper div — so this still detects "clicked a node". Additionally step
+        // aside for overlay portals (the "+" insert affordances, tab headers,
+        // slider arrows, …) so those clicks keep their own behaviour instead of
+        // clearing the selection. Deselect only on genuine whitespace.
+        if (!target.closest('.tecof-node-wrapper') && !isInsideOverlayPortal(target)) {
           useEditorStore.getState().selectNode(null);
           if (isEmbedded()) {
             postToHost('puck:itemDeselected');

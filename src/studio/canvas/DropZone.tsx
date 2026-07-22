@@ -6,7 +6,6 @@ import { useStudio } from '../context';
 import { findNodeById } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
 import { NodeRenderer } from './NodeRenderer';
-import { AddSectionButton } from './AddSectionButton';
 import { RepeatGhosts } from './RepeatGhosts';
 import { RepeatItemContext } from '../../components/RepeatItemContext';
 import { useRepeatRows, type RepeatSourceFieldDef } from '../../components/useRepeatRows';
@@ -102,34 +101,16 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
           </button>
         )
       ) : (
-        // Non-empty slot: interleave hover-revealed "+" affordances so a
-        // component can be inserted at ANY position (top / between / end), not
-        // just at the root. During an active drag they're suppressed — the drop
-        // indicators own positioning then. `openAddSection` targets this zone,
-        // so the modal filters to the types this slot actually accepts.
+        // Non-empty slot: nodes render as DIRECT children of the zone container so
+        // theme structural selectors (grid / space-y / :nth-child) see exactly the
+        // published set. The hover-revealed "+" insert affordances (top / between /
+        // end) are painted out-of-flow by InsertOverlay, which targets this zone by
+        // `data-tecof-zone` and opens the modal filtered to the accepted types.
         (() => {
           const template = (
             <>
-              {!readOnly && !isDragActive && (
-                <AddSectionButton
-                  index={0}
-                  orientation={orientation}
-                  slot
-                  onClick={(idx) => openAddSection({ zoneKey, index: idx })}
-                />
-              )}
               {items.map((item, index) => (
-                <React.Fragment key={item.props.id}>
-                  <NodeRenderer node={item} index={index} zoneKey={zoneKey} />
-                  {!readOnly && !isDragActive && (
-                    <AddSectionButton
-                      index={index + 1}
-                      orientation={orientation}
-                      slot
-                      onClick={(idx) => openAddSection({ zoneKey, index: idx })}
-                    />
-                  )}
-                </React.Fragment>
+                <NodeRenderer key={item.props.id} node={item} index={index} zoneKey={zoneKey} />
               ))}
             </>
           );

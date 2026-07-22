@@ -5732,129 +5732,112 @@
   display: inline-block;
 }
 
-/* ── Squarespace-style Add Section Divider & Button ── */
-.tecof-add-section-divider {
+/* ── Wrapperless insert-affordance overlay (Step 4c) ──
+   The "+" insert affordances are painted from an OUT-OF-FLOW layer portaled into
+   the canvas iframe (InsertOverlay.tsx), so a zone's real DOM children stay
+   exactly the published set — no interleaved divider elements to perturb theme
+   `grid`/`space-y`/`:nth-child`. The overlay root is click-through; only the thin
+   per-gap strips take the pointer, and each reveals a centred "+" pill on hover.
+   Coordinates are iframe-native (position:fixed at scale 1). */
+.tecof-insert-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  /* Above page content, below the drag guides / grid band (2147483000+), which
+     only appear while dragging (when this overlay is hidden anyway). */
+  z-index: 2147482000;
+}
+
+/* Per-gap hover/click band — the WHOLE strip is the button (a bare, reset button)
+   so the entire hover band is clickable with no dead zone. position:fixed rect
+   comes from the geometry model; it flex-centres its guide line + "+" pill on the
+   divider (the strip is centred on the divider line). */
+.tecof-insert-affordance {
+  position: fixed;
+  pointer-events: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  margin-top: -16px;
-  margin-bottom: -16px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Faint accent guide line along the divider, revealed on hover. */
+.tecof-insert-affordance::after {
+  content: '';
+  position: absolute;
+  background: var(--tecof-accent);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  pointer-events: none;
+}
+
+.tecof-insert-affordance.axis-y::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.tecof-insert-affordance.axis-x::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+.tecof-insert-affordance.is-fixed::after {
+  opacity: 0.5;
+}
+
+.tecof-insert-affordance:hover::after,
+.tecof-insert-affordance.is-fixed:hover::after {
+  opacity: 1;
+}
+
+/* The "+" pill, centred in the strip (= on the divider line). Clicks land on the
+   parent button, so the pill itself is inert. */
+.tecof-insert-pill {
   position: relative;
-  z-index: 99;
-}
-
-.tecof-add-section-line {
-  flex: 1;
-  height: 1px;
-  background: transparent;
-  transition: background-color 0.2s ease;
-}
-
-.tecof-add-section-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   opacity: 0;
   transform: scale(0.9);
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  transition: opacity 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
   background: var(--tecof-accent);
   color: var(--tecof-accent-fg);
   font-weight: 600;
-  padding: 6px 14px;
+  padding: 5px 12px;
   font-size: 11px;
-  border: none;
+  line-height: 1;
   border-radius: 9999px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
   box-shadow: var(--tecof-shadow-md);
   white-space: nowrap;
-  margin: 0 10px;
+  pointer-events: none;
 }
 
-.tecof-add-section-btn:hover {
+.tecof-insert-affordance:hover .tecof-insert-pill,
+.tecof-insert-affordance.is-fixed .tecof-insert-pill {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tecof-insert-affordance:hover .tecof-insert-pill {
   background: var(--tecof-accent-hover);
 }
 
-.tecof-add-section-divider:hover .tecof-add-section-line {
-  background-color: var(--tecof-accent);
-}
-
-.tecof-add-section-divider:hover .tecof-add-section-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* Trailing divider (end of page): always visible, no hover hunting. It sits
-   after the last section, so it drops the negative overlap margins too. */
-.tecof-add-section-divider.is-fixed {
-  margin-top: 12px;
-  margin-bottom: 4px;
-}
-
-.tecof-add-section-divider.is-fixed .tecof-add-section-btn {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.tecof-add-section-divider.is-fixed .tecof-add-section-line {
-  background: var(--tecof-border);
-}
-
-.tecof-add-section-divider.is-fixed:hover .tecof-add-section-line {
-  background: var(--tecof-accent);
-}
-
-/* ── In-slot "+" insert affordance (layout-neutral, hover-revealed) ──
-   Rendered between (and around) items INSIDE a DropZone slot so a component can
-   be inserted at any position — not only at the root. The divider collapses to
-   zero size (its ±4px margins cancel the flex gap it would otherwise add, so the
-   slot's own spacing is untouched); a padded ::before supplies a hoverable strip
-   and the "+" pill is absolutely centered over the gap. */
-.tecof-add-section-divider.is-slot {
-  position: relative;
-  height: 0;
-  margin: -4px 0;
-  align-self: stretch;
-  overflow: visible;
-  z-index: 50;
-}
-
-.tecof-add-section-divider.is-slot .tecof-add-section-line {
-  display: none;
-}
-
-.tecof-add-section-divider.is-slot::before {
-  content: '';
-  position: absolute;
-  /* Hover strip kept close to the flex gap (which was already empty space), so
-     it reveals the "+" without stealing clicks aimed at the adjacent items. */
-  inset: -5px 0;
-}
-
-.tecof-add-section-divider.is-slot .tecof-add-section-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  margin: 0;
+/* Slightly smaller pill for the dense in-slot gaps (vertical dividers). */
+.tecof-insert-affordance.axis-x .tecof-insert-pill {
   padding: 3px 9px;
   font-size: 10px;
-}
-
-.tecof-add-section-divider.is-slot:hover .tecof-add-section-btn {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-/* Horizontal slot → a VERTICAL divider between side-by-side items. */
-.tecof-add-section-divider.is-slot.is-horizontal {
-  height: auto;
-  width: 0;
-  margin: 0 -4px;
-}
-
-.tecof-add-section-divider.is-slot.is-horizontal::before {
-  inset: 0 -5px;
 }
 
 .tecof-canvas-empty-add-btn {
