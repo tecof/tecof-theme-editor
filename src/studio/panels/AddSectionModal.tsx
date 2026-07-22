@@ -17,14 +17,33 @@ interface SavedSharedComponent {
   props: Record<string, unknown>;
 }
 
+/** One named design-system preset of a component, shown as a chip on its card. */
+interface VariantChoice {
+  key: string;
+  label: string;
+  props: Record<string, unknown>;
+}
+
 interface DisplayItem {
   id: string;
   /** Card title. */
   name: string;
   /** Secondary line under the title (component type or "Şablon"). */
   typeText: string;
-  preview: React.ReactNode;
-  onActivate: () => void;
+  /**
+   * Preview for a given preset. Receives the chip's props (undefined = the
+   * component's own defaults) so hovering a chip re-renders the card preview.
+   */
+  renderPreview: (props?: Record<string, unknown>) => React.ReactNode;
+  /** Insert; `variantKey` set when a chip (not the card) was activated. */
+  onActivate: (variantKey?: string) => void;
+  /** Presets shown as chips under the title. Empty/absent → no strip. */
+  variants?: VariantChoice[];
+  /**
+   * Chip pre-selected when the search query matched a variant label — the card
+   * opens showing what the user actually searched for.
+   */
+  initialVariantKey?: string | null;
 }
 
 interface DisplayGroup {
@@ -37,33 +56,96 @@ interface DisplayGroup {
 
 type GridCardProps = Omit<DisplayItem, 'id'>;
 
-/** Clickable & keyboard-accessible card shared by all grid items. */
-const GridCard = ({ name, typeText, preview, onActivate }: GridCardProps) => (
-  <div
-    className="tecof-modal-grid-card"
-    role="button"
-    tabIndex={0}
-    onClick={onActivate}
-    onKeyDown={(e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onActivate();
-      }
-    }}
-  >
-    <div className="tecof-modal-preview-frame">
-      {preview}
-      <span className="tecof-modal-card-add" aria-hidden="true">
-        <Plus size={13} strokeWidth={2.4} />
-        Ekle
-      </span>
+/**
+ * Clickable & keyboard-accessible card shared by all grid items.
+ *
+ * Bir bileşenin varyantları AYRI KART OLARAK LİSTELENMEZ: tek kartın altında
+ * chip şeridi olarak durur. Chip'in üzerine gelmek önizlemeyi o varyanta çevirir,
+ * tıklamak o varyantla ekler. Böylece katalog şişmez, kenar çubuğu sayaçları
+ * kart sayısıyla tutarlı kalır ve varyant kavramı Inspector'daki chip diliyle
+ * aynı görünür (öğrenilen tek bir kalıp).
+ */
+const GridCard = ({
+  name,
+  typeText,
+  renderPreview,
+  onActivate,
+  variants,
+  initialVariantKey = null,
+}: GridCardProps) => {
+  const hasVariants = !!variants?.length;
+  /** Kartın "seçili" ön ayarı — null = bileşenin kendi varsayılanı ("Temel"). */
+  const [selectedKey, setSelectedKey] = useState<string | null>(initialVariantKey);
+  /** Fare bir chip üzerindeyken önizleme geçici olarak onu gösterir. */
+  const [hoverKey, setHoverKey] = useState<string | null | undefined>(undefined);
+
+  // Arama sonucu değişince (aynı kart farklı chip'le eşleşebilir) seçimi tazele.
+  useEffect(() => setSelectedKey(initialVariantKey), [initialVariantKey]);
+
+  const shownKey = hoverKey !== undefined ? hoverKey : selectedKey;
+  const shownVariant = hasVariants ? variants!.find((v) => v.key === shownKey) : undefined;
+
+  return (
+    <div
+      className="tecof-modal-grid-card"
+      role="button"
+      tabIndex={0}
+      onClick={() => onActivate(selectedKey ?? undefined)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onActivate(selectedKey ?? undefined);
+        }
+      }}
+    >
+      <div className="tecof-modal-preview-frame">
+        {renderPreview(shownVariant?.props)}
+        <span className="tecof-modal-card-add" aria-hidden="true">
+          <Plus size={13} strokeWidth={2.4} />
+          Ekle
+        </span>
+      </div>
+      <div className="tecof-modal-card-footer">
+        <span className="tecof-modal-card-label">{name}</span>
+        <span className="tecof-modal-card-type">{typeText}</span>
+
+        {hasVariants && (
+          <div
+            className="tecof-modal-card-variants"
+            role="group"
+            aria-label={`${name} varyantları`}
+            onMouseLeave={() => setHoverKey(undefined)}
+          >
+            {[{ key: '', label: 'Temel', props: {} }, ...variants!].map((v) => {
+              const key = v.key || null;
+              const isActive = selectedKey === key;
+              return (
+                <button
+                  key={v.key || '__base'}
+                  type="button"
+                  className={`tecof-modal-variant-chip${isActive ? ' is-active' : ''}`}
+                  title={`${v.label} varyantıyla ekle`}
+                  aria-pressed={isActive}
+                  onMouseEnter={() => setHoverKey(key)}
+                  onFocus={() => setHoverKey(key)}
+                  onBlur={() => setHoverKey(undefined)}
+                  onClick={(e) => {
+                    // Kart da tıklanmış sayılmasın — chip kendi varyantını ekler.
+                    e.stopPropagation();
+                    setSelectedKey(key);
+                    onActivate(key ?? undefined);
+                  }}
+                >
+                  {v.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
-    <div className="tecof-modal-card-footer">
-      <span className="tecof-modal-card-label">{name}</span>
-      <span className="tecof-modal-card-type">{typeText}</span>
-    </div>
-  </div>
-);
+  );
+};
 
 export interface AddSectionModalProps {
   isOpen: boolean;
@@ -198,13 +280,14 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
           name: t.label,
           typeText: 'Şablon',
           onActivate: () => onSelectTemplate?.(t),
-          preview: t.thumbnail ? (
-            <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
-          ) : (
-            <div className="tecof-modal-template-icon">
-              <LayoutTemplate size={28} strokeWidth={1.6} />
-            </div>
-          ),
+          renderPreview: () =>
+            t.thumbnail ? (
+              <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
+            ) : (
+              <div className="tecof-modal-template-icon">
+                <LayoutTemplate size={28} strokeWidth={1.6} />
+              </div>
+            ),
         }));
       if (items.length > 0) {
         groups.push({ key: 'templates', title: 'Şablonlar', isElement: false, items });
@@ -224,7 +307,9 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
           // (resolveSharedComponents) master'dan çözer → birinde düzenle,
           // hepsinde güncellenir. Taze node id'si createNode'da EN SON atanır.
           onActivate: () => onSelect(item.type, { ...item.props, sharedComponentId: item._id }),
-          preview: <LiveBlockPreview config={config} type={item.type} props={item.props} mode="section" />,
+          renderPreview: () => (
+            <LiveBlockPreview config={config} type={item.type} props={item.props} mode="section" />
+          ),
         }));
       if (items.length > 0) {
         groups.push({ key: 'saved', title: 'Kaydedilenler (Ortak)', isElement: false, items });
@@ -236,39 +321,42 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
       const isElement = isElementCategory(cat.title);
       const items = (typesByCategory[cat.key] || []).flatMap<DisplayItem>((type) => {
         const label = components[type]?.label || type;
-        const cards: DisplayItem[] = [];
-        if (label.toLowerCase().includes(query)) {
-          cards.push({
-            id: `component:${type}`,
-            name: label,
-            typeText: type,
-            onActivate: () => onSelect(type),
-            preview: (
-              <LiveBlockPreview config={config} type={type} mode={isElement ? 'element' : 'section'} />
-            ),
-          });
-        }
-        // Design-system variants: every named preset is its own card, previewed
-        // with ITS props and inserted via the same customProps path saved
-        // components use. `_variant` marks the active chip in the Inspector.
-        for (const [key, variant] of Object.entries(components[type]?.variants ?? {})) {
-          if (!variant?.label || !`${label} ${variant.label}`.toLowerCase().includes(query)) continue;
-          cards.push({
-            id: `component:${type}:${key}`,
-            name: `${label} · ${variant.label}`,
-            typeText: type,
-            onActivate: () => onSelect(type, { ...variant.props, _variant: key }),
-            preview: (
-              <LiveBlockPreview
-                config={config}
-                type={type}
-                props={variant.props}
-                mode={isElement ? 'element' : 'section'}
-              />
-            ),
-          });
-        }
-        return cards;
+
+        /* Design-system varyantları AYRI KART DEĞİL, kartın chip şeridi olur:
+           katalog bileşen sayısı kadar kart gösterir (kenar çubuğu sayaçlarıyla
+           tutarlı), varyantlar tek tıkla eklenir ve `_variant` Inspector'daki
+           aktif chip'i işaretler. */
+        const variants: VariantChoice[] = Object.entries(components[type]?.variants ?? {})
+          .filter(([, v]) => !!v?.label)
+          .map(([key, v]) => ({ key, label: v.label as string, props: v.props ?? {} }));
+
+        const labelHit = label.toLowerCase().includes(query);
+        // Arama varyant adını tutuyorsa kart görünür ve o chip seçili açılır.
+        const matchedVariant = query
+          ? variants.find((v) => `${label} ${v.label}`.toLowerCase().includes(query))
+          : undefined;
+        if (!labelHit && !matchedVariant) return [];
+
+        return [{
+          id: `component:${type}`,
+          name: label,
+          typeText: type,
+          variants,
+          initialVariantKey: labelHit ? null : matchedVariant?.key ?? null,
+          onActivate: (variantKey?: string) => {
+            const variant = variantKey ? components[type]?.variants?.[variantKey] : undefined;
+            if (variant) onSelect(type, { ...variant.props, _variant: variantKey });
+            else onSelect(type);
+          },
+          renderPreview: (props?: Record<string, unknown>) => (
+            <LiveBlockPreview
+              config={config}
+              type={type}
+              props={props}
+              mode={isElement ? 'element' : 'section'}
+            />
+          ),
+        }];
       });
       if (items.length > 0) {
         groups.push({ key: cat.key, title: cat.title, isElement, items });

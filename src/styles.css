@@ -5005,7 +5005,8 @@
 
 .tecof-style-scopes {
   position: sticky;
-  top: 0;
+  top: -20px;
+  padding-top: 6px;
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -6164,7 +6165,7 @@
 
 .tecof-modal-group-head {
   position: sticky;
-  top: 0;
+  top: -4px;
   z-index: 3;
   display: flex;
   align-items: center;
@@ -6426,6 +6427,58 @@
 
 /* Element cards are self-explanatory; the raw type line is just noise there. */
 .tecof-modal-grid.is-elements .tecof-modal-card-type {
+  display: none;
+}
+
+/* ── Variant chips on a card ──────────────────────────────────────────────
+   A component's design-system presets live INSIDE its card instead of being
+   listed as separate cards: hovering a chip swaps the card preview, clicking
+   inserts that preset. Same chip language as the Inspector's variant switcher,
+   so the pattern is learned once. */
+.tecof-modal-card-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tecof-modal-variant-chip {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--tecof-text-muted);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tecof-modal-variant-chip:hover {
+  color: var(--tecof-accent-text);
+  border-color: var(--tecof-accent);
+}
+
+.tecof-modal-variant-chip:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: 0 0 0 2px var(--tecof-accent-ring);
+}
+
+.tecof-modal-variant-chip.is-active {
+  color: var(--tecof-accent-fg);
+  background: var(--tecof-accent);
+  border-color: var(--tecof-accent);
+}
+
+/* Kompakt element kartlarında şerit taşmasın — tek satır, yatay kaydırma. */
+.tecof-modal-grid.is-elements .tecof-modal-card-variants {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tecof-modal-grid.is-elements .tecof-modal-card-variants::-webkit-scrollbar {
   display: none;
 }
 
