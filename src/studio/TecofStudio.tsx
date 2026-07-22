@@ -399,6 +399,12 @@ export const TecofStudio = ({
         return false;
       };
 
+      // Some keydown events arrive with no `key` — browser autofill / password
+      // managers dispatch synthetic keydowns, and IME/dead-key composition can
+      // too. None of the shortcuts below can match a keyless event, so bail
+      // before any `e.key.toLowerCase()` would throw on `undefined`.
+      if (typeof e.key !== 'string') return;
+
       const selectedId = useEditorStore.getState().selection.selectedId;
       const selectedIds = useEditorStore.getState().selection.selectedIds;
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
