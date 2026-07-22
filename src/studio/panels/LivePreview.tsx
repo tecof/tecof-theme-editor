@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { ComponentConfig, StudioConfig } from '../../types';
+import { compileStyles, collectStyleClasses, mergeClassName } from '../style/compileStyles';
+import { generateStyleCss } from '../style/cssGenerator';
+import { STYLES_PROP } from '../style/types';
+import type { NodeStyles } from '../style/types';
 
 /**
  * Reference desktop width previews are rendered at before being scaled down to
@@ -120,6 +124,14 @@ export const buildPreviewProps = (
 ): Record<string, unknown> => {
   const renderProps: Record<string, unknown> = {
     ...props,
+    // Compile the node's `_tecofStyles` into `className` exactly like the canvas
+    // (NodeRenderer) and published page (TecofRender) do, so editor-applied styles
+    // show in the preview too. The CSS for these classes is injected by
+    // LiveBlockPreview (see collectPreviewClasses).
+    className: mergeClassName(
+      props.className as string | undefined,
+      compileStyles(props[STYLES_PROP] as NodeStyles | undefined),
+    ),
     puck: {
       renderDropZone: () => <DummySlot />,
       isEditing: false,
@@ -153,6 +165,38 @@ export const buildPreviewProps = (
   }
 
   return renderProps;
+};
+
+/**
+ * Collects every `_tecofStyles` class used across a preview tree (root + real
+ * nested slot children, mirroring buildPreviewProps' recursion). Feeds
+ * generateStyleCss so the self-hosted style classes actually have CSS inside the
+ * modal (which lives in the host document, not the canvas iframe).
+ */
+export const collectPreviewClasses = (
+  config: StudioConfig,
+  compConfig: ComponentConfig | undefined,
+  props: Record<string, unknown>,
+  depth = 0,
+): string[] => {
+  const out = new Set<string>(collectStyleClasses(props[STYLES_PROP] as NodeStyles | undefined));
+  for (const [fieldName, fieldDef] of Object.entries(compConfig?.fields ?? {})) {
+    if (fieldDef?.type !== 'slot') continue;
+    const value = props[fieldName];
+    if (depth < MAX_PREVIEW_DEPTH && isChildNodeArray(value, config)) {
+      for (const child of value) {
+        for (const cls of collectPreviewClasses(
+          config,
+          config.components?.[child.type],
+          child.props ?? {},
+          depth + 1,
+        )) {
+          out.add(cls);
+        }
+      }
+    }
+  }
+  return Array.from(out);
 };
 
 /**
@@ -242,12 +286,18 @@ export const LiveBlockPreview = ({
   if (!compConfig?.render) {
     return <div className="tecof-modal-preview-fallback">Önizleme Yok</div>;
   }
+  const renderProps = props ?? compConfig.defaultProps ?? {};
+  // `_tecofStyles` classes are self-hosted (host Tailwind never emits them), and
+  // the modal renders in the host document — not the canvas iframe — so their CSS
+  // must be injected here for editor-applied styles to actually show.
+  const styleCss = generateStyleCss(collectPreviewClasses(config, compConfig, renderProps));
   return (
     <AutoScalePreview mode={mode}>
+      {styleCss && <style>{styleCss}</style>}
       <PreviewErrorBoundary>
         <RenderFn
           renderFn={compConfig.render}
-          props={buildPreviewProps(config, compConfig, props ?? compConfig.defaultProps ?? {})}
+          props={buildPreviewProps(config, compConfig, renderProps)}
         />
       </PreviewErrorBoundary>
     </AutoScalePreview>
