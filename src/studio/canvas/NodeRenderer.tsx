@@ -337,10 +337,8 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             onDragEnd={() => {
               endDrag();
             }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            /* onClick moved to delegated canvasInteractions (installed in Frame);
-               the wrapper no longer needs a per-node select handler. */
+            /* Select + hover moved to delegated canvasInteractions (installed in
+               Frame); the non-inline wrapper no longer needs per-node handlers. */
             onDoubleClick={onDoubleClick}
             onContextMenu={handleContextMenu}
             onDragOver={onDragOver}

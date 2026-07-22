@@ -10,9 +10,11 @@
  * guard (which only preventDefault's) and Frame's whitespace-deselect body click
  * (which finds `.tecof-node-wrapper` and steps aside).
  *
- * Scope (this step): SELECT only, and only for NON-INLINE nodes — inline
- * components wire their own handlers via useInlineDragRef and stopPropagation, so
- * their clicks never reach this listener. Hover stays per-node for now.
+ * Scope (this step): SELECT + HOVER for NON-INLINE nodes. Inline components wire
+ * their own handlers via useInlineDragRef and stopPropagation, so their clicks
+ * never reach this listener; for hover, the delegated `mouseover` explicitly
+ * steps aside when the pointer is over an inline node (it has `data-tecof-id` but
+ * no `.tecof-el`) so it can't fight the inline node's own hover.
  */
 
 import { useEditorStore } from '../../engine/store';
@@ -69,6 +71,39 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
     }
   };
 
+  // Hover resolves the INNERMOST node via the nearest `[data-tecof-id]` (not
+  // `.tecof-el`, which would find a non-inline ANCESTOR when the pointer is over
+  // an inline descendant). The nearest node is inline when its own element carries
+  // `data-tecof-id` but is NOT the `.tecof-node-wrapper` — then its own handler
+  // owns the hover and the delegation steps aside. Compares against the STORE's
+  // hoveredId (not a local var) so moving through inline nodes never goes stale.
+  const onOver = (e: MouseEvent) => {
+    if (!isEditMode()) return;
+    const target = e.target as Element | null;
+    const nodeEl = target?.closest?.('[data-tecof-id]');
+    const store = useEditorStore.getState();
+    if (!nodeEl) {
+      if (store.selection.hoveredId !== null) store.hoverNode(null); // whitespace
+      return;
+    }
+    if (!nodeEl.classList.contains('tecof-node-wrapper')) return; // inline → its own
+    const id = nodeEl.getAttribute('data-tecof-id');
+    if (id && store.selection.hoveredId !== id) store.hoverNode(id);
+  };
+
+  // Pointer left the iframe entirely (relatedTarget null) → drop the hover.
+  const onOut = (e: MouseEvent) => {
+    if (e.relatedTarget) return;
+    const store = useEditorStore.getState();
+    if (store.selection.hoveredId !== null) store.hoverNode(null);
+  };
+
   doc.addEventListener('click', onClick);
-  return () => doc.removeEventListener('click', onClick);
+  doc.addEventListener('mouseover', onOver);
+  doc.addEventListener('mouseout', onOut);
+  return () => {
+    doc.removeEventListener('click', onClick);
+    doc.removeEventListener('mouseover', onOver);
+    doc.removeEventListener('mouseout', onOut);
+  };
 }
