@@ -4000,20 +4000,23 @@
 /* ═══════════════════════════════════════════════════════════════════
    Studio — DropZone + Node (rendered INSIDE iframe)
    ═══════════════════════════════════════════════════════════════════ */
+/* Vertical slot: plain BLOCK flow — matches how TecofRender publishes a vertical
+   slot (a plain <div>). No flex `gap`/`align-items:stretch`, so the editor no
+   longer injects an 8px gap or force-stretches children that the live page
+   wouldn't (block children are full-width and margins collapse just like live). */
 .tecof-dropzone {
   border-radius: var(--tecof-radius);
   transition: var(--tecof-transition);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
+  display: block;
 }
 
 /* Horizontal slot: children flow in a row (and wrap), sizing to content so they
-   sit side-by-side. Drop detection picks up the row axis automatically. */
+   sit side-by-side — mirrors TecofRender's inline flex+gap for horizontal slots. */
 .tecof-dropzone.is-horizontal {
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  gap: 8px;
   align-items: flex-start;
 }
 
@@ -4102,15 +4105,19 @@
   filter: saturate(0.6);
 }
 
-/* Editor node wrappers are layout-transparent (display:contents): the rendered
-   component becomes the direct child of its dropzone/parent, so it lays out
-   EXACTLY as it will on the published page (side-by-side in a row, natural
-   width, no injected wrapper box or forced full-width). Selection, drop
-   indicators and drag-guides measure the component element itself (see
-   nodeRect.ts); the drop indicator is positioned with fixed coords instead of
-   anchoring to this wrapper. */
+/* Editor node wrapper. It IS a box (position:relative anchors the drop
+   indicator). `display:contents` was tried but broke selection measurement
+   (a contents box has no rect) and theme structural selectors (`> *`,
+   `:nth-child`, `space-y-*` still land on the box-less wrapper, which then
+   drops margin/border/grid). Instead the parity gap is closed at the dropzone
+   (block model, below), and selection/drag MEASURE the rendered component (the
+   wrapper's child) via nodeRect.ts so the outline still hugs a narrow component
+   even though the wrapper is a full-width box. Wrapperless overlay is the
+   longer-term fix. */
 .tecof-node {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 /* Drag-reorder indicator. `is-y` = horizontal bar (column layouts, drops land
@@ -4133,17 +4140,15 @@
 .tecof-drop-indicator.is-x.is-before { left: -5px; }
 .tecof-drop-indicator.is-x.is-after { right: -5px; }
 
-/* Layout-transparent — see .tecof-node. Visual affordances (drag fade, hidden
-   outline) can't paint on a contents box, so they target the rendered component
-   child (`> *`) instead. */
 .tecof-node-wrapper {
-  display: contents;
+  position: relative;
+  cursor: grab;
 }
 
-.tecof-node-wrapper.is-dragging > * { opacity: 0.4; }
+.tecof-node-wrapper.is-dragging { opacity: 0.4; }
 /* Hidden layer (eye toggle): faded + dashed outline in edit mode so it's still
    discoverable/selectable; omitted entirely in preview + on the published page. */
-.tecof-node-wrapper.is-hidden > * {
+.tecof-node-wrapper.is-hidden {
   opacity: 0.4;
   outline: 1px dashed var(--tecof-border);
   outline-offset: -1px;
@@ -4458,9 +4463,8 @@
   pointer-events: none;
 }
 
-/* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin.
-   Wrapper display:contents olduğundan işaret render edilen bileşene (> *) çizilir. */
-.tecof-studio-root .tecof-node-wrapper[data-tecof-shared="true"] > * {
+/* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin. */
+.tecof-studio-root .tecof-node-wrapper[data-tecof-shared="true"] {
   outline: 1px dashed rgba(139, 92, 246, 0.55);
   outline-offset: -1px;
 }
