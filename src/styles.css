@@ -3697,11 +3697,23 @@
 .tecof-inspector-fields {
   flex: 1;
   overflow-y: auto;
+  /* Kolonun taşan içeriği KAYSIN, kutuları ezmesin: min-height:0 olmadan
+     `flex:1` bir flex öğesi olarak içeriğinin min-content'i kadar büyür ve
+     overflow-y hiç devreye girmez. */
+  min-height: 0;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
+/* Panel yüksekliği yetmediğinde alanlar SIKIŞMAZ — liste kayar.
+   Gerekçe: bu kolonun çocukları varsayılan olarak `flex-shrink:1`'dir; normalde
+   otomatik minimum boyut (min-height:auto) onları içerikten küçültmez, AMA
+   `overflow` değeri visible olmayan bir öğede (ör. accordion) bu koruma düşer
+   ve kutu içeriğinin altına inip kırpılır. `flex:none` hepsini doğal
+   yüksekliğinde tutar. */
+.tecof-inspector-fields > * { flex: none; }
 
 .tecof-inspector-empty {
   display: flex;
@@ -8542,8 +8554,14 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-field-accordion {
   border: 1px solid var(--tecof-border);
   border-radius: var(--tecof-radius);
-  margin-bottom: 10px;
-  overflow: hidden;
+  /* Kutu daima doğal yüksekliğinde: kapsayıcı flex kolonunda ezilip içeriği
+     kırpmasın (bkz. .tecof-inspector-fields > *). Aralık, kapsayıcının kendi
+     `gap`'inden gelir — ayrıca margin verilmez, yoksa gruplar arası boşluk
+     çift sayılır. */
+  flex: none;
+  /* overflow: hidden KULLANMA — .tecof-field-group ile aynı gerekçe: grup
+     içindeki popover'lar ({ } bağlama, renk seçici, medya menüsü) kırpılıyor.
+     Köşeler header/body'nin kendi yarıçapıyla yuvarlanır. */
 }
 .tecof-field-accordion-header {
   display: flex;
@@ -8553,6 +8571,7 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   padding: 9px 10px;
   background: var(--tecof-bg);
   border: none;
+  border-radius: calc(var(--tecof-radius) - 1px) calc(var(--tecof-radius) - 1px) 0 0;
   cursor: pointer;
   font-family: inherit;
   font-size: 12px;
@@ -8570,13 +8589,21 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tecof-field-accordion.is-collapsed .tecof-field-accordion-header {
+  border-radius: calc(var(--tecof-radius) - 1px);
+}
 .tecof-field-accordion-body {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 12px 10px;
   border-top: 1px solid var(--tecof-border-subtle);
+  border-radius: 0 0 calc(var(--tecof-radius) - 1px) calc(var(--tecof-radius) - 1px);
 }
+/* Alan blokları da doğal yüksekliğinde kalır — uzun bir alan (medya ızgarası,
+   dizi listesi) yanındakileri ezmesin. */
+.tecof-field-accordion-body > *,
+.tecof-field-group-body > * { flex: none; }
 
 /* ═══════════════════════════════════════════════════════════════════
    E-ticaret seçicileri (marka / etiket / özellik / flaş satış / kupon)
