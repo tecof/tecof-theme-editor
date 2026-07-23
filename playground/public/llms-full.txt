@@ -2,7 +2,7 @@
 
 > Bu dosya @tecof/theme-editor için AI odaklı rehberi ve repository teknik belgelerini tek bir Markdown bağlamında birleştirir.
 
-- Sürüm: 0.0.67
+- Sürüm: 0.0.71
 - Dil: Türkçe
 - Kaynak önceliği: AI_GUIDE.md → README.md → docs/TAILWIND.md → ARCHITECTURE.md
 - Çelişki halinde kod ve exported TypeScript tipleri son doğruluk kaynağıdır.
@@ -20,7 +20,7 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
 ## Paket kimliği
 
 - Paket: `@tecof/theme-editor`
-- Belgelenen sürüm: `0.0.60`
+- Belgelenen sürüm: `0.0.71`
 - Çalışma zamanı: React 18 veya React 19
 - Amaç: Tecof mağaza ve içerik sayfaları için görsel Studio editörü, yayın
   renderer'ı, API istemcisi ve gelişmiş alan bileşenleri
@@ -46,14 +46,14 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
    kısıtlar `config.permissions` → `component.permissions` →
    `component.resolvePermissions` sırasıyla birleştirilir (bkz.
    `docs/PERMISSIONS.md`).
-8. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
+8. Canvas mimarisi sarmalayıcısızdır (wrapperless canvas): Canvas üzerinde ekstra DOM wrapper düğümleri üretilmez. Seçim, hover ve sürükleme delegasyon/overlay sistemiyle yürütülür.
+9. Bileşenler `fieldsGroups` ile Inspector paneli içerisinde akordeon gruplarına ayrılabilir (`{ name: string, fields: string[] }`).
+10. Aynı `sharedComponentId` değerini paylaşan node'lar Canlı Sembol (Live Symbol) olarak çalışır. Birinde yapılan değişiklik tüm örneklerde canlı güncellenir; alan bazlı `_symbolOverrides` ile özelleştirilebilir.
+11. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
    ayrı bir katmanla çalışır: bir canvas node'una, palet bloğuna veya katman
    paneli satırına **basılı tutmak** (~300ms) sürüklemeyi başlatır; erken
-   hareket kaydırma sayılır. Canvas node taşıma, palet→canvas ekleme ve katman
-   panelinde sıralama (üst/alt + zone'lu satırda ortaya bırakınca "içine")
-   desteklenir. Fare, native HTML5 DnD yolunu kullanmaya devam eder. Ek
-   kurulum gerekmez.
-9. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
+   hareket kaydırma sayılır. Fare, native HTML5 DnD yolunu kullanmaya devam eder.
+12. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
    ilgili kaynak okunmalıdır.
 
 ## Minimum kurulum
@@ -170,6 +170,35 @@ Gelişmiş alan factory'leri:
 - `createIconField`: İkon seçimi
 - `createExternalField`: Üçüncü taraf listeden TEK kayıt seçimi
 - `createApiListField`: Repeat zone için API LİSTE kaynağı (host `fetchList`)
+
+E-ticaret seçicileri (mağazanın kendi kayıtlarından seçim):
+
+- `createCategoryField` / `createCategoryListField`: Kategori (ağaç, girintili)
+- `createProductField` / `createProductListField`: Ürün (sunucu taraflı arama)
+- `createBrandField` / `createBrandListField`: Marka
+- `createTagField` / `createTagListField`: Etiket
+- `createAttributeField` / `createAttributeListField`: Ürün özelliği (renk/beden)
+- `createVariantTypeField`: Varyant tipi tanımı
+- `createVariantField`: Ürün → varyant (iki adımlı)
+- `createFlashSaleField`: Flaş satış (tarih/rozet/renk snapshot'ı ile)
+- `createCampaignField`: Pazarlama kampanyası
+- `createDiscountField`: Kupon / indirim kodu
+
+Bu alanlar seçimi bir **snapshot** olarak saklar: `id` + `slug` + ad ve
+render için gereken alanlar (tarih, renk, kod…). İki sebeple:
+etiket/kupon/flaş satış kayıtlarının storefront (secretKey) ucu YOKTUR, yani
+yayınlanan sayfa kaydı yeniden okuyamaz; ayrıca ürün listeleme ucu markayı ve
+etiketi **ObjectId**, kategoriyi **slug** ile filtreler — yalnız slug saklamak
+marka/etiket filtresini sessizce çalışmaz hâle getirir.
+
+Seçicilerin listesi merchant uçlarından gelir ve **JWT + `x-merchant-id`**
+ister; `TecofApiClient` mağaza kimliğini `merchant-info`'dan bir kez çözüp
+header'a ekler. Kimlik çözülemezse liste boş gösterilmez, HATA basılır —
+"kaydım yok" ile "yetkim yok" karışmasın.
+
+Snapshot **seçim anında donar**: panelde kampanyanın tarihi ya da markanın adı
+sonradan değişirse sayfa eski değeri göstermeye devam eder; merchant alanı
+yeniden seçmelidir.
 
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render
@@ -782,6 +811,72 @@ fields: {
 | `defaultLimit` | `number` | yok | Yeni değerde ön-dolu limit |
 
 **Değer Tipi (`ApiListFieldValue`):** `{ query?: string; limit?: number }` — dokümana yalnızca fetch parametreleri kaydedilir, satırlar render anında çözülür (oturum-içi cache + eş zamanlı istek tekleme).
+
+---
+
+### E-ticaret Seçicileri — Kategori / Ürün / Marka / Etiket / Özellik / Varyant / Flaş Satış / Kampanya / Kupon
+
+Merchant'ın **kendi mağaza kayıtlarından** seçim yaptırır; slug ya da ObjectId elle yazma ihtiyacını bitirir.
+
+```tsx
+import {
+  createCategoryField, createCategoryListField,
+  createProductField, createProductListField,
+  createBrandField, createBrandListField,
+  createTagField, createTagListField,
+  createAttributeField, createAttributeListField,
+  createVariantTypeField, createVariantField,
+  createFlashSaleField, createCampaignField, createDiscountField,
+} from "@tecof/theme-editor";
+
+fields: {
+  category:  createCategoryField({ label: "Kategori" }),
+  product:   createProductField({ label: "Öne Çıkan Ürün" }),
+  brand:     createBrandField({ label: "Marka" }),
+  tags:      createTagListField({ label: "Etiketler", max: 6 }),
+  flashSale: createFlashSaleField({ label: "Flaş Satış" }),
+  coupon:    createDiscountField({ label: "Kupon" }),
+  gift:      createVariantField({ label: "Hediye Ürün" }),
+}
+```
+
+**Saklanan değer bir "snapshot"tır** — yayında ek istek atmadan render edilebilir:
+
+| Alan | Değer |
+|---|---|
+| `createCategoryField` | `{ id, slug, name, path }` |
+| `createProductField` | `{ id, slug, name, image }` |
+| `createBrandField` | `{ id, slug, name, image }` |
+| `createTagField` | `{ id, slug, name }` |
+| `createAttributeField` | `{ id, slug, name, type, isFilterable, options: [{ value, label, colorCode }] }` |
+| `createVariantTypeField` | `{ id, name, selectionType, values: [{ label, colorCode }] }` |
+| `createVariantField` | `{ productId, productSlug, productName, variantId, sku, title, price }` |
+| `createFlashSaleField` | `{ id, name, startDate, endDate, showCountdown, bannerText, highlightColor, discountType, discountValue }` |
+| `createCampaignField` | `{ id, name, status, startDate, endDate, discountCode }` |
+| `createDiscountField` | `{ id, code, title, type, value, minCartAmount, maxDiscountAmount, startDate, endDate }` |
+
+Liste (`*ListField`) varyantlarında değer bu nesnelerden oluşan bir **dizidir** ve editördeki sıra korunur — tema render sırası olarak onu kullanır.
+
+**Neden hem `id` hem `slug`:** ürün listeleme ucu markayı ve etiketi `ObjectId` ile, kategoriyi `slug` ile filtreler. Yalnız slug saklanırsa marka/etiket filtresi sessizce uygulanmaz ve tüm ürünler döner.
+
+```tsx
+// Temada kullanım — filtre KİMLİKLE gider
+const res = await getProducts({ brand: props.brand?.id, tag: props.tag?.id });
+```
+
+**Veri kaynağı ve yetki:** kategori/ürün/marka PUBLIC uçlardan (`/api/store/ecommerce/*`), etiket/özellik/varyant tipi/flaş satış/kampanya/kupon MERCHANT uçlarından (`/api/merchant/ecommerce/*`) gelir. Merchant uçları JWT'ye **ek olarak** `x-merchant-id` header'ı ister — `TecofApiClient` bunu `merchant-info`'dan bir kez çözüp otomatik ekler. Kimlik çözülemezse liste boş gösterilmez, hata basılır.
+
+**Snapshot seçim anında donar:** panelde markanın adı veya kampanyanın tarihi sonradan değişirse sayfa eski değeri göstermeye devam eder; güncellemek için alan yeniden seçilmelidir.
+
+**Arama nerede çalışır:** ürün seçicide sunucuda (binlerce kayıt olabilir), diğerlerinde istemcide — `_crud` uçlarında `?search=` düz metni sessizce yok sayar ve çok dilli `name` bir dizi olduğu için regex'lenemez. Liste kırpıldıysa modalda "N kayıttan ilk M gösteriliyor" notu çıkar.
+
+**Geriye dönük uyum:** var olan bir metin alanının yerine konurken eski prop'u okumaya devam edin — yayındaki kayıtlar yeni alanı taşımaz:
+
+```tsx
+const categoryId = props.brand?.id ?? props.brandIdText ?? "";
+```
+
+Alan seçenekleri: `label`, `placeholder`, `visible` ve liste varyantlarında `max`.
 
 ---
 
@@ -1536,7 +1631,56 @@ ile üretimde çıkan birebir aynıdır, **safelist doğru kurulduğu sürece**.
 
 ---
 
-## 7. Hızlı kontrol listesi
+## 7. Karanlık mod (dark mode) — geliştirici aç/kapa
+
+Karanlık mod **opsiyoneldir ve geliştiricinin genel ayarında açılır**
+(`config.darkMode`). Anahtar yoksa: hiç dark UI, hiç dark CSS, hiç runtime —
+karanlık moda ihtiyacı olmayan tema hiçbir bedel ödemez.
+
+```tsx
+<TecofStudio config={{
+  // ...
+  darkMode: true,                      // varsayılanlarla aç
+  // veya ince ayar:
+  // darkMode: { defaultMode: 'system', storageKey: 'shop-scheme' },
+}} />
+```
+
+**Strateji (Tailwind `.dark` class):** `<html>` üzerindeki `.dark` class'ı,
+`--theme-color-*` değişkenlerinin **DEĞERLERİNİ** takas eder. `generateCSSVariables`
+karanlık mod açıkken ikinci bir blok basar:
+
+```css
+:root      { --theme-color-background: #ffffff; /* … */ }
+:root.dark { --theme-color-background: #09090b; /* … */ }
+```
+
+Sayfa içeriği class'larını **hiç değiştirmez** (`bg-[var(--theme-color-primary)]`
+aynı kalır); sadece `var()` çözümlenen değer değişir. Bu yüzden **`dark:` varyantı
+yoktur ve safelist'e hiçbir şey eklemeniz gerekmez** — self-hosted CSS mimarisiyle
+sorunsuz çalışmasının sebebi budur.
+
+- **Koyu renk değerleri** Tema panelinde düzenlenir (`theme.darkColors`) veya
+  "Koyu palet üret" ile açık paletten otomatik türetilir (`deriveDarkColors`).
+  Girilmeyen her anahtar açık moddaki değerine düşer.
+- **Editörde önizleme:** TopBar'daki ☀️/🌙 düğmesi canvas'ı koyu palette çevirir
+  (yalnız `config.darkMode` açıkken görünür; session-only, dokümana/undo'ya yazmaz).
+- **Yayında ziyaretçi düğmesi:** Sayfanıza `class="tecof-darkmode-toggle"` taşıyan
+  herhangi bir buton koyun — runtime tıklamayı **delege** dinler, `.dark`'ı çevirir
+  ve seçimi `localStorage`'a yazar. `TecofRender` runtime'ı + config `<script>`'ini
+  otomatik kurar.
+- **FOUC (yanlış-tema flaşı) yok:** `TecofRender` `<head>` üretmediği için, sıfır
+  flaş isteyen host `<head>`'e `darkModeHeadScript(config)` çıktısını inline bir
+  `<script>` olarak koyar (class'ı boyamadan önce ayarlar).
+- **İlk şema:** `defaultMode` — `'system'` (OS'i takip eder, varsayılan), `'light'`
+  veya `'dark'`. Ziyaretçinin kayıtlı seçimi her zaman kazanır.
+
+Kendi `<head>`'ini kuran host'lar için ihraçlar: `initDarkMode(document)`,
+`darkModeHeadScript(config)`, `deriveDarkColors(light)`, `DARK_MODE_STORAGE_KEY`.
+
+---
+
+## 8. Hızlı kontrol listesi
 
 - [ ] Host `@theme`'de `--color-primary-50…950` tanımlı.
 - [ ] `safelist: getSafelist()` host Tailwind config'ine eklendi (preset + tema renkleri + bp×state).
@@ -1544,6 +1688,7 @@ ile üretimde çıkan birebir aynıdır, **safelist doğru kurulduğu sürece**.
 - [ ] `@tecof/theme-editor/dist/styles.css` layout'a import edildi (editör chrome'u).
 - [ ] Arbitrary değer kullanılacaksa `collectDocumentClasses(pageData)` ile dinamik safelist eklendi (§3b).
 - [ ] `TecofRender` ile üretim render'ı, editörle aynı `compileStyles` akışını kullanıyor (otomatik).
+- [ ] Karanlık mod isteniyorsa `config.darkMode` açıldı; sıfır flaş için `<head>`'e `darkModeHeadScript()` konuldu (§7).
 
 ---
 

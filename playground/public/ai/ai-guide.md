@@ -6,7 +6,7 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
 ## Paket kimliği
 
 - Paket: `@tecof/theme-editor`
-- Belgelenen sürüm: `0.0.60`
+- Belgelenen sürüm: `0.0.71`
 - Çalışma zamanı: React 18 veya React 19
 - Amaç: Tecof mağaza ve içerik sayfaları için görsel Studio editörü, yayın
   renderer'ı, API istemcisi ve gelişmiş alan bileşenleri
@@ -32,14 +32,14 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
    kısıtlar `config.permissions` → `component.permissions` →
    `component.resolvePermissions` sırasıyla birleştirilir (bkz.
    `docs/PERMISSIONS.md`).
-8. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
+8. Canvas mimarisi sarmalayıcısızdır (wrapperless canvas): Canvas üzerinde ekstra DOM wrapper düğümleri üretilmez. Seçim, hover ve sürükleme delegasyon/overlay sistemiyle yürütülür.
+9. Bileşenler `fieldsGroups` ile Inspector paneli içerisinde akordeon gruplarına ayrılabilir (`{ name: string, fields: string[] }`).
+10. Aynı `sharedComponentId` değerini paylaşan node'lar Canlı Sembol (Live Symbol) olarak çalışır. Birinde yapılan değişiklik tüm örneklerde canlı güncellenir; alan bazlı `_symbolOverrides` ile özelleştirilebilir.
+11. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
    ayrı bir katmanla çalışır: bir canvas node'una, palet bloğuna veya katman
    paneli satırına **basılı tutmak** (~300ms) sürüklemeyi başlatır; erken
-   hareket kaydırma sayılır. Canvas node taşıma, palet→canvas ekleme ve katman
-   panelinde sıralama (üst/alt + zone'lu satırda ortaya bırakınca "içine")
-   desteklenir. Fare, native HTML5 DnD yolunu kullanmaya devam eder. Ek
-   kurulum gerekmez.
-9. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
+   hareket kaydırma sayılır. Fare, native HTML5 DnD yolunu kullanmaya devam eder.
+12. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
    ilgili kaynak okunmalıdır.
 
 ## Minimum kurulum
@@ -156,6 +156,35 @@ Gelişmiş alan factory'leri:
 - `createIconField`: İkon seçimi
 - `createExternalField`: Üçüncü taraf listeden TEK kayıt seçimi
 - `createApiListField`: Repeat zone için API LİSTE kaynağı (host `fetchList`)
+
+E-ticaret seçicileri (mağazanın kendi kayıtlarından seçim):
+
+- `createCategoryField` / `createCategoryListField`: Kategori (ağaç, girintili)
+- `createProductField` / `createProductListField`: Ürün (sunucu taraflı arama)
+- `createBrandField` / `createBrandListField`: Marka
+- `createTagField` / `createTagListField`: Etiket
+- `createAttributeField` / `createAttributeListField`: Ürün özelliği (renk/beden)
+- `createVariantTypeField`: Varyant tipi tanımı
+- `createVariantField`: Ürün → varyant (iki adımlı)
+- `createFlashSaleField`: Flaş satış (tarih/rozet/renk snapshot'ı ile)
+- `createCampaignField`: Pazarlama kampanyası
+- `createDiscountField`: Kupon / indirim kodu
+
+Bu alanlar seçimi bir **snapshot** olarak saklar: `id` + `slug` + ad ve
+render için gereken alanlar (tarih, renk, kod…). İki sebeple:
+etiket/kupon/flaş satış kayıtlarının storefront (secretKey) ucu YOKTUR, yani
+yayınlanan sayfa kaydı yeniden okuyamaz; ayrıca ürün listeleme ucu markayı ve
+etiketi **ObjectId**, kategoriyi **slug** ile filtreler — yalnız slug saklamak
+marka/etiket filtresini sessizce çalışmaz hâle getirir.
+
+Seçicilerin listesi merchant uçlarından gelir ve **JWT + `x-merchant-id`**
+ister; `TecofApiClient` mağaza kimliğini `merchant-info`'dan bir kez çözüp
+header'a ekler. Kimlik çözülemezse liste boş gösterilmez, HATA basılır —
+"kaydım yok" ile "yetkim yok" karışmasın.
+
+Snapshot **seçim anında donar**: panelde kampanyanın tarihi ya da markanın adı
+sonradan değişirse sayfa eski değeri göstermeye devam eder; merchant alanı
+yeniden seçmelidir.
 
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render

@@ -452,6 +452,72 @@ fields: {
 
 ---
 
+### E-ticaret Seçicileri — Kategori / Ürün / Marka / Etiket / Özellik / Varyant / Flaş Satış / Kampanya / Kupon
+
+Merchant'ın **kendi mağaza kayıtlarından** seçim yaptırır; slug ya da ObjectId elle yazma ihtiyacını bitirir.
+
+```tsx
+import {
+  createCategoryField, createCategoryListField,
+  createProductField, createProductListField,
+  createBrandField, createBrandListField,
+  createTagField, createTagListField,
+  createAttributeField, createAttributeListField,
+  createVariantTypeField, createVariantField,
+  createFlashSaleField, createCampaignField, createDiscountField,
+} from "@tecof/theme-editor";
+
+fields: {
+  category:  createCategoryField({ label: "Kategori" }),
+  product:   createProductField({ label: "Öne Çıkan Ürün" }),
+  brand:     createBrandField({ label: "Marka" }),
+  tags:      createTagListField({ label: "Etiketler", max: 6 }),
+  flashSale: createFlashSaleField({ label: "Flaş Satış" }),
+  coupon:    createDiscountField({ label: "Kupon" }),
+  gift:      createVariantField({ label: "Hediye Ürün" }),
+}
+```
+
+**Saklanan değer bir "snapshot"tır** — yayında ek istek atmadan render edilebilir:
+
+| Alan | Değer |
+|---|---|
+| `createCategoryField` | `{ id, slug, name, path }` |
+| `createProductField` | `{ id, slug, name, image }` |
+| `createBrandField` | `{ id, slug, name, image }` |
+| `createTagField` | `{ id, slug, name }` |
+| `createAttributeField` | `{ id, slug, name, type, isFilterable, options: [{ value, label, colorCode }] }` |
+| `createVariantTypeField` | `{ id, name, selectionType, values: [{ label, colorCode }] }` |
+| `createVariantField` | `{ productId, productSlug, productName, variantId, sku, title, price }` |
+| `createFlashSaleField` | `{ id, name, startDate, endDate, showCountdown, bannerText, highlightColor, discountType, discountValue }` |
+| `createCampaignField` | `{ id, name, status, startDate, endDate, discountCode }` |
+| `createDiscountField` | `{ id, code, title, type, value, minCartAmount, maxDiscountAmount, startDate, endDate }` |
+
+Liste (`*ListField`) varyantlarında değer bu nesnelerden oluşan bir **dizidir** ve editördeki sıra korunur — tema render sırası olarak onu kullanır.
+
+**Neden hem `id` hem `slug`:** ürün listeleme ucu markayı ve etiketi `ObjectId` ile, kategoriyi `slug` ile filtreler. Yalnız slug saklanırsa marka/etiket filtresi sessizce uygulanmaz ve tüm ürünler döner.
+
+```tsx
+// Temada kullanım — filtre KİMLİKLE gider
+const res = await getProducts({ brand: props.brand?.id, tag: props.tag?.id });
+```
+
+**Veri kaynağı ve yetki:** kategori/ürün/marka PUBLIC uçlardan (`/api/store/ecommerce/*`), etiket/özellik/varyant tipi/flaş satış/kampanya/kupon MERCHANT uçlarından (`/api/merchant/ecommerce/*`) gelir. Merchant uçları JWT'ye **ek olarak** `x-merchant-id` header'ı ister — `TecofApiClient` bunu `merchant-info`'dan bir kez çözüp otomatik ekler. Kimlik çözülemezse liste boş gösterilmez, hata basılır.
+
+**Snapshot seçim anında donar:** panelde markanın adı veya kampanyanın tarihi sonradan değişirse sayfa eski değeri göstermeye devam eder; güncellemek için alan yeniden seçilmelidir.
+
+**Arama nerede çalışır:** ürün seçicide sunucuda (binlerce kayıt olabilir), diğerlerinde istemcide — `_crud` uçlarında `?search=` düz metni sessizce yok sayar ve çok dilli `name` bir dizi olduğu için regex'lenemez. Liste kırpıldıysa modalda "N kayıttan ilk M gösteriliyor" notu çıkar.
+
+**Geriye dönük uyum:** var olan bir metin alanının yerine konurken eski prop'u okumaya devam edin — yayındaki kayıtlar yeni alanı taşımaz:
+
+```tsx
+const categoryId = props.brand?.id ?? props.brandIdText ?? "";
+```
+
+Alan seçenekleri: `label`, `placeholder`, `visible` ve liste varyantlarında `max`.
+
+---
+
 ### CmsCollectionField — Koleksiyon Bağlama
 
 Bir bileşeni CMS koleksiyonuna bağlar; koleksiyon seçer, limit/sıralama ayarlar ve bileşenin "slot"larını koleksiyon alanlarına eşler (liste/tekrar eden içerik için).

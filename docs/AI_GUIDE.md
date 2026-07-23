@@ -6,7 +6,7 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
 ## Paket kimliği
 
 - Paket: `@tecof/theme-editor`
-- Belgelenen sürüm: `0.0.60`
+- Belgelenen sürüm: `0.0.71`
 - Çalışma zamanı: React 18 veya React 19
 - Amaç: Tecof mağaza ve içerik sayfaları için görsel Studio editörü, yayın
   renderer'ı, API istemcisi ve gelişmiş alan bileşenleri
@@ -32,14 +32,14 @@ tutarlı cevap vermesi için kısa, normatif bağlam sağlar.
    kısıtlar `config.permissions` → `component.permissions` →
    `component.resolvePermissions` sırasıyla birleştirilir (bkz.
    `docs/PERMISSIONS.md`).
-8. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
+8. Canvas mimarisi sarmalayıcısızdır (wrapperless canvas): Canvas üzerinde ekstra DOM wrapper düğümleri üretilmez. Seçim, hover ve sürükleme delegasyon/overlay sistemiyle yürütülür.
+9. Bileşenler `fieldsGroups` ile Inspector paneli içerisinde akordeon gruplarına ayrılabilir (`{ name: string, fields: string[] }`).
+10. Aynı `sharedComponentId` değerini paylaşan node'lar Canlı Sembol (Live Symbol) olarak çalışır. Birinde yapılan değişiklik tüm örneklerde canlı güncellenir; alan bazlı `_symbolOverrides` ile özelleştirilebilir.
+11. Dokunmatik cihazlarda (tablet/telefon) sürükle-bırak, pointer-event tabanlı
    ayrı bir katmanla çalışır: bir canvas node'una, palet bloğuna veya katman
    paneli satırına **basılı tutmak** (~300ms) sürüklemeyi başlatır; erken
-   hareket kaydırma sayılır. Canvas node taşıma, palet→canvas ekleme ve katman
-   panelinde sıralama (üst/alt + zone'lu satırda ortaya bırakınca "içine")
-   desteklenir. Fare, native HTML5 DnD yolunu kullanmaya devam eder. Ek
-   kurulum gerekmez.
-9. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
+   hareket kaydırma sayılır. Fare, native HTML5 DnD yolunu kullanmaya devam eder.
+12. Bilinmeyen bir API veya özellik uydurulmamalıdır. Önce MCP araması veya
    ilgili kaynak okunmalıdır.
 
 ## Minimum kurulum
