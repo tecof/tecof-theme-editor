@@ -14,13 +14,19 @@ export class TecofApiClient {
   private secretKey: string;
   private customCdnUrl?: string;
   private accessToken?: string;
+  private themeId?: string;
 
-  constructor(apiUrl: string, secretKey: string, customCdnUrl?: string, accessToken?: string) {
+  constructor(apiUrl: string, secretKey: string, customCdnUrl?: string, accessToken?: string, themeId?: string) {
     // Remove trailing slash
     this.apiUrl = apiUrl.replace(/\/+$/, '');
     this.secretKey = secretKey;
     this.customCdnUrl = customCdnUrl ? customCdnUrl.replace(/\/+$/, '') : undefined;
     this.accessToken = accessToken;
+    /* Çalışılan temanın id'si (NEXT_PUBLIC_THEME_ID). Bir merchant'ın birden
+       fazla teması olabilir ve aynı slug birden fazla temada bulunabilir —
+       backend, tema şablon sayfası kaydında merchant kopyasını DOĞRU temaya
+       yazabilmek için bunu body/query'den okur; yoksa şablonun kendi temasına düşer. */
+    this.themeId = themeId;
   }
 
   /**
@@ -56,7 +62,12 @@ export class TecofApiClient {
     try {
       // revisionId verilirse backend taslak yerine o revizyonun snapshot'ını döner
       // (salt-okunur revizyon önizlemesi — TecofStudio ?revision= paramından geçirir)
-      const url = `${this.apiUrl}/api/store/editor/${pageId}${revisionId ? `?revision=${encodeURIComponent(revisionId)}` : ''}`;
+      // themeId verilirse tema şablon sayfası yerine (varsa) bu temadaki merchant kopyası döner
+      const qs = new URLSearchParams();
+      if (revisionId) qs.set('revision', revisionId);
+      if (this.themeId) qs.set('themeId', this.themeId);
+      const query = qs.toString();
+      const url = `${this.apiUrl}/api/store/editor/${pageId}${query ? `?${query}` : ''}`;
       const res = await fetch(url, {
         method: 'GET',
         headers: this.headers,
@@ -91,7 +102,7 @@ export class TecofApiClient {
           ...this.headers,
           ...(accessToken && { Authorization: accessToken }),
         },
-        body: JSON.stringify({ draftData, ...(title && { title }) }),
+        body: JSON.stringify({ draftData, ...(title && { title }), ...(this.themeId && { themeId: this.themeId }) }),
       });
       return await res.json();
     } catch (error) {
@@ -113,7 +124,7 @@ export class TecofApiClient {
       const res = await fetch(`${this.apiUrl}/api/store/render`, {
         method: 'POST',
         headers: this.headers,
-        body: JSON.stringify({ slug, ...(locale && { locale }) }),
+        body: JSON.stringify({ slug, ...(locale && { locale }), ...(this.themeId && { themeId: this.themeId }) }),
       });
       return await res.json();
     } catch (error) {
@@ -197,7 +208,12 @@ export class TecofApiClient {
    */
   async getPages(): Promise<ApiResponse<any[]>> {
     try {
-      const res = await fetch(`${this.apiUrl}/api/store/pages`, {
+      // themeId gönderilmezse backend merchant'ın AKTİF temasına düşer — editör
+      // farklı bir temada çalışıyorsa yanlış temanın sayfaları listelenirdi.
+      const qs = new URLSearchParams();
+      if (this.themeId) qs.set('themeId', this.themeId);
+      const suffix = qs.toString() ? `?${qs}` : '';
+      const res = await fetch(`${this.apiUrl}/api/store/pages${suffix}`, {
         method: 'GET',
         headers: this.headers,
       });
@@ -326,7 +342,8 @@ export class TecofApiClient {
       const res = await fetch(`${this.apiUrl}/api/store/cms/collections`, {
         method: 'POST',
         headers: this.headers,
-        body: JSON.stringify({}),
+        // CMS koleksiyonları tema kapsamlı — editörün temasını bildir.
+        body: JSON.stringify({ ...(this.themeId && { themeId: this.themeId }) }),
       });
       return await res.json();
     } catch (error) {
@@ -360,6 +377,8 @@ export class TecofApiClient {
         page: options?.page || 1,
         limit: options?.limit || 50,
         locale: options?.locale,
+        // Koleksiyon slug'ı tema kapsamlı çözülür — editörün temasını bildir.
+        ...(this.themeId && { themeId: this.themeId }),
       };
 
       // 'custom' uses backend default (order: 1) — don't send sort field

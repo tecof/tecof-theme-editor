@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Undo2, Redo2, Copy, Scissors, ClipboardPaste, CopyPlus, Trash2,
   Eye, Pencil, PanelLeft, PanelRight, Save, Plus, Search, Paintbrush, Sparkles,
+  Download, Upload,
 } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
@@ -31,9 +32,13 @@ const MOD = isMac ? '⌘' : 'Ctrl';
 export interface CommandPaletteProps {
   /** Save action wired by the studio shell (Cmd+S command). */
   onSave?: () => void;
+  /** Hidden JSON export — only reachable through the palette (no visible button). */
+  onExport?: () => void;
+  /** Hidden JSON import — only reachable through the palette (no visible button). */
+  onImport?: () => void;
 }
 
-export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
+export const CommandPalette = ({ onSave, onExport, onImport }: CommandPaletteProps) => {
   const open = useUiStore((s) => s.commandPaletteOpen);
   const setOpen = useUiStore((s) => s.setCommandPaletteOpen);
   const { config } = useStudio();
@@ -99,6 +104,15 @@ export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
       actions.push({ id: 'save', label: 'Kaydet', group: 'Eylemler', icon: <Save size={15} />, hint: `${MOD}S`, keywords: 'save taslak', run: onSave });
     }
 
+    // Gizli veri komutları — görünür buton yok, yalnızca paletten aranınca
+    // bulunur. 'Gelişmiş' grubu bileşen listesinden önce, listenin sonunda kalır.
+    if (onExport) {
+      actions.push({ id: 'export-json', label: 'Sayfayı JSON olarak dışa aktar', group: 'Gelişmiş', icon: <Download size={15} />, keywords: 'export json indir yedek backup data veri', run: onExport });
+    }
+    if (onImport) {
+      actions.push({ id: 'import-json', label: 'JSON içe aktar (sayfayı değiştirir)', group: 'Gelişmiş', icon: <Upload size={15} />, keywords: 'import json yükle geri restore data veri', run: onImport });
+    }
+
     // AI section generation — only when the host wired `config.ai`. Listed
     // FIRST so the sparkle sits at the top of the palette.
     if (config.ai) {
@@ -123,7 +137,7 @@ export const CommandPalette = ({ onSave }: CommandPaletteProps) => {
 
     return [...actions, ...inserts];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, selectedId, canUndo, canRedo, onSave, hasStyleBuffer]);
+  }, [config, selectedId, canUndo, canRedo, onSave, onExport, onImport, hasStyleBuffer]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

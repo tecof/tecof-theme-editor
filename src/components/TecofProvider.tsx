@@ -11,21 +11,23 @@ interface TecofContextValue {
   secretKey: string;
   apiUrl: string;
   cdnUrl?: string;
+  themeId?: string;
 }
 
 const TecofContext = createContext<TecofContextValue | null>(null);
 
 /* ─── Provider ─── */
 
-export const TecofProvider = ({ apiUrl, secretKey, cdnUrl, children }: TecofProviderProps) => {
+export const TecofProvider = ({ apiUrl, secretKey, cdnUrl, themeId, children }: TecofProviderProps) => {
   const value = useMemo<TecofContextValue>(
     () => ({
-      apiClient: new TecofApiClient(apiUrl, secretKey, cdnUrl),
+      apiClient: new TecofApiClient(apiUrl, secretKey, cdnUrl, undefined, themeId),
       secretKey,
       apiUrl,
       cdnUrl,
+      themeId,
     }),
-    [apiUrl, secretKey, cdnUrl]
+    [apiUrl, secretKey, cdnUrl, themeId]
   );
 
   return <TecofContext.Provider value={value}>{children}</TecofContext.Provider>;

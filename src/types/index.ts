@@ -506,6 +506,9 @@ export interface TecofProviderProps {
   secretKey: string;
   /** CDN base URL for media files (defaults to apiUrl if not provided) */
   cdnUrl?: string;
+  /** Çalışılan temanın id'si (NEXT_PUBLIC_THEME_ID) — çok temalı merchant'ta
+   *  sayfa kayıt/okuma isteklerinin doğru temaya gitmesini sağlar */
+  themeId?: string;
   /** React children */
   children: React.ReactNode;
 }
@@ -572,6 +575,8 @@ export interface MerchantInfoData {
   /** Default language code (e.g. "tr") */
   defaultLanguage: string;
   isUnderConstruction?: boolean;
+  /** "ecommerce" | "website" — link seçici e-ticaret sekmelerini buna göre gösterir. */
+  productType?: 'ecommerce' | 'website';
 }
 
 /* ─── Language Field Value ─── */
@@ -610,7 +615,11 @@ export interface LinkFieldValue {
   url: string;
   label?: string;
   target?: '_self' | '_blank';
-  type?: 'page' | 'custom';
+  /**
+   * Seçimin kaynağı. Temalar render'da yalnızca url/target okuduğu için yeni
+   * üyeler geriye dönük güvenlidir; rozet renklendirmesi bu alana bakar.
+   */
+  type?: 'page' | 'custom' | 'category' | 'brand' | 'product' | 'cms';
 }
 
 export interface LocalizedLinkFieldValue {

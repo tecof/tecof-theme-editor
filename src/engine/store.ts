@@ -136,6 +136,12 @@ interface EditorState {
 interface EditorActions {
   // Initialization
   setDocument: (doc: TecofDocument) => void;
+  /**
+   * Replaces the whole document as ONE undoable history step (unlike
+   * `setDocument`, which resets history). Used by JSON import: a bad import is
+   * a single Cmd+Z away from recovery.
+   */
+  replaceDocument: (doc: TecofDocument) => void;
 
   // Selection
   selectNode: (id: string | null) => void;
@@ -312,6 +318,18 @@ export const useEditorStore = create<EditorStore>()(
       set((state) => {
         state.document = cloneDocument(parseDocument(doc));
         state.history = { past: [], future: [] };
+        state.selection = { selectedId: null, selectedIds: [], hoveredId: null };
+        state._lastCommit = null;
+      }),
+
+    replaceDocument: (doc) =>
+      set((state) => {
+        const parsed = cloneDocument(parseDocument(doc));
+        commit(state, (draft) => {
+          draft.root = parsed.root;
+          draft.content = parsed.content;
+          draft.zones = parsed.zones;
+        });
         state.selection = { selectedId: null, selectedIds: [], hoveredId: null };
         state._lastCommit = null;
       }),

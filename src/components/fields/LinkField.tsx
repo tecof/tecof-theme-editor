@@ -1,27 +1,25 @@
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
-import { useTecof } from '../TecofProvider';
 import type { LinkFieldValue, LocalizedLinkFieldValue } from '../../types';
 import { LanguageTabBar, FieldLoading } from './LanguageField';
 import { useLanguages } from './useLanguages';
 import { useActiveLanguage } from '../../studio/language/LanguageContext';
+import { LinkPickerDrawer } from './LinkPickerDrawer';
 
-// Vaul and Icons
-import { Drawer } from 'vaul';
 import {
   Link as LinkIcon,
   ExternalLink,
   Globe,
   FileText,
+  FolderTree,
+  Tag,
+  ShoppingBag,
+  Newspaper,
   X,
-  Search,
-  ChevronRight,
   Pencil,
 } from 'lucide-react';
-
-
 
 /* ─── Props ─── */
 
@@ -47,6 +45,17 @@ export interface LinkFieldOptions {
   placeholder?: string;
 }
 
+/* Rozet metni + ikonu seçim tipine göre. Eski kayıtlarda type olmayabilir —
+   'custom' varsayılır. */
+const TYPE_META: Record<string, { label: string; badgeClass: string; icon: ReactElement }> = {
+  page: { label: 'Sayfa', badgeClass: 'tecof-link-badge-page', icon: <FileText size={16} /> },
+  category: { label: 'Kategori', badgeClass: 'tecof-link-badge-entity', icon: <FolderTree size={16} /> },
+  brand: { label: 'Marka', badgeClass: 'tecof-link-badge-entity', icon: <Tag size={16} /> },
+  product: { label: 'Ürün', badgeClass: 'tecof-link-badge-entity', icon: <ShoppingBag size={16} /> },
+  cms: { label: 'İçerik', badgeClass: 'tecof-link-badge-entity', icon: <Newspaper size={16} /> },
+  custom: { label: 'Link', badgeClass: 'tecof-link-badge-custom', icon: <Globe size={16} /> },
+};
+
 /* ─── Main Component ─── */
 
 export const LinkField = ({
@@ -56,11 +65,9 @@ export const LinkField = ({
   showTarget = true,
   placeholder = 'https://...',
 }: LinkFieldProps & LinkFieldOptions) => {
-  const { apiClient } = useTecof();
   const {
     merchantInfo,
     loading: langLoading,
-    error: langError,
     activeTab: localActiveTab,
     setActiveTab: localSetActiveTab,
   } = useLanguages();
@@ -70,9 +77,6 @@ export const LinkField = ({
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [pages, setPages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
 
   // Manual input state
   const [showManual, setShowManual] = useState(false);
@@ -104,7 +108,7 @@ export const LinkField = ({
   const updateActiveValue = useCallback((newLinkVal: LinkFieldValue | null) => {
     const updated = [...valuesRef.current];
     const idx = updated.findIndex(v => v.code === activeTab);
-    
+
     if (idx >= 0) {
       if (newLinkVal) {
         updated[idx] = { ...updated[idx], value: newLinkVal };
@@ -117,40 +121,6 @@ export const LinkField = ({
     }
     onChangeRef.current(updated);
   }, [activeTab]);
-
-  /* ── Fetch Pages ── */
-
-  useEffect(() => {
-    if (!drawerOpen) return;
-    setLoading(true);
-    apiClient.getPages().then((res) => {
-      if (res.success && res.data) {
-        setPages(res.data);
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [drawerOpen, apiClient]);
-
-  /* ── Filtered Pages ── */
-
-  const filteredPages = search.trim()
-    ? pages.filter(p =>
-      p.slug?.toLowerCase().includes(search.toLowerCase()) ||
-      p.title?.toLowerCase().includes(search.toLowerCase())
-    )
-    : pages;
-
-  /* ── Select Page ── */
-
-  const handleSelectPage = useCallback((page: any) => {
-    updateActiveValue({
-      url: `/${page.slug}`,
-      label: page.title || page.slug,
-      target: '_self',
-      type: 'page',
-    });
-    setDrawerOpen(false);
-  }, [updateActiveValue]);
 
   /* ── Confirm Manual ── */
 
@@ -189,6 +159,7 @@ export const LinkField = ({
   }, [activeValue]);
 
   const hasValue = activeValue && activeValue.url && activeValue.url !== '';
+  const typeMeta = TYPE_META[activeValue.type || 'custom'] || TYPE_META.custom;
 
   return (
     <div className="tecof-link-container">
@@ -201,21 +172,19 @@ export const LinkField = ({
           onTabChange={setActiveTab}
         />
       )}
-      
+
       {langLoading && <FieldLoading />}
 
       {/* Current Value Display */}
       {hasValue && (
         <div className="tecof-link-value-box">
-          <div className="tecof-link-value-icon">
-            {activeValue.type === 'page' ? <FileText size={16} /> : <Globe size={16} />}
-          </div>
+          <div className="tecof-link-value-icon">{typeMeta.icon}</div>
           <div className="tecof-link-value-info">
             <p className="tecof-link-value-label">{activeValue.label || activeValue.url}</p>
             <p className="tecof-link-value-url">{activeValue.url}</p>
           </div>
-          <span className={`tecof-link-value-badge ${activeValue.type === 'page' ? 'tecof-link-badge-page' : 'tecof-link-badge-custom'}`}>
-            {activeValue.type === 'page' ? 'Sayfa' : 'Link'}
+          <span className={`tecof-link-value-badge ${typeMeta.badgeClass}`}>
+            {typeMeta.label}
           </span>
           {activeValue.target === '_blank' && (
             <ExternalLink size={14} className="tecof-icon-muted" />
@@ -237,12 +206,19 @@ export const LinkField = ({
       {!readOnly && !hasValue && !showManual && (
         <div className="tecof-link-main-actions">
           <button type="button" className="tecof-link-btn-secondary" onClick={() => setDrawerOpen(true)}>
-            <FileText size={16} /> Sayfa Seç
+            <FileText size={16} /> Bağlantı Seç
           </button>
           <button type="button" className="tecof-link-btn-secondary" onClick={() => setShowManual(true)}>
             <LinkIcon size={16} /> Manuel Link
           </button>
         </div>
+      )}
+
+      {/* Değer varken de seçici yeniden açılabilir — küçük değiştirme yolu */}
+      {!readOnly && hasValue && !showManual && (
+        <button type="button" className="tecof-link-change-btn" onClick={() => setDrawerOpen(true)}>
+          Bağlantıyı değiştir…
+        </button>
       )}
 
       {/* Manual URL Input */}
@@ -290,75 +266,15 @@ export const LinkField = ({
         </div>
       )}
 
-      {/* Page Selector Drawer */}
-      <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="tecof-link-drawer-overlay" />
-          <Drawer.Content className="tecof-link-drawer-content">
-            <Drawer.Title className="tecof-sr-only">Bağlantı Sayfası Seçici</Drawer.Title>
-            <Drawer.Description className="tecof-sr-only">Sayfa listesinden seçim yapın veya arama yapın</Drawer.Description>
-            <div className="tecof-link-drawer-header">
-              <h2 className="tecof-link-drawer-title">Sayfa Seç</h2>
-              <button className="tecof-link-drawer-close-btn" onClick={() => setDrawerOpen(false)}>
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="tecof-link-search-box">
-              <Search size={16} className="tecof-icon-muted" />
-              <input
-                type="text"
-                placeholder="Sayfa ara..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="tecof-link-search-input"
-              />
-            </div>
-
-            {/* Pages List */}
-            {loading ? (
-              <div className="tecof-field-loading" aria-busy="true">
-                {[0, 1, 2].map((item) => (
-                  <div className="tecof-field-loading-row" key={item}>
-                    <span className="tecof-skeleton tecof-skeleton-circle tecof-field-loading-thumb" />
-                    <div className="tecof-field-loading-lines">
-                      <span className="tecof-skeleton tecof-skeleton-text w-60" />
-                      <span className="tecof-skeleton tecof-skeleton-text sm w-80" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filteredPages.length === 0 ? (
-              <div className="tecof-text-center tecof-p-40 tecof-text-muted">
-                {search ? 'Sonuç bulunamadı' : 'Henüz sayfa yok'}
-              </div>
-            ) : (
-              <div className="tecof-link-page-list">
-                {filteredPages.map((page) => {
-                  const selected = activeValue?.url === `/${page.slug}`;
-                  return (
-                    <div
-                      key={page._id}
-                      className={`tecof-link-page-item ${selected ? 'selected' : ''}`}
-                      onClick={() => handleSelectPage(page)}
-                    >
-                      <div className={`tecof-link-status-dot ${page.status || 'draft'}`} title={page.status} />
-                      <div className="tecof-flex-1 tecof-min-w-0">
-                        <p className="tecof-link-page-slug">/{page.slug}</p>
-                        {page.title && (
-                          <p className="tecof-link-page-title">{page.title}</p>
-                        )}
-                      </div>
-                      <ChevronRight size={16} className="tecof-icon-faint" />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+      {/* Bağlantı seçici — MediaDrawer diliyle ortalanmış, sekmeli */}
+      <LinkPickerDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onSelect={updateActiveValue}
+        currentUrl={activeValue?.url}
+        locale={activeTab || merchantInfo?.defaultLanguage || 'tr'}
+        merchantInfo={merchantInfo}
+      />
 
     </div>
   );

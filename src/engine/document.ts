@@ -59,6 +59,57 @@ export const parseDocument = (rawData: Partial<PuckPageData> | null | undefined)
 };
 
 /**
+ * Structural validation for externally supplied page data (JSON import).
+ * `parseDocument` tolerates missing top-level fields, but nodes without a
+ * `type` string or `props.id` break the editor — reject those up front.
+ * Returns a Turkish error message, or null when the data is acceptable.
+ */
+export const validatePageData = (raw: any): string | null => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return 'Dosya bir sayfa dokümanı içermiyor (obje bekleniyor).';
+  }
+
+  const checkNodes = (nodes: any, where: string): string | null => {
+    if (!Array.isArray(nodes)) return `${where} bir dizi olmalı.`;
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') return `${where} içinde geçersiz düğüm var.`;
+      if (typeof node.type !== 'string' || !node.type) {
+        return `${where} içindeki bir düğümde "type" alanı eksik.`;
+      }
+      if (!node.props || typeof node.props !== 'object' || typeof node.props.id !== 'string' || !node.props.id) {
+        return `${where} içindeki "${node.type}" düğümünde "props.id" eksik.`;
+      }
+    }
+    return null;
+  };
+
+  if (raw.content !== undefined) {
+    const err = checkNodes(raw.content, 'content');
+    if (err) return err;
+  }
+
+  if (raw.zones !== undefined) {
+    if (!raw.zones || typeof raw.zones !== 'object' || Array.isArray(raw.zones)) {
+      return '"zones" bir obje olmalı.';
+    }
+    for (const [zoneKey, nodes] of Object.entries(raw.zones)) {
+      const err = checkNodes(nodes, `zones["${zoneKey}"]`);
+      if (err) return err;
+    }
+  }
+
+  if (raw.root !== undefined && (typeof raw.root !== 'object' || raw.root === null || Array.isArray(raw.root))) {
+    return '"root" bir obje olmalı.';
+  }
+
+  if (raw.content === undefined && raw.zones === undefined && raw.root === undefined) {
+    return 'Dosyada content / zones / root alanlarından hiçbiri yok — Tecof sayfa dosyası değil.';
+  }
+
+  return null;
+};
+
+/**
  * Serializes a TecofDocument back into a format compatible with PuckPageData.
  * It ensures a lossless round-trip.
  */

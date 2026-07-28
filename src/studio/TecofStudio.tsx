@@ -1,11 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { PanelLeft, PanelRight } from 'lucide-react';
 import { useEditorStore } from '../engine/store';
 import { useUiStore } from './uiStore';
 import { findNodeById } from '../engine/zones';
 import { CommandPalette } from './command/CommandPalette';
 import { ThemeVars } from './theme/ThemeVars';
-import { parseDocument, serializeDocument } from '../engine/document';
+import { parseDocument, serializeDocument, validatePageData } from '../engine/document';
 import { getNodePermissions } from '../engine/permissions';
 import { migrateDocument } from '../engine/migrate';
 import { StudioContext } from './context';
@@ -14,6 +13,7 @@ import { Canvas } from './canvas/Canvas';
 import { SelectionOverlay } from './overlay/SelectionOverlay';
 import { NodeContextMenu } from './overlay/NodeContextMenu';
 import { AiSectionModal } from './ai/AiSectionModal';
+import { NodeSettingsModal } from './panels/NodeSettingsModal';
 import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
@@ -55,7 +55,6 @@ export const TecofStudio = ({
 
   const leftPanelOpen = useUiStore((state) => state.leftPanelOpen);
   const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
-  const toggleRightPanel = useUiStore((state) => state.toggleRightPanel);
   const mode = useUiStore((state) => state.mode);
 
   const documentStateRef = useRef(documentState);
@@ -284,6 +283,71 @@ export const TecofStudio = ({
       setSaving(false);
     }
   }, [pageId, apiClient, accessToken, onSave, isEmbedded, revisionPreviewId]);
+
+  // 3a-ii. Gizli JSON dışa/içe aktarma — yalnızca Cmd+K komut paletinden
+  // erişilir (TopBar'da buton yok). Export canlı store'u sızdırmamak için
+  // serializeDocument'ın derin kopyasını indirir; import validasyon +
+  // migrasyondan geçip TEK geri alınabilir history adımı olarak uygulanır.
+  const handleExportJson = useCallback(() => {
+    const serialized = serializeDocument(useEditorStore.getState().document);
+    const envelope = {
+      _format: 'tecof-page@1',
+      exportedAt: new Date().toISOString(),
+      pageId,
+      data: serialized,
+    };
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `tecof-page-${pageId}-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, [pageId]);
+
+  const handleImportJson = useCallback(() => {
+    // Revizyon önizlemesi salt okunur — palet bu durumu bilmediği için nöbet burada.
+    if (revisionPreviewId) {
+      window.alert('Revizyon önizlemesi salt okunurdur — içe aktarma için normal editörü kullanın.');
+      return;
+    }
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        // Hem zarflı (tecof-page@1) hem çıplak doküman kabul edilir.
+        const raw = parsed && typeof parsed === 'object' && parsed.data !== undefined ? parsed.data : parsed;
+
+        const validationError = validatePageData(raw);
+        if (validationError) {
+          window.alert(`İçe aktarma başarısız: ${validationError}`);
+          return;
+        }
+
+        const confirmed = window.confirm(
+          'Mevcut sayfa içeriği içe aktarılan veriyle DEĞİŞTİRİLECEK. ' +
+          'Bu işlem Geri Al (Cmd+Z) ile geri alınabilir; kalıcı olması için kaydetmeniz gerekir. Devam edilsin mi?'
+        );
+        if (!confirmed) return;
+
+        // Yükleme akışıyla birebir aynı boru hattı: parse → migrate → store.
+        const doc = migrateDocument(parseDocument(raw), config.migrations);
+        useEditorStore.getState().replaceDocument(doc);
+      } catch (err: any) {
+        window.alert(`İçe aktarma başarısız: ${err?.message || 'Dosya okunamadı.'}`);
+      }
+    };
+    input.click();
+  }, [revisionPreviewId, config.migrations]);
 
   // 3b. Dirty detection + optional autosave.
   // Runs whenever the document reference changes. Dirty = live doc differs from
@@ -589,11 +653,14 @@ export const TecofStudio = ({
               <SelectionOverlay />
               <NodeContextMenu />
             </div>
-            {rightPanelOpen ? (
+            {/* Sağ panel de sol panelle aynı desende TAMAMEN kapanır: rail yok,
+                genişlik 0'a iner; açma yolu TopBar toggle'ı ve Cmd+K paleti. */}
+            <div
+              className={`tecof-right-panel-wrap${rightPanelOpen ? ' is-open' : ''}`}
+              aria-hidden={!rightPanelOpen}
+            >
               <Inspector />
-            ) : (
-              <PanelRail side="right" onExpand={toggleRightPanel} />
-            )}
+            </div>
           </div>
 
           {saving && (
@@ -602,29 +669,15 @@ export const TecofStudio = ({
             </div>
           )}
 
-          <CommandPalette onSave={handleSaveDraft} />
+          <CommandPalette onSave={handleSaveDraft} onExport={handleExportJson} onImport={handleImportJson} />
           <AiSectionModal />
+          <NodeSettingsModal />
           <ThemeVars />
         </div>
       </LanguageProvider>
     </StudioContext.Provider>
   );
 };
-
-/* ─── Thin collapsed rail shown in place of a hidden panel ─── */
-const PanelRail = ({ side, onExpand }: { side: 'left' | 'right'; onExpand: () => void }) => (
-  <div className={`tecof-panel-rail tecof-panel-rail-${side}`}>
-    <button
-      type="button"
-      className="tecof-icon-btn"
-      onClick={onExpand}
-      title={side === 'left' ? 'Sol paneli aç' : 'Sağ paneli aç'}
-      aria-label={side === 'left' ? 'Sol paneli aç' : 'Sağ paneli aç'}
-    >
-      {side === 'left' ? <PanelLeft size={16} /> : <PanelRight size={16} />}
-    </button>
-  </div>
-);
 
 /* ─── Full-editor skeleton shown while the page document loads ─── */
 const StudioSkeleton = ({ className }: { className?: string }) => (

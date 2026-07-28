@@ -209,7 +209,8 @@
 /* ─── ColorField · Popover ─── */
 .tecof-color-popover {
   position: fixed;
-  z-index: 10000;
+  /* Node ayarları modalının (99999) üstünde kalmalı — drawer bandı */
+  z-index: 1000000;
   width: 244px;
   box-sizing: border-box;
   display: flex;
@@ -889,75 +890,70 @@
   background: var(--tecof-accent-hover);
 }
 
-.tecof-link-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 9999;
+/* ─── Bağlantı seçici (LinkPickerDrawer) ───
+   Kabuk MediaDrawer'ın tecof-upload-drawer-* sınıflarını yeniden kullanır;
+   liste amaçlı olduğundan genişlik daraltılır. Çift sınıf: upload-drawer'ın
+   820px kuralı kaynak sırasında SONRA geldiği için tek sınıf ezilirdi. */
+.tecof-upload-drawer-content.tecof-link-picker-content {
+  max-width: 680px;
 }
 
-.tecof-link-drawer-content {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70vh;
+.tecof-link-picker-body {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--tecof-surface);
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  z-index: 10000;
-  padding: 16px;
+  overflow-y: auto;
 }
 
-.tecof-link-drawer-header {
-  display: flex;
-  justify-content: space-between;
+.tecof-link-picker-group {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tecof-text-muted);
+  margin: 10px 2px 4px;
+}
+
+.tecof-link-picker-back {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 12px;
-}
-
-.tecof-link-drawer-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0;
-}
-
-.tecof-link-drawer-close-btn {
-  background: var(--tecof-bg);
+  gap: 4px;
+  align-self: flex-start;
   border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: var(--tecof-surface-2);
+  color: var(--tecof-text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px 6px 6px;
+  border-radius: var(--tecof-radius-sm);
   cursor: pointer;
+  margin-bottom: 10px;
   transition: background-color 0.15s ease;
 }
 
-.tecof-link-drawer-close-btn:hover {
-  background: var(--tecof-border);
-}
-
-.tecof-link-search-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+.tecof-link-picker-back:hover {
   background: var(--tecof-bg);
-  border-radius: var(--tecof-radius);
-  margin-bottom: 12px;
 }
 
-.tecof-link-search-input {
-  flex: 1;
+.tecof-link-change-btn {
   border: none;
   background: transparent;
-  outline: none;
-  font-size: 13px;
-  color: var(--tecof-text);
+  color: var(--tecof-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 2px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.tecof-link-change-btn:hover {
+  text-decoration: underline;
+}
+
+.tecof-link-badge-entity {
+  background: var(--tecof-surface-2);
+  color: var(--tecof-text-soft);
 }
 
 .tecof-link-page-list {
@@ -3312,8 +3308,27 @@
   transition: width 0.24s ease;
 }
 
+/* Sağ panel (Inspector) sarmalayıcısı — sol panelle aynı tam-kapanma deseni.
+   Kenarlık wrapper'a DEĞİL .tecof-inspector'a ait: kapalıyken 1px çizgi bile
+   kalmaz. */
+.tecof-right-panel-wrap {
+  width: 0;
+  height: 100%;
+  flex-shrink: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: width 0.24s ease, visibility 0s linear 0.24s;
+}
+
+.tecof-right-panel-wrap.is-open {
+  width: 320px;
+  visibility: visible;
+  transition: width 0.24s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tecof-left-panel-wrap,
+  .tecof-right-panel-wrap,
   .tecof-block-cat-items,
   .tecof-block-cat-chevron {
     transition: none;
@@ -4481,10 +4496,11 @@
   outline-offset: -1px;
 }
 
+/* Konum JS'ten gelir (OverlayToolbar kendini ölçüp konteynere clamp'ler) —
+   köşe-çapası yok: dar bileşenlerde kırpılma ve uzun section'larda görünür
+   alan dışına düşme bu yüzden kalktı. Outline'ın kardeşi, konteyner koordinatı. */
 .tecof-toolbar {
   position: absolute;
-  top: -36px;
-  right: -2px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -4493,12 +4509,12 @@
   padding: 4px;
   pointer-events: auto;
   box-shadow: 0 4px 6px -1px var(--tecof-accent-ring);
+  transition: top 0.1s ease-out, left 0.1s ease-out;
 }
 
-/* Not enough room above the selection: drop the toolbar below the box instead. */
-.tecof-toolbar.is-flipped {
-  top: calc(100% + 4px);
-  bottom: auto;
+/* Scroll sırasında outline'larla aynı kural: birebir takip, iz bırakma. */
+.tecof-overlay.is-scrolling .tecof-toolbar {
+  transition: none;
 }
 
 .tecof-toolbar-btn {
@@ -4947,20 +4963,6 @@
   cursor: help;
   flex-shrink: 0;
 }
-
-/* ─── Collapsed panel rail ─── */
-.tecof-panel-rail {
-  width: 44px;
-  flex-shrink: 0;
-  background: var(--tecof-surface);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 0;
-}
-
-.tecof-panel-rail-left { border-right: 1px solid var(--tecof-border); }
-.tecof-panel-rail-right { border-left: 1px solid var(--tecof-border); }
 
 /* ═══════════════════════════════════════════════════════════════════
    Studio — Visual Style Editor (Tailwind)
@@ -5619,7 +5621,8 @@
   max-height: 280px;
   display: flex;
   flex-direction: column;
-  z-index: 1010;
+  /* body'ye portallanır — node ayarları modalının üstünde kalmalı */
+  z-index: 1000000;
   overflow: hidden;
   animation: tecof-dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -5929,6 +5932,41 @@
 @keyframes tecof-modal-in {
   from { opacity: 0; transform: scale(0.97) translateY(8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ─── Bileşen ayarları modalı (NodeSettingsModal) ───
+   Inspector gövdesini (NodeInspectorBody) ortada gösterir. Sınırlı yükseklikte
+   flex column: içerideki .tecof-inspector-fields (flex:1 + min-height:0) tek
+   scroll bölgesi olur — panel davranışıyla birebir aynı. */
+.tecof-node-settings-modal {
+  /* Panel açılışta programatik odaklanır (ESC panel-scoped yakalanır) —
+     tarayıcı odak halkası modal çerçevesinde gereksiz */
+  outline: none;
+  background: var(--tecof-surface);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 14px;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28), 0 1px 0 rgba(255, 255, 255, 0.72) inset;
+  width: min(460px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: tecof-modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tecof-node-settings-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--tecof-border);
+  flex: none;
+}
+
+/* Sekme çubuğu modal içinde sabit kalsın — scroll yalnız alan listesinde */
+.tecof-node-settings-modal .tecof-inspector-tabs {
+  flex: none;
 }
 
 .tecof-modal-header {
@@ -6551,7 +6589,9 @@
 .tecof-cmdk-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10001;
+  /* Palet ve alan seçicileri (ExternalField/EcommerceField aynı sınıfı kullanır)
+     node ayarları modalının (99999) ÜSTÜNDE açılmalı — drawer bandı */
+  z-index: 1000000;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -7083,7 +7123,8 @@
 
 .tecof-bind-popover {
   position: fixed;
-  z-index: 10002;
+  /* Node ayarları modalının (99999) üstünde kalmalı — drawer bandı */
+  z-index: 1000000;
   width: 248px;
   box-sizing: border-box;
   display: flex;
@@ -8604,6 +8645,10 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
    dizi listesi) yanındakileri ezmesin. */
 .tecof-field-accordion-body > *,
 .tecof-field-group-body > * { flex: none; }
+
+.tecof-field-accordion-body .tecof-field-label-container {
+  margin-bottom: 0 !important;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    E-ticaret seçicileri (marka / etiket / özellik / flaş satış / kupon)

@@ -114,6 +114,9 @@ interface UiState {
   /** Whether the "AI ile bölüm üret" modal is open (only reachable when the
    * host wires `config.ai`). */
   aiModalOpen: boolean;
+  /** Whether the node settings modal (overlay toolbar'daki kalem) is open —
+   * seçili bileşenin Inspector gövdesini sağ paneli açmadan modal'da gösterir. */
+  nodeSettingsOpen: boolean;
   /** Which color scheme the canvas previews. Editor aid, session-only (NOT part
    * of the document / undo / publish): ThemeVars toggles the `.dark` class on the
    * canvas + host roots so authors can design the dark palette live. Only surfaced
@@ -140,6 +143,7 @@ interface UiState {
   setCanvasScale: (scale: number) => void;
   setDropHover: (hover: DropHoverState | null) => void;
   setAiModalOpen: (open: boolean) => void;
+  setNodeSettingsOpen: (open: boolean) => void;
   setPreviewColorScheme: (scheme: 'light' | 'dark') => void;
   togglePreviewColorScheme: () => void;
 }
@@ -162,6 +166,7 @@ export const useUiStore = create<UiState>((set) => ({
   canvasScale: 1,
   dropHover: null,
   aiModalOpen: false,
+  nodeSettingsOpen: false,
   previewColorScheme: 'light',
 
   setMode: (mode) => set({ mode }),
@@ -206,6 +211,7 @@ export const useUiStore = create<UiState>((set) => ({
       return { dropHover: hover };
     }),
   setAiModalOpen: (open) => set({ aiModalOpen: open }),
+  setNodeSettingsOpen: (open) => set({ nodeSettingsOpen: open }),
   setPreviewColorScheme: (scheme) => set({ previewColorScheme: scheme }),
   togglePreviewColorScheme: () =>
     set((s) => ({ previewColorScheme: s.previewColorScheme === 'dark' ? 'light' : 'dark' })),
