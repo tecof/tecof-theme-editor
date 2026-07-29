@@ -62,7 +62,9 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
   const beginDrag = useEditorStore((state) => state.beginDrag);
   const endDrag = useEditorStore((state) => state.endDrag);
 
-  const [expanded, setExpanded] = useState(true);
+  /* Katmanlar VARSAYILAN KAPALI gelir — kalabalık sayfada ağaç önce üst
+     seviyeyi gösterir. Seçim içerideyse aşağıdaki efekt yolu otomatik açar. */
+  const [expanded, setExpanded] = useState(false);
   const [dragOverPos, setDragOverPos] = useState<DropPos | null>(null);
   const [renaming, setRenaming] = useState(false);
   const renameCancelledRef = useRef(false);
@@ -80,6 +82,19 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
   // node can always be unlocked.
   const isHidden = node.props._hidden === true;
   const isLocked = node.props._locked === true;
+
+  /* Seçili node bu düğümün ALTINDAysa dal otomatik açılır. Varsayılan kapalı
+     olduğu için bu şart: canvas'ta seçilen node'un satırı, ataları kapalıyken
+     hiç render edilmez ve aşağıdaki scrollIntoView çalışacak satır bulamazdı.
+     Yalnız açar, kapatmaz — kullanıcının elle açtıkları seçim değişince
+     kapanmaz. */
+  const containsSelection = useEditorStore((state) => {
+    const sel = state.selection.selectedId;
+    return sel ? isInsideSubtree(state.document, node.props.id, sel) : false;
+  });
+  useEffect(() => {
+    if (containsSelection) setExpanded(true);
+  }, [containsSelection]);
 
   // Canvas'ta yapılan seçimi ağaçta görünür kıl.
   useEffect(() => {

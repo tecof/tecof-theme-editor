@@ -7,8 +7,15 @@ import { Layers, Grid, Search, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
 
-/** Kapalı tutulan blok kategorileri — oturumlar arası hatırlanır. */
-const CAT_COLLAPSE_KEY = 'tecof:blocks:collapsed-cats:v1';
+/**
+ * Blok kategorisi accordion durumu — oturumlar arası hatırlanır.
+ *
+ * VARSAYILAN KAPALI: haritada kaydı olmayan kategori kapalı sayılır; kullanıcı
+ * açınca `false` (açık) yazılır. v1 anahtarı ters semantikteydi (kayıtsız =
+ * açık) — eski kayıtları yeni anlamla okumak kullanıcının bilerek açık
+ * bıraktıklarını kapatırdı, o yüzden anahtar v2'ye taşındı.
+ */
+const CAT_COLLAPSE_KEY = 'tecof:blocks:collapsed-cats:v2';
 
 const readCollapsedCats = (): Record<string, boolean> => {
   try {
@@ -34,7 +41,11 @@ export const LeftPanel = () => {
 
   const toggleCategory = (title: string) => {
     setCollapsedCats((prev) => {
-      const next = { ...prev, [title]: !prev[title] };
+      /* Etkin durum türetilir: kayıt yok = KAPALI. `!prev[title]` kullanmak
+         kayıtsız (kapalı görünen) kategoride true yazar ve ilk tıklama hiçbir
+         şey açmazdı. */
+      const currentlyCollapsed = prev[title] !== false;
+      const next = { ...prev, [title]: !currentlyCollapsed };
       try {
         window.localStorage.setItem(CAT_COLLAPSE_KEY, JSON.stringify(next));
       } catch {
@@ -141,7 +152,8 @@ export const LeftPanel = () => {
 
               const previewMode = /element/i.test(catTitle) ? 'element' : 'section';
               // Arama yaparken accordion durumu yok sayılır: eşleşen her şey görünür.
-              const isCollapsed = !searchQuery && collapsedCats[catTitle] === true;
+              /* Kayıtsız kategori KAPALI (varsayılan); arama hepsini açar */
+              const isCollapsed = !searchQuery && collapsedCats[catTitle] !== false;
 
               return (
                 <div

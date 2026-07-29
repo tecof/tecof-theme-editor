@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useEffect, useRef, useState } from 'react';
+import { cdnFileUrl } from '../../utils';
 import { useEditor, EditorContent } from '@tiptap/react';
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -285,7 +286,11 @@ const TipTapInstance = ({
   // Handle image selection from media library
   const handleImageSelect = useCallback((file: UploadedFile) => {
     if (!editor) return;
-    const src = `${cdnUrl}/${file.name}`;
+    /* cdnFileUrl ŞART: URL TipTap HTML'ine KALICI yazılır. folder'sız kurulan
+       adres scope'lu dosyada 404'tü ve external stok görsellerde file.url
+       yerine file.name kullanıldığı için onlar da kırıktı. */
+    const src = cdnFileUrl(cdnUrl, file);
+    if (!src) return;
     const alt = file.meta?.originalName || file.name;
     editor.chain().focus().setImage({ src, alt }).run();
   }, [editor, cdnUrl]);

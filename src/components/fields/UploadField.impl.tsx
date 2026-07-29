@@ -413,6 +413,11 @@ const UploadFieldImpl = ({
             name: fileData.name,
             size: fileData.size,
             type: fileData.type || 'application/octet-stream',
+            /* folder ŞART — dosyalar artık depolama kökünde değil, scope'lu
+               klasörde yaşıyor (merchants/{id}/theme/assets/…). Bu alan sayfa
+               JSON'una yazılmayınca TecofPicture URL'i köke göre kurup 404
+               alıyordu; tüm görüntüleme folder'lı yola bağlı. */
+            folder: fileData.folder || '/',
             meta: fileData.meta || {},
           }));
         } catch (err: any) {

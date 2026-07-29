@@ -5,7 +5,7 @@ import { useStudio } from '../context';
 import { useTecof } from '../../components/TecofProvider';
 import { ColorField } from '../../components/fields/ColorField';
 import type { ThemeColors, ThemeConfig, CustomFont } from '../../types';
-import { deriveDarkColors } from '../../utils';
+import { deriveDarkColors, cdnFileUrl } from '../../utils';
 import { resolveTheme, THEME_PROP } from './theme';
 import { FontSelect } from './FontSelect';
 import { findFontByStack, getBuiltinFont, fontIdFromFamily, type ThemeFont } from './fonts';
@@ -121,7 +121,10 @@ export const ThemeEditor = () => {
       if (!res?.success || !name) throw new Error('upload failed');
       const family = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim() || 'Custom Font';
       const id = fontIdFromFamily(family);
-      const next: CustomFont = { id, family, src: `${cdnUrl || ''}/${name}`, format: FONT_FORMATS[ext] };
+      /* cdnFileUrl ŞART: @font-face src'i tema JSON'una KALICI yazılır —
+         folder'sız kurulan adres scope'lu klasördeki font dosyası için hem
+         editörde hem vitrinde 404'tü. */
+      const next: CustomFont = { id, family, src: cdnFileUrl(cdnUrl || '', uploaded), format: FONT_FORMATS[ext] };
       const customFonts = [...(theme.customFonts ?? []).filter((f) => f.id !== id), next];
       patch({ ...theme, customFonts });
     } catch {

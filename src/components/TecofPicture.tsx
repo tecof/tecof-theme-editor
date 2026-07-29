@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { useTecof } from './TecofProvider';
+import { cdnFileUrl } from '../utils';
 import type { UploadedFile } from '../types';
 
 /* ─── Helpers ─── */
@@ -148,8 +149,9 @@ export const TecofPicture = memo(({
   const isExternal = data.type === 'external' || data.provider === 'external';
   if (!isExternal && !data.name) return null;
 
-  const buildURL = (fileName: string) =>
-    `${cdnUrl}/${data.folder && data.folder !== '/' ? `${data.folder.replace(/^\//, '')}/${fileName}` : fileName}`;
+  /* Ortak helper — EditorField/ThemeEditor ile aynı kaynak; folder mantığı
+     bir daha sessizce ayrışamasın diye tek yerde yaşar. */
+  const buildURL = (fileName: string) => cdnFileUrl(cdnUrl, data, fileName);
 
   // Original for the lightbox link; the size-matched variant for the <img>.
   const originalURL = isExternal ? (data.url || '') : buildURL(data.name);

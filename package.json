@@ -1,6 +1,6 @@
 {
     "name": "@tecof/theme-editor",
-    "version": "0.0.75",
+    "version": "0.0.77",
     "description": "React theme editor and renderer library for Tecof projects",
     "keywords": [
         "react",
@@ -23,11 +23,26 @@
     "main": "./dist/index.js",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
+    "typesVersions": {
+        "*": {
+            "email": [
+                "dist/email/index.d.ts"
+            ],
+            "under-construction": [
+                "dist/components/UnderConstruction.d.ts"
+            ]
+        }
+    },
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.js"
+        },
+        "./email": {
+            "types": "./dist/email/index.d.ts",
+            "import": "./dist/email/index.mjs",
+            "require": "./dist/email/index.js"
         },
         "./puck.css": "./dist/styles.css",
         "./styles.css": "./dist/styles.css",
@@ -49,7 +64,7 @@
         "dev:preview": "npm run docs:ai && vite --config playground/vite.config.ts",
         "docs:ai": "node scripts/generate-ai-docs.mjs",
         "mcp:docs": "npm run docs:ai --silent && node mcp/server.mjs",
-        "build": "tsup && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
+        "build": "tsup && tsup --config tsup.email.config.ts && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
         "prepublishOnly": "npm run build",
         "lint": "eslint .",
         "test": "vitest",
@@ -62,16 +77,14 @@
         "@tiptap/core": "^3.0.0",
         "@tiptap/pm": "^3.0.0",
         "@tiptap/react": "^3.0.0",
+        "lucide-react": ">=0.408.0 <2",
         "react": "^18 || ^19",
         "react-dom": "^18 || ^19"
     },
-    "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.29.0",
-        "@tecof/theme-editor": "^0.0.73",
-        "zod": "^4.4.3"
-    },
+    "dependencies": {},
     "devDependencies": {
         "@eslint/js": "^9.0.0",
+        "@modelcontextprotocol/sdk": "^1.29.0",
         "@monaco-editor/react": "^4.7.0",
         "@storybook/react-vite": "^8.0.0",
         "@tiptap/core": "^3.27.1",
@@ -127,6 +140,7 @@
         "vaul": "^1.1.2",
         "vite": "^6.4.3",
         "vitest": "^3.0.0",
-        "zustand": "^5.0.14"
+        "zustand": "^5.0.14",
+        "zod": "^4.4.3"
     }
 }

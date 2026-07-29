@@ -1,6 +1,44 @@
 import type { ThemeConfig, ThemeColors, HSL, DeepPartialThemeConfig } from '../types';
 import { themeFontVarLines } from '../studio/theme/fonts';
 
+/* ─── CDN File URL ───
+ *
+ * Dosyalar backend'de scope'lu klasörlere yazılır (merchants/{id}/theme/assets/…);
+ * public adres CDN/<folder>/<name> şemasındadır. `folder`'ı hesaba katmadan
+ * `${cdnUrl}/${name}` kurmak scope'lu her dosya için 404 üretir — ve üretilen
+ * URL TipTap HTML'ine ya da tema JSON'una KALICI yazıldığında düzeltilemez.
+ * Bu yüzden URL kuran her tüketici bu tek helper'ı kullanır.
+ */
+
+export interface CdnFileLike {
+  name?: string;
+  folder?: string | null;
+  /** External (stok) dosyalarda hazır mutlak adres */
+  url?: string;
+  type?: string;
+  provider?: string;
+}
+
+/**
+ * Bir upload kaydından CDN URL'i kurar.
+ *
+ * @param fileName Varyant adı (meta.webp / meta.thumbnail…) — verilmezse file.name.
+ *        Varyantlar orijinalle AYNI klasörde yaşar, folder öneki ortaktır.
+ */
+export function cdnFileUrl(cdnUrl: string, file: CdnFileLike | null | undefined, fileName?: string): string {
+  if (!file) return '';
+  // Stok/harici görseller CDN'de değildir — kayıttaki mutlak adres kullanılır
+  if (file.type === 'external' || file.provider === 'external') return file.url || '';
+
+  const name = fileName || file.name || '';
+  if (!name) return '';
+
+  const folder = file.folder && file.folder !== '/'
+    ? `${String(file.folder).replace(/^\/+|\/+$/g, '')}/`
+    : '';
+  return `${cdnUrl}/${folder}${name}`;
+}
+
 /* ─── Color Converters ─── */
 
 export function hexToHsl(hex: string): HSL {
