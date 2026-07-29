@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Bookmark, LayoutGrid, LayoutTemplate, Plus, Search, X } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Bookmark, LayoutGrid, LayoutTemplate, Plus, Search, Trash2, X } from 'lucide-react';
 import type { SectionTemplate, StudioConfig } from '../../types';
 import { useStudio } from '../context';
 import { LiveBlockPreview } from './LivePreview';
@@ -44,6 +44,11 @@ interface DisplayItem {
    * opens showing what the user actually searched for.
    */
   initialVariantKey?: string | null;
+  /**
+   * Kalıcı silme (yalnız "Kaydedilenler" kartları). Verildiğinde kartın
+   * köşesinde çöp butonu çizilir; onay ve API çağrısı çağıranın işidir.
+   */
+  onDelete?: () => void;
 }
 
 interface DisplayGroup {
@@ -72,6 +77,7 @@ const GridCard = ({
   onActivate,
   variants,
   initialVariantKey = null,
+  onDelete,
 }: GridCardProps) => {
   const hasVariants = !!variants?.length;
   /** Kartın "seçili" ön ayarı — null = bileşenin kendi varsayılanı ("Temel"). */
@@ -104,6 +110,22 @@ const GridCard = ({
           <Plus size={13} strokeWidth={2.4} />
           Ekle
         </span>
+        {onDelete && (
+          <button
+            type="button"
+            className="tecof-modal-card-delete"
+            title={`"${name}" ortak bileşenini sil`}
+            aria-label={`${name} ortak bileşenini sil`}
+            onClick={(e) => {
+              // Kart tıklaması sayılmasın — silme butonu bileşeni EKLEMEZ.
+              e.stopPropagation();
+              onDelete();
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <Trash2 size={13} strokeWidth={2} />
+          </button>
+        )}
       </div>
       <div className="tecof-modal-card-footer">
         <span className="tecof-modal-card-label">{name}</span>
@@ -170,6 +192,40 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [savedComponents, setSavedComponents] = useState<SavedSharedComponent[]>([]);
+  /* İstek uçtayken ikinci tıklama işlem başlatmasın (çifte DELETE koruması).
+     Ref, handler'ı useCallback ile stabil tutar — state olsaydı displayGroups
+     memo'sundaki closure bayatlar ya da memo her silmede boşa patlardı. */
+  const deletingRef = useRef(false);
+
+  /* ── Ortak bileşen silme ──
+     Backend silmeden önce ref'leri kullanan sayfalara İŞLER: hiçbir sayfadan
+     içerik kaybolmaz, yalnız "birinde düzenle → hepsinde güncellensin" bağı
+     kalkar. Onay metni tam olarak bunu söyler — korkutmadan, doğru beklentiyle. */
+  const handleDeleteSaved = useCallback(async (item: SavedSharedComponent) => {
+    if (!apiClient || deletingRef.current) return;
+    const ok = window.confirm(
+      `"${item.name}" ortak bileşeni silinsin mi?\n\n` +
+      `Bu bileşeni kullanan sayfalardaki kopyalar aynen kalır ama bağımsızlaşır — ` +
+      `artık birinde yapılan düzenleme diğerlerine yansımaz. Bu işlem geri alınamaz.`
+    );
+    if (!ok) return;
+
+    deletingRef.current = true;
+    try {
+      const res = await apiClient.deleteSharedComponent(item._id);
+      if (res?.success) {
+        setSavedComponents((prev) => prev.filter((s) => s._id !== item._id));
+      } else {
+        console.error('Ortak bileşen silinemedi:', res?.message);
+        window.alert(res?.message || 'Ortak bileşen silinemedi, tekrar deneyin.');
+      }
+    } catch (err) {
+      console.error('Ortak bileşen silinemedi:', err);
+      window.alert('Ortak bileşen silinemedi, tekrar deneyin.');
+    } finally {
+      deletingRef.current = false;
+    }
+  }, [apiClient]);
 
   // Fetch saved global components when the modal opens
   useEffect(() => {
@@ -307,6 +363,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
           // (resolveSharedComponents) master'dan çözer → birinde düzenle,
           // hepsinde güncellenir. Taze node id'si createNode'da EN SON atanır.
           onActivate: () => onSelect(item.type, { ...item.props, sharedComponentId: item._id }),
+          onDelete: () => handleDeleteSaved(item),
           renderPreview: () => (
             <LiveBlockPreview config={config} type={item.type} props={item.props} mode="section" />
           ),
@@ -367,7 +424,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
   }, [
     activeCategory, searchQuery, templates, visibleSaved,
     componentCategories, typesByCategory, components, config,
-    onSelect, onSelectTemplate,
+    onSelect, onSelectTemplate, handleDeleteSaved,
   ]);
 
   const totalVisible = useMemo(

@@ -6335,6 +6335,43 @@
   transform: translate(-50%, 0);
 }
 
+/* Ortak bileşen silme — yalnız "Kaydedilenler" kartlarında, hover'da görünür.
+   "Ekle" rozetiyle çakışmasın diye sağ üst köşededir; kırmızı yalnız hover'da
+   (kart üstünde sürekli kırmızı ikon gereksiz tehdit hissi verir). */
+.tecof-modal-card-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--tecof-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--tecof-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  z-index: 3;
+}
+
+.tecof-modal-grid-card:hover .tecof-modal-card-delete,
+.tecof-modal-card-delete:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tecof-modal-card-delete:hover,
+.tecof-modal-card-delete:focus-visible {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
 .tecof-modal-card-chip {
   position: absolute;
   top: 10px;
@@ -6523,6 +6560,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* İkon (Bookmark/LayoutTemplate) EZİLMESİN: kapsayıcı `min-width: 0` +
+   `overflow: hidden` taşıdığından uzun başlıkta ("Kaydedilenler (Ortak)")
+   flex, SVG'yi büzüp bozuk bir kutucuğa çeviriyordu. Daralan taraf her zaman
+   metin olmalı. `display: block` da satır-içi SVG'nin baseline kaymasını keser. */
+.tecof-modal-cat-btn-title > svg {
+  flex: 0 0 auto;
+  display: block;
 }
 
 .tecof-modal-empty {

@@ -451,6 +451,28 @@ export class TecofApiClient {
   }
 
   /**
+   * Delete a global/shared component.
+   *
+   * Backend silmeden önce ref'leri kullanan sayfalara İŞLER (materialize):
+   * kopyalar bağımsızlaşır, hiçbir sayfadan içerik kaybolmaz — yalnız
+   * "birinde düzenle → hepsinde güncellensin" bağı kalkar.
+   */
+  async deleteSharedComponent(id: string): Promise<ApiResponse<any>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/shared-components/${id}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+      return await res.json();
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to delete shared component',
+      };
+    }
+  }
+
+  /**
    * Update a global/shared component's props/data.
    */
   async updateSharedComponent(id: string, name: string, type: string, props: any): Promise<ApiResponse<any>> {
