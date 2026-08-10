@@ -2655,16 +2655,26 @@
 
 .tecof-cms-col-settings {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 4px;
 }
 
 .tecof-cms-col-setting {
-  flex: 1;
+  flex: 1 1 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
+/* Dar Inspector'da (320px) Limit input + üçlü Sıralama grubu yan yana sığmaz —
+   sort grubunun min-content'i (~215px) input'u eziyordu. flex-basis'ler wrap ile
+   birlikte davranışı belirler: geniş bağlamda (NodeSettingsModal ~460px) yan
+   yana, dar panelde alt alta. Sıra showLimit/showSort bayraklarına göre
+   değiştiğinden :first-child yerine :has ile hedeflenir. */
+.tecof-cms-col-setting:has(.tecof-cms-col-setting-input) { flex: 1 1 96px; }
+.tecof-cms-col-setting:has(.tecof-cms-col-sort-btns) { flex: 1 1 220px; }
 
 .tecof-cms-col-setting-label {
   font-size: 10px;
@@ -2682,6 +2692,8 @@
   border-radius: var(--tecof-radius);
   outline: none;
   width: 100%;
+  /* content-box'ta padding+border, input'u kolonundan 26px taşırıyordu */
+  box-sizing: border-box;
   transition: all 0.2s ease;
   color: var(--tecof-text);
   font-weight: 500;
@@ -2729,7 +2741,9 @@
 /* ── Gelişmiş filtre satırları (CmsCollectionField) ── */
 .tecof-cms-col-filter-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  /* 1fr'nin min'i auto — uzun option metinli select track'i panelden geniş
+     itebiliyordu; minmax(0, 1fr) track'i panele hapseder. */
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px;
   align-items: center;
 }
@@ -2771,7 +2785,10 @@
 
 .tecof-cms-col-sort-btn {
   flex: 1;
-  padding: 6px 8px;
+  min-width: 0;
+  /* "Özel Sıralama" sıkışınca iki satıra kırılıp buton yüksekliklerini bozuyordu */
+  white-space: nowrap;
+  padding: 6px 4px;
   font-size: 11px;
   font-weight: 500;
   background: transparent;
@@ -2877,6 +2894,7 @@
 
 .tecof-cms-col-mapping-select {
   flex: 1;
+  min-width: 0;
   padding: 6px 10px;
   font-size: 13px;
   border: var(--tecof-line-subtle);
@@ -4027,13 +4045,17 @@
 /* ═══════════════════════════════════════════════════════════════════
    Studio — DropZone + Node (rendered INSIDE iframe)
    ═══════════════════════════════════════════════════════════════════ */
-/* Vertical slot: plain BLOCK flow — matches how TecofRender publishes a vertical
-   slot (a plain <div>). No flex `gap`/`align-items:stretch`, so the editor no
-   longer injects an 8px gap or force-stretches children that the live page
-   wouldn't (block children are full-width and margins collapse just like live). */
+/* Vertical slot: yayında TecofRender düz bir <div> basar ve temanın slot'a
+   verdiği display (grid, contents, flex…) AYNEN geçerlidir. Editör display'i
+   yalnız BOŞ dropzone'da block'a zorlar (hint kutusunun yer kaplaması için);
+   dolu slotta temanın display'ini ezmek editör görünümünü yayından saptırıyordu
+   (örn. display:contents grid slotları alt alta diziliyordu). */
 .tecof-dropzone {
   border-radius: var(--tecof-radius);
   transition: var(--tecof-transition);
+}
+
+.tecof-dropzone.is-empty {
   display: block;
 }
 
@@ -5761,6 +5783,19 @@
   /* Above page content, below the drag guides / grid band (2147483000+), which
      only appear while dragging (when this overlay is hidden anyway). */
   z-index: 2147482000;
+}
+
+/* Scroll sırasında şeritler içerikle kayamaz (position:fixed) ve ölçüm bir kare
+   geriden gelir — titreme yerine overlay scroll boyunca tamamen gizlenir. */
+.tecof-insert-overlay.is-scrolling {
+  visibility: hidden;
+}
+
+/* Section sınırında kök "Bölüm Ekle" şeridi, slot'un kenara clamp'lenmiş "Ekle"
+   şeridiyle çakıştığında ÜSTTE kazanır — yoksa section eklemek isteyen tıklama
+   slot'a bileşen ekliyordu. */
+.tecof-insert-affordance.is-root {
+  z-index: 1;
 }
 
 /* Per-gap hover/click band — the WHOLE strip is the button (a bare, reset button)

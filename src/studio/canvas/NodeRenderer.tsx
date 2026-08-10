@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { useStudio } from '../context';
 import { EditorRepeatSlot, ParentNodeContext, renderDropZone } from './DropZone';
 import { RepeatItemContext } from '../../components/RepeatItemContext';
@@ -20,6 +20,9 @@ export interface NodeRendererProps {
   index: number;
   zoneKey?: string;
 }
+
+/** className sözleşmesi ihlali tip başına BİR kez uyarılır (konsol spam'i olmasın). */
+const warnedMarkerTypes = new Set<string>();
 
 export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   const { config, metadata, readOnly: studioReadOnly } = useStudio();
@@ -135,6 +138,28 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
     handleMouseLeave,
     handleClick,
   });
+
+  // Wrapperless sözleşme bekçisi: kimlik yalnız className kanalında yaşar —
+  // className'i köküne geçirmeyen bileşen kanvasta SEÇİLEMEZ olur (üstelik
+  // tıklaması boşluk sanılıp mevcut seçimi siler). İhlali sessizce yutmak
+  // yerine tip başına bir kez uyarır ki tema geliştiricisi köküne cn(className)
+  // eklemeyi bilsin. (Hook sırası: aşağıdaki erken return'lerden ÖNCE.)
+  useEffect(() => {
+    if (!componentConfig || componentConfig.inline || locked) return;
+    const raf = requestAnimationFrame(() => {
+      const iframe = document.querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe');
+      if (!iframe?.contentDocument) return; // canvas henüz hazır değil — yargıya varma
+      if (iframe.contentDocument.querySelector(`[class~="tecof-node-${node.props.id}"]`)) return;
+      if (warnedMarkerTypes.has(node.type)) return;
+      warnedMarkerTypes.add(node.type);
+      console.warn(
+        `[TecofStudio] "${node.type}" bileşeni className prop'unu kök DOM elemanına geçirmiyor — ` +
+        `kanvasta seçilemez/sürüklenemez olur ve tıklaması mevcut seçimi siler. ` +
+        `render(props) içindeki className'i kök elemana (cn/clsx ile) ekleyin.`
+      );
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [componentConfig, locked, node.props.id, node.type]);
 
   if (!componentConfig) {
     return (

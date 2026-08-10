@@ -255,6 +255,21 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
+  // Her açılışta arama/kategori sıfırlanır — bileşen unmount olmadığı için
+  // önceki oturumun filtresi yaşıyor, yeni açılış "Uyumlu bileşen bulunamadı"
+  // ile boş görünebiliyordu.
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveCategory('all');
+    setSearchQuery('');
+  }, [isOpen]);
+
+  /* Backdrop kapatması mousedown+mouseup ÇİFTİNE bağlı: yalnız her ikisi de
+     backdrop'ta başlarsa kapanır. Eskiden tek onClick'ti — şeride çift tıklayan
+     kullanıcının ikinci tıkı ya da arama input'undan backdrop'a biten bir metin
+     sürüklemesi modalı anında kapatıyordu ("buton bozuk" algısı). */
+  const backdropArmedRef = useRef(false);
+
   // filterType (zone hedefli açılış) uygulanmış görünür kümeler.
   const templates = useMemo(
     () => (filterType ? allTemplates.filter((t) => filterType(t.payload.node.type)) : allTemplates),
@@ -452,7 +467,17 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
     sidebarEntries.find((entry) => entry.key === activeCategory)?.title || 'Tümü';
 
   return (
-    <div className="tecof-modal-overlay" onClick={onClose}>
+    <div
+      className="tecof-modal-overlay"
+      onMouseDown={(e) => {
+        backdropArmedRef.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        const armed = backdropArmedRef.current;
+        backdropArmedRef.current = false;
+        if (armed && e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
         className="tecof-add-section-modal"
         role="dialog"

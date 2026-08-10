@@ -17,9 +17,10 @@ import { DragGuides } from './DragGuides';
 import { TouchDragLayer } from './TouchDragLayer';
 import { createNode } from './dndUtils';
 import { isValidDrop } from '../../engine/rules';
+import { findNodeById } from '../../engine/zones';
 import { resolveTheme } from '../theme/theme';
 import { LayoutTemplate, Plus } from 'lucide-react';
-import { postToHost } from '../bridge';
+import { isEmbedded, postToHost } from '../bridge';
 import type { SectionTemplate } from '../../types';
 
 /** Fixed layout widths per viewport; desktop comes from `uiStore.desktopWidth`. */
@@ -79,12 +80,40 @@ export const Canvas = () => {
   const openAddSection = useUiStore((s) => s.openAddSection);
   const closeAddSection = useUiStore((s) => s.closeAddSection);
 
-  // Zone hedefli açılışta modal yalnızca o zone'a bırakılabilecek tipleri
-  // göstersin (drop kurallarıyla aynı kaynaktan).
-  const modalFilterType = addSectionTarget?.zoneKey
+  // Modal, hedef zone'a (kök dahil) bırakılabilecek tipleri göstersin — drop
+  // kurallarıyla aynı kaynaktan. Kök hedefte zoneKey undefined geçilir;
+  // allowedParents tanımlayan temalarda kural ihlali modalda da engellenir.
+  const modalFilterType = addSectionTarget
     ? (type: string) =>
         isValidDrop(config, type, addSectionTarget.zoneKey, useEditorStore.getState().document)
     : undefined;
+
+  /* Eklenen node'u seç ve görünür alana kaydır — eskiden modal kapanınca yeni
+     bölüm viewport dışında, seçimsiz kalıyordu; kullanıcı "eklenmedi" sanıp
+     tekrar ekliyordu (mükerrer bölüm şikayetinin kaynağı). */
+  const focusInsertedNode = (id: string | undefined) => {
+    if (!id) return;
+    selectNode(id);
+    if (isEmbedded()) {
+      const type = findNodeById(useEditorStore.getState().document, id)?.node.type ?? '';
+      postToHost('puck:itemSelected', { item: { type, id } });
+    }
+    requestAnimationFrame(() => {
+      const iframe = document.querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe');
+      const el = iframe?.contentDocument?.querySelector(`[class~="tecof-node-${id}"]`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
+  /* insertPayload id'leri remap'ler — eklenen kök node'un id'si store'dan,
+     eklendiği pozisyondan okunur. */
+  const insertedIdAt = (zoneKey: string | undefined, index: number | undefined) => {
+    const docState = useEditorStore.getState().document;
+    const list = zoneKey ? docState.zones[zoneKey] : docState.content;
+    if (!list || list.length === 0) return undefined;
+    const idx = index != null ? Math.min(index, list.length - 1) : list.length - 1;
+    return list[idx]?.props.id;
+  };
 
   // Root drop is handled by the delegated CanvasNativeDrop (root carries
   // data-tecof-zone="root"); the is-touch-dragover affordance is set imperatively.
@@ -131,8 +160,10 @@ export const Canvas = () => {
     // `customProps` carries a saved/shared component's props snapshot; without
     // it the node starts from the component's defaultProps.
     const newNode = createNode(config, type, customProps);
-    insertNode(newNode, addSectionTarget?.zoneKey, addSectionTarget?.index);
+    const target = addSectionTarget;
+    insertNode(newNode, target?.zoneKey, target?.index);
     closeAddSection();
+    focusInsertedNode(newNode.props.id as string);
   };
 
   const handleSelectTemplate = (template: SectionTemplate) => {
@@ -141,8 +172,10 @@ export const Canvas = () => {
       node: template.payload.node,
       zones: template.payload.zones || {},
     }));
-    insertPayload(payload, addSectionTarget?.zoneKey, addSectionTarget?.index);
+    const target = addSectionTarget;
+    insertPayload(payload, target?.zoneKey, target?.index);
     closeAddSection();
+    focusInsertedNode(insertedIdAt(target?.zoneKey, target?.index));
   };
 
   const clearSelection = () => {
@@ -154,6 +187,9 @@ export const Canvas = () => {
     // Clicks inside the iframe are handled by Frame/Canvas root. This clears
     // selection only when the user clicks the editor chrome around the page.
     if ((e.target as HTMLElement).closest('.tecof-canvas-viewport')) return;
+    // AddSectionModal bu container'ın İÇİNDE render edilir — modalda gezinen
+    // mousedown seçimi silip host'a itemDeselected yollamamalı.
+    if ((e.target as HTMLElement).closest('.tecof-modal-overlay')) return;
     clearSelection();
   };
 

@@ -64,6 +64,13 @@ export interface InsertAffordance {
  * possible (it sits ON TOP of them in the overlay) while staying easy to hover.
  */
 export const STRIP_THICKNESS = 16;
+/**
+ * Floor for the hover band when the real gap is smaller than STRIP_THICKNESS.
+ * The band must never exceed the ACTUAL gap by more than this — a full 16px band
+ * centred on a 0px boundary steals an 8px edge from BOTH neighbours, which made
+ * component-edge clicks open the add modal instead of selecting the node.
+ */
+export const MIN_THICKNESS = 6;
 /** Minimum strip span along the divider so tiny items stay grabbable. */
 const MIN_SPAN = 24;
 /** Push the always-visible trailing affordance below the last item (into the tail spacer). */
@@ -89,19 +96,30 @@ export function gapAxis(a: OverlayRect, b: OverlayRect): Axis {
   return vOverlap > 1 && hOverlap <= 1 ? 'x' : 'y';
 }
 
+/**
+ * Hover-band thickness clamped to the REAL gap between the neighbours: a wide
+ * gap keeps the comfortable 16px band, a tight/flush/overlapping boundary
+ * shrinks to a thin (but still hoverable) band so it doesn't cover the
+ * neighbours' clickable edges.
+ */
+const bandThickness = (gap: number) =>
+  gap >= STRIP_THICKNESS ? STRIP_THICKNESS : Math.max(MIN_THICKNESS, gap);
+
 /** Affordance sitting in the gap BETWEEN two measured siblings. */
 function betweenAffordance(a: OverlayRect, b: OverlayRect): Geom {
   const axis = gapAxis(a, b);
   if (axis === 'y') {
     const lineY = (bottom(a) + b.top) / 2;
+    const thickness = bandThickness(b.top - bottom(a));
     const left = Math.min(a.left, b.left);
     const width = Math.max(Math.max(right(a), right(b)) - left, MIN_SPAN);
-    return { axis, strip: { top: lineY - STRIP_THICKNESS / 2, left, width, height: STRIP_THICKNESS } };
+    return { axis, strip: { top: lineY - thickness / 2, left, width, height: thickness } };
   }
   const lineX = (right(a) + b.left) / 2;
+  const thickness = bandThickness(b.left - right(a));
   const top = Math.min(a.top, b.top);
   const height = Math.max(Math.max(bottom(a), bottom(b)) - top, MIN_SPAN);
-  return { axis, strip: { top, left: lineX - STRIP_THICKNESS / 2, width: STRIP_THICKNESS, height } };
+  return { axis, strip: { top, left: lineX - thickness / 2, width: thickness, height } };
 }
 
 /**

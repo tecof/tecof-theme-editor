@@ -42,6 +42,21 @@ const rectOf = (el: Element): OverlayRect => {
  */
 const isVisible = (r: OverlayRect) => r.width > 0 || r.height > 0;
 
+/**
+ * Sticky/fixed elemanların rect'i scroll'da viewport'a PİNLİ kalır — akış
+ * konumlarını temsil etmez. Sticky bir Header'ın rect'iyle hesaplanan
+ * between-şerit, scroll'da header'ın (ve altındaki içeriğin) ÜSTÜNDE gezinir;
+ * kullanıcı logoya hover'layınca "Bölüm Ekle" pili beliriyordu. Bu elemanlar
+ * ölçümden hariç tutulur: komşuları edge-affordance'a düşer, pinli eleman
+ * üzerinde hiç şerit üretilmez.
+ */
+const isPinned = (el: Element): boolean => {
+  const win = el.ownerDocument.defaultView;
+  if (!win) return false;
+  const pos = win.getComputedStyle(el).position;
+  return pos === 'sticky' || pos === 'fixed';
+};
+
 export const InsertOverlay = () => {
   // Reactive deps: any document edit or drag toggle re-measures.
   const documentState = useEditorStore((s) => s.document);
@@ -53,6 +68,10 @@ export const InsertOverlay = () => {
   // Bumped by layout-only changes (image/font load, panel resize, scroll) that
   // move nodes without touching the document.
   const [tick, setTick] = useState(0);
+  // Scroll sırasında position:fixed şeritler içerikle kaymaz ve rAF ölçümü bir
+  // kare geriden gelir — kuyruk pili "yüzüyor" görünüyordu. Scroll boyunca
+  // overlay gizlenir, durunca (120ms) son ölçümle geri gelir.
+  const [scrolling, setScrolling] = useState(false);
 
   useLayoutEffect(() => {
     const doc = rootRef.current?.ownerDocument;
@@ -82,6 +101,7 @@ export const InsertOverlay = () => {
       const childRects = zone.list.map((node) => {
         const el = doc.querySelector(`[class~="tecof-node-${node.props.id}"]`);
         if (!el) return null;
+        if (isPinned(el)) return null; // sticky/fixed: rect akışı temsil etmez
         const r = rectOf(el);
         return isVisible(r) ? r : null; // skip hidden children
       });
@@ -111,10 +131,23 @@ export const InsertOverlay = () => {
 
     let cancelled = false;
     let raf = 0;
+    let scrollTimer = 0;
     const schedule = () => {
       if (cancelled) return; // e.g. a late fonts.ready resolving after unmount
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => setTick((t) => t + 1));
+    };
+    const onScroll = () => {
+      if (cancelled) return;
+      setScrolling(true);
+      const win = doc.defaultView;
+      if (win) {
+        win.clearTimeout(scrollTimer);
+        scrollTimer = win.setTimeout(() => {
+          if (!cancelled) setScrolling(false);
+        }, 120);
+      }
+      schedule();
     };
 
     // ResizeObserver on the body catches content reflow (image/font load, text
@@ -123,7 +156,7 @@ export const InsertOverlay = () => {
     const ro = new ResizeObserver(schedule);
     if (doc.body) ro.observe(doc.body);
     // Capture-phase so nested scroll containers (not just the root) re-measure.
-    doc.addEventListener('scroll', schedule, { capture: true, passive: true });
+    doc.addEventListener('scroll', onScroll, { capture: true, passive: true });
     doc.defaultView?.addEventListener('resize', schedule);
     // Late web-font layout shift.
     doc.fonts?.ready.then(schedule).catch(() => {});
@@ -131,23 +164,27 @@ export const InsertOverlay = () => {
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      doc.defaultView?.clearTimeout(scrollTimer);
       ro.disconnect();
-      doc.removeEventListener('scroll', schedule, { capture: true });
+      doc.removeEventListener('scroll', onScroll, { capture: true });
       doc.defaultView?.removeEventListener('resize', schedule);
     };
   }, []);
 
   return (
-    <div ref={rootRef} className="tecof-insert-overlay">
+    <div ref={rootRef} className={`tecof-insert-overlay${scrolling ? ' is-scrolling' : ''}`}>
       {items.map((a) => (
         // The whole strip IS the button so the entire hover band is clickable (no
         // dead zone that would also swallow clicks meant for the component behind
         // it). Marked as an overlay portal so the canvas select/guard step aside —
-        // a click opens the modal instead of deselecting the node.
+        // a click opens the modal instead of deselecting the node. `is-root`:
+        // section sınırında kök "Bölüm Ekle" şeridi, slot'un clamp'lenmiş kenar
+        // şeridinin ÜSTÜNDE kazanmalı (z-index) — yoksa section eklemek isteyen
+        // kullanıcı slot'a bileşen ekler.
         <button
           key={a.key}
           type="button"
-          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}`}
+          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}${a.zoneKey ? '' : ' is-root'}`}
           style={{ top: a.strip.top, left: a.strip.left, width: a.strip.width, height: a.strip.height }}
           title={a.zoneKey ? 'Buraya bileşen ekle' : 'Buraya Bölüm Ekle'}
           {...{ [OVERLAY_PORTAL_ATTR]: '' }}

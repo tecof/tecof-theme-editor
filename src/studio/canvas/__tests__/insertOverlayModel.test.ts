@@ -3,6 +3,7 @@ import {
   computeZoneAffordances,
   gapAxis,
   STRIP_THICKNESS,
+  MIN_THICKNESS,
   type OverlayRect,
 } from '../insertOverlayModel';
 
@@ -135,5 +136,44 @@ describe('computeZoneAffordances — transient unmeasured nodes', () => {
     });
     // position 0: prev=null,next=null(child0 is null) → skipped; positions with child1 remain.
     expect(res.map((a) => a.index)).toEqual([1, 2]);
+  });
+});
+
+describe('computeZoneAffordances — gap-clamped band thickness', () => {
+  it('keeps the full band for wide gaps, shrinks to the real gap for tight ones', () => {
+    // gap 20 (>= STRIP_THICKNESS) → full 16px band.
+    const wide = computeZoneAffordances({
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 600), R(120, 0, 100, 600)],
+    });
+    expect(wide[1].strip.height).toBe(STRIP_THICKNESS);
+
+    // gap 10 → band exactly 10, still centred on the midpoint (line y=105).
+    const tight = computeZoneAffordances({
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 600), R(110, 0, 100, 600)],
+    });
+    expect(tight[1].strip.height).toBe(10);
+    expect(tight[1].strip.top).toBe(105 - 10 / 2);
+  });
+
+  it('flush/overlapping boundaries fall back to the minimum band, not 16px', () => {
+    // gap 0 (flush sections) → MIN_THICKNESS band so component edges stay clickable.
+    const flush = computeZoneAffordances({
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 600), R(100, 0, 100, 600)],
+    });
+    expect(flush[1].strip.height).toBe(MIN_THICKNESS);
+
+    // horizontal flush pair → same clamp on width.
+    const flushX = computeZoneAffordances({
+      zoneAxis: 'x',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 200), R(0, 200, 100, 200)],
+    });
+    expect(flushX[1].strip.width).toBe(MIN_THICKNESS);
   });
 });

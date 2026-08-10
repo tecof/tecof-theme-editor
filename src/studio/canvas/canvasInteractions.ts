@@ -18,7 +18,8 @@
  */
 
 import { useEditorStore } from '../../engine/store';
-import { findNodeById } from '../../engine/zones';
+import { findNodeById, getParentId } from '../../engine/zones';
+import type { TecofDocument } from '../../types';
 import { isEmbedded, postToHost } from '../bridge';
 import { isInsideOverlayPortal } from './overlayPortal';
 import { writeDragData } from './dndUtils';
@@ -45,6 +46,49 @@ export const nodeIdFromEl = (el: ClassListed | null): string | null => {
   return null;
 };
 
+/** Clicked node'dan kök seviyeye ata zinciri: [clicked, parent, …, rootLevel]. */
+const ancestorChain = (doc: TecofDocument, id: string): string[] => {
+  const chain = [id];
+  let cur: string | null = id;
+  // getParentId zone anahtarından çözer; kök seviyede null döner. Döngü koruması
+  // olarak zincir uzunluğu makul bir sınırda kesilir (bozuk doc'ta sonsuz döngü olmasın).
+  while (chain.length < 100) {
+    cur = getParentId(doc, cur!);
+    if (!cur) break;
+    chain.push(cur);
+  }
+  return chain;
+};
+
+/**
+ * Dıştan-içe tık eskalasyonu (Figma/Framer modeli): yüzeyi çocuklarla kaplı bir
+ * section'da kullanıcı section'ı KANVASTAN seçebilsin diye ilk tık en DIŞTAKİ
+ * (kök seviye) atayı seçer; seçili node'un içine sonraki tık BİR kat iner. Aynı
+ * section'ın başka bir alt ağacına tıklanınca seçim derinliği korunur (kardeşler
+ * arasında gezinme kata geri fırlatmaz). Alt+tık her zaman en içtekini seçer.
+ * Pure — test edilebilir.
+ */
+export const resolveClickTarget = (
+  doc: TecofDocument,
+  clickedId: string,
+  selectedId: string | null,
+  altKey = false,
+): string => {
+  if (altKey) return clickedId;
+  const chain = ancestorChain(doc, clickedId);
+  const outermost = chain[chain.length - 1];
+  if (!selectedId) return outermost;
+  const selIdx = chain.indexOf(selectedId);
+  if (selIdx === 0) return clickedId; // zaten en içteki seçili → kal
+  if (selIdx > 0) return chain[selIdx - 1]; // seçilinin içine bir kat in
+  // Farklı alt ağaç: aynı section içindeyse seçim DERİNLİĞİNİ koru.
+  const selChain = ancestorChain(doc, selectedId);
+  if (selChain.length > 0 && selChain[selChain.length - 1] === outermost) {
+    return chain[Math.max(0, chain.length - selChain.length)];
+  }
+  return outermost;
+};
+
 /**
  * Install delegated node selection on a canvas document. Returns a cleanup fn.
  * `isEditMode` gates it exactly like the guard (no selection in preview).
@@ -65,10 +109,16 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
       store.toggleSelect(id);
       return;
     }
-    store.selectNode(id);
+    // Çift tıklamanın ikinci tıkı (detail 2) eskalasyonu İLERLETMEZ — dblclick
+    // inline-edit'e giderken seçim kat değiştirmesin.
+    const targetId =
+      e.detail > 1 && store.selection.selectedId
+        ? store.selection.selectedId
+        : resolveClickTarget(store.document, id, store.selection.selectedId, e.altKey);
+    store.selectNode(targetId);
     if (isEmbedded()) {
-      const type = findNodeById(store.document, id)?.node.type ?? '';
-      postToHost('puck:itemSelected', { item: { type, id } });
+      const type = findNodeById(store.document, targetId)?.node.type ?? '';
+      postToHost('puck:itemSelected', { item: { type, id: targetId } });
     }
   };
 
@@ -81,6 +131,10 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
   const onOver = (e: MouseEvent) => {
     if (!isEditMode()) return;
     const target = e.target as Element | null;
+    // İmleç bir overlay-portal (ör. görünmez "Ekle" şeridi) üstündeyken mevcut
+    // hover korunur — şerit bir bileşenin kenarını örttüğünde highlight'ın
+    // yanıp sönmesini (titreme) bitirir.
+    if (isInsideOverlayPortal(target)) return;
     // Innermost node — matched by the marker class (non-inline, synchronous) OR
     // data-tecof-id (inline). Only `.tecof-el` (non-inline) is handled here; inline
     // nodes own their hover via useInlineDragRef.

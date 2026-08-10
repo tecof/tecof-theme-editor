@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useEditorStore } from '../engine/store';
 import { useUiStore } from './uiStore';
-import { findNodeById } from '../engine/zones';
+import { findNodeById, getParentId } from '../engine/zones';
 import { CommandPalette } from './command/CommandPalette';
 import { ThemeVars } from './theme/ThemeVars';
 import { parseDocument, serializeDocument, validatePageData } from '../engine/document';
@@ -488,13 +488,29 @@ export const TecofStudio = ({
         return;
       }
 
-      // Escape -> close the palette first, otherwise deselect.
+      // Escape -> önce palet; açık bir modal varsa kapatmayı MODALIN kendi
+      // listener'ına bırak ve seçime DOKUNMA (eskiden modal kapanırken seçim de
+      // siliniyordu). Seçim varken bir üst kata çık (Figma); kök seviyedeyse
+      // bırak.
       if (e.key === 'Escape') {
-        if (useUiStore.getState().commandPaletteOpen) {
-          useUiStore.getState().setCommandPaletteOpen(false);
+        const ui = useUiStore.getState();
+        if (ui.commandPaletteOpen) {
+          ui.setCommandPaletteOpen(false);
           return;
         }
-        useEditorStore.getState().selectNode(null);
+        if (ui.addSectionTarget != null || ui.nodeSettingsOpen || ui.aiModalOpen) return;
+        const editor = useEditorStore.getState();
+        const currentId = editor.selection.selectedId;
+        const parentId = currentId ? getParentId(editor.document, currentId) : null;
+        if (parentId) {
+          editor.selectNode(parentId);
+          if (isEmbedded) {
+            const type = findNodeById(editor.document, parentId)?.node.type ?? '';
+            postToHost('puck:itemSelected', { item: { type, id: parentId } });
+          }
+          return;
+        }
+        editor.selectNode(null);
         if (isEmbedded) {
           postToHost('puck:itemDeselected');
         }
