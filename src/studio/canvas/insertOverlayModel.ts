@@ -123,7 +123,6 @@ const isSmallElement = (r: OverlayRect): boolean =>
 
 const right = (r: OverlayRect) => r.left + r.width;
 const bottom = (r: OverlayRect) => r.top + r.height;
-const clamp = (v: number, lo: number, hi: number) => (lo > hi ? v : Math.min(Math.max(v, lo), hi));
 
 type Geom = { axis: Axis; strip: OverlayRect; line: number };
 
@@ -197,28 +196,48 @@ function edgeAffordance(
   side: 'before' | 'after',
   offset = 0,
 ): Geom {
-  /* Çizginin GERÇEK konumu: elemanın kenarı (+ kuyruk offset'i). Band clamp'le
-     kaysa bile `line` bu mutlak konumdan türetilir — çizgi hep doğru yerde. */
+  /* Band elemanın kenarına YAPIŞIK durur ve önce DIŞARIDAKİ boşluğu kullanır;
+     dışarıda yer yoksa (slot kapsayıcısına yapışık ilk/son eleman — flex-col
+     slotlarda İLK ELEMAN HEP böyledir) yalnız MIN_THICKNESS kadar İÇERİ taşan
+     ince bir şerit kalır.
+
+     ESKİ model bandı sabit EDGE_BAND kalınlığında tutup kapsayıcıya
+     CLAMP'liyordu: slot'a yapışık ilk elemanda 30px'lik band elemanın ÜSTÜNE
+     kayıyor, elemanın ilk 30px'i tıklama bandının altında kalıyordu — Eyebrow
+     gibi kısa (≈20px) elemanlar TAMAMEN örtülüp tıklanamaz oluyordu. Yeni
+     modelde band asla kenardan içeri MIN_THICKNESS'ten fazla giremez (between
+     şeridinin flush-sınır uzlaşmasıyla aynı bütçe). */
+  const scan = (edgeAbs: number, availOutside: number) => {
+    const avail = Math.max(0, availOutside);
+    const thickness = avail >= EDGE_BAND ? EDGE_BAND : Math.max(MIN_THICKNESS, avail);
+    const outside = Math.min(avail, thickness);
+    const start = side === 'before' ? edgeAbs - outside : edgeAbs - (thickness - outside);
+    return { start, thickness, line: edgeAbs - start };
+  };
+
   if (axis === 'y') {
     const width = Math.max(container.width, MIN_SPAN);
-    /* 'before' → band elemanın ÜSTÜNDE; 'after' → band elemanın ALTINDA. */
-    const rawTop = side === 'before' ? item.top - EDGE_BAND : bottom(item) + offset;
-    const top = clamp(rawTop, container.top, Math.max(container.top, bottom(container) - EDGE_BAND));
     const lineAbs = side === 'before' ? item.top : bottom(item) + offset;
+    const g = scan(
+      lineAbs,
+      side === 'before' ? lineAbs - container.top : bottom(container) - lineAbs,
+    );
     return {
       axis,
-      strip: { top, left: container.left, width, height: EDGE_BAND },
-      line: lineAbs - top,
+      strip: { top: g.start, left: container.left, width, height: g.thickness },
+      line: g.line,
     };
   }
   const height = Math.max(container.height, MIN_SPAN);
-  const rawLeft = side === 'before' ? item.left - EDGE_BAND : right(item) + offset;
-  const left = clamp(rawLeft, container.left, Math.max(container.left, right(container) - EDGE_BAND));
   const lineAbs = side === 'before' ? item.left : right(item) + offset;
+  const g = scan(
+    lineAbs,
+    side === 'before' ? lineAbs - container.left : right(container) - lineAbs,
+  );
   return {
     axis,
-    strip: { top: container.top, left, width: EDGE_BAND, height },
-    line: lineAbs - left,
+    strip: { top: container.top, left: g.start, width: g.thickness, height },
+    line: g.line,
   };
 }
 

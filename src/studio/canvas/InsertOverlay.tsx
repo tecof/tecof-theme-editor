@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Plus } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
+import { findNodeById } from '../../engine/zones';
 import { useUiStore } from '../uiStore';
 import { OVERLAY_PORTAL_ATTR } from './overlayPortal';
 import {
@@ -61,7 +62,19 @@ export const InsertOverlay = () => {
   // Reactive deps: any document edit or drag toggle re-measures.
   const documentState = useEditorStore((s) => s.document);
   const drag = useEditorStore((s) => s.drag);
+  const selectedId = useEditorStore((s) => s.selection.selectedId);
   const openAddSection = useUiStore((s) => s.openAddSection);
+
+  // Seçili KÖK section'ın hemen altındaki sınır artık HOST chrome'unda yaşar
+  // (SelectionOverlay: kalıcı "Bölüm Ekle" pili + kendi ayraç çizgisi). Aynı
+  // sınırın iframe affordance'ı bastırılır — iki katman ayrı koordinat
+  // uzayında aynı çizgiyi çizince (host: section alt kenarı, iframe: boşluğun
+  // ORTASI) pil ile çizgi arasında görünür kayma oluşuyordu.
+  const suppressedRootIndex = (() => {
+    if (!selectedId) return null;
+    const path = findNodeById(documentState, selectedId)?.path;
+    return path && path.zoneKey === undefined ? path.index + 1 : null;
+  })();
   // Inline yazım sırasında TÜM ekleme affordance'ları da gizlenir: bu katman
   // iframe İÇİNDE ayrı yaşar, host'taki `.tecof-overlay.is-inline-editing`
   // kuralı buraya ulaşmaz — özellikle seçili section'ın altındaki KALICI
@@ -198,7 +211,9 @@ export const InsertOverlay = () => {
         <button
           key={a.key}
           type="button"
-          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}${a.zoneKey ? '' : ' is-root'}${a.compact ? ' is-compact' : ''}${a.edge ? ` is-edge-${a.edge}` : ''}`}
+          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}${a.zoneKey ? '' : ' is-root'}${a.compact ? ' is-compact' : ''}${a.edge ? ` is-edge-${a.edge}` : ''}${
+            !a.zoneKey && suppressedRootIndex === a.index ? ' is-suppressed' : ''
+          }`}
           style={(() => {
             /* TAM PİKSEL yuvarlama: getBoundingClientRect kesirli döner; kesirli
                `top` + 2px çizgi yarım-piksel render'la bulanık/1px kayık

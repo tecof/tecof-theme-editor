@@ -40,6 +40,9 @@ export interface DropZoneProps {
    * elemanın üstünde taşınır. Editörde hiç set edilmez.
    */
   isEmpty?: boolean;
+  /** Repeat satırlarını besleyen prop adı (EditorRepeatSlot geçirir) — ghost
+   *  satırlarının `data-tecof-item` hedefi için; DOM'a kendisi yazılmaz. */
+  repeatSourceField?: string;
   /** `<Slot>`'un serbest prop geçişi (`data-*`, `aria-*`, `id`…): motor-içi
    *  anahtarlar ayıklandıktan sonra zone kapsayıcısına AYNEN spread edilir —
    *  yayın (RenderDropZone) ile birebir aynı sözleşme. */
@@ -54,6 +57,7 @@ export const DropZone = ({
   repeatItems,
   managedLayout,
   isEmpty: _isEmpty,
+  repeatSourceField,
   ...domRest
 }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
@@ -161,7 +165,7 @@ export const DropZone = ({
               ) : (
                 template
               )}
-              <RepeatGhosts rows={repeatRows} nodes={items} />
+              <RepeatGhosts rows={repeatRows} nodes={items} sourceField={repeatSourceField} />
             </>
           );
         })()
@@ -179,15 +183,26 @@ export const EditorRepeatSlot = ({
   zone,
   orientation,
   value,
+  sourceField,
   sourceFieldDef,
 }: {
   zone: string;
   orientation?: 'vertical' | 'horizontal';
   value: unknown;
+  /** Satırları besleyen prop'un ADI — ghost'lara `data-tecof-item="<ad>:<i>"`
+   *  basılır ki tıklama Inspector'da ilgili satırı açsın. */
+  sourceField?: string;
   sourceFieldDef?: RepeatSourceFieldDef;
 }) => {
   const rows = useRepeatRows(value, sourceFieldDef);
-  return <DropZone zone={zone} orientation={orientation} repeatItems={rows as any[]} />;
+  return (
+    <DropZone
+      zone={zone}
+      orientation={orientation}
+      repeatItems={rows as any[]}
+      repeatSourceField={sourceField}
+    />
+  );
 };
 
 // Helper for puck.renderDropZone — TÜM prop'lar aynen geçer (adlı beyaz liste

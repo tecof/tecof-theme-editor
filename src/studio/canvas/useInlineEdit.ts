@@ -223,6 +223,10 @@ export function runInlineEditFromEvent(
       // inline editing from inside one.
       if (isInsideOverlayPortal(e.target)) return;
       const target = e.target as HTMLElement;
+      // Repeat GHOST'ları salt-görsel kopyadır: içlerindeki data-tecof-prop
+      // işaretleri ŞABLONUN prop'larına aittir; ghost'ta düzenlemeye izin
+      // vermek 2..n satırının metnini şablona/yanlış hedefe yazardı.
+      if (target.closest('.tecof-repeat-ghost')) return;
       const wrapper = target.closest('[data-tecof-id]') as HTMLElement | null;
       // İki marker türü de düzenleme hedefi olabilir; closest kombine seçicide
       // EN YAKIN olanı döndürür (satır-içi işaret dıştaki data-tecof-prop'u ezmez).

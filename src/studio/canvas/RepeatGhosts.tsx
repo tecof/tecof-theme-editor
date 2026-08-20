@@ -139,14 +139,27 @@ export interface RepeatGhostsProps {
   rows: any[];
   /** The template nodes of the repeat zone (each ghost provides its own zone scope). */
   nodes: TecofNode[];
+  /** Satırları besleyen prop adı: verilirse ghost sarmalayıcısı
+   *  `data-tecof-item="<ad>:<satır>"` taşır — tıklama Inspector'da o satırı
+   *  açıp kaydırır (canvasInteractions.requestFocusFromTarget). */
+  sourceField?: string;
 }
 
-export const RepeatGhosts = ({ rows, nodes }: RepeatGhostsProps) => {
+export const RepeatGhosts = ({ rows, nodes, sourceField }: RepeatGhostsProps) => {
   if (rows.length <= 1 || nodes.length === 0) return null;
   return (
     <>
       {rows.slice(1).map((row, i) => (
-        <div key={i + 1} className="tecof-repeat-ghost" aria-hidden="true">
+        /* aria-hidden kaldırıldı DEĞİL: ghost'lar hâlâ dekoratif kopya; ama
+           tıklama hedefi olarak data-tecof-item taşırlar (CSS pointer-events
+           artık auto — bkz. .tecof-repeat-ghost). Inline edit ghost içinde
+           BAŞLAMAZ (useInlineEdit ghost guard'ı) — kopyaya yazılamaz. */
+        <div
+          key={i + 1}
+          className="tecof-repeat-ghost"
+          aria-hidden="true"
+          {...(sourceField ? { 'data-tecof-item': `${sourceField}:${i + 1}` } : {})}
+        >
           <RepeatItemContext.Provider value={{ item: row, index: i + 1, count: rows.length }}>
             {nodes.map((node) => (
               <GhostNode key={`${i + 1}:${node.props.id}`} node={node} />

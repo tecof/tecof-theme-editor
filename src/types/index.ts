@@ -441,6 +441,13 @@ export interface MigrationConfig {
  * compatibility with existing host configs.
  */
 export interface StudioConfig {
+  /**
+   * Seçim toolbar'ındaki ⓘ (bileşen bilgisi) düğmesi. VARSAYILAN KAPALI
+   * (2026-08 kullanıcı kararı: gündelik düzenlemede yer kaplıyor, kafa
+   * karıştırıyordu). Bileşen dokümantasyonunu yüzeye çıkarmak isteyen tema
+   * `nodeInfoButton: true` ile açar.
+   */
+  nodeInfoButton?: boolean;
   /** Registered components, keyed by component type. */
   components: Record<string, ComponentConfig>;
   /** Optional ordered category definitions for the component picker. */

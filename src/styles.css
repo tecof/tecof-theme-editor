@@ -4568,6 +4568,16 @@
    AYRI: host'ta yaşadığı için seçim çerçevesinin ÜSTÜNE çizilir — iframe'de
    dururken çerçeve çizgisi yazının üstüne biniyordu. translate(-50%,-50%)
    pili tam sınıra oturtur (yarısı içeride yarısı dışarıda, Squarespace gibi). */
+/* Host pilinin ayraç çizgisi — pil ile AYNI koordinat kaynağından
+   (selectedCoords alt kenarı) çizilir; kayma yapısal olarak imkânsız. */
+.tecof-add-below-line {
+  position: absolute;
+  height: 2px;
+  background: var(--tecof-accent);
+  z-index: 6;
+  pointer-events: none;
+}
+
 .tecof-add-below {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -5024,8 +5034,11 @@
    çerçeve alır — tıklanınca Inspector ilgili array satırını açar, çift tıklama
    satır metnini yerinde düzenler. Önizleme/yayında class yok → sıfır etki. */
 .tecof-canvas-edit [data-tecof-item]:hover {
-  outline: 1px dashed var(--tecof-structure);
+  outline: 1.5px dashed var(--tecof-structure);
   outline-offset: 2px;
+  background-color: var(--tecof-structure-subtle);
+  cursor: pointer;
+  border-radius: 2px;
 }
 .tecof-canvas-edit [data-tecof-item-prop] {
   cursor: text;
@@ -5959,11 +5972,20 @@
   visibility: hidden;
 }
 
-/* Section sınırında kök "Bölüm Ekle" şeridi, slot'un kenara clamp'lenmiş "Ekle"
+/* Section sınırında kök "Bölüm Ekle" şeridi, slot'un kenara yaklaşan "Ekle"
    şeridiyle çakıştığında ÜSTTE kazanır — yoksa section eklemek isteyen tıklama
    slot'a bileşen ekliyordu. */
 .tecof-insert-affordance.is-root {
   z-index: 1;
+}
+
+/* Seçili KÖK section'ın hemen altındaki sınır host chrome'una devredildi
+   (SelectionOverlay: kalıcı pil + kendi çizgisi) — iframe'deki aynı sınır
+   tamamen sustur: iki katman farklı referans kullanınca (host: section alt
+   kenarı, iframe: boşluk ORTASI) çizgi ile pil ayrışıyordu. */
+.tecof-insert-affordance.is-suppressed {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 /* Per-gap hover/click band — the WHOLE strip is the button (a bare, reset button)
@@ -7625,13 +7647,24 @@
    drag hit-testing — drops fall through to the zone itself). */
 .tecof-repeat-ghost {
   display: contents;
-  pointer-events: none;
+  /* pointer-events AUTO (eskiden none): ghost artık tıklama HEDEFİ —
+     data-tecof-item taşır, tıklayınca Inspector ilgili repeat satırını açıp
+     kaydırır. Düzenleme yine yasak: inline edit ghost guard'ı (useInlineEdit)
+     çift tıklamayı yutar, ghost içeriği şablonun salt-görsel kopyası kalır. */
   user-select: none;
 }
 
 /* No box on display:contents — dim the ghost's top-level children instead. */
 .tecof-repeat-ghost > * {
   opacity: 0.55;
+}
+
+/* display:contents kutu boyamaz — hover çerçevesi üst-düzey çocuklara çizilir. */
+.tecof-canvas-edit .tecof-repeat-ghost:hover > * {
+  outline: 1.5px dashed var(--tecof-structure);
+  outline-offset: 2px;
+  opacity: 0.8;
+  cursor: pointer;
 }
 
 /* ─── Section Template cards (Add Section modal) ─── */

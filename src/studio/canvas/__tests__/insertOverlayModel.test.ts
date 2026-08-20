@@ -336,3 +336,62 @@ describe('computeZoneAffordances — line (gerçek ayraç konumu, kayma düzeltm
     expect(before.strip.left + before.line).toBe(0); // çizgi eleman sol kenarında
   });
 });
+
+describe('computeZoneAffordances — adaptif kenar bandı (Eyebrow tıklama düzeltmesi)', () => {
+  it('slot kapsayıcısına YAPIŞIK ilk eleman: band elemanın üstünü ÖRTMEZ (≤ MIN_THICKNESS)', () => {
+    // flex-col slotlarda ilk çocuk HEP kapsayıcıya yapışıktır (avail=0).
+    // ESKİ model 30px bandı içeri clamp'liyordu → 20px'lik Eyebrow tamamen
+    // bandın altında kalıyor, TIKLANAMIYORDU. Yeni band en fazla
+    // MIN_THICKNESS kadar içeri taşar.
+    const res = computeZoneAffordances({
+      zoneKey: 'Hero-1:contentSlot',
+      zoneAxis: 'y',
+      containerRect: R(100, 0, 500, 600),
+      childRects: [R(100, 0, 20, 600), R(144, 0, 60, 600)], // 20px Eyebrow + Title
+    });
+    const before = res.find((a) => a.edge === 'before')!;
+    expect(before.strip.height).toBe(MIN_THICKNESS); // 30 DEĞİL
+    expect(before.strip.top).toBe(100); // eleman kenarından başlar
+    expect(before.strip.top + before.line).toBe(100); // çizgi kenarda
+    // Eyebrow'un 6..20px aralığı artık bandsız → tıklanabilir.
+  });
+
+  it('dışarıda kısmi yer varsa band önce onu kullanır, kalanı içeri taşmaz', () => {
+    // eleman kapsayıcıdan 12px içeride → band 12px dışarıda [88..100], içeri 0.
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'y',
+      containerRect: R(88, 0, 500, 600),
+      childRects: [R(100, 0, 40, 600)],
+    });
+    const before = res.find((a) => a.edge === 'before')!;
+    expect(before.strip.top).toBe(88);
+    expect(before.strip.height).toBe(12);
+    expect(before.strip.top + before.line).toBe(100);
+  });
+
+  it('son eleman kapsayıcı dibine yapışıksa after bandı da içeri en çok MIN_THICKNESS taşar', () => {
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 200, 600),
+      childRects: [R(0, 0, 200, 600)], // kapsayıcıyı tam dolduran eleman
+    });
+    const after = res.find((a) => a.edge === 'after')!;
+    expect(after.strip.height).toBe(MIN_THICKNESS);
+    expect(after.strip.top).toBe(200 - MIN_THICKNESS);
+    expect(after.strip.top + after.line).toBe(200); // çizgi alt kenarda
+  });
+
+  it('bol dış boşlukta davranış değişmedi: tam EDGE_BAND dışarıda', () => {
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 1000, 600),
+      childRects: [R(200, 0, 100, 600)],
+    });
+    const before = res.find((a) => a.edge === 'before')!;
+    expect(before.strip).toMatchObject({ top: 170, height: 30 });
+    expect(before.line).toBe(30);
+  });
+});

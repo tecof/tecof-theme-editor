@@ -226,6 +226,7 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             zone={fieldName}
             orientation={fieldDef.orientation}
             value={displayProps[fieldDef.repeatSource]}
+            sourceField={fieldDef.repeatSource}
             sourceFieldDef={componentConfig.fields?.[fieldDef.repeatSource]}
           />
         ) : (

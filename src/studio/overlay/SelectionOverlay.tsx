@@ -346,6 +346,9 @@ const OverlayToolbar = ({
   onEdit,
   readOnly,
 }: OverlayToolbarProps) => {
+  // ⓘ düğmesi görünürlüğü (bkz. aşağıdaki kullanım) — config'ten okunur.
+  const { config: studioConfig } = useStudio();
+  const showInfoButton = (studioConfig as { nodeInfoButton?: boolean }).nodeInfoButton === true;
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
@@ -384,7 +387,10 @@ const OverlayToolbar = ({
 
   return (
   <div ref={toolbarRef} className="tecof-toolbar" style={style}>
-    <InfoPopover node={node} componentConfig={componentConfig} />
+    {/* ⓘ bilgi düğmesi OPT-IN (kullanıcı kararı 2026-08-20: 'gerek yok,
+        default kapalı'): yalnız StudioConfig.nodeInfoButton === true olan
+        temalarda görünür. */}
+    {showInfoButton ? <InfoPopover node={node} componentConfig={componentConfig} /> : null}
 
     {/* Düzenle — Inspector gövdesini modal'da açar. Çoklu seçimde disable:
         modal tek düğümü düzenler. edit izni kapalıysa da disable (alanlar
@@ -761,6 +767,19 @@ export const SelectionOverlay = () => {
         !isMulti &&
         !readOnly &&
         !inlineEditing && (
+          <>
+            {/* Pil ile AYNI koordinattan çizilen ayraç çizgisi — iframe'in
+                boşluk-ortası çizgisi bastırıldığı için (InsertOverlay
+                is-suppressed) çizgi+pil hep aynı noktada, kayma imkânsız. */}
+            <div
+              aria-hidden
+              className="tecof-add-below-line"
+              style={{
+                top: selectedCoords.top + selectedCoords.height,
+                left: selectedCoords.left,
+                width: selectedCoords.width,
+              }}
+            />
           <button
             type="button"
             className="tecof-add-below"
@@ -777,6 +796,7 @@ export const SelectionOverlay = () => {
             <Plus size={12} strokeWidth={2.6} aria-hidden="true" />
             Bölüm Ekle
           </button>
+          </>
         )}
 
       {/* Yol + ölçü bilgisi: node'a yapışık çipler yerine canvas'ın sol altında
