@@ -255,3 +255,84 @@ describe('computeZoneAffordances — compact (element seviyesi HEP; kökte küç
     expect(between?.compact).toBe(true);
   });
 });
+
+describe('computeZoneAffordances — line (gerçek ayraç konumu, kayma düzeltmeleri)', () => {
+  it('between: çizgi şeridin tam ortasında (thickness/2) ve boşluğun ortasına denk gelir', () => {
+    // 20px boşluk: 100..120 → çizgi 110, şerit 16px → top=102, line=8
+    const res = computeZoneAffordances({
+      zoneKey: undefined,
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 600), R(120, 0, 100, 600)],
+    });
+    const between = res.find((a) => a.index === 1)!;
+    expect(between.strip.top + between.line).toBe(110);
+    expect(between.line).toBe(between.strip.height / 2);
+  });
+
+  it('edge-before: çizgi ELEMANIN üst kenarında (band dışarıda, line = EDGE_BAND)', () => {
+    // ilk eleman top=200 → band 170..200, çizgi 200 (eleman kenarı)
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 1000, 600),
+      childRects: [R(200, 0, 100, 600)],
+    });
+    const before = res.find((a) => a.edge === 'before')!;
+    expect(before.strip.top).toBe(170);
+    expect(before.strip.top + before.line).toBe(200);
+  });
+
+  it('KAYMA DÜZELTMESİ: kapsayıcıya yapışık elemanda clamp bandı kaydırsa da çizgi kenarı izler', () => {
+    // Eleman kapsayıcının TEPESİNE yapışık (top=0): rawTop=-30 → clamp → band 0..30.
+    // ESKİ model çizgiyi bandın alt kenarına (30) sabitliyordu = elemanın 30px İÇİ.
+    // YENİ model: line mutlak eleman kenarını (0) izler → şerit-içi offset 0.
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 1000, 600),
+      childRects: [R(0, 0, 100, 600)],
+    });
+    const before = res.find((a) => a.edge === 'before')!;
+    expect(before.strip.top).toBe(0); // clamp uygulandı
+    expect(before.strip.top + before.line).toBe(0); // çizgi ELEMAN kenarında
+  });
+
+  it('edge-after: çizgi elemanın alt kenarında (line = 0, band aşağıda)', () => {
+    // tek eleman 0..100, kök DEĞİL (kuyruk offseti yok) → band 100..130, çizgi 100
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 1000, 600),
+      childRects: [R(0, 0, 100, 600)],
+    });
+    const after = res.find((a) => a.edge === 'after')!;
+    expect(after.strip.top).toBe(100);
+    expect(after.line).toBe(0);
+  });
+
+  it('kök kuyruk (alwaysVisible): çizgi bilinçli olarak bottom+TRAIL_OFFSET te, bandın başında', () => {
+    const res = computeZoneAffordances({
+      zoneKey: undefined,
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 600)],
+      alwaysLastVisible: true, // InsertOverlay kök zone'da bunu geçer
+    });
+    const tail = res.find((a) => a.alwaysVisible)!;
+    expect(tail.strip.top).toBe(116); // 100 + 16
+    expect(tail.line).toBe(0); // çizgi band başında (kuyruk boşluğunda yüzer)
+  });
+
+  it('axis-x edge-before: yatay eksende de çizgi eleman kenarını izler (clamp dahil)', () => {
+    const res = computeZoneAffordances({
+      zoneKey: 's',
+      zoneAxis: 'x',
+      containerRect: R(0, 0, 100, 600),
+      childRects: [R(0, 0, 100, 200)], // left=0, kapsayıcıya yapışık
+    });
+    const before = res.find((a) => a.edge === 'before')!;
+    expect(before.strip.left).toBe(0); // clamp
+    expect(before.strip.left + before.line).toBe(0); // çizgi eleman sol kenarında
+  });
+});

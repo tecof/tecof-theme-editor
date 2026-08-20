@@ -6,9 +6,10 @@
  *   2. className compilation (token → Tailwind class via `toClass`),
  *   3. the production safelist (every token × variant → finite class set).
  *
- * Targets Tailwind v4: theme tokens are CSS variables (`@theme`), so the
- * editor palette (`--tecof-primary-*`) maps to `bg-primary-600` etc. once the
- * host registers `--color-primary-*` in its `@theme`.
+ * Targets Tailwind v4: theme tokens are CSS variables (`@theme`), so
+ * `bg-primary-600` resolves from the host's `--color-primary-*` once registered
+ * in its `@theme`, falling back to the package's NEUTRAL `--tecof-brand-*`
+ * scale (never the blue chrome palette `--tecof-primary-*`).
  */
 
 import { TAILWIND_PALETTE, TAILWIND_SHADES, tailwindSwatch } from './palette';
@@ -109,11 +110,14 @@ const BASE_COLOR_OPTIONS: StyleControlOption[] = [
   { label: 'Siyah', value: 'black', swatch: '#000000' },
 ];
 
-/** Brand palette (Tailwind v4 @theme: --color-primary-*). */
+/** Brand palette (Tailwind v4 @theme: --color-primary-*).
+ *  Swatch SİTENİN markasını gösterir; host teması tanımlamamışsa nötr marka
+ *  ölçeğine düşer — chrome paleti (--tecof-primary-*, mavi) burada KULLANILMAZ,
+ *  yoksa seçici her mağazada markadan bağımsız mavi görünürdü. */
 const BRAND_COLOR_OPTIONS: StyleControlOption[] = TAILWIND_SHADES.map((s) => ({
   label: `Primary ${s}`,
   value: `primary-${s}`,
-  swatch: `var(--tecof-primary-${s})`,
+  swatch: `var(--color-primary-${s}, var(--tecof-brand-${s}))`,
 }));
 
 /** Full Tailwind default palette (`red-500` → `bg-red-500`). */

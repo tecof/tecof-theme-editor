@@ -48,9 +48,29 @@ interface DropZoneProps {
    * components can pass runtime data (API results) here themselves.
    */
   repeatItems?: any[];
+  /**
+   * YAYIN sinyali: zone listesi boşsa TecofRender enjeksiyonda true basar;
+   * `<Slot hideIfEmpty>` bunu okuyup hiç render etmez. RenderDropZone'un
+   * kendisi bu prop'u KULLANMAZ (DOM'a da yazmaz) — yalnız enjekte edilen
+   * elemanın üstünde taşınır.
+   */
+  isEmpty?: boolean;
+  /** `<Slot>`'un serbest prop geçişi (`data-*`, `aria-*`, `id`…): motor-içi
+   *  anahtarlar ayıklandıktan sonra kapsayıcı div'e AYNEN spread edilir —
+   *  geçiş burada uygulanmazsa Slot'un vaadi sessizce ölü koda dönerdi. */
+  [extra: string]: unknown;
 }
 
-const RenderDropZone = ({ zone, className, style, orientation = 'vertical', repeatItems, managedLayout }: DropZoneProps) => {
+const RenderDropZone = ({
+  zone,
+  className,
+  style,
+  orientation = 'vertical',
+  repeatItems,
+  managedLayout,
+  isEmpty: _isEmpty,
+  ...domRest
+}: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const context = useContext(RenderContext);
@@ -83,7 +103,8 @@ const RenderDropZone = ({ zone, className, style, orientation = 'vertical', repe
       ));
 
   return (
-    <div className={className} style={{ ...orientationStyle, ...style }}>
+    // domRest ÖNCE: motorun kendi className/style'ı ezilemesin.
+    <div {...domRest} className={className} style={{ ...orientationStyle, ...style }}>
       {children}
     </div>
   );
@@ -157,6 +178,17 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
         // come from the named prop — a plain array, or an async source
         // (api-list / CMS collection) resolved by RepeatSlotZone. No data means
         // no output (never raw `{{ item.* }}` tokens on the live site).
+        // `isEmpty`: <Slot hideIfEmpty> için yayın sinyali — zone listesi bu
+        // noktada bilinir (anahtar `${nodeId}:${slot}`). Repeat slot'larda
+        // üretilmez: satırlar async (api-list/CMS) gelebilir, "boş" kararı
+        // render anında verilemez. Editör tarafı (DropZone) işareti hiç
+        // basmaz; boş slot orada "Bileşen Ekle" ipucuyla görünür kalmalı.
+        const slotZoneItems = context.zones[`${node.props.id}:${fieldName}`];
+        // _hidden (Katmanlar'dan gizlenen) çocuklar yayında hiç render edilmez
+        // (aşağıda `props._hidden → null`) — tüm çocukları gizli slot da BOŞTUR;
+        // ham uzunluğa bakmak hideIfEmpty'yi ve :has() çöküşlerini kaçırıyordu.
+        const slotIsEmpty =
+          !slotZoneItems || slotZoneItems.every((n: any) => n?.props?._hidden);
         componentProps[fieldName] = fieldDef.repeatSource ? (
           <RepeatSlotZone
             zone={fieldName}
@@ -165,7 +197,11 @@ const RenderNode = ({ node, index }: { node: any; index: number }) => {
             sourceFieldDef={componentConfig.fields?.[fieldDef.repeatSource]}
           />
         ) : (
-          <RenderDropZone zone={fieldName} orientation={fieldDef.orientation} />
+          <RenderDropZone
+            zone={fieldName}
+            orientation={fieldDef.orientation}
+            isEmpty={slotIsEmpty}
+          />
         );
       }
     });

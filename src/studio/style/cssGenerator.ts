@@ -113,9 +113,11 @@ const colorValue = (token: string): string | null => {
   if (token === 'black') return '#000000';
   const brand = /^primary-(\d{2,3})$/.exec(token);
   if (brand) {
-    // Host @theme may define --color-primary-*; the editor palette always
-    // defines --tecof-primary-* as fallback.
-    return `var(--color-primary-${brand[1]}, var(--tecof-primary-${brand[1]}))`;
+    // Host @theme may define --color-primary-*; the editor ships a NEUTRAL brand
+    // scale as fallback. Deliberately NOT the chrome palette (--tecof-primary-*):
+    // chrome is blue and repainting the editor UI must never repaint the USER's
+    // brand-coloured content.
+    return `var(--color-primary-${brand[1]}, var(--tecof-brand-${brand[1]}))`;
   }
   const palette = parsePaletteToken(token);
   if (palette) return tailwindSwatch(palette.hue.name, palette.shade);

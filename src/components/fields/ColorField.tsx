@@ -119,6 +119,10 @@ const pushRecent = (hex: string): void => {
 };
 
 const DEFAULT_SWATCHES = [
+  // İÇERİK paleti (kullanıcının kendi renk seçimleri) — editör chrome'u değil.
+  // #74b500 bilinçli: kullanıcı yeşili meşru bir içerik rengidir ve listede
+  // #3b82f6 zaten mavi slotu doldurur (chrome mavisi #2f7cf6 eklemek neredeyse
+  // özdeş iki maviyle bir slotu israf ediyordu).
   '#18181b', '#71717a', '#ffffff', '#74b500', '#10b981',
   '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b',
 ];

@@ -8,7 +8,7 @@
    Accent zemini üzerine BEYAZ yazı (--tecof-accent-fg) kullanılır.
    İstisnalar (bilinçli, kendi semantik token'larında):
    • ortak bileşen (symbol) kimliği MOR (--tecof-shared-*),
-   • spacing overlay devtools dili: padding YEŞİL / margin AMBER (--tecof-spacing-*),
+   • spacing overlay: padding MAVİ (accent alias) / margin AMBER (--tecof-spacing-*),
    • success/danger/warning durum renkleri.
    Bu token'lar yalnızca editör arayüzünü boyar; kullanıcı sitesinin teması
    (--theme-* değişkenleri, generateCSSVariables) bundan etkilenmez.
@@ -26,6 +26,26 @@
   --tecof-primary-800: #1a52b5;
   --tecof-primary-900: #1a437e;
   --tecof-primary-950: #102a56;
+
+  /* ─── MARKA fallback ölçeği (KULLANICI İÇERİĞİ — chrome DEĞİL) ───
+     KRİTİK AYRIM: `primary-600` gibi bir stil token'ı kullanıcının kendi
+     içeriğine `var(--color-primary-600, var(--tecof-brand-600))` olarak derlenir
+     (style/cssGenerator.ts). Fallback chrome paletine bağlıysa, editör arayüz
+     rengini değiştirmek KULLANICI SİTESİNİN markasını da değiştirir — chrome
+     maviye alınınca teması `--color-primary-*` tanımlamayan mağazaların
+     içeriği de maviye dönüyordu. Bu ölçek bu yüzden ayrı ve NÖTR kalır
+     (tarihsel Tecof yeşili); chrome paleti yukarıdaki --tecof-primary-*'tır. */
+  --tecof-brand-50: #faffe4;
+  --tecof-brand-100: #f2ffc5;
+  --tecof-brand-200: #e3ff92;
+  --tecof-brand-300: #ceff53;
+  --tecof-brand-400: #b6fb20;
+  --tecof-brand-500: #9ae600;
+  --tecof-brand-600: #74b500;
+  --tecof-brand-700: #588902;
+  --tecof-brand-800: #476c08;
+  --tecof-brand-900: #3c5b0c;
+  --tecof-brand-950: #1d3300;
 
   /* ─── Semantik Accent Token'ları ─── */
   --tecof-accent: var(--tecof-primary-600);
@@ -63,10 +83,13 @@
   --tecof-shared-border: rgba(139, 92, 246, 0.30);
   --tecof-shared-outline: rgba(139, 92, 246, 0.55);
 
-  /* ─── Spacing overlay — devtools dili (padding yeşil / margin amber) ─── */
-  --tecof-spacing-padding: rgb(116, 181, 0);
-  --tecof-spacing-padding-band: rgba(116, 181, 0, 0.22);
-  --tecof-spacing-padding-label: rgb(90, 140, 0);
+  /* ─── Spacing overlay ───
+     Padding MAVİ (kullanıcı kararı 2026-08-20: "kalan yeşilleri de maviye al");
+     margin AMBER kalır ki iki bant ayırt edilebilsin (devtools'un yeşil/turuncu
+     ayrımının mavi/amber karşılığı). Chrome accent'ine ALIAS — tek noktadan. */
+  --tecof-spacing-padding: var(--tecof-accent);
+  --tecof-spacing-padding-band: rgba(47, 124, 246, 0.22);
+  --tecof-spacing-padding-label: var(--tecof-accent-hover);
   --tecof-spacing-margin-band: rgba(246, 173, 85, 0.30);
   --tecof-spacing-margin-label: rgb(201, 124, 24);
 
@@ -4540,6 +4563,44 @@
   transition: none;
 }
 
+/* Squarespace "Bölüm Ekle" — seçili KÖK section'ın alt kenarının ortasında
+   kalıcı pil (SelectionOverlay, HOST dokümanı). Iframe'deki insert pilinden
+   AYRI: host'ta yaşadığı için seçim çerçevesinin ÜSTÜNE çizilir — iframe'de
+   dururken çerçeve çizgisi yazının üstüne biniyordu. translate(-50%,-50%)
+   pili tam sınıra oturtur (yarısı içeride yarısı dışarıda, Squarespace gibi). */
+.tecof-add-below {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 7; /* outline(z:auto) + statusbar(6) üstünde; toolbar ölçüm bağımsız */
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--tecof-accent-fg);
+  background: var(--tecof-accent);
+  border: 2px solid #ffffff;
+  border-radius: var(--tecof-radius-pill);
+  box-shadow: var(--tecof-shadow-md);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.tecof-add-below:hover {
+  background: var(--tecof-accent-hover);
+}
+.tecof-add-below:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--tecof-accent-ring), var(--tecof-shadow-md);
+}
+/* Scroll sırasında koordinatlar bir kare geriden gelir — diğer chrome gibi
+   kısa süreliğine gizle. */
+.tecof-overlay.is-scrolling .tecof-add-below {
+  visibility: hidden;
+}
+
 /* Inline metin düzenlemesi sürerken TÜM seçim chrome'u gizlenir (outline,
    toolbar, spacing/resize tutamaçları, durum çubuğu) — kullanıcı yazarken
    imleç tek odak kalır (Squarespace davranışı). Bayrağı SelectionOverlay
@@ -4605,6 +4666,9 @@
    köşe-çapası yok: dar bileşenlerde kırpılma ve uzun section'larda görünür
    alan dışına düşme bu yüzden kalktı. Outline'ın kardeşi, konteyner koordinatı. */
 .tecof-toolbar {
+  /* add-below pili (z:7) ile dar viewport'ta üst üste binerse interaktif
+     chrome olan toolbar kazansın. */
+  z-index: 8;
   position: absolute;
   display: flex;
   align-items: center;
@@ -5888,6 +5952,13 @@
   visibility: hidden;
 }
 
+/* Inline metin düzenlemesi sürerken ekleme affordance'ları da gizlenir —
+   SelectionOverlay'in `.is-inline-editing` davranışının iframe içindeki eşi
+   (özellikle seçili section'ın altındaki kalıcı "Bölüm Ekle" pili). */
+.tecof-insert-overlay.is-inline-editing {
+  visibility: hidden;
+}
+
 /* Section sınırında kök "Bölüm Ekle" şeridi, slot'un kenara clamp'lenmiş "Ekle"
    şeridiyle çakıştığında ÜSTTE kazanır — yoksa section eklemek isteyen tıklama
    slot'a bileşen ekliyordu. */
@@ -5897,8 +5968,8 @@
 
 /* Per-gap hover/click band — the WHOLE strip is the button (a bare, reset button)
    so the entire hover band is clickable with no dead zone. position:fixed rect
-   comes from the geometry model; it flex-centres its guide line + "+" pill on the
-   divider (the strip is centred on the divider line). */
+   comes from the geometry model; çizgi + pil şeride DEĞİL, --tecof-insert-line
+   değişkenindeki gerçek ayraç konumuna sabitlenir. */
 .tecof-insert-affordance {
   position: fixed;
   pointer-events: auto;
@@ -5924,42 +5995,24 @@
   pointer-events: none;
 }
 
+/* Çizgi konumu TEK kaynaktan: --tecof-insert-line (InsertOverlay, modelin
+   `line` değerinden tam piksele yuvarlayıp basar). between'de şerit merkezi,
+   edge'de ELEMANIN gerçek kenarı — band kapsayıcıya clamp'lenip kaysa bile
+   çizgi kenardan ayrılmaz (eski top:50% / kenara-sabit kurallar iki ayrı
+   kayma üretiyordu: yarım-piksel bulanıklık + clamp'te elemanın içine düşen
+   çizgi). */
 .tecof-insert-affordance.axis-y::after {
   left: 0;
   right: 0;
-  top: 50%;
+  top: calc(var(--tecof-insert-line, 50%) - 1px);
   height: 2px;
-  transform: translateY(-50%);
 }
 
 .tecof-insert-affordance.axis-x::after {
   top: 0;
   bottom: 0;
-  left: 50%;
+  left: calc(var(--tecof-insert-line, 50%) - 1px);
   width: 2px;
-  transform: translateX(-50%);
-}
-
-/* Kenar (edge) affordance'ında band elemanın DIŞINA taşar; kılavuz çizgi
-   merkezde değil, elemanın TAM kenarında (bandın iç kenarında) durur — pil
-   bandın merkezinde, tümüyle kenarın dışında kalır. */
-.tecof-insert-affordance.axis-y.is-edge-after::after {
-  top: 0;
-  transform: none;
-}
-.tecof-insert-affordance.axis-y.is-edge-before::after {
-  top: auto;
-  bottom: 0;
-  transform: none;
-}
-.tecof-insert-affordance.axis-x.is-edge-after::after {
-  left: 0;
-  transform: none;
-}
-.tecof-insert-affordance.axis-x.is-edge-before::after {
-  left: auto;
-  right: 0;
-  transform: none;
 }
 
 .tecof-insert-affordance.is-fixed::after {
@@ -5971,10 +6024,18 @@
   opacity: 1;
 }
 
-/* The "+" pill, centred in the strip (= on the divider line). Clicks land on the
-   parent button, so the pill itself is inert. */
+/* "+" pili ÇİZGİNİN ÜSTÜNE mutlak sabitlenir (--tecof-insert-line) — eski
+   flex-merkezleme pili ŞERİDİN ortasına koyuyordu; 30px kenar bandında pil
+   çizgiden ~15px kopuk duruyordu ("Ekle kayık" şikâyeti).
+   ⚠ Konum kayması `translate` ÖZELLİĞİYLE DEĞİL, transform içindeki
+   --tecof-pill-tx/ty değişkenleriyle verilir: tüketici temaların minifier'ı
+   (Turbopack/LightningCSS) aynı kuralda `transform` + `translate` görünce
+   `translate`'i SESSİZCE DÜŞÜRÜYOR — pil merkezleme kayboluyordu. Kenar
+   varyantları yalnız değişkenleri + top/left'i değiştirir. */
 .tecof-insert-pill {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: var(--tecof-insert-line, 50%);
   /* ::after kılavuz çizgisi generated-content olarak pil'den SONRA boyanır ve
      accent çizgi "Ekle" metninin üstünden geçiyordu ("çizgi yazıya biniyor").
      z-index pili çizginin üstüne alır. */
@@ -5983,7 +6044,7 @@
   align-items: center;
   gap: 4px;
   opacity: 0;
-  transform: scale(0.9);
+  transform: translate(var(--tecof-pill-tx, -50%), var(--tecof-pill-ty, -50%)) scale(0.9);
   transition: opacity 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
   background: var(--tecof-structure);
   color: var(--tecof-structure-fg);
@@ -5997,10 +6058,36 @@
   pointer-events: none;
 }
 
+/* Dikey ayraçta (axis-x) pil çizginin üstünde YATAY sabitlenir. */
+.tecof-insert-affordance.axis-x .tecof-insert-pill {
+  left: var(--tecof-insert-line, 50%);
+  top: 50%;
+}
+
+/* Kenar (edge) affordance'ında pil çizgiye YAPIŞIK ama elemanın DIŞINDA durur
+   (3px nefes payı) — elemanın üstüne binmez, çizgiden de kopmaz. Band pili
+   kapsar (EDGE_BAND=30 ≥ pil), hover kaybı olmaz. */
+.tecof-insert-affordance.axis-y.is-edge-after .tecof-insert-pill {
+  top: calc(var(--tecof-insert-line, 0px) + 3px);
+  --tecof-pill-ty: 0%;
+}
+.tecof-insert-affordance.axis-y.is-edge-before .tecof-insert-pill {
+  top: calc(var(--tecof-insert-line, 100%) - 3px);
+  --tecof-pill-ty: -100%;
+}
+.tecof-insert-affordance.axis-x.is-edge-after .tecof-insert-pill {
+  left: calc(var(--tecof-insert-line, 0px) + 3px);
+  --tecof-pill-tx: 0%;
+}
+.tecof-insert-affordance.axis-x.is-edge-before .tecof-insert-pill {
+  left: calc(var(--tecof-insert-line, 100%) - 3px);
+  --tecof-pill-tx: -100%;
+}
+
 .tecof-insert-affordance:hover .tecof-insert-pill,
 .tecof-insert-affordance.is-fixed .tecof-insert-pill {
   opacity: 1;
-  transform: scale(1);
+  transform: translate(var(--tecof-pill-tx, -50%), var(--tecof-pill-ty, -50%)) scale(1);
 }
 
 .tecof-insert-affordance:hover .tecof-insert-pill {
@@ -7587,7 +7674,7 @@
 }
 
 .tecof-space-padding {
-  background: var(--tecof-spacing-padding-band); /* devtools yeşili = padding */
+  background: var(--tecof-spacing-padding-band); /* accent mavisi = padding */
 }
 
 /* Persistent px value inside each band (devtools-style); only rendered when
@@ -7673,7 +7760,7 @@
 .tecof-spacing-handle.is-v .tecof-spacing-handle-bar { width: 4px; height: 18px; }
 
 .tecof-spacing-handle.is-padding .tecof-spacing-handle-bar {
-  background: var(--tecof-spacing-padding); /* yeşil = padding (SpacingBands ile aynı ton) */
+  background: var(--tecof-spacing-padding); /* mavi = padding (SpacingBands ile aynı ton) */
 }
 .tecof-spacing-handle.is-margin .tecof-spacing-handle-bar {
   background: rgb(246, 173, 85); /* amber = margin (SpacingBands ile aynı ton) */

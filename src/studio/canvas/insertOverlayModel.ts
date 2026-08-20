@@ -70,6 +70,19 @@ export interface InsertAffordance {
    * elemanlarda `false` kalır, metin görünür.
    */
   compact: boolean;
+  /**
+   * GERÇEK ayraç çizgisinin şerit İÇİNDEKİ konumu (normal eksende px, şerit
+   * başlangıcından). Çizgi + pil CSS'te bu değere sabitlenir — TEK kaynak:
+   *
+   * - between: şerit boşluğa ortalandığı için thickness/2.
+   * - edge   : ELEMANIN gerçek kenarı. Kritik fark: band kapsayıcıya
+   *   clamp'lenip kaysa bile `line` gerçek kenarı izler — eski model çizgiyi
+   *   bandın kenarına CSS ile sabitliyordu ve kapsayıcıya yapışık elemanlarda
+   *   (rawTop clamp'lenince) çizgi elemanın 30px İÇİNE düşüyordu.
+   * - kuyruk (TRAIL_OFFSET'li after): bandın başı (bottom+16) — kuyruk pili
+   *   bilinçli olarak tail boşluğunda yüzer, section kenarına yapışmaz.
+   */
+  line: number;
 }
 
 /**
@@ -112,7 +125,7 @@ const right = (r: OverlayRect) => r.left + r.width;
 const bottom = (r: OverlayRect) => r.top + r.height;
 const clamp = (v: number, lo: number, hi: number) => (lo > hi ? v : Math.min(Math.max(v, lo), hi));
 
-type Geom = { axis: Axis; strip: OverlayRect };
+type Geom = { axis: Axis; strip: OverlayRect; line: number };
 
 /**
  * Axis of the gap between two adjacent rects. They sit on the same ROW (→ a
@@ -145,13 +158,21 @@ function betweenAffordance(a: OverlayRect, b: OverlayRect): Geom {
     const thickness = bandThickness(b.top - bottom(a));
     const left = Math.min(a.left, b.left);
     const width = Math.max(Math.max(right(a), right(b)) - left, MIN_SPAN);
-    return { axis, strip: { top: lineY - thickness / 2, left, width, height: thickness } };
+    return {
+      axis,
+      strip: { top: lineY - thickness / 2, left, width, height: thickness },
+      line: thickness / 2,
+    };
   }
   const lineX = (right(a) + b.left) / 2;
   const thickness = bandThickness(b.left - right(a));
   const top = Math.min(a.top, b.top);
   const height = Math.max(Math.max(bottom(a), bottom(b)) - top, MIN_SPAN);
-  return { axis, strip: { top, left: lineX - thickness / 2, width: thickness, height } };
+  return {
+    axis,
+    strip: { top, left: lineX - thickness / 2, width: thickness, height },
+    line: thickness / 2,
+  };
 }
 
 /**
@@ -176,18 +197,29 @@ function edgeAffordance(
   side: 'before' | 'after',
   offset = 0,
 ): Geom {
+  /* Çizginin GERÇEK konumu: elemanın kenarı (+ kuyruk offset'i). Band clamp'le
+     kaysa bile `line` bu mutlak konumdan türetilir — çizgi hep doğru yerde. */
   if (axis === 'y') {
     const width = Math.max(container.width, MIN_SPAN);
-    /* 'before' → band elemanın ÜSTÜNDE (çizgi bandın altında = eleman üst kenarı)
-       'after'  → band elemanın ALTINDA (çizgi bandın üstünde = eleman alt kenarı) */
+    /* 'before' → band elemanın ÜSTÜNDE; 'after' → band elemanın ALTINDA. */
     const rawTop = side === 'before' ? item.top - EDGE_BAND : bottom(item) + offset;
     const top = clamp(rawTop, container.top, Math.max(container.top, bottom(container) - EDGE_BAND));
-    return { axis, strip: { top, left: container.left, width, height: EDGE_BAND } };
+    const lineAbs = side === 'before' ? item.top : bottom(item) + offset;
+    return {
+      axis,
+      strip: { top, left: container.left, width, height: EDGE_BAND },
+      line: lineAbs - top,
+    };
   }
   const height = Math.max(container.height, MIN_SPAN);
   const rawLeft = side === 'before' ? item.left - EDGE_BAND : right(item) + offset;
   const left = clamp(rawLeft, container.left, Math.max(container.left, right(container) - EDGE_BAND));
-  return { axis, strip: { top: container.top, left, width: EDGE_BAND, height } };
+  const lineAbs = side === 'before' ? item.left : right(item) + offset;
+  return {
+    axis,
+    strip: { top: container.top, left, width: EDGE_BAND, height },
+    line: lineAbs - left,
+  };
 }
 
 /**
@@ -240,6 +272,7 @@ export function computeZoneAffordances(input: ZoneAffordanceInput): InsertAfford
       index: k,
       axis: geom.axis,
       strip: geom.strip,
+      line: geom.line,
       alwaysVisible: !!(isLast && alwaysLastVisible),
       compact,
       edge,

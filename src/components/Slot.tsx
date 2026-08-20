@@ -52,10 +52,43 @@ export interface SlotProps {
   className?: string;
   /** Slot kapsayıcısına ek inline stil (nadiren gerekir). */
   style?: React.CSSProperties;
+  /**
+   * YAYINDA slot boşsa hiç render etme (kapsayıcı div dahil) — `.hide-if-slot-empty`
+   * CSS hack'inin birinci sınıf karşılığı. Motor (TecofRender) yayında enjekte
+   * ettiği slot elemanına `isEmpty` işaretini basar; EDİTÖRDE işaret basılmaz,
+   * boş slot "Bileşen Ekle" ipucuyla görünür kalır (bilinçli asimetri).
+   * repeatSource'lu slotlarda işaret üretilmez (satırlar async gelebilir) —
+   * orada bu bayrak etkisizdir.
+   */
+  hideIfEmpty?: boolean;
+  /**
+   * Kalan tüm prop'lar (`data-*`, `aria-*`, `id`…) slot kapsayıcısına AYNEN
+   * geçer — tema, sırf `data-reveal-item` basmak için sarmalayıcı div açmak
+   * zorunda kalmaz.
+   */
+  [extra: string]: unknown;
 }
 
-export const Slot = ({ value, layout = 'none', gap, className, style }: SlotProps): ReactNode => {
+export const Slot = ({
+  value,
+  layout = 'none',
+  gap,
+  className,
+  style,
+  hideIfEmpty,
+  ...rest
+}: SlotProps): ReactNode => {
   if (!value) return null;
+
+  // Yayın boşluk sinyali: TecofRender enjekte ettiği elemana `isEmpty` basar.
+  // Yalnız `=== true` gizler — editör (işaret yok, undefined) etkilenmez.
+  if (
+    hideIfEmpty &&
+    React.isValidElement(value) &&
+    (value.props as Record<string, unknown>).isEmpty === true
+  ) {
+    return null;
+  }
 
   const gapValue = gap != null ? GAP_VALUE[gap] ?? gap : undefined;
   const mergedStyle: React.CSSProperties | undefined =
@@ -64,6 +97,9 @@ export const Slot = ({ value, layout = 'none', gap, className, style }: SlotProp
       : style;
 
   const injected: Record<string, unknown> = {
+    // Ekstra prop'lar (data-*, aria-*, id) kapsayıcıya aynen geçer; bilinen
+    // anahtarlar (managedLayout/className/style) SONRA yazılır ki ezilemesinler.
+    ...rest,
     managedLayout: true,
     className: cx('tecof-slot', LAYOUT_CLASS[layout], className),
     ...(mergedStyle ? { style: mergedStyle } : {}),

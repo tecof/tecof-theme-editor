@@ -23,10 +23,13 @@ describe('nodeIdFromEl', () => {
   });
 });
 
-describe('resolveClickTarget — outside-in click escalation', () => {
-  // hero-1 ─ contentSlot ─ title-1 ─ inner ─ span-1
-  //                      └ title-2 ─ inner ─ span-2
-  // blog-1 (ikinci kök section)
+describe('resolveClickTarget — derin seçim modeli (Webflow)', () => {
+  // MODEL DEĞİŞİKLİĞİ (kullanıcı kararı 2026-08-20): tık DAİMA en içteki
+  // (derin) node'u seçer — eski dıştan-içe eskalasyon kaldırıldı. Bir elemente
+  // tıklayınca panel yalnız o elementi göstermeli, Stil ona uygulanmalı;
+  // section aggregate görünümü section'ın KENDİ boş alanına tıklayınca gelir
+  // (orada derin hedef zaten section'ın kendisidir). Bu testler yeni sözleşmeyi
+  // SABITLER: fonksiyon her durumda tıklananı döndürür.
   const doc = {
     root: { props: {} },
     content: [
@@ -43,35 +46,24 @@ describe('resolveClickTarget — outside-in click escalation', () => {
     },
   } as any;
 
-  it('no selection → selects the outermost (root-level) ancestor', () => {
-    expect(resolveClickTarget(doc, 'span-1', null)).toBe('hero-1');
+  it('seçim yokken derindeki elemente tık → o element (eskalasyon YOK)', () => {
+    expect(resolveClickTarget(doc, 'span-1', null)).toBe('span-1');
   });
 
-  it('clicking inside the selected node descends exactly one level', () => {
-    expect(resolveClickTarget(doc, 'span-1', 'hero-1')).toBe('title-1');
-    expect(resolveClickTarget(doc, 'span-1', 'title-1')).toBe('span-1');
+  it('mevcut seçim ne olursa olsun tıklanan derin node kazanır', () => {
+    expect(resolveClickTarget(doc, 'span-1', 'hero-1')).toBe('span-1');
+    expect(resolveClickTarget(doc, 'span-2', 'title-1')).toBe('span-2');
+    expect(resolveClickTarget(doc, 'span-1', 'blog-1')).toBe('span-1');
   });
 
-  it('clicking the already-selected innermost node keeps it selected', () => {
-    expect(resolveClickTarget(doc, 'span-1', 'span-1')).toBe('span-1');
-  });
-
-  it('sibling subtree in the SAME section preserves the selection depth', () => {
-    // title-1 seçiliyken (derinlik 1) span-2'ye tık → aynı derinlikteki title-2.
-    expect(resolveClickTarget(doc, 'span-2', 'title-1')).toBe('title-2');
-  });
-
-  it('a different section resets to that section (outermost)', () => {
-    expect(resolveClickTarget(doc, 'span-1', 'blog-1')).toBe('hero-1');
-  });
-
-  it('Alt+click bypasses escalation and selects the innermost node directly', () => {
-    expect(resolveClickTarget(doc, 'span-1', null, true)).toBe('span-1');
-    expect(resolveClickTarget(doc, 'span-1', 'hero-1', true)).toBe('span-1');
-  });
-
-  it('a root-level click target stays itself regardless of selection', () => {
+  it("section'ın kendi boş alanına tık (derin hedef = section) → section", () => {
+    // Aggregate görünümün giriş yolu: tıklama section'ın kendi yüzeyine
+    // düştüğünde closest('.tecof-el') section'ı bulur.
     expect(resolveClickTarget(doc, 'hero-1', null)).toBe('hero-1');
-    expect(resolveClickTarget(doc, 'hero-1', 'blog-1')).toBe('hero-1');
+    expect(resolveClickTarget(doc, 'hero-1', 'span-1')).toBe('hero-1');
+  });
+
+  it('Alt+tık davranışı değişmedi (zaten derin seçimdi)', () => {
+    expect(resolveClickTarget(doc, 'span-1', 'hero-1', true)).toBe('span-1');
   });
 });

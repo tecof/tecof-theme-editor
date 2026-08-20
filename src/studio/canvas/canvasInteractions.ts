@@ -19,7 +19,7 @@
 
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
-import { findNodeById, getParentId } from '../../engine/zones';
+import { findNodeById } from '../../engine/zones';
 import type { TecofDocument } from '../../types';
 import { isEmbedded, postToHost } from '../bridge';
 import { isInsideOverlayPortal } from './overlayPortal';
@@ -104,48 +104,31 @@ export const requestFocusFromTarget = (target: EventTarget | null, fallbackId: s
   });
 };
 
-/** Clicked node'dan kök seviyeye ata zinciri: [clicked, parent, …, rootLevel]. */
-const ancestorChain = (doc: TecofDocument, id: string): string[] => {
-  const chain = [id];
-  let cur: string | null = id;
-  // getParentId zone anahtarından çözer; kök seviyede null döner. Döngü koruması
-  // olarak zincir uzunluğu makul bir sınırda kesilir (bozuk doc'ta sonsuz döngü olmasın).
-  while (chain.length < 100) {
-    cur = getParentId(doc, cur!);
-    if (!cur) break;
-    chain.push(cur);
-  }
-  return chain;
-};
-
 /**
- * Dıştan-içe tık eskalasyonu (Figma/Framer modeli): yüzeyi çocuklarla kaplı bir
- * section'da kullanıcı section'ı KANVASTAN seçebilsin diye ilk tık en DIŞTAKİ
- * (kök seviye) atayı seçer; seçili node'un içine sonraki tık BİR kat iner. Aynı
- * section'ın başka bir alt ağacına tıklanınca seçim derinliği korunur (kardeşler
- * arasında gezinme kata geri fırlatmaz). Alt+tık her zaman en içtekini seçer.
- * Pure — test edilebilir.
+ * Tık hedefi çözümü — DERİN SEÇİM modeli (Webflow; kullanıcı kararı 2026-08-20).
+ *
+ * ESKİ model dıştan-içe eskalasyondu (ilk tık en dıştaki section'ı seçer,
+ * sonraki tık bir kat iner). Pratikte kafa karıştırıyordu: bir elemente
+ * tıklayınca panelde ÜST section'ın tüm alanları (aggregate) geliyor, Stil
+ * sekmesi de tıklanan elemente değil section'a uygulanıyordu ("stil almıyor").
+ *
+ * YENİ model: tık DAİMA en içteki (derin) node'u seçer — panel yalnız o
+ * elementin alanlarını gösterir, Stil doğrudan ona uygulanır. Section'ı
+ * kanvastan seçmek için section'ın KENDİ boş alanına (padding/arka plan,
+ * elementlerin dışı) tıklanır: orada en içteki .tecof-el section'ın kendisidir
+ * ve panel aggregate görünümüyle TÜM alt elementlerin alanlarını listeler.
+ * Üst seçim için ayrıca: durum çubuğu breadcrumb'ı, "Üst Öğe" butonu, katman
+ * ağacı. Alt+tık davranışı değişmedi (zaten en içtekini seçiyordu).
+ *
+ * İmza korunmuştur (doc/selectedId artık kararı etkilemez) — dblclick
+ * kararlılığı (detail>1'de seçimi koru) çağıranda yaşar. Pure — test edilebilir.
  */
 export const resolveClickTarget = (
-  doc: TecofDocument,
+  _doc: TecofDocument,
   clickedId: string,
-  selectedId: string | null,
-  altKey = false,
-): string => {
-  if (altKey) return clickedId;
-  const chain = ancestorChain(doc, clickedId);
-  const outermost = chain[chain.length - 1];
-  if (!selectedId) return outermost;
-  const selIdx = chain.indexOf(selectedId);
-  if (selIdx === 0) return clickedId; // zaten en içteki seçili → kal
-  if (selIdx > 0) return chain[selIdx - 1]; // seçilinin içine bir kat in
-  // Farklı alt ağaç: aynı section içindeyse seçim DERİNLİĞİNİ koru.
-  const selChain = ancestorChain(doc, selectedId);
-  if (selChain.length > 0 && selChain[selChain.length - 1] === outermost) {
-    return chain[Math.max(0, chain.length - selChain.length)];
-  }
-  return outermost;
-};
+  _selectedId: string | null,
+  _altKey = false,
+): string => clickedId;
 
 /**
  * Install delegated node selection on a canvas document. Returns a cleanup fn.

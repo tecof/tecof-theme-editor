@@ -1,7 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Plus } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
-import { findNodeById } from '../../engine/zones';
 import { useUiStore } from '../uiStore';
 import { OVERLAY_PORTAL_ATTR } from './overlayPortal';
 import {
@@ -62,18 +61,13 @@ export const InsertOverlay = () => {
   // Reactive deps: any document edit or drag toggle re-measures.
   const documentState = useEditorStore((s) => s.document);
   const drag = useEditorStore((s) => s.drag);
-  const selectedId = useEditorStore((s) => s.selection.selectedId);
   const openAddSection = useUiStore((s) => s.openAddSection);
+  // Inline yazım sırasında TÜM ekleme affordance'ları da gizlenir: bu katman
+  // iframe İÇİNDE ayrı yaşar, host'taki `.tecof-overlay.is-inline-editing`
+  // kuralı buraya ulaşmaz — özellikle seçili section'ın altındaki KALICI
+  // "Bölüm Ekle" pili yazarken ekranda kalıyordu.
+  const inlineEditing = useUiStore((s) => s.inlineEditingNodeId != null);
 
-  // Squarespace davranışı: bir KÖK section seçiliyken hemen ALTINDAKİ "Bölüm
-  // Ekle" affordance'ı hover beklemeden görünür kalır (yalnız altında — üstteki
-  // hover'da kalır ki chrome kalabalıklaşmasın). Kök akışta k index'li
-  // affordance k'inci çocuğun ÖNÜNE ekler → seçilinin altı = path.index + 1.
-  const selectedBelowIndex = (() => {
-    if (!selectedId) return null;
-    const path = findNodeById(documentState, selectedId)?.path;
-    return path && path.zoneKey === undefined ? path.index + 1 : null;
-  })();
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<InsertAffordance[]>([]);
@@ -184,7 +178,12 @@ export const InsertOverlay = () => {
   }, []);
 
   return (
-    <div ref={rootRef} className={`tecof-insert-overlay${scrolling ? ' is-scrolling' : ''}`}>
+    <div
+      ref={rootRef}
+      className={`tecof-insert-overlay${scrolling ? ' is-scrolling' : ''}${
+        inlineEditing ? ' is-inline-editing' : ''
+      }`}
+    >
       {items.map((a) => (
         // The whole strip IS the button so the entire hover band is clickable (no
         // dead zone that would also swallow clicks meant for the component behind
@@ -192,15 +191,34 @@ export const InsertOverlay = () => {
         // a click opens the modal instead of deselecting the node. `is-root`:
         // section sınırında kök "Bölüm Ekle" şeridi, slot'un clamp'lenmiş kenar
         // şeridinin ÜSTÜNDE kazanmalı (z-index) — yoksa section eklemek isteyen
-        // kullanıcı slot'a bileşen ekler. `is-fixed` iki kaynaktan gelir: kök
-        // kuyruk pili (model) + seçili section'ın hemen altı (Squarespace).
+        // kullanıcı slot'a bileşen ekler. NOT: seçili section'ın altındaki
+        // KALICI "Bölüm Ekle" pili burada DEĞİL, SelectionOverlay'dedir (host):
+        // iframe içindeki pil, host'ta çizilen seçim çerçevesinin HEP altında
+        // kalıyordu — çizgi yazının üstüne biniyordu.
         <button
           key={a.key}
           type="button"
-          className={`tecof-insert-affordance axis-${a.axis}${
-            a.alwaysVisible || (!a.zoneKey && selectedBelowIndex === a.index) ? ' is-fixed' : ''
-          }${a.zoneKey ? '' : ' is-root'}${a.compact ? ' is-compact' : ''}${a.edge ? ` is-edge-${a.edge}` : ''}`}
-          style={{ top: a.strip.top, left: a.strip.left, width: a.strip.width, height: a.strip.height }}
+          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}${a.zoneKey ? '' : ' is-root'}${a.compact ? ' is-compact' : ''}${a.edge ? ` is-edge-${a.edge}` : ''}`}
+          style={(() => {
+            /* TAM PİKSEL yuvarlama: getBoundingClientRect kesirli döner; kesirli
+               `top` + 2px çizgi yarım-piksel render'la bulanık/1px kayık
+               görünüyordu. Çizgi konumu (--tecof-insert-line) MUTLAK konumdan
+               yuvarlanıp şeride göre yeniden ifade edilir — şerit yuvarlaması
+               çizgiyi kaydıramaz. Çizgi + pil bu tek değişkene sabitlenir
+               (bkz. insertOverlayModel.line: between=merkez, edge=eleman kenarı,
+               clamp'te bile gerçek kenar). */
+            const top = Math.round(a.strip.top);
+            const left = Math.round(a.strip.left);
+            const lineAbs = a.axis === 'y' ? a.strip.top + a.line : a.strip.left + a.line;
+            const line = Math.round(lineAbs) - (a.axis === 'y' ? top : left);
+            return {
+              top,
+              left,
+              width: Math.round(a.strip.width),
+              height: Math.round(a.strip.height),
+              ['--tecof-insert-line' as string]: `${line}px`,
+            } as CSSProperties;
+          })()}
           title={a.zoneKey ? 'Buraya bileşen ekle' : 'Buraya Bölüm Ekle'}
           {...{ [OVERLAY_PORTAL_ATTR]: '' }}
           onClick={(e) => {

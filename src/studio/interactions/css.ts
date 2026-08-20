@@ -10,5 +10,5 @@
  */
 export const INTERACTIONS_CSS = `
 .tecof-fx-hidden { display: none !important; }
-.tecof-fx-starthidden { outline: 1px dashed rgba(99, 102, 241, 0.55); outline-offset: 2px; }
+.tecof-fx-starthidden { outline: 1px dashed rgba(47, 124, 246, 0.55); outline-offset: 2px; }
 `.trim();

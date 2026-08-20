@@ -33,9 +33,29 @@ export interface DropZoneProps {
    * Düz renderSlot çağrıları geçmez → eski davranış (BC) korunur.
    */
   managedLayout?: boolean;
+  /**
+   * YAYIN sinyali: TecofRender, zone listesi boşsa true basar; `<Slot
+   * hideIfEmpty>` bunu okuyup hiç render etmez. DropZone/RenderDropZone bu
+   * prop'u KENDİSİ kullanmaz (DOM'a da yazmaz) — yalnız enjekte edilen
+   * elemanın üstünde taşınır. Editörde hiç set edilmez.
+   */
+  isEmpty?: boolean;
+  /** `<Slot>`'un serbest prop geçişi (`data-*`, `aria-*`, `id`…): motor-içi
+   *  anahtarlar ayıklandıktan sonra zone kapsayıcısına AYNEN spread edilir —
+   *  yayın (RenderDropZone) ile birebir aynı sözleşme. */
+  [extra: string]: unknown;
 }
 
-export const DropZone = ({ zone, className, style, orientation = 'vertical', repeatItems, managedLayout }: DropZoneProps) => {
+export const DropZone = ({
+  zone,
+  className,
+  style,
+  orientation = 'vertical',
+  repeatItems,
+  managedLayout,
+  isEmpty: _isEmpty,
+  ...domRest
+}: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const { config, readOnly } = useStudio();
@@ -79,7 +99,9 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
     .join(' ');
 
   return (
+    // domRest ÖNCE: motorun kendi class/attr'ları (data-tecof-zone dahil) ezilemesin.
     <div
+      {...domRest}
       className={dropzoneClassName}
       style={style}
       data-tecof-zone={zoneKey}
@@ -168,17 +190,7 @@ export const EditorRepeatSlot = ({
   return <DropZone zone={zone} orientation={orientation} repeatItems={rows as any[]} />;
 };
 
-// Helper for puck.renderDropZone
-export const renderDropZone = ({ zone, className, style, orientation, repeatItems, managedLayout }: DropZoneProps) => {
-  return (
-    <DropZone
-      zone={zone}
-      className={className}
-      style={style}
-      orientation={orientation}
-      repeatItems={repeatItems}
-      managedLayout={managedLayout}
-    />
-  );
-};
+// Helper for puck.renderDropZone — TÜM prop'lar aynen geçer (adlı beyaz liste
+// serbest data-*/aria-* geçişini sessizce düşürüyordu).
+export const renderDropZone = (props: DropZoneProps) => <DropZone {...props} />;
 export default DropZone;

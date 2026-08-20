@@ -25,6 +25,16 @@ export type SlotSpec = {
   /** Yerleşim — <Slot>'a geçer ve field orientation'ını belirler (row → horizontal). */
   layout?: SlotLayout;
   gap?: SlotGap;
+  /**
+   * Slot kapsayıcısının ek className'i. FONKSİYON verilirse her render'da
+   * bileşenin props'uyla çağrılır — prop'a bağlı yerleşim niyeti
+   * (`(p) => p.align === 'center' && 'items-center'`) için. Bu olmadan
+   * defineSection'a geçen bileşenler hizalama gibi ayarlar için elle
+   * <Slot> çağrısına geri dönmek zorunda kalıyordu.
+   */
+  className?: string | ((props: any) => string | false | null | undefined);
+  /** Yayında slot boşsa kapsayıcıyı hiç render etme (bkz. SlotProps.hideIfEmpty). */
+  hideIfEmpty?: boolean;
   maxItems?: number;
   /** Eklenince otomatik doğan çocuklar (çocuk KENDİ defaultProps'uyla birleşir). */
   default?: Array<string | { type: string; props?: Record<string, any> }>;
@@ -48,7 +58,12 @@ export interface SectionDefinition {
   resizable?: boolean;
   permissions?: ComponentConfig['permissions'];
   metadata?: ComponentConfig['metadata'];
-  /** (props, slots) → JSX. Kök className'e p.className otomatik eklenir. */
+  /** (props, slots) → JSX. Kök className'e p.className otomatik eklenir.
+   *  ⚠ TUZAK: render bir DOM elemanı değil BİLEŞEN elemanı döndürürse
+   *  (`<HeroBody/>` gibi), className o bileşene PROP olarak klonlanır — bileşen
+   *  bunu kök DOM'una basmazsa node editörde SEÇİLEMEZ olur. Hook gerektiren
+   *  gövdeleri ayrı bileşene alırken `className` prop'unu kabul edip köke
+   *  cn(...) ile geçirin (bkz. mova DroneHeroBody). */
   render: (props: any, slots: RenderedSlots) => React.ReactNode;
 }
 
@@ -85,12 +100,16 @@ function build(def: SectionDefinition): ComponentConfig {
   const render = (props: any): React.ReactNode => {
     const rendered: RenderedSlots = {};
     for (const [name, spec] of Object.entries(slots)) {
+      const specClass =
+        typeof spec.className === 'function' ? spec.className(props) : spec.className;
       rendered[name] = (
         <Slot
           key={name}
           value={props[name]}
           layout={spec.layout ?? 'none'}
           gap={spec.gap}
+          className={specClass || undefined}
+          hideIfEmpty={spec.hideIfEmpty}
         />
       );
     }

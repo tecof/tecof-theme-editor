@@ -412,29 +412,38 @@ export const NodeInspectorBody: React.FC<NodeInspectorBodyProps> = ({
   /* Canvas odak isteği: hedef alan bloğuna (yoksa node grubuna) kaydır + kısa
      vurgu. Accordion/array açılımları AYNI istekle başka effect'lerde state
      olarak açılır ve bir sonraki render'da DOM'a girer — bu yüzden hedef rAF
-     döngüsüyle birkaç frame denenir (bulunamazsa sessizce vazgeçilir). */
+     döngüsüyle birkaç frame denenir. İstek İŞLENDİĞİNDE (bulunsun ya da
+     bulunmasın) store'dan düşürülür: aksi halde bu gövde her yeniden mount
+     olduğunda (modal açılışı, seçim kaldır→yeniden seç) bayat hedefe
+     kendiliğinden kayıp vurgu yakardı. */
   const fieldsScrollRef = useRef<HTMLDivElement | null>(null);
   const inspectorFocus = useUiStore((s) => s.inspectorFocus);
+  const consumeInspectorFocus = useUiStore((s) => s.consumeInspectorFocus);
   useEffect(() => {
     if (!inspectorFocus) return;
+    const { nodeId, field, itemIndex, token } = inspectorFocus;
     let tries = 0;
     let raf = 0;
     const attempt = () => {
       const root = fieldsScrollRef.current;
       if (!root) return;
-      const { nodeId, field, itemIndex } = inspectorFocus;
       const esc = (v: string) => v.replace(/"/g, '\\"');
       const blockSel = field
         ? `[data-tecof-node="${esc(nodeId)}"][data-tecof-field="${esc(field)}"]`
         : null;
       let target: HTMLElement | null = null;
+      const block = blockSel ? root.querySelector<HTMLElement>(blockSel) : null;
       // Array satırı hedefliyse önce satırın kendisini dene (açılmış olmalı).
-      if (blockSel && itemIndex != null) {
-        target = root.querySelector<HTMLElement>(
-          `${blockSel} [data-tecof-array-index="${itemIndex}"]`
-        );
+      // İç içe array'lerde descendant seçici DOKÜMAN SIRASINDA önce gelen İÇ
+      // array'in satırını yakalayabilir — adayı, en yakın alan bloğu bu blok
+      // olanla sınırla.
+      if (block && itemIndex != null) {
+        target =
+          Array.from(
+            block.querySelectorAll<HTMLElement>(`[data-tecof-array-index="${itemIndex}"]`)
+          ).find((el) => el.closest('[data-tecof-field]') === block) ?? null;
       }
-      if (!target && blockSel) target = root.querySelector<HTMLElement>(blockSel);
+      if (!target) target = block;
       if (!target) {
         target = root.querySelector<HTMLElement>(`[data-tecof-node-group="${esc(nodeId)}"]`);
       }
@@ -444,13 +453,15 @@ export const NodeInspectorBody: React.FC<NodeInspectorBodyProps> = ({
         target.classList.remove('tecof-field-flash');
         void target.offsetWidth;
         target.classList.add('tecof-field-flash');
+        consumeInspectorFocus(token);
         return;
       }
       if (tries++ < 8) raf = requestAnimationFrame(attempt);
+      else consumeInspectorFocus(token); // hedef yok — istek yine de tüketilir
     };
     raf = requestAnimationFrame(attempt);
     return () => cancelAnimationFrame(raf);
-  }, [inspectorFocus]);
+  }, [inspectorFocus, consumeInspectorFocus]);
 
   // Find active selected node details memoized to prevent expensive lookup on every render
   const activeNodeInfo = useMemo(() => {

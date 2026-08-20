@@ -143,8 +143,15 @@ interface UiState {
    * SelectionOverlay bunu okuyup yazım sırasında tüm seçim chrome'unu
    * (outline + toolbar + durum çubuğu) gizler — imleç tek odak kalır. */
   inlineEditingNodeId: string | null;
+  /** Monoton artan odak token sayacı — inspectorFocus null'lansa da devam eder
+   * (token yeniden kullanılırsa "bu isteği zaten işledim" karşılaştırmaları
+   * yanlış eşleşirdi). */
+  lastFocusToken: number;
   /** Sağ panel odak isteği (bkz. InspectorFocusRequest); null = istek yok.
-   * Temizlenmez — token artışı effect'leri tetikler, bayat istek zararsızdır. */
+   * TEK SEFERLİK: hedefe kaydırılınca `consumeInspectorFocus` ile null'a çekilir.
+   * Aksi halde istek asılı kalır ve panel gövdesi her YENİDEN MOUNT olduğunda
+   * (modal açılışı, seçim kaldırıp yeniden seçme) bayat hedefe kendiliğinden
+   * kayıp vurgu yakardı. */
   inspectorFocus: InspectorFocusRequest | null;
 
   setMode: (mode: EditorMode) => void;
@@ -173,6 +180,8 @@ interface UiState {
   setInlineEditingNodeId: (id: string | null) => void;
   /** Token'ı store kendisi artırır — çağıran yalnız hedefi verir. */
   requestInspectorFocus: (req: Omit<InspectorFocusRequest, 'token'>) => void;
+  /** İstek işlendi (kaydırma yapıldı ya da hedef bulunamadı) — bayat tekrarı önler. */
+  consumeInspectorFocus: (token: number) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -197,6 +206,7 @@ export const useUiStore = create<UiState>((set) => ({
   previewColorScheme: 'light',
   inlineEditingNodeId: null,
   inspectorFocus: null,
+  lastFocusToken: 0,
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
@@ -247,5 +257,12 @@ export const useUiStore = create<UiState>((set) => ({
   setInlineEditingNodeId: (id) =>
     set((s) => (s.inlineEditingNodeId === id ? s : { inlineEditingNodeId: id })),
   requestInspectorFocus: (req) =>
-    set((s) => ({ inspectorFocus: { ...req, token: (s.inspectorFocus?.token ?? 0) + 1 } })),
+    set((s) => {
+      const token = s.lastFocusToken + 1;
+      return { inspectorFocus: { ...req, token }, lastFocusToken: token };
+    }),
+  // Yalnız İŞLENEN token'ı temizle: kullanıcı bu arada başka bir yere tıkladıysa
+  // (yeni token) taze istek yanlışlıkla düşürülmez.
+  consumeInspectorFocus: (token) =>
+    set((s) => (s.inspectorFocus && s.inspectorFocus.token === token ? { inspectorFocus: null } : s)),
 }));

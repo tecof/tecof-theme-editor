@@ -11,7 +11,7 @@ export interface UnderConstructionProps {
 /**
  * "Yapım aşamasında" sayfası — minimal, light bir tasarım.
  *
- * Tek vurgu rengi (varsayılan: Tecof primary #74b500) üzerine kurulu:
+ * Tek vurgu rengi (varsayılan: Tecof mavisi #2f7cf6) üzerine kurulu:
  * ince nokta ızgaralı açık zemin, üstten süzülen hafif renk tonu, canlı
  * durum rozeti (ping animasyonlu nokta) ve tek dekoratif öğe olarak akan
  * ilerleme çizgisi. Kart/cam efekti yok — içerik doğrudan zeminde durur.
@@ -24,7 +24,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
   description,
   subtitle,
   logoUrl,
-  accentColor = '#74b500', // Tecof primary (ana renk)
+  accentColor = '#2f7cf6', // Tecof mavisi (chrome paletiyle aynı)
 }) => {
   return (
     <div className="tecof-uc-wrapper">
@@ -32,9 +32,9 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
         .tecof-uc-wrapper {
           --uc-accent: ${accentColor};
           /* Metinde kullanılacak koyu ton: küçük yazıda da okunur kalsın. */
-          --uc-accent-ink: color-mix(in srgb, ${accentColor} 68%, #223005);
+          --uc-accent-ink: color-mix(in srgb, ${accentColor} 68%, #0d2350);
           --uc-accent-tint: color-mix(in srgb, ${accentColor} 10%, transparent);
-          --uc-accent-track: color-mix(in srgb, ${accentColor} 14%, #f1f2ec);
+          --uc-accent-track: color-mix(in srgb, ${accentColor} 14%, #eef3fb);
 
           min-height: 100vh;
           display: flex;
@@ -45,7 +45,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           color: #101828;
           font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
             Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-          background-color: #fbfcf9;
+          background-color: #fafbfe;
           background-image:
             radial-gradient(640px 340px at 50% -120px, var(--uc-accent-tint), transparent 70%),
             radial-gradient(circle, rgba(16, 24, 40, 0.05) 1px, transparent 1px);
@@ -119,7 +119,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({
           margin-top: 2.4rem;
           padding: 0.5rem 1.1rem;
           background: #ffffff;
-          border: 1px solid #e7eae0;
+          border: 1px solid #e2e8f4;
           border-radius: 999px;
           font-size: 0.8rem;
           font-weight: 600;

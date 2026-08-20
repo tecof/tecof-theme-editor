@@ -1,149 +1,149 @@
 {
-    "name": "@tecof/theme-editor",
-    "version": "0.0.82",
-    "description": "React theme editor and renderer library for Tecof projects",
-    "keywords": [
-        "react",
-        "tecof",
-        "wysiwyg",
-        "editor",
-        "cms",
-        "theme"
-    ],
-    "author": "Ahmet Aksungur <ahmet@tecof.com>",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/tecof/tecof-theme-editor"
-    },
-    "bugs": {
-        "url": "https://github.com/tecof/tecof-theme-editor/issues"
-    },
-    "homepage": "https://github.com/tecof/tecof-theme-editor#readme",
-    "main": "./dist/index.js",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "typesVersions": {
-        "*": {
-            "email": [
-                "dist/email/index.d.ts"
-            ],
-            "under-construction": [
-                "dist/components/UnderConstruction.d.ts"
-            ]
-        }
-    },
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.js"
-        },
-        "./email": {
-            "types": "./dist/email/index.d.ts",
-            "import": "./dist/email/index.mjs",
-            "require": "./dist/email/index.js"
-        },
-        "./puck.css": "./dist/styles.css",
-        "./styles.css": "./dist/styles.css",
-        "./dist/styles.css": "./dist/styles.css",
-        "./under-construction": {
-            "types": "./dist/components/UnderConstruction.d.ts",
-            "import": "./dist/components/UnderConstruction.mjs",
-            "require": "./dist/components/UnderConstruction.js"
-        }
-    },
-    "files": [
-        "dist"
-    ],
-    "sideEffects": [
-        "*.css"
-    ],
-    "scripts": {
-        "dev": "tsup --watch",
-        "dev:preview": "npm run docs:ai && vite --config playground/vite.config.ts",
-        "docs:ai": "node scripts/generate-ai-docs.mjs",
-        "mcp:docs": "npm run docs:ai --silent && node mcp/server.mjs",
-        "build": "tsup && tsup --config tsup.email.config.ts && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
-        "prepublishOnly": "npm run build",
-        "lint": "eslint .",
-        "test": "vitest",
-        "storybook": "storybook dev -p 6006",
-        "build-storybook": "storybook build",
-        "changeset": "changeset",
-        "release": "changeset publish"
-    },
-    "peerDependencies": {
-        "@tiptap/core": "^3.0.0",
-        "@tiptap/pm": "^3.0.0",
-        "@tiptap/react": "^3.0.0",
-        "lucide-react": ">=0.408.0 <2",
-        "react": "^18 || ^19",
-        "react-dom": "^18 || ^19"
-    },
-    "dependencies": {
-        "@tecof/analytics": "^0.0.3",
-        "@tecof/theme-editor": "^0.0.77"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.0.0",
-        "@modelcontextprotocol/sdk": "^1.29.0",
-        "@monaco-editor/react": "^4.7.0",
-        "@storybook/react-vite": "^8.0.0",
-        "@tiptap/core": "^3.27.1",
-        "@tiptap/extension-blockquote": "^3.27.1",
-        "@tiptap/extension-bold": "^3.27.1",
-        "@tiptap/extension-code": "^3.27.1",
-        "@tiptap/extension-code-block": "^3.27.1",
-        "@tiptap/extension-document": "^3.27.1",
-        "@tiptap/extension-hard-break": "^3.27.1",
-        "@tiptap/extension-heading": "^3.27.1",
-        "@tiptap/extension-horizontal-rule": "^3.27.1",
-        "@tiptap/extension-image": "^3.27.1",
-        "@tiptap/extension-italic": "^3.27.1",
-        "@tiptap/extension-link": "^3.27.1",
-        "@tiptap/extension-list": "^3.27.1",
-        "@tiptap/extension-paragraph": "^3.27.1",
-        "@tiptap/extension-strike": "^3.27.1",
-        "@tiptap/extension-text": "^3.27.1",
-        "@tiptap/extension-text-align": "^3.27.1",
-        "@tiptap/extension-underline": "^3.27.1",
-        "@tiptap/pm": "^3.27.1",
-        "@tiptap/react": "^3.27.1",
-        "@types/react": "^19.0.0",
-        "@types/react-dom": "^19.0.0",
-        "@vitejs/plugin-react": "^4.7.0",
-        "browser-image-compression": "^2.0.2",
-        "clsx": "^2.1.1",
-        "esbuild": "^0.28.1",
-        "eslint": "^9.0.0",
-        "eslint-plugin-react": "^7.37.5",
-        "eslint-plugin-react-hooks": "^7.1.1",
-        "filepond": "^4.32.12",
-        "filepond-plugin-file-validate-size": "^2.2.8",
-        "filepond-plugin-file-validate-type": "^1.2.9",
-        "filepond-plugin-image-crop": "^2.0.6",
-        "filepond-plugin-image-edit": "^1.6.3",
-        "filepond-plugin-image-exif-orientation": "^1.0.11",
-        "filepond-plugin-image-preview": "^4.6.12",
-        "filepond-plugin-image-resize": "^2.0.10",
-        "filepond-plugin-image-transform": "^3.8.7",
-        "globals": "^17.7.0",
-        "immer": "^11.1.8",
-        "lucide-react": "^1.7.0",
-        "nanoid": "^5.1.16",
-        "prettier": "^3.0.0",
-        "react": "^19.2.7",
-        "react-dom": "^19.2.7",
-        "react-filepond": "^7.1.3",
-        "tailwind-merge": "^3.0.0",
-        "tsup": "^8.0.0",
-        "typescript": "^5.0.0",
-        "typescript-eslint": "^8.62.0",
-        "vaul": "^1.1.2",
-        "vite": "^6.4.3",
-        "vitest": "^3.0.0",
-        "zod": "^4.4.3",
-        "zustand": "^5.0.14"
+  "name": "@tecof/theme-editor",
+  "version": "0.0.83",
+  "description": "React theme editor and renderer library for Tecof projects",
+  "keywords": [
+    "react",
+    "tecof",
+    "wysiwyg",
+    "editor",
+    "cms",
+    "theme"
+  ],
+  "author": "Ahmet Aksungur <ahmet@tecof.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tecof/tecof-theme-editor"
+  },
+  "bugs": {
+    "url": "https://github.com/tecof/tecof-theme-editor/issues"
+  },
+  "homepage": "https://github.com/tecof/tecof-theme-editor#readme",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "email": [
+        "dist/email/index.d.ts"
+      ],
+      "under-construction": [
+        "dist/components/UnderConstruction.d.ts"
+      ]
     }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./email": {
+      "types": "./dist/email/index.d.ts",
+      "import": "./dist/email/index.mjs",
+      "require": "./dist/email/index.js"
+    },
+    "./puck.css": "./dist/styles.css",
+    "./styles.css": "./dist/styles.css",
+    "./dist/styles.css": "./dist/styles.css",
+    "./under-construction": {
+      "types": "./dist/components/UnderConstruction.d.ts",
+      "import": "./dist/components/UnderConstruction.mjs",
+      "require": "./dist/components/UnderConstruction.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "dev": "tsup --watch",
+    "dev:preview": "npm run docs:ai && vite --config playground/vite.config.ts",
+    "docs:ai": "node scripts/generate-ai-docs.mjs",
+    "mcp:docs": "npm run docs:ai --silent && node mcp/server.mjs",
+    "build": "tsup && tsup --config tsup.email.config.ts && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
+    "prepublishOnly": "npm run build",
+    "lint": "eslint .",
+    "test": "vitest",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "changeset": "changeset",
+    "release": "changeset publish"
+  },
+  "peerDependencies": {
+    "@tiptap/core": "^3.0.0",
+    "@tiptap/pm": "^3.0.0",
+    "@tiptap/react": "^3.0.0",
+    "lucide-react": ">=0.408.0 <2",
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  },
+  "dependencies": {
+    "@tecof/analytics": "^0.0.3",
+    "@tecof/theme-editor": "^0.0.77",
+    "clsx": "^2.1.1",
+    "immer": "^11.1.8",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@monaco-editor/react": "^4.7.0",
+    "@storybook/react-vite": "^8.0.0",
+    "@tiptap/core": "^3.27.1",
+    "@tiptap/extension-blockquote": "^3.27.1",
+    "@tiptap/extension-bold": "^3.27.1",
+    "@tiptap/extension-code": "^3.27.1",
+    "@tiptap/extension-code-block": "^3.27.1",
+    "@tiptap/extension-document": "^3.27.1",
+    "@tiptap/extension-hard-break": "^3.27.1",
+    "@tiptap/extension-heading": "^3.27.1",
+    "@tiptap/extension-horizontal-rule": "^3.27.1",
+    "@tiptap/extension-image": "^3.27.1",
+    "@tiptap/extension-italic": "^3.27.1",
+    "@tiptap/extension-link": "^3.27.1",
+    "@tiptap/extension-list": "^3.27.1",
+    "@tiptap/extension-paragraph": "^3.27.1",
+    "@tiptap/extension-strike": "^3.27.1",
+    "@tiptap/extension-text": "^3.27.1",
+    "@tiptap/extension-text-align": "^3.27.1",
+    "@tiptap/extension-underline": "^3.27.1",
+    "@tiptap/pm": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "browser-image-compression": "^2.0.2",
+    "esbuild": "^0.28.1",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "filepond": "^4.32.12",
+    "filepond-plugin-file-validate-size": "^2.2.8",
+    "filepond-plugin-file-validate-type": "^1.2.9",
+    "filepond-plugin-image-crop": "^2.0.6",
+    "filepond-plugin-image-edit": "^1.6.3",
+    "filepond-plugin-image-exif-orientation": "^1.0.11",
+    "filepond-plugin-image-preview": "^4.6.12",
+    "filepond-plugin-image-resize": "^2.0.10",
+    "filepond-plugin-image-transform": "^3.8.7",
+    "globals": "^17.7.0",
+    "lucide-react": "^1.7.0",
+    "nanoid": "^5.1.16",
+    "prettier": "^3.0.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-filepond": "^7.1.3",
+    "tailwind-merge": "^3.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.62.0",
+    "vaul": "^1.1.2",
+    "vite": "^6.4.3",
+    "vitest": "^3.0.0",
+    "zod": "^4.4.3"
+  }
 }

@@ -35,7 +35,10 @@ export const LeftPanel = () => {
 
   const [activeTab, setActiveTab] = useState<'blocks' | 'layers'>('blocks');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPreviews, setShowPreviews] = useState(false);
+  // Varsayılan AÇIK (kullanıcı kararı 2026-08-20): bileşen önizlemeleri
+  // kapalı başlayınca kullanıcı göz ikonunu keşfedene kadar liste "sadece
+  // isim" kalıyordu. Kapatmak isteyen yine gözden kapatır.
+  const [showPreviews, setShowPreviews] = useState(true);
   // Accordion: hangi kategoriler kapalı — kullanıcının tercihi localStorage'da.
   const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>(readCollapsedCats);
 

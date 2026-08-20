@@ -6,23 +6,23 @@ madde GERÇEK bir tekrar/tuzağa dayanır (dosya:satır ile). Öncelik sırası:
 
 ---
 
-## ✅ Uygulama durumu (2026-08, `@tecof/theme-editor` 0.0.81)
+## ✅ Uygulama durumu (2026-08, `@tecof/theme-editor` 0.0.83)
 
 | # | Madde | Durum | Nerede |
 |---|---|---|---|
 | 1 | Motor yerleşimi INLINE yerine CLASS + CSS var | ✅ Uygulandı | `DropZone.tsx` + `TecofRender.tsx` `managedLayout` bayrağı; `.tecof-slot-*` @layer base |
-| 2 | `<Slot>` bileşeni | ✅ Uygulandı (kısmi) | `src/components/Slot.tsx` — `value/layout/gap/className/style`. `hideIfEmpty` + `as`/a11y **henüz yok** (madde 3'e bağlı) |
-| 3 | Boş slot'u birinci sınıf yap (`hideIfEmpty`) | ⬜ Yapılmadı | motorun render'a `isEmpty` sinyali geçirmesi gerekiyor |
+| 2 | `<Slot>` bileşeni | ✅ Uygulandı | `src/components/Slot.tsx` — `value/layout/gap/className/style/hideIfEmpty` + serbest prop geçişi (`data-*`/`aria-*`/`id` kapsayıcıya) (0.0.83) |
+| 3 | Boş slot'u birinci sınıf yap (`hideIfEmpty`) | ✅ Uygulandı (yayın) | TecofRender enjekte ettiği slot elemanına `isEmpty` basar; `<Slot hideIfEmpty>` yayında null döner. EDİTÖRDE bilinçli devre dışı: boş slot "Bileşen Ekle" ipucuyla görünür kalır (0.0.83) |
 | 4 | `defaultProps` slot dizisi ↔ `defaultChildren` otomatik birleşme | ◑ Dolaylı | motor seviyesinde değil; `defineSection` slot `default`'unu `defaultChildren`'a MAP'leyerek tuzağı atlatır |
 | 5 | `<TecofRoot>` — kök className sözleşmesi | ✅ Uygulandı | `src/components/TecofRoot.tsx`; `defineSection` render köküne `p.className`'i otomatik ekler |
-| 6 | `defineSection` / `defineElement` fabrikası | ✅ Uygulandı | `src/components/defineComponent.tsx` |
+| 6 | `defineSection` / `defineElement` fabrikası | ✅ Uygulandı | `src/components/defineComponent.tsx`; 0.0.83: SlotSpec `className` FONKSİYON da alır (`(p)=>p.align==='center'&&'items-center'`) + `hideIfEmpty`. Referans göç: mova `DroneHero.tsx` |
 
-**Dağıtım kapısı:** Bu API yalnız **yayınlanmış** paket sürümünde temalara ulaşır.
-0.0.80 (npm latest) bu API'yi İÇERMEZ — yerel **0.0.81** içerir ama henüz
-yayınlanmadı. Temalar `<Slot>`/`TecofRoot`/`defineSection` kullanmadan ÖNCE:
-1. `@tecof/theme-editor` 0.0.81 **npm publish**,
-2. tema `package.json` (mova/core `^0.0.80` → `^0.0.81`) + `npm install`,
-3. section bileşenlerini aşağıdaki reçeteyle `renderSlot` → `<Slot>`'a taşı.
+**Sürüm haritası:** `<Slot>`/`TecofRoot`/`defineSection` → 0.0.81 (yayında).
+`data-tecof-item` + editör UX paketi → 0.0.82 (yayında, ARA kayıt). Slot serbest
+prop geçişi + `hideIfEmpty` + SlotSpec `className` fonksiyonu + derin-seçim
+modeli + host "Bölüm Ekle" pili → **0.0.83** (yerel, publish bekliyor).
+NOT: npm'de `^0.0.x` YALNIZ o minor'u kabul eder — tema yükseltmesi package.json
+sürümünü elle değiştirmeyi gerektirir.
 
 `.tecof-slot-*` yayın CSS'i mova + core `globals.css`'ine (@layer base) **eklendi**
 (bu adım zararsız; eski paket sürümünde class'lar üretilmez). Yayın sayfası paket

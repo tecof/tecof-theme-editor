@@ -8,6 +8,7 @@ import { useUiStore } from '../uiStore';
 import type { TecofNode } from '../../types';
 import { NodeErrorBoundary } from './NodeErrorBoundary';
 import { postToHost, isEmbedded } from '../bridge';
+import { requestFocusFromTarget } from './canvasInteractions';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
 import { STYLES_PROP } from '../style/types';
 import { interactionNodeClasses } from '../interactions/registry';
@@ -89,6 +90,14 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             id: node.props.id,
           },
         });
+      }
+
+      // Sağ panel odağı — delege edilmiş listener'daki (canvasInteractions)
+      // davranışın AYNISI. Inline bileşenler kendi handler'larını bağlayıp
+      // stopPropagation ettiği için o listener'a hiç ulaşmazlar; bu çağrı
+      // olmadan inline bir node'a tıklamak paneli hiç hareket ettirmezdi.
+      if (e.detail === 1) {
+        requestFocusFromTarget(e.target, node.props.id);
       }
     },
     [selectNode, toggleSelect, node.props.id, node.type, locked]
@@ -220,7 +229,23 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
             sourceFieldDef={componentConfig.fields?.[fieldDef.repeatSource]}
           />
         ) : (
-          renderDropZone({ zone: fieldName, orientation: fieldDef.orientation })
+          (() => {
+            // ÖNİZLEME = yayının aynası: `<Slot hideIfEmpty>` boş slotu
+            // preview'da da gizleyebilsin diye isEmpty yalnız kilitli modda
+            // basılır (edit'te ASLA — boş slot "Bileşen Ekle" ipucuyla görünür
+            // kalmalı). _hidden çocuklar yayında render edilmediği için boş
+            // sayılır (TecofRender ile aynı hesap).
+            if (!locked) {
+              return renderDropZone({ zone: fieldName, orientation: fieldDef.orientation });
+            }
+            const zoneItems =
+              useEditorStore.getState().document.zones[`${node.props.id}:${fieldName}`];
+            return renderDropZone({
+              zone: fieldName,
+              orientation: fieldDef.orientation,
+              isEmpty: !zoneItems || zoneItems.every((n) => n?.props?._hidden),
+            });
+          })()
         );
       }
     });

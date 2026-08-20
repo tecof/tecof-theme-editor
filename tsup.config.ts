@@ -19,6 +19,19 @@ export default defineConfig({
     'lucide-react/dynamic',
     'lucide-react/dynamicIconImports',
   ],
+  /**
+   * clsx / immer / zustand `dependencies`tedir ÇÜNKÜ public `dist/index.d.ts`
+   * onların tiplerini sızdırır (`zustand.UseBoundStore<StoreApi<UiState>>`,
+   * `immer.Patch`, `clsx.ClassValue`). devDependency oldukları sürece tüketici
+   * onları KURMUYORDU ve tip çözümü yalnız tesadüfen (başka bir paketin
+   * hoist'lediği kopya sayesinde) çalışıyordu — mova'da `@react-three/fiber`
+   * kaldırılınca `useUiStore` sessizce `any`'ye düştü.
+   *
+   * `noExternal` ile runtime davranışı AYNEN korunur: bu üçü dist'e gömülü
+   * kalır (tek store örneği garantisi), package.json kaydı yalnız tiplerin
+   * çözülmesini sağlar.
+   */
+  noExternal: ['clsx', 'immer', 'zustand'],
   treeshake: true,
   injectStyle: true,
   async onSuccess() {

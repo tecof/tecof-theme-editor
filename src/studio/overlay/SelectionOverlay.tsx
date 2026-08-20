@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from 're
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { getBreadcrumbs, getParentId, findNodeById } from '../../engine/zones';
-import { ArrowUp, ArrowDown, Copy, Trash2, ChevronUp, Info, Pencil } from 'lucide-react';
+import { ArrowUp, ArrowDown, Copy, Trash2, ChevronUp, Info, Pencil, Plus } from 'lucide-react';
 import { useStudio } from '../context';
 import { usePermissions } from '../usePermissions';
 import type { ComponentConfig, TecofDocument, TecofNode } from '../../types';
@@ -515,6 +515,7 @@ export const SelectionOverlay = () => {
   const hoveredId = useEditorStore((state) => state.selection.hoveredId);
   const mode = useUiStore((state) => state.mode);
   const setNodeSettingsOpen = useUiStore((state) => state.setNodeSettingsOpen);
+  const openAddSection = useUiStore((state) => state.openAddSection);
   // Inline metin düzenlemesi sürerken TÜM seçim chrome'u (outline + toolbar +
   // durum çubuğu) gizlenir — kullanıcı yazarken imleç tek odak kalsın
   // (Squarespace davranışı). Commit/cancel bayrağı temizler, chrome geri gelir.
@@ -741,6 +742,42 @@ export const SelectionOverlay = () => {
           readOnly={!!readOnly}
         />
       )}
+
+      {/* Squarespace "Bölüm Ekle": KÖK bir section seçiliyken alt kenarın tam
+          ortasında kalıcı pil. BURADA (host overlay) yaşar, iframe'deki
+          InsertOverlay'de DEĞİL: seçim çerçevesi host'ta çizilir ve iframe
+          içeriğinin HEP üstündedir — pil iframe'deyken çerçeve çizgisi yazının
+          üstüne biniyordu. Kök akışta k index'i k'inci çocuğun ÖNÜNE ekler →
+          seçilinin altı = path.index + 1. Hover-bazlı iframe affordance'ları
+          aynen durur; bu yalnız seçime bağlı kalıcı olanıdır.
+          SON kök section İSTİSNA: iframe'in her-zaman-görünür kuyruk pili
+          zaten aynı index'e ekliyor — ikisi birden üst üste iki "Bölüm Ekle"
+          yığıyordu, host pili orada bastırılır. */}
+      {selectedId &&
+        selectedCoords &&
+        nodeDetails &&
+        nodeDetails.path.zoneKey === undefined &&
+        nodeDetails.path.index < documentState.content.length - 1 &&
+        !isMulti &&
+        !readOnly &&
+        !inlineEditing && (
+          <button
+            type="button"
+            className="tecof-add-below"
+            style={{
+              top: selectedCoords.top + selectedCoords.height,
+              left: selectedCoords.left + selectedCoords.width / 2,
+            }}
+            title="Bu bölümün altına yeni bölüm ekle"
+            onClick={(e) => {
+              e.stopPropagation();
+              openAddSection({ index: nodeDetails.path.index + 1 });
+            }}
+          >
+            <Plus size={12} strokeWidth={2.6} aria-hidden="true" />
+            Bölüm Ekle
+          </button>
+        )}
 
       {/* Yol + ölçü bilgisi: node'a yapışık çipler yerine canvas'ın sol altında
           sabit durum çubuğu — küçük elemanların üzerini örtmez, tıklama çalmaz. */}

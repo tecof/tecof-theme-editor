@@ -19,9 +19,19 @@ describe('generateStyleCss', () => {
     expect(css).toContain('background-color: var(--color-red-500, #ef4444) !important;');
   });
 
+  /* Fallback ölçeği MARKA (--tecof-brand-*) olmalı, chrome paleti
+     (--tecof-primary-*, mavi) DEĞİL: editör arayüz rengini değiştirmek,
+     teması --color-primary-* tanımlamayan mağazaların İÇERİĞİNİ de
+     boyardı. Bu iki ölçeğin ayrı kalması bilinçli bir sözleşmedir. */
+  it('marka rengi fallback\'i chrome paletine DEĞİL --tecof-brand-* e düşer', () => {
+    const css = generateStyleCss(['text-primary-500!']);
+    expect(css).toContain('var(--tecof-brand-500)');
+    expect(css).not.toContain('--tecof-primary-');
+  });
+
   it('resolves brand colors through theme variables', () => {
     const css = generateStyleCss(['bg-primary-600!']);
-    expect(css).toContain('var(--color-primary-600, var(--tecof-primary-600))');
+    expect(css).toContain('var(--color-primary-600, var(--tecof-brand-600))');
   });
 
   it('passes arbitrary values through', () => {
@@ -143,7 +153,7 @@ describe('generateStyleCss', () => {
     expect(css).toContain(
       'linear-gradient(to right, var(--tc-grad-from, transparent), var(--tc-grad-to, transparent))'
     );
-    expect(css).toContain('--tc-grad-from: var(--color-primary-600, var(--tecof-primary-600)) !important;');
+    expect(css).toContain('--tc-grad-from: var(--color-primary-600, var(--tecof-brand-600)) !important;');
     expect(css).toContain('--tc-grad-to: #ff0000 !important;');
   });
 
