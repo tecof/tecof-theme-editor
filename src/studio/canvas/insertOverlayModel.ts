@@ -222,10 +222,17 @@ export function computeZoneAffordances(input: ZoneAffordanceInput): InsertAfford
     }
     if (!geom) continue; // both neighbours unmeasured this frame
 
-    // Komşulardan HERHANGİ biri küçükse metinsiz pil: iki komşu arasındaki
-    // ortalanmış pil küçük olanı örter. Kenar affordance'ında tek komşuya bakılır.
+    // ELEMENT seviyesinde (slot zone'ları) pil DAİMA kompakt — Webflow modeli:
+    // çizgi üstünde küçük yuvarlak "+". Between pili boşluğun merkezinde durur
+    // ve geometrik clamp'i yoktur; metinli pil ("+ Ekle" ≈ 60×22px) dar
+    // boşluklarda komşu elemanların İÇİNE taşıyordu (kullanıcının "ekle kısmı
+    // patlıyor" bildirdiği durum: geniş-ama-alçak buton compact'ın eski
+    // width<140 AND height<96 koşulunu geçemiyordu). Kök (section) akışında
+    // section'lar büyük olduğundan metinli "Bölüm Ekle" pili kalır; yalnız
+    // küçük komşuda metin düşer.
     const neighbours = [prev, next].filter((r): r is OverlayRect => r != null);
-    const compact = neighbours.length > 0 && neighbours.some(isSmallElement);
+    const compact =
+      zoneKey !== undefined || (neighbours.length > 0 && neighbours.some(isSmallElement));
 
     out.push({
       key: `${zoneKey ?? 'root'}#${k}`,

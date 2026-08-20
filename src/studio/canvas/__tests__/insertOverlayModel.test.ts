@@ -195,11 +195,11 @@ describe('computeZoneAffordances — gap-clamped band thickness', () => {
   });
 });
 
-describe('computeZoneAffordances — compact (küçük eleman → yalnız + ikonu)', () => {
-  it('büyük stacked section komşuları → compact:false (metin görünür)', () => {
-    // R(top,left,height,width): tam genişlik yüksek ssection'lar
+describe('computeZoneAffordances — compact (element seviyesi HEP; kökte küçük komşu)', () => {
+  it('KÖK akışta büyük stacked section komşuları → compact:false (metinli "Bölüm Ekle")', () => {
+    // R(top,left,height,width): tam genişlik yüksek section'lar; kök = zoneKey undefined
     const res = computeZoneAffordances({
-      zoneKey: 'root',
+      zoneKey: undefined,
       zoneAxis: 'y',
       containerRect: container,
       childRects: [R(0, 0, 300, 600), R(320, 0, 300, 600)],
@@ -207,7 +207,32 @@ describe('computeZoneAffordances — compact (küçük eleman → yalnız + ikon
     expect(res.every((a) => a.compact === false)).toBe(true);
   });
 
-  it('yan yana küçük butonlar (40x40) → compact:true', () => {
+  it('KÖK akışta küçük komşu → compact:true (metin küçüğü örterdi)', () => {
+    const res = computeZoneAffordances({
+      zoneKey: undefined,
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 40, 80), R(60, 0, 300, 600)],
+    });
+    const between = res.find((a) => a.index === 1);
+    expect(between?.compact).toBe(true);
+  });
+
+  it('ELEMENT seviyesi (slot zone) DAİMA compact — büyük komşularda bile', () => {
+    // Webflow modeli: slot içinde pil hep küçük yuvarlak "+" — between pilinin
+    // geometrik clamp'i yok; metinli pil dar boşlukta komşuların içine taşıyordu
+    // (geniş-ama-alçak buton eski width<140 AND height<96 koşulunu geçemiyordu).
+    const res = computeZoneAffordances({
+      zoneKey: 'Hero-1:contentSlot',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 900, 600),
+      childRects: [R(0, 0, 400, 600), R(420, 0, 400, 600)],
+    });
+    expect(res.length).toBeGreaterThan(0);
+    expect(res.every((a) => a.compact === true)).toBe(true);
+  });
+
+  it('yan yana küçük butonlar (40x40, slot) → compact:true', () => {
     const res = computeZoneAffordances({
       zoneKey: 'actions',
       zoneAxis: 'x',
@@ -219,22 +244,12 @@ describe('computeZoneAffordances — compact (küçük eleman → yalnız + ikon
     expect(res.every((a) => a.compact === true)).toBe(true);
   });
 
-  it('uzun dar kolon (100x400) → compact:false (yükseklik büyük)', () => {
+  it('geniş-ama-alçak buton (600x44, slot) → compact:true (eski AND koşulunun açığı)', () => {
     const res = computeZoneAffordances({
-      zoneKey: 'col',
+      zoneKey: 'ctaSlot',
       zoneAxis: 'y',
-      containerRect: R(0, 0, 900, 100),
-      childRects: [R(0, 0, 400, 100), R(420, 0, 400, 100)],
-    });
-    expect(res.every((a) => a.compact === false)).toBe(true);
-  });
-
-  it('bir küçük bir büyük komşu → compact:true (pil küçüğü örter)', () => {
-    const res = computeZoneAffordances({
-      zoneKey: 'mixed',
-      zoneAxis: 'x',
-      containerRect: R(0, 0, 300, 600),
-      childRects: [R(0, 0, 40, 40), R(0, 60, 300, 300)],
+      containerRect: R(0, 0, 400, 600),
+      childRects: [R(0, 0, 200, 600), R(210, 0, 44, 600)],
     });
     const between = res.find((a) => a.index === 1);
     expect(between?.compact).toBe(true);

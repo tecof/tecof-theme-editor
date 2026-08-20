@@ -69,6 +69,23 @@ export interface DropHoverState {
 }
 
 /**
+ * Canvas'tan sağ panele "şu alana odaklan" isteği. Kanvasta bir elemente
+ * tıklanınca yayınlanır: Inspector İçerik sekmesine geçer, ilgili node grubunu/
+ * alan bloğunu açar ve oraya kaydırıp kısa bir vurgu (flash) uygular.
+ *
+ * - `field` yoksa yalnız node'un grubu (aggregate görünümde SectionGroup) hedeflenir.
+ * - `itemIndex` `data-tecof-item="<field>:<index>"` işaretli repeater/array
+ *   kartlarından gelir: array alanındaki o satır otomatik genişletilir.
+ * - `token` her istekte artar — aynı alana ikinci tıklama da effect'leri tetikler.
+ */
+export interface InspectorFocusRequest {
+  nodeId: string;
+  field?: string;
+  itemIndex?: number;
+  token: number;
+}
+
+/**
  * Editor *UI* state, deliberately kept separate from the document engine store
  * (`useEditorStore`). This holds chrome/interaction state that should NOT be part
  * of the page document or its undo history: the active mode and panel visibility.
@@ -122,6 +139,13 @@ interface UiState {
    * canvas + host roots so authors can design the dark palette live. Only surfaced
    * when the host enables `config.darkMode`. */
   previewColorScheme: 'light' | 'dark';
+  /** Inline metin düzenlemesi aktifken düzenlenen node'un id'si; null = yok.
+   * SelectionOverlay bunu okuyup yazım sırasında tüm seçim chrome'unu
+   * (outline + toolbar + durum çubuğu) gizler — imleç tek odak kalır. */
+  inlineEditingNodeId: string | null;
+  /** Sağ panel odak isteği (bkz. InspectorFocusRequest); null = istek yok.
+   * Temizlenmez — token artışı effect'leri tetikler, bayat istek zararsızdır. */
+  inspectorFocus: InspectorFocusRequest | null;
 
   setMode: (mode: EditorMode) => void;
   toggleMode: () => void;
@@ -146,6 +170,9 @@ interface UiState {
   setNodeSettingsOpen: (open: boolean) => void;
   setPreviewColorScheme: (scheme: 'light' | 'dark') => void;
   togglePreviewColorScheme: () => void;
+  setInlineEditingNodeId: (id: string | null) => void;
+  /** Token'ı store kendisi artırır — çağıran yalnız hedefi verir. */
+  requestInspectorFocus: (req: Omit<InspectorFocusRequest, 'token'>) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -168,6 +195,8 @@ export const useUiStore = create<UiState>((set) => ({
   aiModalOpen: false,
   nodeSettingsOpen: false,
   previewColorScheme: 'light',
+  inlineEditingNodeId: null,
+  inspectorFocus: null,
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
@@ -215,4 +244,8 @@ export const useUiStore = create<UiState>((set) => ({
   setPreviewColorScheme: (scheme) => set({ previewColorScheme: scheme }),
   togglePreviewColorScheme: () =>
     set((s) => ({ previewColorScheme: s.previewColorScheme === 'dark' ? 'light' : 'dark' })),
+  setInlineEditingNodeId: (id) =>
+    set((s) => (s.inlineEditingNodeId === id ? s : { inlineEditingNodeId: id })),
+  requestInspectorFocus: (req) =>
+    set((s) => ({ inspectorFocus: { ...req, token: (s.inspectorFocus?.token ?? 0) + 1 } })),
 }));

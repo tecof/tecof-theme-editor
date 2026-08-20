@@ -235,6 +235,30 @@ Kurallar:
 7. Canvas'ta bağlı bir metne çift tıklayıp satır içi düzenleme yapmak token'ı
    literal değerle ezer; bağlı alanlar Inspector'dan düzenlenmelidir.
 
+## Array kartı işaretleri (`data-tecof-item`)
+
+Repeat zone'dan AYRI mekanizma: bileşen `type:'array'` prop'unu KENDİ render'ında
+map'liyorsa (slot yok), kartları editöre şu attr'larla tanıtabilir:
+
+```tsx
+{services.map((s, i) => (
+  <li key={i} data-tecof-item={`services:${i}`}>
+    <h3 data-tecof-item-prop="title">{getL(s.title, locale)}</h3>
+    <p  data-tecof-item-prop="description">{getL(s.description, locale)}</p>
+  </li>
+))}
+```
+
+- Kart edit modunda hover çerçevesi alır; tıklama Inspector'da `services`
+  alanının o satırını açıp kaydırır; çift tıklama satır alanını yerinde
+  düzenler (`{ ...row, [alan]: değer }` immutable satır yazımı, tek undo adımı).
+- Çok dilli satır alanları desteklenir (`[{code,value}]` merge + `data-tecof-lang`).
+- `data-tecof-item-prop` BİLİNÇLİ olarak `data-tecof-prop`'tan ayrıdır: eski
+  editör sürümleri satır işaretini top-level prop sanıp temaya çöp prop
+  yazabilirdi — yeni attr'ı eski sürüm hiç görmez (ileri-uyumlu, zararsız).
+- Satır, commit anında silinmiş/taşınmışsa yazım sessizce vazgeçer (bayat
+  index guard'ı) — yanlış satıra asla yazılmaz.
+
 ## TecofEditor önemli prop'ları
 
 | Prop | Anlamı | Varsayılan |

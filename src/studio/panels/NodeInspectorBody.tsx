@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronUp, ChevronDown, ChevronRight, Lock, Component, Link2, Link2Off } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { findNodeById, getParentId, getDescendants } from '../../engine/zones';
 import { findSymbolRoot, findSymbolInstanceRoots, symbolOverridesOf } from '../../engine/symbols';
 import { findRepeatScope } from '../../engine/repeat';
@@ -105,6 +106,19 @@ export const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
     setExpandedGroups(new Set());
   }, [nodeId]);
 
+  // Canvas odak isteği bu node'un bir alanını hedefliyorsa, alanı içeren
+  // fieldsGroups accordion'ını otomatik aç — kaydırma hedefi görünür olsun.
+  const inspectorFocus = useUiStore((s) => s.inspectorFocus);
+  useEffect(() => {
+    if (!inspectorFocus || inspectorFocus.nodeId !== nodeId || !inspectorFocus.field) return;
+    const focusField = inspectorFocus.field;
+    const nodeNow = findNodeById(useEditorStore.getState().document, nodeId)?.node;
+    const cfg = nodeNow ? config.components[nodeNow.type] : undefined;
+    const grp = cfg?.fieldsGroups?.find((g) => (g.fields ?? []).includes(focusField));
+    if (!grp) return;
+    setExpandedGroups((prev) => (prev.has(grp.name) ? prev : new Set(prev).add(grp.name)));
+  }, [inspectorFocus, nodeId, config]);
+
   const info = useMemo(() => {
     if (!node) return null;
     return { node, componentConfig: config.components[node.type] };
@@ -162,11 +176,19 @@ export const NodeFieldSet: React.FC<{ nodeId: string }> = ({ nodeId }) => {
     const fieldDef = fieldMap.get(fieldName);
     if (!fieldDef) return null;
     return (
-      <div key={fieldName} className={`tecof-field-block${symbolId ? ' is-symbol' : ''}`}>
+      <div
+        key={fieldName}
+        className={`tecof-field-block${symbolId ? ' is-symbol' : ''}`}
+        // Canvas→panel odak hedefi: kaydırma effect'i bu çifti querySelector'la
+        // bulur ([data-tecof-node="<id>"][data-tecof-field="<alan>"]).
+        data-tecof-node={nodeId}
+        data-tecof-field={fieldName}
+      >
         <FieldRenderer
           name={fieldName}
           definition={fieldDef}
           value={info.node.props[fieldName]}
+          nodeId={nodeId}
           onChange={(newVal) => updateProps(nodeId, { [fieldName]: newVal })}
           readOnly={
             fieldsReadOnly || resolved.readOnly[fieldName] === true || fieldDef?.readOnly === true
@@ -285,6 +307,9 @@ const SectionGroup = React.memo<{
         collapsed ? ' is-collapsed' : ''
       }`}
       style={{ '--tecof-group-depth': depth } as React.CSSProperties}
+      // Canvas→panel odak hedefi (alan işareti olmayan tıklamalar node'un
+      // grubuna kaydırır).
+      data-tecof-node-group={id}
       onMouseEnter={() => hoverNode(id)}
       onMouseLeave={() => hoverNode(null)}
     >
@@ -383,6 +408,49 @@ export const NodeInspectorBody: React.FC<NodeInspectorBodyProps> = ({
       }),
     [setCollapsed]
   );
+
+  /* Canvas odak isteği: hedef alan bloğuna (yoksa node grubuna) kaydır + kısa
+     vurgu. Accordion/array açılımları AYNI istekle başka effect'lerde state
+     olarak açılır ve bir sonraki render'da DOM'a girer — bu yüzden hedef rAF
+     döngüsüyle birkaç frame denenir (bulunamazsa sessizce vazgeçilir). */
+  const fieldsScrollRef = useRef<HTMLDivElement | null>(null);
+  const inspectorFocus = useUiStore((s) => s.inspectorFocus);
+  useEffect(() => {
+    if (!inspectorFocus) return;
+    let tries = 0;
+    let raf = 0;
+    const attempt = () => {
+      const root = fieldsScrollRef.current;
+      if (!root) return;
+      const { nodeId, field, itemIndex } = inspectorFocus;
+      const esc = (v: string) => v.replace(/"/g, '\\"');
+      const blockSel = field
+        ? `[data-tecof-node="${esc(nodeId)}"][data-tecof-field="${esc(field)}"]`
+        : null;
+      let target: HTMLElement | null = null;
+      // Array satırı hedefliyse önce satırın kendisini dene (açılmış olmalı).
+      if (blockSel && itemIndex != null) {
+        target = root.querySelector<HTMLElement>(
+          `${blockSel} [data-tecof-array-index="${itemIndex}"]`
+        );
+      }
+      if (!target && blockSel) target = root.querySelector<HTMLElement>(blockSel);
+      if (!target) {
+        target = root.querySelector<HTMLElement>(`[data-tecof-node-group="${esc(nodeId)}"]`);
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Animasyonu her istekte yeniden başlat (class kalmış olabilir).
+        target.classList.remove('tecof-field-flash');
+        void target.offsetWidth;
+        target.classList.add('tecof-field-flash');
+        return;
+      }
+      if (tries++ < 8) raf = requestAnimationFrame(attempt);
+    };
+    raf = requestAnimationFrame(attempt);
+    return () => cancelAnimationFrame(raf);
+  }, [inspectorFocus]);
 
   // Find active selected node details memoized to prevent expensive lookup on every render
   const activeNodeInfo = useMemo(() => {
@@ -510,7 +578,7 @@ export const NodeInspectorBody: React.FC<NodeInspectorBodyProps> = ({
       </div>
 
       {/* Fields List / Style Editor */}
-      <div className="tecof-inspector-fields">
+      <div className="tecof-inspector-fields" ref={fieldsScrollRef}>
         {fieldsReadOnly && (
           <div className="tecof-inspector-readonly-note">
             <Lock size={12} aria-hidden="true" />

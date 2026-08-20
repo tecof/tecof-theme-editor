@@ -65,7 +65,16 @@ export const CanvasEditDelegation: React.FC = () => {
   useEffect(() => {
     const doc = anchorRef.current?.ownerDocument;
     if (!doc) return;
-    return installCanvasEdit(doc, () => langRef.current);
+    // Yalnız düzenleme modunda mount edildiğimiz için (Canvas koşullu render)
+    // body'ye edit işareti basmak güvenli: paket CSS'i bununla salt-editör
+    // affordance'larını açar (ör. `[data-tecof-item]` repeater kart hover
+    // çerçevesi) — önizleme/yayında sınıf hiç var olmaz.
+    doc.body?.classList.add('tecof-canvas-edit');
+    const uninstall = installCanvasEdit(doc, () => langRef.current);
+    return () => {
+      doc.body?.classList.remove('tecof-canvas-edit');
+      uninstall();
+    };
   }, []);
   return <div ref={anchorRef} style={{ display: 'none' }} aria-hidden="true" />;
 };

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { useStudio } from '../context';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
 import { ThemeEditor } from '../theme/ThemeEditor';
@@ -25,6 +26,23 @@ export const Inspector = () => {
      korunur — refactor öncesi davranış. Modal kendi iç state'ini kullanır. */
   const [nodeTab, setNodeTab] = useState<InspectorTab>('content');
   const [nodeCollapsed, setNodeCollapsed] = useState<Set<string>>(() => new Set());
+
+  /* Canvas'tan "şu alana git" isteği (bir elemente tıklama): İçerik sekmesine
+     geç, sağ paneli aç, hedef node'un aggregate satırı daraltılmışsa aç.
+     Kaydırma + vurgu NodeInspectorBody'de (hedef DOM'u orada yaşar). */
+  const inspectorFocus = useUiStore((s) => s.inspectorFocus);
+  const setRightPanelOpen = useUiStore((s) => s.setRightPanelOpen);
+  useEffect(() => {
+    if (!inspectorFocus) return;
+    setNodeTab('content');
+    setRightPanelOpen(true);
+    setNodeCollapsed((prev) => {
+      if (!prev.has(inspectorFocus.nodeId)) return prev;
+      const next = new Set(prev);
+      next.delete(inspectorFocus.nodeId);
+      return next;
+    });
+  }, [inspectorFocus, setRightPanelOpen]);
 
   // 1. Component selected state — body extracted to NodeInspectorBody.
   if (selectedId) {

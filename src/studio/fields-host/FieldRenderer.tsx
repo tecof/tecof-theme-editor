@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useUiStore } from '../uiStore';
 import { FieldLabel } from '../../components/fields/FieldLabel';
 import { FieldErrorBoundary } from '../../components/fields/FieldErrorBoundary';
 import { CmsBindingButton } from '../../components/fields/CmsBindingButton';
@@ -12,6 +13,13 @@ export interface FieldRendererProps {
   value: unknown;
   onChange: (value: unknown) => void;
   readOnly?: boolean;
+  /**
+   * Alanın ait olduğu node (Inspector'dan gelir; kök/alt alan kullanımlarında
+   * boş). Canvas'tan gelen `inspectorFocus` isteğinin BU alandaki array
+   * satırını otomatik genişletmesi için gerekli — istek {nodeId, field,
+   * itemIndex} üçlüsüyle eşleşmeli, yoksa başka node'daki aynı adlı alan açılır.
+   */
+  nodeId?: string;
 }
 
 interface SelectOption {
@@ -32,8 +40,21 @@ export const FieldRenderer = ({
   value,
   onChange,
   readOnly = false,
+  nodeId,
 }: FieldRendererProps) => {
   const [expandedIndices, setExpandedIndices] = useState<Record<number, boolean>>({});
+
+  // Canvas'tan gelen "şu array satırına git" isteği bu alanı hedefliyorsa
+  // satırı otomatik genişlet — NodeInspectorBody'nin kaydırma effect'i satırın
+  // DOM'a girmesini rAF döngüsüyle bekler.
+  const inspectorFocus = useUiStore((s) => s.inspectorFocus);
+  useEffect(() => {
+    if (!inspectorFocus || !nodeId) return;
+    if (inspectorFocus.nodeId !== nodeId || inspectorFocus.field !== name) return;
+    const idx = inspectorFocus.itemIndex;
+    if (idx == null) return;
+    setExpandedIndices((prev) => (prev[idx] ? prev : { ...prev, [idx]: true }));
+  }, [inspectorFocus, nodeId, name]);
 
   const label = definition.label || name;
   const type = definition.type;
@@ -321,7 +342,7 @@ export const FieldRenderer = ({
               const itemLabel = getItemLabel(item, idx);
 
               return (
-                <div key={idx} className="tecof-array-item">
+                <div key={idx} className="tecof-array-item" data-tecof-array-index={idx}>
                   <div
                     onClick={() => toggleExpand(idx)}
                     onKeyDown={(e) => {

@@ -2,47 +2,73 @@
 
 /* ═══════════════════════════════════════════════════════════════════
    Tecof Editor — Design System / :root Tokens
-   Marka paleti: lime-green. KURAL: 600 = ana renk, 700 = hover.
-   Accent zemini üzerine KOYU yazı (--tecof-accent-fg) kullanılır (AA kontrast).
+   KARAR (2026-08): TÜM editör chrome'u tek MAVİ-BEYAZ dilde (Figma/Webflow
+   modeli) ve renk TEK NOKTADAN yönetilir: aşağıdaki --tecof-primary-* ölçeğini
+   değiştirmek bütün paneli + canvas affordance'larını birlikte değiştirir.
+   Accent zemini üzerine BEYAZ yazı (--tecof-accent-fg) kullanılır.
+   İstisnalar (bilinçli, kendi semantik token'larında):
+   • ortak bileşen (symbol) kimliği MOR (--tecof-shared-*),
+   • spacing overlay devtools dili: padding YEŞİL / margin AMBER (--tecof-spacing-*),
+   • success/danger/warning durum renkleri.
    Bu token'lar yalnızca editör arayüzünü boyar; kullanıcı sitesinin teması
    (--theme-* değişkenleri, generateCSSVariables) bundan etkilenmez.
    ═══════════════════════════════════════════════════════════════════ */
 :root {
-  /* ─── Marka Paleti (lime-green) ─── */
-  --tecof-primary-50: #faffe4;
-  --tecof-primary-100: #f2ffc5;
-  --tecof-primary-200: #e3ff92;
-  --tecof-primary-300: #ceff53;
-  --tecof-primary-400: #b6fb20;
-  --tecof-primary-500: #9ae600;
-  --tecof-primary-600: #74b500; /* ANA renk */
-  --tecof-primary-700: #588902; /* HOVER */
-  --tecof-primary-800: #476c08;
-  --tecof-primary-900: #3c5b0c;
-  --tecof-primary-950: #1d3300;
+  /* ─── Chrome Paleti (mavi) — 600 = ana renk, 700 = hover ─── */
+  --tecof-primary-50: #eff6ff;
+  --tecof-primary-100: #dbeafe;
+  --tecof-primary-200: #bfdbfe;
+  --tecof-primary-300: #93c5fd;
+  --tecof-primary-400: #60a5fa;
+  --tecof-primary-500: #3b82f6;
+  --tecof-primary-600: #2f7cf6; /* ANA renk */
+  --tecof-primary-700: #1e63d8; /* HOVER */
+  --tecof-primary-800: #1a52b5;
+  --tecof-primary-900: #1a437e;
+  --tecof-primary-950: #102a56;
 
   /* ─── Semantik Accent Token'ları ─── */
   --tecof-accent: var(--tecof-primary-600);
   --tecof-accent-hover: var(--tecof-primary-700);
   --tecof-accent-active: var(--tecof-primary-800);
-  --tecof-accent-fg: var(--tecof-primary-950); /* zemin üstü KOYU yazı */
+  --tecof-accent-fg: #ffffff; /* accent zemin üstü BEYAZ yazı */
   --tecof-accent-subtle: var(--tecof-primary-50); /* tint arka plan */
   --tecof-accent-subtle-hover: var(--tecof-primary-100);
   --tecof-accent-border: var(--tecof-primary-300);
   --tecof-accent-text: var(--tecof-primary-700); /* açık zeminde okunur accent metin */
-  --tecof-accent-ring: rgba(116, 181, 0, 0.30); /* focus halkası = 600 @30% */
+  --tecof-accent-ring: rgba(47, 124, 246, 0.30); /* focus halkası = 600 @30% */
+  --tecof-accent-ring-soft: rgba(47, 124, 246, 0.12);
+  --tecof-accent-tint-strong: rgba(47, 124, 246, 0.16);
+  --tecof-accent-glow: rgba(47, 124, 246, 0.24); /* renkli buton gölgesi */
+  --tecof-accent-on-dark: #8ab4ff; /* koyu zemin (popover) üstünde okunur accent */
 
-  /* ─── Yapısal (structure) token'ları — MAVİ ───
-     Karar: canvas'taki YAPISAL affordance'lar (insert çizgisi + "Ekle" pili,
-     seçim/hover çerçevesi, drop hedefi, sürükleme kılavuzu) MAVİ; butonlar ve
-     panel aksiyonları marka YEŞİLİ (accent) kalır. Böylece "nereye ekliyorum /
-     neyi seçtim" yapısı, "ne yaptırıyorum" aksiyonlarından renkle ayrışır
-     (Figma/Webflow dili). Ortak bileşen kimliği ayrıca MOR kalır. */
-  --tecof-structure: #2f7cf6;
-  --tecof-structure-hover: #1e63d8;
-  --tecof-structure-fg: #ffffff; /* mavi zemin üstü yazı */
+  /* ─── Yapısal (structure) alias'ları ───
+     Yapısal affordance'lar (insert çizgisi/pili, seçim çerçevesi, drop hedefi,
+     kılavuzlar) tarihsel olarak ayrı token setini kullanır; artık accent'e
+     ALIAS'tır — chrome tek renkte, ama ileride yapı/aksiyon ayrımı istenirse
+     yalnız bu blok değiştirilir. */
+  --tecof-structure: var(--tecof-accent);
+  --tecof-structure-hover: var(--tecof-accent-hover);
+  --tecof-structure-fg: var(--tecof-accent-fg);
   --tecof-structure-subtle: rgba(47, 124, 246, 0.08); /* hover tint */
-  --tecof-structure-ring: rgba(47, 124, 246, 0.30);
+  --tecof-structure-ring: var(--tecof-accent-ring);
+  --tecof-structure-border-faint: rgba(47, 124, 246, 0.36); /* boş dropzone kesikli çerçeve */
+  --tecof-structure-border: rgba(47, 124, 246, 0.58);
+
+  /* ─── Ortak bileşen (symbol) kimliği — MOR ─── */
+  --tecof-shared: #8b5cf6;
+  --tecof-shared-fg: #ffffff;
+  --tecof-shared-subtle: rgba(139, 92, 246, 0.08);
+  --tecof-shared-tint: rgba(139, 92, 246, 0.10);
+  --tecof-shared-border: rgba(139, 92, 246, 0.30);
+  --tecof-shared-outline: rgba(139, 92, 246, 0.55);
+
+  /* ─── Spacing overlay — devtools dili (padding yeşil / margin amber) ─── */
+  --tecof-spacing-padding: rgb(116, 181, 0);
+  --tecof-spacing-padding-band: rgba(116, 181, 0, 0.22);
+  --tecof-spacing-padding-label: rgb(90, 140, 0);
+  --tecof-spacing-margin-band: rgba(246, 173, 85, 0.30);
+  --tecof-spacing-margin-label: rgb(201, 124, 24);
 
   /* ─── Nötr / yüzey ölçeği ─── */
   --tecof-bg: #f4f4f5;
@@ -81,8 +107,8 @@
   --tecof-line-subtle: 1px solid var(--tecof-border-subtle);
   --tecof-line-strong: 1px solid var(--tecof-border-strong);
   --tecof-line-dashed: 1px dashed var(--tecof-border-strong);
-  --tecof-focus-ring: 0 0 0 3px rgba(116, 181, 0, 0.10);
-  --tecof-focus-ring-strong: 0 0 0 3px rgba(116, 181, 0, 0.15);
+  --tecof-focus-ring: 0 0 0 3px rgba(47, 124, 246, 0.10);
+  --tecof-focus-ring-strong: 0 0 0 3px rgba(47, 124, 246, 0.15);
   --tecof-danger-ring: 0 0 0 3px rgba(239, 68, 68, 0.10);
   --tecof-overlay-scrim: rgba(9, 9, 11, 0.60);
   --tecof-scrollbar-thumb: rgba(0, 0, 0, 0.15);
@@ -1538,7 +1564,7 @@
 .tecof-upload-gallery-item.selected {
   background: var(--tecof-accent-subtle);
   border-color: var(--tecof-accent);
-  box-shadow: 0 4px 12px rgba(116, 181, 0, 0.12);
+  box-shadow: 0 4px 12px var(--tecof-accent-ring-soft);
 }
 
 .tecof-upload-gallery-check {
@@ -1555,7 +1581,7 @@
   justify-content: center;
   color: var(--tecof-accent-fg);
   z-index: 2;
-  box-shadow: 0 2px 8px rgba(116, 181, 0, 0.4);
+  box-shadow: 0 2px 8px var(--tecof-accent-glow);
   animation: tecof-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -2216,7 +2242,7 @@
 
 .tecof-repeater-row.expanded {
   border-color: var(--tecof-accent);
-  box-shadow: 0 0 0 2px rgba(116, 181, 0, 0.08);
+  box-shadow: 0 0 0 2px var(--tecof-accent-ring-soft);
 }
 
 /* ── Row Header ── */
@@ -2862,7 +2888,7 @@
   background: var(--tecof-accent-subtle);
   border-radius: var(--tecof-radius);
   align-self: flex-start;
-  box-shadow: 0 1px 2px rgba(116, 181, 0, 0.04);
+  box-shadow: var(--tecof-shadow-sm);
 }
 
 .tecof-cms-col-badge svg {
@@ -3965,10 +3991,10 @@
 .tecof-canvas-root.is-dragover .tecof-canvas-empty {
   border-color: var(--tecof-accent);
   background:
-    linear-gradient(135deg, rgba(116, 181, 0, 0.10), rgba(255, 255, 255, 0.96)),
+    linear-gradient(135deg, rgba(47, 124, 246, 0.10), rgba(255, 255, 255, 0.96)),
     var(--tecof-surface);
   color: var(--tecof-accent-text);
-  box-shadow: 0 24px 70px rgba(67, 86, 14, 0.16), inset 0 0 0 1px rgba(116, 181, 0, 0.16);
+  box-shadow: 0 24px 70px rgba(16, 42, 86, 0.16), inset 0 0 0 1px var(--tecof-accent-tint-strong);
   transform: translateY(-2px) scale(1.01);
 }
 
@@ -4032,7 +4058,7 @@
   color: var(--tecof-accent-text);
   background: var(--tecof-accent-subtle);
   border: 1px solid var(--tecof-accent-border);
-  box-shadow: 0 10px 28px rgba(116, 181, 0, 0.16);
+  box-shadow: 0 10px 28px var(--tecof-accent-tint-strong);
 }
 
 .tecof-canvas-empty-kicker {
@@ -4109,7 +4135,7 @@
 
 .tecof-dropzone.is-empty {
   min-height: 30px;
-  border: 1px dashed rgba(116, 181, 0, 0.36);
+  border: 1px dashed var(--tecof-structure-border-faint);
   background: rgba(255, 255, 255, 0.08);
   padding: 4px;
   justify-content: center;
@@ -4124,7 +4150,7 @@
 }
 
 .tecof-dropzone.is-empty:hover {
-  border-color: rgba(116, 181, 0, 0.58);
+  border-color: var(--tecof-structure-border);
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -4259,9 +4285,9 @@
 .tecof-grid-col {
   flex: 1 1 0;
   min-width: 0;
-  background: rgba(99, 102, 241, 0.07);
-  border-left: 1px solid rgba(99, 102, 241, 0.22);
-  border-right: 1px solid rgba(99, 102, 241, 0.22);
+  background: rgba(47, 124, 246, 0.07);
+  border-left: 1px solid rgba(47, 124, 246, 0.22);
+  border-right: 1px solid rgba(47, 124, 246, 0.22);
 }
 
 /* ── Drag-time smart alignment guides (inside the iframe; DragGuides.tsx) ── */
@@ -4281,7 +4307,7 @@
 .tecof-drag-guide-edge {
   /* Subtle hairline; works for both the vertical (column flow) and horizontal
      (row flow) orientation without per-axis dash tricks. */
-  background: rgba(99, 102, 241, 0.35);
+  background: rgba(47, 124, 246, 0.35);
 }
 .tecof-drag-guide-badge {
   transform: translate(-50%, -50%);
@@ -4291,7 +4317,7 @@
   font-weight: 600;
   line-height: 1.5;
   color: #fff;
-  background: var(--tecof-accent, #6366f1);
+  background: var(--tecof-accent);
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
@@ -4514,6 +4540,16 @@
   transition: none;
 }
 
+/* Inline metin düzenlemesi sürerken TÜM seçim chrome'u gizlenir (outline,
+   toolbar, spacing/resize tutamaçları, durum çubuğu) — kullanıcı yazarken
+   imleç tek odak kalır (Squarespace davranışı). Bayrağı SelectionOverlay
+   uiStore'daki `inlineEditingNodeId`den okur; commit/cancel geri getirir.
+   display:none yerine visibility: ölçüm binding'leri (ResizeObserver) yaşasın,
+   çıkışta konumlar hazır olsun. */
+.tecof-overlay.is-inline-editing > * {
+  visibility: hidden;
+}
+
 /* Hover: clear solid outline + a very faint tint so the hovered component is
    obvious without obscuring its content (dashed 1.5px read as ambiguous). The
    tint is translucent enough to keep text readable on any background. */
@@ -4537,11 +4573,11 @@
    "Ortak Bileşen" rozeti. Buradaki düzenleme master'a yazılır ve bu bileşeni
    kullanan TÜM sayfalara yayılır — mor renk bu gücün uyarısıdır. */
 .tecof-outline.is-hover.is-shared {
-  border-color: #8b5cf6;
-  background: rgba(139, 92, 246, 0.08);
+  border-color: var(--tecof-shared);
+  background: var(--tecof-shared-subtle);
 }
-.tecof-outline.is-selected.is-shared { border-color: #8b5cf6; }
-.tecof-outline.is-selected.is-multi.is-shared { border-color: #8b5cf6; }
+.tecof-outline.is-selected.is-shared { border-color: var(--tecof-shared); }
+.tecof-outline.is-selected.is-multi.is-shared { border-color: var(--tecof-shared); }
 
 .tecof-outline.is-selected.is-shared::before {
   content: "Ortak Bileşen";
@@ -4549,7 +4585,7 @@
   bottom: -22px;
   left: -2px;
   padding: 2px 8px;
-  background: #8b5cf6;
+  background: var(--tecof-shared);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -4561,7 +4597,7 @@
 
 /* Kanvasta kalıcı ince mor işaret — seçili olmasa da ortak bileşen fark edilsin. */
 .tecof-studio-root .tecof-node-wrapper.is-shared {
-  outline: 1px dashed rgba(139, 92, 246, 0.55);
+  outline: 1px dashed var(--tecof-shared-outline);
   outline-offset: -1px;
 }
 
@@ -4905,16 +4941,30 @@
    Studio — New Features: inline edit, modes, language switch, panels
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ─── Inline text editing border (rendered inside the canvas iframe) ─── */
+/* ─── Inline text editing (rendered inside the canvas iframe) ───
+   KARAR (2026-08): yazım sırasında ÇERÇEVE YOK — outline + ring kaldırıldı
+   (kullanıcı: "outline gerek yok"). İmleç (caret) zaten odağı gösterir;
+   SelectionOverlay da aynı anda `.is-inline-editing` ile tüm seçim chrome'unu
+   gizler (Squarespace davranışı). Arka plan bilerek boyanmaz — koyu/renkli
+   section'da açık metnin kontrastını bozar. */
 [data-tecof-inline-editing="true"] {
-  outline: 2px solid var(--tecof-accent);
-  outline-offset: 2px;
-  border-radius: 2px;
+  outline: none;
   cursor: text;
-  /* No background fill — overwriting the element's own background destroys
-     contrast for light text on dark/colored sections. The outline + ring
-     mark the active field while the original bg/text colors stay intact. */
-  box-shadow: 0 0 0 4px var(--tecof-accent-ring);
+  caret-color: var(--tecof-accent);
+}
+
+/* ─── Repeater/array kartı işaretleri (canvas iframe, yalnız edit modu) ───
+   Tema, array-prop'tan map'lediği kart köküne `data-tecof-item="<field>:<index>"`
+   ve satır-içi metinlere `data-tecof-item-prop="<alan>"` basar. Edit modunda
+   (CanvasEditDelegation body'ye .tecof-canvas-edit ekler) kart hover'da kesikli
+   çerçeve alır — tıklanınca Inspector ilgili array satırını açar, çift tıklama
+   satır metnini yerinde düzenler. Önizleme/yayında class yok → sıfır etki. */
+.tecof-canvas-edit [data-tecof-item]:hover {
+  outline: 1px dashed var(--tecof-structure);
+  outline-offset: 2px;
+}
+.tecof-canvas-edit [data-tecof-item-prop] {
+  cursor: text;
 }
 
 /* ─── Object field group ─── */
@@ -5957,15 +6007,25 @@
   background: var(--tecof-structure-hover);
 }
 
-/* Küçük komşuda metinsiz pil: gap sıfırlanır, kare/dairesel "+" rozeti. Metin
-   DOM'a hiç girmediği için (bkz. InsertOverlay) burada yalnız biçim ayarlanır. */
+/* Kompakt pil = Webflow modeli: çizgi üstünde küçük DAİRE "+" (metinsiz).
+   Element seviyesinde (slot zone'ları) pil HEP kompakttır (insertOverlayModel):
+   between pili boşluğun merkezinde durur ve dar boşlukta metinli pil komşu
+   elemanların üstüne taşıyordu ("ekle kısmı patlıyor"). Beyaz halka, az da olsa
+   taşan daireyi içerikten görsel olarak ayırır. Metin DOM'a hiç girmez. */
 .tecof-insert-affordance.is-compact .tecof-insert-pill {
   gap: 0;
-  padding: 5px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  justify-content: center;
   border-radius: 9999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 .tecof-insert-affordance.axis-x.is-compact .tecof-insert-pill {
-  padding: 4px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
 }
 
 /* Slightly smaller pill for the dense in-slot gaps (vertical dividers). */
@@ -5990,19 +6050,19 @@
   font-weight: 700;
   cursor: pointer;
   margin-top: 18px;
-  box-shadow: 0 12px 26px rgba(116, 181, 0, 0.24);
+  box-shadow: 0 12px 26px var(--tecof-accent-glow);
   transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tecof-canvas-empty-add-btn:hover {
   background: var(--tecof-accent-hover);
-  box-shadow: 0 14px 30px rgba(88, 137, 2, 0.28);
+  box-shadow: 0 14px 30px var(--tecof-accent-glow);
   transform: translateY(-2px);
 }
 
 .tecof-canvas-empty-add-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--tecof-accent-ring), 0 12px 26px rgba(116, 181, 0, 0.24);
+  box-shadow: 0 0 0 3px var(--tecof-accent-ring), 0 12px 26px var(--tecof-accent-glow);
 }
 
 @media (max-width: 520px) {
@@ -6236,7 +6296,7 @@
 }
 
 .tecof-modal-cat-btn.is-active .tecof-modal-cat-count {
-  background: rgba(116, 181, 0, 0.16);
+  background: var(--tecof-accent-tint-strong);
   color: var(--tecof-accent-text);
 }
 
@@ -7523,11 +7583,11 @@
 }
 
 .tecof-space-margin {
-  background: rgba(246, 173, 85, 0.30); /* amber = margin */
+  background: var(--tecof-spacing-margin-band); /* amber = margin */
 }
 
 .tecof-space-padding {
-  background: rgba(116, 181, 0, 0.22); /* brand green = padding */
+  background: var(--tecof-spacing-padding-band); /* devtools yeşili = padding */
 }
 
 /* Persistent px value inside each band (devtools-style); only rendered when
@@ -7544,8 +7604,8 @@
   white-space: nowrap;
 }
 
-.tecof-space-padding .tecof-space-label { background: rgb(90, 140, 0); }
-.tecof-space-margin .tecof-space-label { background: rgb(201, 124, 24); }
+.tecof-space-padding .tecof-space-label { background: var(--tecof-spacing-padding-label); }
+.tecof-space-margin .tecof-space-label { background: var(--tecof-spacing-margin-label); }
 
 /* Fixed status bar at the bottom-left of the canvas overlay: node ancestry +
    W × H. Replaces the node-attached breadcrumb/size chips, which covered
@@ -7613,7 +7673,7 @@
 .tecof-spacing-handle.is-v .tecof-spacing-handle-bar { width: 4px; height: 18px; }
 
 .tecof-spacing-handle.is-padding .tecof-spacing-handle-bar {
-  background: rgb(116, 181, 0); /* yeşil = padding (SpacingBands ile aynı ton) */
+  background: var(--tecof-spacing-padding); /* yeşil = padding (SpacingBands ile aynı ton) */
 }
 .tecof-spacing-handle.is-margin .tecof-spacing-handle-bar {
   background: rgb(246, 173, 85); /* amber = margin (SpacingBands ile aynı ton) */
@@ -7653,8 +7713,8 @@
   pointer-events: none;
   white-space: nowrap;
 }
-.tecof-spacing-drag-label.is-padding { background: rgb(90, 140, 0); }
-.tecof-spacing-drag-label.is-margin { background: rgb(201, 124, 24); }
+.tecof-spacing-drag-label.is-padding { background: var(--tecof-spacing-padding-label); }
+.tecof-spacing-drag-label.is-margin { background: var(--tecof-spacing-margin-label); }
 
 /* Sürükleme boyunca overlay kökü tüm pointer olaylarını üstlenir; iframe'e
    hover/pointer sızmaz ve imleç eksene uygun resize imleci olarak kalır. */
@@ -7671,7 +7731,7 @@
 /* ── Resize handles (width/height) — resize mode ── */
 .tecof-resize-handle {
   position: absolute;
-  background: var(--tecof-accent, #6366f1);
+  background: var(--tecof-accent);
   border: 1.5px solid #fff;
   border-radius: 4px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
@@ -7690,8 +7750,8 @@
   position: absolute;
   top: 0;
   left: 0;
-  border: 1px dashed var(--tecof-accent, #6366f1);
-  background: rgba(99, 102, 241, 0.06);
+  border: 1px dashed var(--tecof-accent);
+  background: var(--tecof-structure-subtle);
   pointer-events: none;
   z-index: 4;
 }
@@ -7705,7 +7765,7 @@
   font-weight: 600;
   line-height: 1.4;
   color: #fff;
-  background: var(--tecof-accent, #6366f1);
+  background: var(--tecof-accent);
   pointer-events: none;
   white-space: nowrap;
   z-index: 6;
@@ -7763,7 +7823,7 @@
 .tecof-info-popover-title {
   font-size: 12px;
   font-weight: 600;
-  color: var(--tecof-accent, #84dc06);
+  color: var(--tecof-accent-on-dark, #8ab4ff);
   margin-bottom: 2px;
 }
 
@@ -8590,7 +8650,7 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
    Runtime CSS mirror (canvas preview) of studio/interactions/css.ts. The
    published page injects the same rules via TecofRender. */
 .tecof-fx-hidden { display: none !important; }
-.tecof-fx-starthidden { outline: 1px dashed rgba(99, 102, 241, 0.55); outline-offset: 2px; }
+.tecof-fx-starthidden { outline: 1px dashed rgba(47, 124, 246, 0.55); outline-offset: 2px; }
 
 /* Inspector → Etkileşim panel */
 .tecof-ix-editor { display: flex; flex-direction: column; gap: 12px; padding: 4px 2px; }
@@ -8722,11 +8782,11 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   padding: 8px 10px;
   margin-bottom: 10px;
   border-radius: var(--tecof-radius);
-  background: rgba(139, 92, 246, 0.1);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: var(--tecof-shared-tint);
+  border: 1px solid var(--tecof-shared-border);
   color: var(--tecof-text);
 }
-.tecof-symbol-banner > svg { flex: none; margin-top: 1px; color: rgb(139, 92, 246); }
+.tecof-symbol-banner > svg { flex: none; margin-top: 1px; color: var(--tecof-shared); }
 .tecof-symbol-banner-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tecof-symbol-banner-text strong { font-size: 12px; font-weight: 700; }
 .tecof-symbol-banner-text span { font-size: 11px; color: var(--tecof-text-muted); line-height: 1.4; }
@@ -8734,6 +8794,26 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 /* Per-field link/unlink toggle for a symbol instance. */
 .tecof-field-block { position: relative; }
 .tecof-field-block.is-symbol { padding-right: 22px; }
+
+/* Canvas→panel odak vurgusu: kanvasta bir elemente/karta tıklanınca Inspector
+   hedef alan bloğuna (ya da node grubuna / array satırına) kaydırılır ve bu
+   class'la kısa bir halka+tint yanıp söner. Class'ı NodeInspectorBody'nin odak
+   effect'i basar; animasyon bitse de class'ın kalması zararsızdır (yeniden
+   tetiklemede remove→reflow→add ile baştan oynatılır). */
+.tecof-field-flash {
+  animation: tecof-field-flash 1.1s ease-out;
+  border-radius: var(--tecof-radius-sm);
+}
+@keyframes tecof-field-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--tecof-accent-ring);
+    background-color: var(--tecof-accent-subtle);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+    background-color: transparent;
+  }
+}
 .tecof-field-sync {
   position: absolute;
   top: 0;
@@ -8753,7 +8833,7 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   transition: var(--tecof-transition);
 }
 .tecof-field-sync:hover:not(:disabled) { opacity: 1; background: var(--tecof-surface); color: var(--tecof-text); }
-.tecof-field-sync.is-detached { opacity: 1; color: rgb(139, 92, 246); }
+.tecof-field-sync.is-detached { opacity: 1; color: var(--tecof-shared); }
 .tecof-field-sync:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── Inspector field groups (config.fieldsGroups → accordion) ───────────── */

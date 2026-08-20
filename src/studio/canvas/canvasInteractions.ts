@@ -18,11 +18,13 @@
  */
 
 import { useEditorStore } from '../../engine/store';
+import { useUiStore } from '../uiStore';
 import { findNodeById, getParentId } from '../../engine/zones';
 import type { TecofDocument } from '../../types';
 import { isEmbedded, postToHost } from '../bridge';
 import { isInsideOverlayPortal } from './overlayPortal';
 import { writeDragData } from './dndUtils';
+import { parseItemAttr } from './useInlineEdit';
 
 /**
  * Stable marker class on a NON-INLINE node's rendered root — the delegation
@@ -44,6 +46,62 @@ export const nodeIdFromEl = (el: ClassListed | null): string | null => {
     if (cls.startsWith(ID_PREFIX)) return cls.slice(ID_PREFIX.length);
   }
   return null;
+};
+
+/**
+ * Kanvas tıklamasından sağ panel odak isteği üretir (bkz. uiStore
+ * `InspectorFocusRequest`): tıklanan yerin `data-tecof-prop` /
+ * `data-tecof-item-prop` / `data-tecof-item` işaretlerinden hangi node'un hangi
+ * alanına (ve varsa array satırına) gidileceğini çözer.
+ *
+ * SAHİPLİK KURALI — `useInlineEdit.resolveMatch`'teki `wrapper.contains(...)`
+ * guard'ının birebir karşılığı: bir işaret YALNIZ onu render eden node'a aittir.
+ * İşaretli bir bölgenin İÇİNE yerleşmiş başka bir node'a tıklandığında atanın
+ * alanına kaymak yanlış olurdu; array satırı (`data-tecof-item`) da yalnız alan
+ * işaretiyle AYNI node'a aitse kullanılır — aksi halde kartın içindeki yuva
+ * çocuğu, dış node'un array alan adıyla eşleştirilip panelde hiçbir hedef
+ * bulunamazdı.
+ *
+ * `fallbackId`: hiçbir işaret yoksa (ya da işaret başka node'a aitse) odak
+ * doğrudan tıklanan node'un grubuna gider.
+ */
+export const requestFocusFromTarget = (target: EventTarget | null, fallbackId: string): void => {
+  const t = target as Element | null;
+  const propEl = t?.closest?.('[data-tecof-item-prop],[data-tecof-prop]') ?? null;
+  const itemEl = t?.closest?.('[data-tecof-item]') ?? null;
+  const ownerOf = (el: Element | null) =>
+    el ? el.closest(`.${NODE_MARKER_CLASS}`) : null;
+
+  const propOwner = ownerOf(propEl);
+  const itemOwner = ownerOf(itemEl);
+  // İşaretin sahibi = odak node'u; yoksa tıklanan node.
+  const ownerEl = propOwner ?? itemOwner;
+  const nodeId = nodeIdFromEl(ownerEl) ?? fallbackId;
+
+  let field: string | undefined;
+  let itemIndex: number | undefined;
+
+  // Array satırı yalnız alan işaretiyle AYNI node'a aitse (ya da tek işaret
+  // oysa) onurlandırılır.
+  if (itemEl && (!propEl || itemOwner === propOwner)) {
+    const spec = parseItemAttr(itemEl.getAttribute('data-tecof-item'));
+    if (spec) {
+      field = spec.field;
+      itemIndex = spec.index;
+    }
+  }
+  // Satır işareti yoksa alan adı doğrudan işaretten gelir. `data-tecof-item-prop`
+  // SATIR-İÇİ bir alandır (top-level alan değil) — satır bağlamı çözülemediyse
+  // panelde arayacak bir alan bloğu yoktur, node grubuna düşülür.
+  if (field == null && propEl) {
+    field = propEl.getAttribute('data-tecof-prop') ?? undefined;
+  }
+
+  useUiStore.getState().requestInspectorFocus({
+    nodeId,
+    ...(field ? { field } : {}),
+    ...(itemIndex != null ? { itemIndex } : {}),
+  });
 };
 
 /** Clicked node'dan kök seviyeye ata zinciri: [clicked, parent, …, rootLevel]. */
@@ -119,6 +177,13 @@ export function installCanvasInteractions(doc: Document, isEditMode: () => boole
     if (isEmbedded()) {
       const type = findNodeById(store.document, targetId)?.node.type ?? '';
       postToHost('puck:itemSelected', { item: { type, id: targetId } });
+    }
+
+    // Sağ panel odağı: tıklanan yerin işaretlerinden Inspector'a "şu alana git"
+    // isteği yayınla. Çift tıklamanın ikinci tıkı (detail>1) inline edit'e
+    // gittiğinden isteği tekrarlamaz.
+    if (e.detail === 1) {
+      requestFocusFromTarget(e.target, id);
     }
   };
 
