@@ -40,6 +40,11 @@ export class TecofApiClient {
     this.accessToken = token;
   }
 
+  /** FilePond gibi this.headers'ı kullanamayan akışların JWT'yi ekleyebilmesi için. */
+  getAccessToken(): string | undefined {
+    return this.accessToken;
+  }
+
   private get headers(): Record<string, string> {
     return {
       'x-secret-key': this.secretKey,

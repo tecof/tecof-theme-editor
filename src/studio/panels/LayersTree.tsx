@@ -6,6 +6,7 @@ import { findNodeById, getParentId } from '../../engine/zones';
 import { isValidDrop } from '../../engine/rules';
 import { Trash2, ChevronRight, ChevronDown, Layout, Box, Copy, Eye, EyeOff, Lock, Unlock } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
+import { revealNodeInCanvas } from '../canvas/revealNode';
 import { readDragData, writeDragData } from '../canvas/dndUtils';
 import { computeLayerDropPos, type LayerDropPos } from '../canvas/touchDragModel';
 import type { TecofDocument, TecofNode } from '../../types';
@@ -219,6 +220,9 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
       toggleSelect(node.props.id);
     } else {
       selectNode(node.props.id);
+      // Katmandan seçilen düğüm canvas'ta görünür alana kaydırılır — kullanıcı
+      // katman panelinden tıkladığı bölümü ekranda göremiyordu.
+      revealNodeInCanvas(node.props.id);
     }
   };
 
@@ -226,6 +230,7 @@ const TreeNode = ({ node, depth }: TreeNodeProps) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       selectNode(node.props.id);
+      revealNodeInCanvas(node.props.id);
       return;
     }
 

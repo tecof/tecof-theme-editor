@@ -26,9 +26,16 @@ export interface DropZoneProps {
    * components can pass runtime rows via `puck.renderDropZone({ repeatItems })`.
    */
   repeatItems?: any[];
+  /**
+   * `<Slot>` bunu true geçer: yatay slot'un `is-horizontal` YERLEŞİM class'ı
+   * eklenmez — yerleşim çağıranın className'inden gelir (tema utilities'i kazanır).
+   * data-tecof-orientation yine yazılır (insert overlay eksen için okur).
+   * Düz renderSlot çağrıları geçmez → eski davranış (BC) korunur.
+   */
+  managedLayout?: boolean;
 }
 
-export const DropZone = ({ zone, className, style, orientation = 'vertical', repeatItems }: DropZoneProps) => {
+export const DropZone = ({ zone, className, style, orientation = 'vertical', repeatItems, managedLayout }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const { config, readOnly } = useStudio();
@@ -60,7 +67,8 @@ export const DropZone = ({ zone, className, style, orientation = 'vertical', rep
 
   const dropzoneClassName = [
     'tecof-dropzone',
-    orientation === 'horizontal' ? 'is-horizontal' : '',
+    orientation === 'horizontal' && !managedLayout ? 'is-horizontal' : '',
+    managedLayout ? 'tecof-slot-managed' : '',
     items.length === 0 ? 'is-empty' : '',
     isDragActive ? 'is-drag-active' : '',
     isDropDenied ? 'is-drop-denied' : '',
@@ -161,7 +169,7 @@ export const EditorRepeatSlot = ({
 };
 
 // Helper for puck.renderDropZone
-export const renderDropZone = ({ zone, className, style, orientation, repeatItems }: DropZoneProps) => {
+export const renderDropZone = ({ zone, className, style, orientation, repeatItems, managedLayout }: DropZoneProps) => {
   return (
     <DropZone
       zone={zone}
@@ -169,6 +177,7 @@ export const renderDropZone = ({ zone, className, style, orientation, repeatItem
       style={style}
       orientation={orientation}
       repeatItems={repeatItems}
+      managedLayout={managedLayout}
     />
   );
 };

@@ -184,7 +184,7 @@ export const InsertOverlay = () => {
         <button
           key={a.key}
           type="button"
-          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}${a.zoneKey ? '' : ' is-root'}`}
+          className={`tecof-insert-affordance axis-${a.axis}${a.alwaysVisible ? ' is-fixed' : ''}${a.zoneKey ? '' : ' is-root'}${a.compact ? ' is-compact' : ''}${a.edge ? ` is-edge-${a.edge}` : ''}`}
           style={{ top: a.strip.top, left: a.strip.left, width: a.strip.width, height: a.strip.height }}
           title={a.zoneKey ? 'Buraya bileşen ekle' : 'Buraya Bölüm Ekle'}
           {...{ [OVERLAY_PORTAL_ATTR]: '' }}
@@ -194,9 +194,12 @@ export const InsertOverlay = () => {
             openAddSection(a.zoneKey ? { zoneKey: a.zoneKey, index: a.index } : { index: a.index });
           }}
         >
+          {/* compact: küçük komşuda pil metinsiz — yalnız "+" (geniş "Ekle"
+              metni küçük elemanın üstüne taşıyordu). Metin DOM'a hiç girmez ki
+              boş flex boşluğu kalmasın. */}
           <span className="tecof-insert-pill">
             <Plus size={12} strokeWidth={2.6} />
-            <span>{a.zoneKey ? 'Ekle' : 'Bölüm Ekle'}</span>
+            {!a.compact && <span>{a.zoneKey ? 'Ekle' : 'Bölüm Ekle'}</span>}
           </span>
         </button>
       ))}

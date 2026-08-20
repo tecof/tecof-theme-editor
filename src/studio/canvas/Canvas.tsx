@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { revealNodeInCanvas } from './revealNode';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { initScrollEffects } from '../style/scrollEffects';
@@ -98,11 +99,7 @@ export const Canvas = () => {
       const type = findNodeById(useEditorStore.getState().document, id)?.node.type ?? '';
       postToHost('puck:itemSelected', { item: { type, id } });
     }
-    requestAnimationFrame(() => {
-      const iframe = document.querySelector<HTMLIFrameElement>('.tecof-canvas-viewport iframe');
-      const el = iframe?.contentDocument?.querySelector(`[class~="tecof-node-${id}"]`);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
+    revealNodeInCanvas(id);
   };
 
   /* insertPayload id'leri remap'ler — eklenen kök node'un id'si store'dan,

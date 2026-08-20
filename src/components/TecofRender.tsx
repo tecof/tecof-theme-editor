@@ -33,6 +33,14 @@ interface DropZoneProps {
   /** Lay children out side-by-side (row) instead of stacked. Mirrors the editor. */
   orientation?: 'vertical' | 'horizontal';
   /**
+   * `<Slot>` bunu true geçer: motor VARSAYILAN yerleşimi (yatay slot'a inline
+   * flex/gap) BASMAZ; yerleşim tamamen çağıranın className'inden gelir. Böylece
+   * tema `className="gap-x-10 flex-col …"` yazınca çalışır (inline stil artık
+   * onu ezmez). `renderSlot`'un düz çağrıları bu bayrağı geçmez → eski davranış
+   * (BC) korunur.
+   */
+  managedLayout?: boolean;
+  /**
    * Repeat rows: when an array, the zone's children (the item template) render
    * once per row, each pass scoped to that row via RepeatItemContext so
    * `{{ item.* }}` prop tokens resolve against it. An empty array renders an
@@ -42,7 +50,7 @@ interface DropZoneProps {
   repeatItems?: any[];
 }
 
-const RenderDropZone = ({ zone, className, style, orientation = 'vertical', repeatItems }: DropZoneProps) => {
+const RenderDropZone = ({ zone, className, style, orientation = 'vertical', repeatItems, managedLayout }: DropZoneProps) => {
   const parentId = useContext(ParentNodeContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const context = useContext(RenderContext);
@@ -53,8 +61,9 @@ const RenderDropZone = ({ zone, className, style, orientation = 'vertical', repe
   // Horizontal slots render side-by-side on the published site too, so the
   // layout matches what the editor shows. Author styles still override via
   // `style` (applied last) or a `className`.
+  // managedLayout (`<Slot>`): yerleşim className'den gelir; motor default basmaz.
   const orientationStyle: React.CSSProperties | undefined =
-    orientation === 'horizontal'
+    !managedLayout && orientation === 'horizontal'
       ? { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px' }
       : undefined;
 

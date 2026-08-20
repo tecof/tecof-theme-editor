@@ -6,6 +6,12 @@ export { TecofEditor } from './components/TecofEditor';
 export { TecofStudio } from './studio/TecofStudio';
 export { TecofRender } from './components/TecofRender';
 export { TecofPicture } from './components/TecofPicture';
+export { Slot } from './components/Slot';
+export type { SlotProps, SlotLayout, SlotGap } from './components/Slot';
+export { TecofRoot } from './components/TecofRoot';
+export type { TecofRootProps } from './components/TecofRoot';
+export { defineSection, defineElement } from './components/defineComponent';
+export type { SectionDefinition, ElementDefinition } from './components/defineComponent';
 export { UnderConstruction } from './components/UnderConstruction';
 
 /* ─── Custom Puck Fields ─── */

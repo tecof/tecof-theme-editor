@@ -27,15 +27,17 @@ interface GhostDropZoneProps {
   style?: React.CSSProperties;
   orientation?: 'vertical' | 'horizontal';
   repeatItems?: any[];
+  /** <Slot> ile enjekte edilir: varsayılan yerleşim basılmaz (bkz. TecofRender). */
+  managedLayout?: boolean;
 }
 
-const GhostDropZone = ({ zone, className, style, orientation = 'vertical', repeatItems }: GhostDropZoneProps) => {
+const GhostDropZone = ({ zone, className, style, orientation = 'vertical', repeatItems, managedLayout }: GhostDropZoneProps) => {
   const parentId = useContext(GhostParentContext);
   const zoneKey = parentId ? `${parentId}:${zone}` : zone;
   const items = useEditorStore((state) => state.document.zones[zoneKey]) || [];
 
   const orientationStyle: React.CSSProperties | undefined =
-    orientation === 'horizontal'
+    !managedLayout && orientation === 'horizontal'
       ? { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px' }
       : undefined;
 

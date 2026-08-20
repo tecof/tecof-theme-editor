@@ -274,7 +274,7 @@ const UploadFieldImpl = ({
     value = [rawValue as UploadedFile];
   }
 
-  const { apiUrl, secretKey } = useTecof();
+  const { apiUrl, secretKey, apiClient } = useTecof();
 
   const [filesForPond, setFilesForPond] = useState<any[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -392,11 +392,18 @@ const UploadFieldImpl = ({
             ? `${apiUrl}/api/store/upload?folder=${encodeURIComponent(folder)}`
             : `${apiUrl}/api/store/upload`;
 
+          /* Secret key PUBLIC'tir (site bundle'ında gezer); backend yazma
+             uçlarında üstüne JWT ister. Editörün diğer TÜM çağrıları
+             `this.headers` ile Authorization gönderiyordu — yalnız bu FilePond
+             akışı göndermiyordu ve backend upload'ı sıkılaştırıldığında
+             `missing-auth-token` ile kırılıyordu. Token varsa eklenir. */
+          const accessToken = apiClient?.getAccessToken?.();
           const res = await fetch(url, {
             method: 'POST',
             headers: {
               'x-secret-key': secretKey,
               Accept: 'application/json',
+              ...(accessToken ? { Authorization: accessToken } : {}),
             },
             body: formData,
             signal: controller.signal,

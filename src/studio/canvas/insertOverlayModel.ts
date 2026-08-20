@@ -56,6 +56,20 @@ export interface InsertAffordance {
    */
   strip: OverlayRect;
   alwaysVisible: boolean;
+  /**
+   * Kenar affordance'ı (tek komşu): 'before' = elemanın ÜST kenarı, 'after' =
+   * ALT kenarı. İki eleman arasındaki (between) affordance'ta `null`. Overlay bu
+   * bilgiyle pili kenarın dışına kaydırır (kenar çizgisi eleman sınırında kalır,
+   * pil elemanın içine taşmaz).
+   */
+  edge: 'before' | 'after' | null;
+  /**
+   * Komşu eleman(lar) küçükse (bir buton/ikon/etiket boyutunda) `true`.
+   * Overlay bu durumda pili metinsiz — yalnız "+" ikonu — çizer: geniş bir
+   * "Ekle" metni küçük elemanın üstüne taşıp onu örtüyordu. Büyük/uzun
+   * elemanlarda `false` kalır, metin görünür.
+   */
+  compact: boolean;
 }
 
 /**
@@ -75,6 +89,24 @@ export const MIN_THICKNESS = 6;
 const MIN_SPAN = 24;
 /** Push the always-visible trailing affordance below the last item (into the tail spacer). */
 const TRAIL_OFFSET = 16;
+/**
+ * Kenar (edge) bandının kalınlığı: eleman kenarının DIŞINA taşar ve "Ekle" pilini
+ * tümüyle içine alır (band pili kapsamalı ki pilin göründüğü yer tıklanabilsin).
+ * Between (iki eleman arası) affordance'lar bunu KULLANMAZ; onlar boşluğa göre
+ * clamp'lenen STRIP_THICKNESS bandını kullanır.
+ */
+const EDGE_BAND = 30;
+
+/**
+ * "Küçük eleman" eşikleri: bir eleman HEM darsa HEM alçaksa (kabaca bir
+ * buton/ikon/etiket) metin pili onu örter → yalnız ikon gösterilir. Uzun ya da
+ * geniş elemanlarda metin sığar. Eşikler pil metninin ("Ekle") rahat oturması
+ * için kalibre edildi; yalnız GÖRSEL karar, tıklama davranışını etkilemez.
+ */
+export const COMPACT_MAX_WIDTH = 140;
+export const COMPACT_MAX_HEIGHT = 96;
+const isSmallElement = (r: OverlayRect): boolean =>
+  r.width < COMPACT_MAX_WIDTH && r.height < COMPACT_MAX_HEIGHT;
 
 const right = (r: OverlayRect) => r.left + r.width;
 const bottom = (r: OverlayRect) => r.top + r.height;
@@ -123,11 +155,19 @@ function betweenAffordance(a: OverlayRect, b: OverlayRect): Geom {
 }
 
 /**
- * Affordance at a zone EDGE (before the first item / after the last), where only
- * one neighbour exists. The strip spans the container's cross-extent so it's easy
- * to grab; `offset` pushes an always-visible trailing affordance into the tail.
- * The divider line is clamped to keep the whole band inside the container, so a
- * section flush to the canvas top/edge doesn't render its "+" pill off-screen.
+ * Kenardaki (ilk elemandan ÖNCE / son elemandan SONRA) affordance — tek komşu var.
+ *
+ * Band, elemanın DIŞINA (üstte 'before', altta 'after') taşan bir şerittir;
+ * kılavuz çizgi elemanın TAM kenarında (bandın iç kenarında) durur, "Ekle" pili
+ * bandın içinde tamamen kenarın dışında kalır. Böylece pil elemanın içine
+ * taşmaz (kullanıcının bildirdiği "üste doğru kayma") AMA band pili kapsadığı
+ * için pilin göründüğü yer tıklanabilir kalır — merkezlenmiş 16px'lik şerit pili
+ * yarı yarıya dışarıda bırakıp tıklama boşluğu yaratıyordu.
+ *
+ * Çizginin bandın hangi kenarında duracağını CSS `is-edge-before/after` sınıfı
+ * belirler (geometri yalnız bandı konumlandırır). Band, container dışına
+ * taşmayacak şekilde kırpılır; `offset` her-zaman-görünür kuyruk pilini tail
+ * boşluğuna iter.
  */
 function edgeAffordance(
   item: OverlayRect,
@@ -136,17 +176,18 @@ function edgeAffordance(
   side: 'before' | 'after',
   offset = 0,
 ): Geom {
-  const half = STRIP_THICKNESS / 2;
   if (axis === 'y') {
-    const raw = side === 'before' ? item.top : bottom(item) + offset;
-    const lineY = clamp(raw, container.top + half, bottom(container) - half);
     const width = Math.max(container.width, MIN_SPAN);
-    return { axis, strip: { top: lineY - half, left: container.left, width, height: STRIP_THICKNESS } };
+    /* 'before' → band elemanın ÜSTÜNDE (çizgi bandın altında = eleman üst kenarı)
+       'after'  → band elemanın ALTINDA (çizgi bandın üstünde = eleman alt kenarı) */
+    const rawTop = side === 'before' ? item.top - EDGE_BAND : bottom(item) + offset;
+    const top = clamp(rawTop, container.top, Math.max(container.top, bottom(container) - EDGE_BAND));
+    return { axis, strip: { top, left: container.left, width, height: EDGE_BAND } };
   }
-  const raw = side === 'before' ? item.left : right(item) + offset;
-  const lineX = clamp(raw, container.left + half, right(container) - half);
   const height = Math.max(container.height, MIN_SPAN);
-  return { axis, strip: { top: container.top, left: lineX - half, width: STRIP_THICKNESS, height } };
+  const rawLeft = side === 'before' ? item.left - EDGE_BAND : right(item) + offset;
+  const left = clamp(rawLeft, container.left, Math.max(container.left, right(container) - EDGE_BAND));
+  return { axis, strip: { top: container.top, left, width: EDGE_BAND, height } };
 }
 
 /**
@@ -165,14 +206,26 @@ export function computeZoneAffordances(input: ZoneAffordanceInput): InsertAfford
     const isLast = k === n;
 
     let geom: Geom | null = null;
+    /* Kenar affordance'ı mı ve hangi yönde? Kılavuz çizgi elemanın TAM kenarında
+       durur; pil o kenarın DIŞINA (üstte 'before', altta 'after') kaydırılır —
+       merkezlenmiş pil kenarın yarısını elemanın içine taşırıyordu. İki eleman
+       ARASINDAKİ (between) affordance boşlukta durduğu için taşma yok, edge=null. */
+    let edge: 'before' | 'after' | null = null;
     if (prev && next) {
       geom = betweenAffordance(prev, next);
     } else if (next) {
       geom = edgeAffordance(next, containerRect, zoneAxis, 'before');
+      edge = 'before';
     } else if (prev) {
       geom = edgeAffordance(prev, containerRect, zoneAxis, 'after', isLast && alwaysLastVisible ? TRAIL_OFFSET : 0);
+      edge = 'after';
     }
     if (!geom) continue; // both neighbours unmeasured this frame
+
+    // Komşulardan HERHANGİ biri küçükse metinsiz pil: iki komşu arasındaki
+    // ortalanmış pil küçük olanı örter. Kenar affordance'ında tek komşuya bakılır.
+    const neighbours = [prev, next].filter((r): r is OverlayRect => r != null);
+    const compact = neighbours.length > 0 && neighbours.some(isSmallElement);
 
     out.push({
       key: `${zoneKey ?? 'root'}#${k}`,
@@ -181,6 +234,8 @@ export function computeZoneAffordances(input: ZoneAffordanceInput): InsertAfford
       axis: geom.axis,
       strip: geom.strip,
       alwaysVisible: !!(isLast && alwaysLastVisible),
+      compact,
+      edge,
     });
   }
   return out;

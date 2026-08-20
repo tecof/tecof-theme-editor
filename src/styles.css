@@ -32,6 +32,18 @@
   --tecof-accent-text: var(--tecof-primary-700); /* açık zeminde okunur accent metin */
   --tecof-accent-ring: rgba(116, 181, 0, 0.30); /* focus halkası = 600 @30% */
 
+  /* ─── Yapısal (structure) token'ları — MAVİ ───
+     Karar: canvas'taki YAPISAL affordance'lar (insert çizgisi + "Ekle" pili,
+     seçim/hover çerçevesi, drop hedefi, sürükleme kılavuzu) MAVİ; butonlar ve
+     panel aksiyonları marka YEŞİLİ (accent) kalır. Böylece "nereye ekliyorum /
+     neyi seçtim" yapısı, "ne yaptırıyorum" aksiyonlarından renkle ayrışır
+     (Figma/Webflow dili). Ortak bileşen kimliği ayrıca MOR kalır. */
+  --tecof-structure: #2f7cf6;
+  --tecof-structure-hover: #1e63d8;
+  --tecof-structure-fg: #ffffff; /* mavi zemin üstü yazı */
+  --tecof-structure-subtle: rgba(47, 124, 246, 0.08); /* hover tint */
+  --tecof-structure-ring: rgba(47, 124, 246, 0.30);
+
   /* ─── Nötr / yüzey ölçeği ─── */
   --tecof-bg: #f4f4f5;
   --tecof-surface: #ffffff;
@@ -1699,38 +1711,68 @@
   text-decoration: none;
 }
 
-.tecof-picture-wrapper {
-  position: relative;
-  display: block;
-  overflow: hidden;
-}
+/* ── TecofPicture temel kuralları ────────────────────────────────────────────
+   `@layer base` ŞART: editör canvas'ı temanın Tailwind v4 CSS'ini de yükler.
+   Bu kurallar KATMANSIZ yazıldığında, temanın `@layer utilities`'indeki
+   yardımcı sınıfları (h-10 w-10 avatarda, absolute inset-0 CTA arka planında)
+   özgüllükten BAĞIMSIZ olarak eziyordu (katmansız > her katman). Sonucu editörde
+   iki gerçek bozulmaydı: yorum kartı avatarı satırın tamamına yayılıp adı
+   sıkıştırıyor, tam-kaplama görsel `position:relative` kalıp 0 yükseklikle
+   görünmüyordu (aynı bug storefront'ta theme globals.css'inde düzeltildi).
+   base < utilities olduğu için artık yardımcı sınıf verilince o kazanır, aksi
+   halde varsayılan davranış korunur. */
+@layer base {
+  /* ── <Slot> yerleşim class'ları ──────────────────────────────────────────
+     <Slot layout="row"> bu class'ları basar; motor `managedLayout` ile kendi
+     varsayılanını basmaz. @layer base'de olduğu için tema utilities'i (gap-x-10,
+     items-center …) EZER — inline-stil/katmansız-class'ın className'i yenmesi
+     sorunu biter. `--tecof-slot-gap` <Slot gap="md"> ile ayarlanır (varsayılan 8px).
+     Yayın tarafında AYNI class'lar temanın globals.css'inde de tanımlıdır (yayın
+     paket CSS'ini yüklemez). */
+  .tecof-slot-row,
+  .tecof-slot-row-wrap,
+  .tecof-slot-col {
+    display: flex;
+    column-gap: var(--tecof-slot-gap, 8px);
+    row-gap: var(--tecof-slot-gap, 8px);
+  }
+  .tecof-slot-row { flex-direction: row; flex-wrap: nowrap; }
+  .tecof-slot-row-wrap { flex-direction: row; flex-wrap: wrap; }
+  .tecof-slot-col { flex-direction: column; flex-wrap: nowrap; }
+  .tecof-slot-contents { display: contents; }
 
-.tecof-picture-wrapper.fill {
-  width: 100%;
-  height: 100%;
-}
+  .tecof-picture-wrapper {
+    position: relative;
+    display: block;
+    overflow: hidden;
+  }
 
-.tecof-picture-img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
+  .tecof-picture-wrapper.fill {
+    width: 100%;
+    height: 100%;
+  }
 
-.tecof-picture-img-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+  .tecof-picture-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
 
-.tecof-picture-video {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: cover;
+  .tecof-picture-img-fill {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tecof-picture-video {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
 }
 
 /* ─── UploadField · Reference Input ─── */
@@ -2049,14 +2091,10 @@
   padding: 20px 12px;
 }
 
-.tecof-picture-wrapper {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
+/* NOT: buradaki eski `.tecof-picture-wrapper { width/height:100%; display:flex }`
+   yinelenen tanım KALDIRILDI — yukarıdaki @layer base bloğuyla çelişiyor ve
+   canvas'ta tema yardımcı sınıflarını eziyordu. Editörün kendi medya bağlamları
+   (media-tile, upload-gallery) zaten daha spesifik kendi kurallarını kullanır. */
 
 /* ─── FieldErrorBoundary ─── */
 .tecof-field-error-boundary {
@@ -4098,17 +4136,17 @@
    layout — a 2px border appearing mid-drag moves the columns under the pointer
    and causes dragover/dragleave flicker in tight multi-column slots. */
 .tecof-dropzone.is-dragover {
-  border-color: var(--tecof-accent);
-  background: var(--tecof-accent-subtle);
-  box-shadow: inset 0 0 0 2px var(--tecof-accent);
+  border-color: var(--tecof-structure);
+  background: var(--tecof-structure-subtle);
+  box-shadow: inset 0 0 0 2px var(--tecof-structure);
 }
 
 /* Touch DnD container affordance: same visual as .is-dragover, but toggled
    imperatively by TouchDragLayer (pointer events can't reach the DropZone's
    React state). Also applies to the canvas root while a touch drag hovers it. */
 .is-touch-dragover {
-  box-shadow: inset 0 0 0 2px var(--tecof-accent);
-  background: var(--tecof-accent-subtle);
+  box-shadow: inset 0 0 0 2px var(--tecof-structure);
+  background: var(--tecof-structure-subtle);
 }
 
 /* Empty-zone hint is a real click-to-add button: hidden until the zone is
@@ -4239,7 +4277,7 @@
   position: fixed;
   pointer-events: none;
 }
-.tecof-drag-guide-line { background: var(--tecof-accent, #6366f1); }
+.tecof-drag-guide-line { background: var(--tecof-structure, #2f7cf6); }
 .tecof-drag-guide-edge {
   /* Subtle hairline; works for both the vertical (column flow) and horizontal
      (row flow) orientation without per-axis dash tricks. */
@@ -4480,10 +4518,19 @@
    obvious without obscuring its content (dashed 1.5px read as ambiguous). The
    tint is translucent enough to keep text readable on any background. */
 .tecof-outline.is-hover {
-  border: 2px solid var(--tecof-accent);
-  background: rgba(116, 181, 0, 0.08);
+  border: 2px solid var(--tecof-structure);
+  background: var(--tecof-structure-subtle);
 }
-.tecof-outline.is-selected { border: 2px solid var(--tecof-accent); }
+.tecof-outline.is-selected { border: 2px solid var(--tecof-structure); }
+
+/* İç elementler (slot çocukları) KESİKLİ çerçeve; section'lar (kök) düz kalır —
+   neyin section neyin element olduğu bir bakışta ayrışsın. Ortak (mor) bileşen
+   kuralları aşağıda kendi border rengini verir; is-inner yalnız çizgi STİLİNİ
+   (dashed) değiştirdiği için mor+kesikli birlikte çalışır. */
+.tecof-outline.is-inner.is-hover,
+.tecof-outline.is-inner.is-selected {
+  border-style: dashed;
+}
 
 /* ── Ortak (shared) bileşen — MOR kimlik ──
    sharedComponentId taşıyan node'lar: hover/seçimde mor outline + seçimde
@@ -5821,7 +5868,7 @@
 .tecof-insert-affordance::after {
   content: '';
   position: absolute;
-  background: var(--tecof-accent);
+  background: var(--tecof-structure);
   opacity: 0;
   transition: opacity 0.16s ease;
   pointer-events: none;
@@ -5843,6 +5890,28 @@
   transform: translateX(-50%);
 }
 
+/* Kenar (edge) affordance'ında band elemanın DIŞINA taşar; kılavuz çizgi
+   merkezde değil, elemanın TAM kenarında (bandın iç kenarında) durur — pil
+   bandın merkezinde, tümüyle kenarın dışında kalır. */
+.tecof-insert-affordance.axis-y.is-edge-after::after {
+  top: 0;
+  transform: none;
+}
+.tecof-insert-affordance.axis-y.is-edge-before::after {
+  top: auto;
+  bottom: 0;
+  transform: none;
+}
+.tecof-insert-affordance.axis-x.is-edge-after::after {
+  left: 0;
+  transform: none;
+}
+.tecof-insert-affordance.axis-x.is-edge-before::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .tecof-insert-affordance.is-fixed::after {
   opacity: 0.5;
 }
@@ -5856,14 +5925,18 @@
    parent button, so the pill itself is inert. */
 .tecof-insert-pill {
   position: relative;
+  /* ::after kılavuz çizgisi generated-content olarak pil'den SONRA boyanır ve
+     accent çizgi "Ekle" metninin üstünden geçiyordu ("çizgi yazıya biniyor").
+     z-index pili çizginin üstüne alır. */
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   opacity: 0;
   transform: scale(0.9);
   transition: opacity 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
-  background: var(--tecof-accent);
-  color: var(--tecof-accent-fg);
+  background: var(--tecof-structure);
+  color: var(--tecof-structure-fg);
   font-weight: 600;
   padding: 5px 12px;
   font-size: 11px;
@@ -5881,7 +5954,18 @@
 }
 
 .tecof-insert-affordance:hover .tecof-insert-pill {
-  background: var(--tecof-accent-hover);
+  background: var(--tecof-structure-hover);
+}
+
+/* Küçük komşuda metinsiz pil: gap sıfırlanır, kare/dairesel "+" rozeti. Metin
+   DOM'a hiç girmediği için (bkz. InsertOverlay) burada yalnız biçim ayarlanır. */
+.tecof-insert-affordance.is-compact .tecof-insert-pill {
+  gap: 0;
+  padding: 5px;
+  border-radius: 9999px;
+}
+.tecof-insert-affordance.axis-x.is-compact .tecof-insert-pill {
+  padding: 4px;
 }
 
 /* Slightly smaller pill for the dense in-slot gaps (vertical dividers). */

@@ -111,8 +111,25 @@ describe('computeZoneAffordances — single item', () => {
       alwaysLastVisible: true,
     });
     expect(res.map((a) => a.index)).toEqual([0, 1]);
-    expect(res[0].strip.top + res[0].strip.height / 2).toBe(50); // before, at item top
+    // 'before' bandı elemanın ÜSTÜNDE; kılavuz çizgi bandın ALT kenarında =
+    // eleman üst kenarı (50). Band [20,50], çizgi 50'de.
+    expect(res[0].edge).toBe('before');
+    expect(res[0].strip.top + res[0].strip.height).toBe(50);
     expect(res[1].alwaysVisible).toBe(true); // trailing
+    expect(res[1].edge).toBe('after');
+  });
+
+  it('kenar affordance edge yönü doğru; between affordance edge=null', () => {
+    const res = computeZoneAffordances({
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 100, 600), R(120, 0, 100, 600)],
+    });
+    // [before(0), between(1), after(2)]
+    expect(res.map((a) => a.edge)).toEqual(['before', null, 'after']);
+    // 'after' bandı son elemanın ALTINDA; çizgi bandın ÜST kenarında = eleman alt kenarı (220).
+    const after = res[2];
+    expect(after.strip.top).toBe(220);
   });
 });
 
@@ -175,5 +192,51 @@ describe('computeZoneAffordances — gap-clamped band thickness', () => {
       childRects: [R(0, 0, 100, 200), R(0, 200, 100, 200)],
     });
     expect(flushX[1].strip.width).toBe(MIN_THICKNESS);
+  });
+});
+
+describe('computeZoneAffordances — compact (küçük eleman → yalnız + ikonu)', () => {
+  it('büyük stacked section komşuları → compact:false (metin görünür)', () => {
+    // R(top,left,height,width): tam genişlik yüksek ssection'lar
+    const res = computeZoneAffordances({
+      zoneKey: 'root',
+      zoneAxis: 'y',
+      containerRect: container,
+      childRects: [R(0, 0, 300, 600), R(320, 0, 300, 600)],
+    });
+    expect(res.every((a) => a.compact === false)).toBe(true);
+  });
+
+  it('yan yana küçük butonlar (40x40) → compact:true', () => {
+    const res = computeZoneAffordances({
+      zoneKey: 'actions',
+      zoneAxis: 'x',
+      containerRect: R(0, 0, 40, 600),
+      childRects: [R(0, 0, 40, 40), R(0, 60, 40, 40), R(0, 120, 40, 40)],
+    });
+    // aradaki + kenar affordance'ların tamamı compact
+    expect(res.length).toBeGreaterThan(0);
+    expect(res.every((a) => a.compact === true)).toBe(true);
+  });
+
+  it('uzun dar kolon (100x400) → compact:false (yükseklik büyük)', () => {
+    const res = computeZoneAffordances({
+      zoneKey: 'col',
+      zoneAxis: 'y',
+      containerRect: R(0, 0, 900, 100),
+      childRects: [R(0, 0, 400, 100), R(420, 0, 400, 100)],
+    });
+    expect(res.every((a) => a.compact === false)).toBe(true);
+  });
+
+  it('bir küçük bir büyük komşu → compact:true (pil küçüğü örter)', () => {
+    const res = computeZoneAffordances({
+      zoneKey: 'mixed',
+      zoneAxis: 'x',
+      containerRect: R(0, 0, 300, 600),
+      childRects: [R(0, 0, 40, 40), R(0, 60, 300, 300)],
+    });
+    const between = res.find((a) => a.index === 1);
+    expect(between?.compact).toBe(true);
   });
 });
