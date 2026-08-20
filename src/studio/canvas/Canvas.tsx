@@ -22,7 +22,7 @@ import { findNodeById } from '../../engine/zones';
 import { resolveTheme } from '../theme/theme';
 import { LayoutTemplate, Plus } from 'lucide-react';
 import { isEmbedded, postToHost } from '../bridge';
-import type { SectionTemplate } from '../../types';
+import type { PageTemplate, SectionTemplate } from '../../types';
 
 /** Fixed layout widths per viewport; desktop comes from `uiStore.desktopWidth`. */
 const VIEWPORT_WIDTHS = { tablet: 768, mobile: 375 } as const;
@@ -38,6 +38,7 @@ export const Canvas = () => {
   const theme = resolveTheme(rootProps, config.theme);
   const insertNode = useEditorStore((state) => state.insertNode);
   const insertPayload = useEditorStore((state) => state.insertPayload);
+  const insertPageTemplate = useEditorStore((state) => state.insertPageTemplate);
   const selectNode = useEditorStore((state) => state.selectNode);
 
   // ── Gerçek-genişlik canvas + sığdırma (fit-scale) ──
@@ -171,6 +172,18 @@ export const Canvas = () => {
     }));
     const target = addSectionTarget;
     insertPayload(payload, target?.zoneKey, target?.index);
+    closeAddSection();
+    focusInsertedNode(insertedIdAt(target?.zoneKey, target?.index));
+  };
+
+  /* Hazır SAYFA şablonu: tüm bölümler tek commit'te eklenir (tek Geri Al).
+     Yıkıcı değil — mevcut içerik korunur, bölümler hedef konuma sırayla girer. */
+  const handleSelectPageTemplate = (template: PageTemplate) => {
+    const sections = template.sections.map((s) =>
+      JSON.parse(JSON.stringify({ node: s.node, zones: s.zones || {} }))
+    );
+    const target = addSectionTarget;
+    insertPageTemplate(sections, target?.zoneKey, target?.index);
     closeAddSection();
     focusInsertedNode(insertedIdAt(target?.zoneKey, target?.index));
   };
@@ -318,6 +331,7 @@ export const Canvas = () => {
         onClose={closeAddSection}
         onSelect={handleSelectComponent}
         onSelectTemplate={handleSelectTemplate}
+        onSelectPageTemplate={handleSelectPageTemplate}
         config={config}
         filterType={modalFilterType}
       />

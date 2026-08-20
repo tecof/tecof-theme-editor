@@ -184,6 +184,12 @@ interface EditorActions {
    * inserted root. One undo step.
    */
   insertPayload: (payload: ClipboardPayload, targetZoneKey?: string, index?: number) => void;
+  /**
+   * Çok bölümlü SAYFA şablonu ekler: her bölüm sırayla, hepsi TEK commit'te
+   * (tek Geri Al adımı). Her `pastePayload` çağrısı id'leri yeniden ürettiği
+   * için aynı şablonu iki kez eklemek çakışma yaratmaz. İlk bölüm seçilir.
+   */
+  insertPageTemplate: (sections: ClipboardPayload[], targetZoneKey?: string, index?: number) => void;
 
   // History
   undo: () => void;
@@ -560,6 +566,26 @@ export const useEditorStore = create<EditorStore>()(
         if (newId) {
           state.selection.selectedId = newId;
           state.selection.selectedIds = [newId];
+        }
+      }),
+
+    insertPageTemplate: (sections, targetZoneKey, index) =>
+      set((state) => {
+        const list = (sections || []).filter((s) => s?.node);
+        if (!list.length) return;
+        let firstId: string | null = null;
+        commit(state, (doc) => {
+          list.forEach((payload, i) => {
+            /* index verilmişse bölümler ARDIŞIK konumlara girer (i kayması);
+               verilmemişse her biri listenin sonuna eklenir. */
+            const at = typeof index === 'number' ? index + i : undefined;
+            const inserted = ops.pastePayload(doc, payload, targetZoneKey, at);
+            if (i === 0) firstId = inserted.props.id;
+          });
+        });
+        if (firstId) {
+          state.selection.selectedId = firstId;
+          state.selection.selectedIds = [firstId];
         }
       }),
 

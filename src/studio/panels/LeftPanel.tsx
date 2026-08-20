@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { matchesAllTerms } from '../../utils/search';
 import { useStudio } from '../context';
 import { useEditorStore } from '../../engine/store';
 import { LayersTree } from './LayersTree';
@@ -148,7 +149,8 @@ export const LeftPanel = () => {
               // Filter types based on query
               const filteredTypes = blockTypes.filter((type) => {
                 const label = components[type]?.label || type;
-                return label.toLowerCase().includes(searchQuery.toLowerCase());
+                // Türkçe-güvenli (İ/ı + aksansız yazım) — bkz. utils/search.
+                return matchesAllTerms(label, searchQuery);
               });
 
               if (filteredTypes.length === 0) return null;

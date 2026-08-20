@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Bookmark, LayoutGrid, LayoutTemplate, Plus, Search, Trash2, X } from 'lucide-react';
-import type { SectionTemplate, StudioConfig } from '../../types';
+import { Bookmark, FileStack, LayoutGrid, LayoutTemplate, Plus, Search, Trash2, X } from 'lucide-react';
+import type { PageTemplate, SectionTemplate, StudioConfig } from '../../types';
+import { matchesAllTerms } from '../../utils/search';
 import { useStudio } from '../context';
 import { LiveBlockPreview } from './LivePreview';
 
 /** Stable fallbacks so `config?.x || {}` doesn't produce a new reference per render. */
 const NO_TEMPLATES: SectionTemplate[] = [];
+const NO_PAGE_TEMPLATES: PageTemplate[] = [];
 const NO_CATEGORIES: NonNullable<StudioConfig['categories']> = {};
 const NO_COMPONENTS: StudioConfig['components'] = {};
 
@@ -175,6 +177,8 @@ export interface AddSectionModalProps {
   onSelect: (type: string, customProps?: Record<string, unknown>) => void;
   /** Insert a pre-built section template (subtree with fresh ids). */
   onSelectTemplate?: (template: SectionTemplate) => void;
+  /** Hazır SAYFA şablonu seçildi — çok bölümlü ekleme (bkz. PageTemplate). */
+  onSelectPageTemplate?: (template: PageTemplate) => void;
   config: StudioConfig;
   /**
    * Restricts the listed component types (e.g. only what a target zone's drop
@@ -184,9 +188,12 @@ export interface AddSectionModalProps {
   filterType?: (type: string) => boolean;
 }
 
-export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, config, filterType }: AddSectionModalProps) => {
+export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, onSelectPageTemplate, config, filterType }: AddSectionModalProps) => {
   const { apiClient } = useStudio();
   const allTemplates = config?.templates ?? NO_TEMPLATES;
+  /* Sayfa şablonları YALNIZ kök akışa eklenebilir: bir slot hedeflenmişken
+     (filterType dolu) tam sayfa eklemek anlamsız — sekme gizlenir. */
+  const pageTemplates = filterType ? NO_PAGE_TEMPLATES : (config?.pageTemplates ?? NO_PAGE_TEMPLATES);
   const categories = config?.categories ?? NO_CATEGORIES;
   const components = config?.components ?? NO_COMPONENTS;
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -339,13 +346,39 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
    * grouped layout (with headers) instead of one flat mixed grid.
    */
   const displayGroups = useMemo<DisplayGroup[]>(() => {
-    const query = searchQuery.trim().toLowerCase();
+    /* Türkçe-güvenli arama: düz toLowerCase() "İ/ı"da kırılıyordu ("Iletisim"
+       arayan "İletişim"i bulamıyordu) ve aksansız yazımı ("hakkimizda")
+       hiç eşleştirmiyordu. matchesAllTerms iki tarafı da katlar ve çok
+       kelimeli sorguyu (sıra bağımsız) destekler. */
+    const query = searchQuery.trim();
     const showAll = activeCategory === 'all';
     const groups: DisplayGroup[] = [];
 
+    if ((showAll || activeCategory === 'pages') && pageTemplates.length > 0 && onSelectPageTemplate) {
+      const items = pageTemplates
+        .filter((t) => matchesAllTerms(`${t.label} ${t.description || ''} ${(t.keywords || []).join(' ')}`, query))
+        .map<DisplayItem>((t) => ({
+          id: `page:${t.id}`,
+          name: t.label,
+          typeText: `${t.sections.length} bölüm`,
+          onActivate: () => onSelectPageTemplate(t),
+          renderPreview: () =>
+            t.thumbnail ? (
+              <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
+            ) : (
+              <div className="tecof-modal-template-icon">
+                <FileStack size={28} strokeWidth={1.6} />
+              </div>
+            ),
+        }));
+      if (items.length > 0) {
+        groups.push({ key: 'pages', title: 'Sayfa Şablonları', isElement: false, items });
+      }
+    }
+
     if ((showAll || activeCategory === 'templates') && templates.length > 0) {
       const items = templates
-        .filter((t) => t.label.toLowerCase().includes(query))
+        .filter((t) => matchesAllTerms(t.label, query))
         .map<DisplayItem>((t) => ({
           id: `template:${t.id}`,
           name: t.label,
@@ -367,7 +400,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
 
     if ((showAll || activeCategory === 'saved') && visibleSaved.length > 0) {
       const items = visibleSaved
-        .filter((item) => item.name.toLowerCase().includes(query))
+        .filter((item) => matchesAllTerms(item.name, query))
         .map<DisplayItem>((item) => ({
           id: `saved:${item._id}`,
           name: item.name,
@@ -402,10 +435,10 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
           .filter(([, v]) => !!v?.label)
           .map(([key, v]) => ({ key, label: v.label as string, props: v.props ?? {} }));
 
-        const labelHit = label.toLowerCase().includes(query);
+        const labelHit = matchesAllTerms(label, query);
         // Arama varyant adını tutuyorsa kart görünür ve o chip seçili açılır.
         const matchedVariant = query
-          ? variants.find((v) => `${label} ${v.label}`.toLowerCase().includes(query))
+          ? variants.find((v) => matchesAllTerms(`${label} ${v.label}`, query))
           : undefined;
         if (!labelHit && !matchedVariant) return [];
 
@@ -437,7 +470,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
 
     return groups;
   }, [
-    activeCategory, searchQuery, templates, visibleSaved,
+    activeCategory, searchQuery, templates, pageTemplates, onSelectPageTemplate, visibleSaved,
     componentCategories, typesByCategory, components, config,
     onSelect, onSelectTemplate, handleDeleteSaved,
   ]);
@@ -451,6 +484,9 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
   const sidebarEntries = useMemo(() => {
     const allCount = Object.values(typesByCategory).reduce((sum, arr) => sum + arr.length, 0);
     const entries = [{ key: 'all', title: 'Tümü', count: allCount }];
+    if (pageTemplates.length > 0 && onSelectPageTemplate) {
+      entries.push({ key: 'pages', title: 'Sayfa Şablonları', count: pageTemplates.length });
+    }
     if (templates.length > 0) entries.push({ key: 'templates', title: 'Şablonlar', count: templates.length });
     if (visibleSaved.length > 0) {
       entries.push({ key: 'saved', title: 'Kaydedilenler (Ortak)', count: visibleSaved.length });
@@ -459,7 +495,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, c
       entries.push({ key: cat.key, title: cat.title, count: typesByCategory[cat.key]?.length || 0 });
     }
     return entries;
-  }, [templates.length, visibleSaved.length, componentCategories, typesByCategory]);
+  }, [templates.length, pageTemplates.length, onSelectPageTemplate, visibleSaved.length, componentCategories, typesByCategory]);
 
   if (!isOpen) return null;
 

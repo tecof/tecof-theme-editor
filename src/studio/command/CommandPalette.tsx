@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { matchesAllTerms } from '../../utils/search';
 import { createPortal } from 'react-dom';
 import {
   Undo2, Redo2, Copy, Scissors, ClipboardPaste, CopyPlus, Trash2,
@@ -140,10 +141,11 @@ export const CommandPalette = ({ onSave, onExport, onImport }: CommandPalettePro
   }, [config, selectedId, canUndo, canRedo, onSave, onExport, onImport, hasStyleBuffer]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    // Türkçe-güvenli arama (bkz. utils/search) — komut adları da Türkçe.
+    const q = query.trim();
     if (!q) return commands;
     return commands.filter((c) =>
-      `${c.label} ${c.group} ${c.keywords || ''}`.toLowerCase().includes(q)
+      matchesAllTerms(`${c.label} ${c.group} ${c.keywords || ''}`, q)
     );
   }, [commands, query]);
 

@@ -191,5 +191,11 @@ export type {
   ResolveDataResult,
   MigrationConfig,
   ItemSchemaField,
+  SectionTemplate,
+  PageTemplate,
+  TecofNode,
+  TecofDocument,
 } from './types';
 export type { TecofPictureProps } from './components/TecofPicture';
+
+export { normalizeSearch, matchesSearch, matchesAllTerms } from './utils/search';

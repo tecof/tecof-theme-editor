@@ -413,6 +413,41 @@ export interface SectionTemplate {
 }
 
 /**
+ * Hazır SAYFA şablonu — birden çok bölümü (section) tek seferde ekler.
+ *
+ * `SectionTemplate`'ten farkı: o TEK bir kök düğüm ekler, bu bir sayfanın
+ * TAMAMINI (Header + Hero + Özellikler + SSS + CTA…) sırayla ekler. Tema
+ * kendi bileşenleriyle kurduğu "Ana Sayfa", "Hakkımızda", "İletişim" gibi
+ * hazır sayfaları `StudioConfig.pageTemplates` ile bildirir; kullanıcı
+ * "Bölüm Ekle" modalındaki "Sayfa Şablonları" sekmesinden seçer.
+ *
+ * Ekleme YIKICI DEĞİLDİR: bölümler hedef konuma sırayla eklenir, mevcut
+ * içerik silinmez (kullanıcı istemediklerini kaldırır). Tümü TEK commit'tir —
+ * bir Geri Al (Cmd+Z) şablonun tamamını geri alır.
+ */
+export interface PageTemplate {
+  /** Kararlı id (React key + telemetri). */
+  id: string;
+  /** Modalda görünen ad: "Ana Sayfa", "Hakkımızda"… */
+  label: string;
+  /** Kartın altındaki kısa açıklama. */
+  description?: string;
+  /** Opsiyonel önizleme görseli (yoksa ikon çizilir). */
+  thumbnail?: string;
+  /** Aramada da taranan etiketler: ["kurumsal","landing"]. */
+  keywords?: string[];
+  /**
+   * Sayfanın bölümleri — SIRAYLA eklenir. Her biri `SectionTemplate.payload`
+   * ile AYNI şekildedir: kök düğüm + (varsa) alt zone'ları. Düğüm id'leri
+   * ekleme anında yeniden üretilir, şablon nesnesi asla mutasyona uğramaz.
+   */
+  sections: Array<{
+    node: TecofNode;
+    zones?: Record<string, TecofNode[]>;
+  }>;
+}
+
+/**
  * Declarative data migration applied to a saved document before it is edited or
  * rendered — upgrades old data when component types are renamed or prop schemas
  * change. Runs in order: rename → transformProps → migrate; then the schema
@@ -454,6 +489,8 @@ export interface StudioConfig {
   categories?: Record<string, { title?: string; components?: string[]; [key: string]: any }>;
   /** Optional pre-built section templates shown in the "Bölüm Ekle" library. */
   templates?: SectionTemplate[];
+  /** Hazır SAYFA şablonları (çok bölümlü) — "Bölüm Ekle" modalında ayrı sekme. */
+  pageTemplates?: PageTemplate[];
   /** Global feature permissions. Component configs may override per type. */
   permissions?: Partial<Permissions>;
   /** Optional data migration applied whenever a document is loaded/rendered. */
