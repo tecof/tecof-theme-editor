@@ -6,8 +6,7 @@ import { useActiveLanguage } from '../language/LanguageContext';
 import { collectTranslationGaps } from '../language/translationCoverage';
 import {
   Monitor, Tablet, Smartphone, Undo2, Redo2, Save, Check,
-  PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown, Scaling, Sun, Moon,
-} from 'lucide-react';
+  PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown, Scaling, Sun, Moon, UnfoldVertical, Info } from 'lucide-react';
 import { GridControl } from './GridControl';
 import { useStudio } from '../context';
 
@@ -113,6 +112,9 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
   const toggleRightPanel = useUiStore((state) => state.toggleRightPanel);
   const resizeEnabled = useUiStore((state) => state.resizeEnabled);
   const toggleResize = useUiStore((state) => state.toggleResize);
+  const spacingEnabled = useUiStore((state) => state.spacingEnabled);
+  const toggleSpacing = useUiStore((state) => state.toggleSpacing);
+  const setHelpModalOpen = useUiStore((state) => state.setHelpModalOpen);
 
   const { config } = useStudio();
   const darkModeEnabled = !!config.darkMode;
@@ -220,6 +222,17 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
         >
           <Scaling size={16} />
         </button>
+        {/* Spacing (padding/margin) tutamaçları — default KAPALI, buradan açılır.
+            resize ile karşılıklı dışlayıcı (uiStore toggle'ları birbirini kapatır). */}
+        <button
+          type="button"
+          onClick={toggleSpacing}
+          className={`tecof-icon-btn${spacingEnabled ? ' is-active' : ''}`}
+          title="Boşluk ayarlama modu — padding/margin tutamaçları (B)"
+          aria-pressed={spacingEnabled}
+        >
+          <UnfoldVertical size={16} />
+        </button>
 
         {/* Dark preview toggle — only when the host enables config.darkMode.
             Drives ThemeVars' `.dark` class so the canvas previews the dark palette. */}
@@ -260,6 +273,16 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
             </button>
           </>
         )}
+
+        {/* Kullanım kılavuzu — özelliklerin ne işe yaradığını anlatan modal. */}
+        <button
+          type="button"
+          onClick={() => setHelpModalOpen(true)}
+          className="tecof-icon-btn"
+          title="Editör nasıl kullanılır?"
+        >
+          <Info size={16} />
+        </button>
 
         <button
           type="button"

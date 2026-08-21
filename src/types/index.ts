@@ -14,6 +14,24 @@ export interface ThemeColors {
   destructive: string;
 }
 
+/**
+ * Tek bir hazır renk paleti (bkz. StudioConfig.themePresets). `colors` kısmi
+ * olabilir: verilmeyen anahtarlar mevcut değerinde kalır — "yalnız vurgu
+ * rengini değiştiren" mini varyantlar da mümkündür.
+ */
+export interface ThemePreset {
+  /** Kararlı id (React key + aktiflik karşılaştırması). */
+  id: string;
+  /** Kartta görünen ad: "Mürekkep", "Gün Doğumu"… */
+  label: string;
+  /** Opsiyonel kısa açıklama (title attribute). */
+  description?: string;
+  /** Uygulanacak renkler — ThemeColors'ın alt kümesi. */
+  colors: Partial<ThemeColors>;
+  /** Koyu mod paleti de değişecekse (opsiyonel). */
+  darkColors?: Partial<ThemeColors>;
+}
+
 /* ─── Typography Types ─── */
 
 export interface ThemeTypography {
@@ -491,6 +509,15 @@ export interface StudioConfig {
   templates?: SectionTemplate[];
   /** Hazır SAYFA şablonları (çok bölümlü) — "Bölüm Ekle" modalında ayrı sekme. */
   pageTemplates?: PageTemplate[];
+  /**
+   * TEMA RENK VARYANTLARI: tema tasarımcısının bu tema için hazırladığı hazır
+   * renk paletleri. Tema panelinin "Renkler" bölümünün üstünde kart olarak
+   * listelenir; tıklayınca paletin renkleri `_tecofTheme.colors` üzerine
+   * uygulanır (diğer tema ayarlarına — tipografi/spacing — dokunulmaz) ve
+   * kanvas anında güncellenir. Kullanıcı sonrasında tek tek rengi değiştirmeye
+   * devam edebilir.
+   */
+  themePresets?: ThemePreset[];
   /** Global feature permissions. Component configs may override per type. */
   permissions?: Partial<Permissions>;
   /** Optional data migration applied whenever a document is loaded/rendered. */

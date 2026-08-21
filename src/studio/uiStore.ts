@@ -120,6 +120,13 @@ interface UiState {
   /** Resize mode: when on, the selected node shows width/height resize handles
    * (instead of the spacing handles). Editor aid, session-only. */
   resizeEnabled: boolean;
+  /** Spacing (padding/margin) sürükleme tutamaçları. VARSAYILAN KAPALI
+   * (2026-08 kullanıcı kararı: her seçimde kenar tutamaçları çıkması gündelik
+   * düzenlemede kalabalıktı) — TopBar'daki toggle (B) ile açılır. resize ile
+   * karşılıklı dışlayıcıdır: ikisi aynı kenarları paylaşır. */
+  spacingEnabled: boolean;
+  /** "Editör nasıl kullanılır" kılavuz modalı (TopBar ⓘ). */
+  helpModalOpen: boolean;
   /** Design width (CSS px) the DESKTOP viewport renders the page at. The canvas
    * iframe is laid out at this exact width and scale-fitted into the available
    * area, so the page sees a REAL desktop breakpoint even on small screens. */
@@ -170,6 +177,8 @@ interface UiState {
   setGridColumns: (n: number) => void;
   setGridGap: (px: number) => void;
   toggleResize: () => void;
+  toggleSpacing: () => void;
+  setHelpModalOpen: (open: boolean) => void;
   setDesktopWidth: (px: number) => void;
   setCanvasScale: (scale: number) => void;
   setDropHover: (hover: DropHoverState | null) => void;
@@ -198,6 +207,8 @@ export const useUiStore = create<UiState>((set) => ({
   gridColumns: 12,
   gridGap: 24,
   resizeEnabled: false,
+  spacingEnabled: false,
+  helpModalOpen: false,
   desktopWidth: 1440,
   canvasScale: 1,
   dropHover: null,
@@ -226,7 +237,14 @@ export const useUiStore = create<UiState>((set) => ({
   toggleGrid: () => set((s) => ({ gridVisible: !s.gridVisible })),
   setGridColumns: (n) => set({ gridColumns: Math.max(1, Math.min(24, Math.round(n) || 1)) }),
   setGridGap: (px) => set({ gridGap: Math.max(0, Math.round(px) || 0) }),
-  toggleResize: () => set((s) => ({ resizeEnabled: !s.resizeEnabled })),
+  // resize ↔ spacing karşılıklı dışlayıcı: ikisi de seçili node'un KENARLARINI
+  // kullanır; birini açmak diğerini kapatır (hangisinin aktif olduğu belirsiz
+  // kalmasın).
+  toggleResize: () =>
+    set((s) => ({ resizeEnabled: !s.resizeEnabled, spacingEnabled: false })),
+  toggleSpacing: () =>
+    set((s) => ({ spacingEnabled: !s.spacingEnabled, resizeEnabled: false })),
+  setHelpModalOpen: (open) => set({ helpModalOpen: open }),
   setDesktopWidth: (px) => set({ desktopWidth: Math.max(320, Math.min(3840, Math.round(px) || 1440)) }),
   // Scale updates fire from a ResizeObserver — only notify on real change.
   setCanvasScale: (scale) =>

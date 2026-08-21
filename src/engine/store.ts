@@ -192,6 +192,11 @@ interface EditorActions {
   insertPageTemplate: (sections: ClipboardPayload[], targetZoneKey?: string, index?: number) => void;
 
   // History
+  /** Coalescing penceresini kapatır: bir SONRAKİ commit, önceki commit'le aynı
+   * coalesce anahtarını taşısa bile YENİ bir undo adımı açar. Ayrık kullanıcı
+   * jestleri (ör. arka arkaya iki tema paleti tıklaması) tek adıma kaynamasın
+   * diye — çağırmak dokümanı DEĞİŞTİRMEZ. */
+  breakCoalescing: () => void;
   undo: () => void;
   redo: () => void;
 
@@ -587,6 +592,11 @@ export const useEditorStore = create<EditorStore>()(
           state.selection.selectedId = firstId;
           state.selection.selectedIds = [firstId];
         }
+      }),
+
+    breakCoalescing: () =>
+      set((state) => {
+        state._lastCommit = null;
       }),
 
     undo: () =>

@@ -14,6 +14,7 @@ import { SelectionOverlay } from './overlay/SelectionOverlay';
 import { NodeContextMenu } from './overlay/NodeContextMenu';
 import { AiSectionModal } from './ai/AiSectionModal';
 import { NodeSettingsModal } from './panels/NodeSettingsModal';
+import HelpModal from './panels/HelpModal';
 import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
@@ -498,7 +499,7 @@ export const TecofStudio = ({
           ui.setCommandPaletteOpen(false);
           return;
         }
-        if (ui.addSectionTarget != null || ui.nodeSettingsOpen || ui.aiModalOpen) return;
+        if (ui.addSectionTarget != null || ui.nodeSettingsOpen || ui.aiModalOpen || ui.helpModalOpen) return;
         const editor = useEditorStore.getState();
         const currentId = editor.selection.selectedId;
         const parentId = currentId ? getParentId(editor.document, currentId) : null;
@@ -518,6 +519,24 @@ export const TecofStudio = ({
       }
 
       // Undo / Redo
+      // Bir MODAL açıkken kanvas kısayolları (G/R/B, Delete, ok tuşları,
+      // kopyala/yapıştır, Cmd+D…) ÇALIŞMAMALI: HelpModal'da hiç input
+      // olmadığından odak panel div'inde kalıyor ve ör. kılavuzu okurken
+      // Delete'e basmak modalın ARKASINDAKİ seçili node'u siliyordu.
+      // (Escape yukarıda kendi guard'ıyla işlendi; Cmd+K da modal-üstü.)
+      // Undo/redo dahil: modal açıkken görünmez doküman değişikliği olmamalı.
+      {
+        const uiNow = useUiStore.getState();
+        if (
+          uiNow.addSectionTarget != null ||
+          uiNow.nodeSettingsOpen ||
+          uiNow.aiModalOpen ||
+          uiNow.helpModalOpen
+        ) {
+          return;
+        }
+      }
+
       if (isCmdOrCtrl && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -548,6 +567,12 @@ export const TecofStudio = ({
       if (!isCmdOrCtrl && !e.altKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
         useUiStore.getState().toggleResize();
+        return;
+      }
+      // 'B' -> spacing (padding/margin) tutamaçları — default kapalı, toggle.
+      if (!isCmdOrCtrl && !e.altKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        useUiStore.getState().toggleSpacing();
         return;
       }
 
@@ -688,6 +713,7 @@ export const TecofStudio = ({
           <CommandPalette onSave={handleSaveDraft} onExport={handleExportJson} onImport={handleImportJson} />
           <AiSectionModal />
           <NodeSettingsModal />
+          <HelpModal />
           <ThemeVars />
         </div>
       </LanguageProvider>

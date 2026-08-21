@@ -193,6 +193,7 @@ export type {
   ItemSchemaField,
   SectionTemplate,
   PageTemplate,
+  ThemePreset,
   TecofNode,
   TecofDocument,
 } from './types';

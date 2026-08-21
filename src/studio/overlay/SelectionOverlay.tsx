@@ -657,6 +657,9 @@ export const SelectionOverlay = () => {
   // instead of padding/margin. Opt-out per component via `resizable: false`.
   const resizeEnabled = useUiStore((state) => state.resizeEnabled);
   const canResize = resizeEnabled && componentConfig?.resizable !== false;
+  /* Spacing tutamaçları artık OPT-IN (TopBar toggle, kısayol B) — eskiden her
+     seçimde varsayılan çıkıyordu ve gündelik düzenlemede kalabalık yapıyordu. */
+  const spacingEnabled = useUiStore((state) => state.spacingEnabled);
 
   // Preview mode hides all editor chrome so links/buttons are fully interactive.
   if (mode === 'preview') return null;
@@ -712,13 +715,13 @@ export const SelectionOverlay = () => {
                 coords={selectedCoords}
                 onResizeChange={setResizeCorner}
               />
-            ) : (
+            ) : spacingEnabled ? (
               <SpacingDragHandles
                 nodeId={selectedId}
                 coords={selectedCoords}
                 onDragAxisChange={setSpacingDragAxis}
               />
-            ))}
+            ) : null)}
         </div>
       )}
 

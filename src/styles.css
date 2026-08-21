@@ -6242,6 +6242,57 @@
   animation: tecof-modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ── Kullanım kılavuzu modalı (TopBar ⓘ) ── */
+.tecof-help-modal {
+  width: min(640px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  background: var(--tecof-surface);
+  border-radius: var(--tecof-radius-lg);
+  box-shadow: var(--tecof-shadow-lg);
+  overflow: hidden;
+  animation: tecof-modal-in 0.18s ease;
+  outline: none;
+}
+.tecof-help-body {
+  overflow-y: auto;
+  padding: 4px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.tecof-help-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--tecof-text);
+}
+.tecof-help-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-accent-subtle);
+  color: var(--tecof-accent-text);
+}
+.tecof-help-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--tecof-text-soft);
+}
+.tecof-help-list li::marker { color: var(--tecof-text-subtle); }
+
 .tecof-node-settings-head {
   display: flex;
   align-items: flex-start;
@@ -6795,9 +6846,34 @@
    so the pattern is learned once. */
 .tecof-modal-card-variants {
   display: flex;
-  flex-wrap: wrap;
+  /* TEK SATIR + yatay kaydırma (2026-08 düzeltmesi): wrap, varyant sayısına
+     göre KART YÜKSEKLİĞİNİ değiştiriyordu (grid satır hizası bozuluyordu);
+     eski element-kartı özel kuralı ise scrollbar'ı TAMAMEN gizleyip üçüncü
+     chip'i kart kenarında yarım kırpıyordu — kullanıcı kaydırılabilir
+     olduğunu göremiyordu ("Mova · Mürekkep" kırpık ekran görüntüsü). Şimdi:
+     tek satır (yükseklik sabit), İNCE görünür scrollbar (affordance) ve
+     kaydırma modal gövdesine sızmaz. Hover-önizleme tüm chip'lerde yaşar. */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  /* Affordance İKİ kanaldan: Firefox scrollbar-width/color; WebKit'te macOS
+     overlay modunda `thin` kalıcı bar ÇİZMEZ — ::-webkit-scrollbar ile 5px
+     kalıcı ince bar veriyoruz ki taşma her platformda görünür olsun. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--tecof-border-strong) transparent;
+  overscroll-behavior-x: contain;
   gap: 4px;
   margin-top: 6px;
+  padding-bottom: 2px; /* ince scrollbar chip'e yapışmasın */
+}
+.tecof-modal-card-variants::-webkit-scrollbar {
+  height: 5px;
+}
+.tecof-modal-card-variants::-webkit-scrollbar-thumb {
+  background: var(--tecof-border-strong);
+  border-radius: 9999px;
+}
+.tecof-modal-card-variants::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .tecof-modal-variant-chip {
@@ -6805,6 +6881,11 @@
   font-size: 11px;
   font-weight: 600;
   line-height: 1.35;
+  /* Sıkışma guard'ları: chip metni ASLA pill içinde satır kırmaz ve flex
+     onu min-content'e ezemez — uzun tema etiketleri ("Mova · Mürekkep")
+     tam boy kalır, gerekiyorsa şerit kayar. */
+  white-space: nowrap;
+  flex: none;
   color: var(--tecof-text-muted);
   background: var(--tecof-surface-2);
   border: 1px solid var(--tecof-border);
@@ -6830,15 +6911,8 @@
   border-color: var(--tecof-accent);
 }
 
-/* Kompakt element kartlarında şerit taşmasın — tek satır, yatay kaydırma. */
-.tecof-modal-grid.is-elements .tecof-modal-card-variants {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tecof-modal-grid.is-elements .tecof-modal-card-variants::-webkit-scrollbar {
-  display: none;
-}
+/* Element kartları artık taban kuralı kullanır (tek satır + ince scrollbar) —
+   eski "scrollbar'ı tamamen gizle" istisnası görünmez kırpılma yaratıyordu. */
 
 .tecof-modal-cat-btn-title {
   display: inline-flex;
@@ -7085,6 +7159,53 @@
   padding-bottom: 4px;
   border-bottom: var(--tecof-line);
 }
+
+/* ── Tema renk varyantı kartları (config.themePresets) ── */
+.tecof-theme-presets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.tecof-theme-preset {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.tecof-theme-preset:hover { border-color: var(--tecof-accent); }
+.tecof-theme-preset:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: 0 0 0 2px var(--tecof-accent-ring);
+}
+.tecof-theme-preset.is-active {
+  border-color: var(--tecof-accent);
+  box-shadow: 0 0 0 2px var(--tecof-accent-ring);
+}
+.tecof-theme-preset-swatches {
+  display: inline-flex;
+  gap: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--tecof-border-subtle);
+}
+.tecof-theme-preset-swatches span {
+  width: 18px;
+  height: 14px;
+  display: block;
+}
+.tecof-theme-preset-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tecof-text-soft);
+}
+.tecof-theme-preset.is-active .tecof-theme-preset-label { color: var(--tecof-accent-text); }
 
 .tecof-theme-row {
   display: flex;

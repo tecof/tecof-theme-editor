@@ -150,8 +150,75 @@ export const ThemeEditor = () => {
 
   const resetTheme = () => setRootProps({ [THEME_PROP]: undefined });
 
+  /* ── Tema renk varyantları (config.themePresets) ──
+     Tema tasarımcısının hazırladığı paletler; tıklama YALNIZ colors (+varsa
+     darkColors) alanını değiştirir — tipografi/spacing/font'lara dokunmaz,
+     kullanıcı sonrasında tek tek rengi düzenlemeye devam eder. Aktiflik:
+     preset'in TÜM renkleri mevcut temayla birebir eşleşiyorsa işaretli. */
+  const presets = config.themePresets ?? [];
+  const isPresetActive = (preset: (typeof presets)[number]) =>
+    Object.entries(preset.colors).every(
+      ([k, v]) => String(theme.colors[k as keyof ThemeColors] ?? '').toLowerCase() === String(v).toLowerCase()
+    ) &&
+    Object.entries(preset.darkColors ?? {}).every(
+      ([k, v]) =>
+        String(theme.darkColors?.[k as keyof ThemeColors] ?? '').toLowerCase() === String(v).toLowerCase()
+    );
+  const applyPreset = (preset: (typeof presets)[number]) => {
+    /* İki preset tıklaması 500ms içinde TEK undo adımına kaynamasın: her
+       palet uygulaması ayrı, geri alınabilir bir adım olmalı. */
+    useEditorStore.getState().breakCoalescing();
+    const nextColors = { ...theme.colors, ...preset.colors };
+    /* Koyu palet senkronu: preset kendi darkColors'ını getiriyorsa üstüne
+       yazılır; getirmiyorsa ama temada TÜRETİLMİŞ bir koyu palet varsa yeni
+       açık renklerden YENİDEN türetilir — aksi halde önceki paletin koyu
+       renkleri yeni paletin altında hayalet gibi kalıyordu. Koyu palet hiç
+       yoksa dokunulmaz (kullanıcı seed'lemedi). */
+    const nextDark = preset.darkColors
+      ? { ...(theme.darkColors ?? {}), ...preset.darkColors }
+      : theme.darkColors
+        ? deriveDarkColors(nextColors)
+        : undefined;
+    patch({
+      ...theme,
+      colors: nextColors,
+      ...(nextDark ? { darkColors: nextDark } : {}),
+    });
+  };
+  /* Kart üstündeki mini palet noktaları: en ayırt edici 4 anahtar. */
+  const swatchKeys: (keyof ThemeColors)[] = ['primary', 'accent', 'background', 'foreground'];
+
   return (
     <div className="tecof-theme-editor">
+      {presets.length > 0 && (
+        <div className="tecof-theme-section">
+          <div className="tecof-theme-section-title">Hazır Paletler</div>
+          <div className="tecof-theme-presets" role="group" aria-label="Tema renk varyantları">
+            {presets.map((preset) => {
+              const active = isPresetActive(preset);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className={`tecof-theme-preset${active ? ' is-active' : ''}`}
+                  title={preset.description || preset.label}
+                  aria-pressed={active}
+                  onClick={() => applyPreset(preset)}
+                >
+                  <span className="tecof-theme-preset-swatches" aria-hidden="true">
+                    {swatchKeys.map((k) => {
+                      const c = preset.colors[k] ?? theme.colors[k];
+                      return <span key={k} style={{ background: c }} />;
+                    })}
+                  </span>
+                  <span className="tecof-theme-preset-label">{preset.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Colors */}
       <div className="tecof-theme-section">
         <div className="tecof-theme-section-title">Renkler</div>

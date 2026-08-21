@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createNode } from '../canvas/dndUtils';
 import type { ComponentConfig, StudioConfig } from '../../types';
 import { compileStyles, collectStyleClasses, mergeClassName } from '../style/compileStyles';
 import { generateStyleCss } from '../style/cssGenerator';
@@ -283,10 +284,29 @@ export const LiveBlockPreview = ({
   mode: PreviewMode;
 }) => {
   const compConfig = config.components?.[type];
+  /* ÖNİZLEME = EKLEME sözleşmesi: her dal `createNode`'dan geçer — gerçek
+     ekleme yolu da (Canvas.handleSelectComponent) AYNI fonksiyonu kullanır,
+     yani kart neyi gösteriyorsa tıklayınca o eklenir.
+     - props YOK (katalog kartı): defaultProps + defaultChildren materyalize
+       olur — defineSection bileşenlerinde slot içeriği YALNIZ
+       defaultChildren'dadır, ham defaultProps'la her slot "İçerik Alanı"
+       placeholder'ına düşüyordu (kartlar boş görünüyordu).
+     - props VAR (varyant delta'sı / kayıtlı ortak bileşen snapshot'ı):
+       createNode override olarak birleştirir. Varyantlar KISMİ delta'dır
+       (yalnız birkaç prop) — delta'yı tek başına render etmek zengin taban
+       kartının yanında chip hover'ında boş iskelete çöküyordu. Kayıtlı
+       snapshot'larda DOLU slot dizileri korunur (createNode non-empty slotu
+       asla ezmez); boş slota default enjekte edilir — ekleme yolu da aynı
+       şekilde davranır, önizleme sapmasın.
+     `createNode` PURE'dır ama her çağrıda taze id üretir → useMemo ŞART
+     (yoksa çocuk key'leri değişir, her render remount olur). */
+  const renderProps = React.useMemo(
+    () => (compConfig ? createNode(config, type, props).props : props ?? {}),
+    [config, type, props, compConfig]
+  );
   if (!compConfig?.render) {
     return <div className="tecof-modal-preview-fallback">Önizleme Yok</div>;
   }
-  const renderProps = props ?? compConfig.defaultProps ?? {};
   // `_tecofStyles` classes are self-hosted (host Tailwind never emits them), and
   // the modal renders in the host document — not the canvas iframe — so their CSS
   // must be injected here for editor-applied styles to actually show.

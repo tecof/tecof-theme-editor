@@ -40,14 +40,40 @@ export const ThemeVars = () => {
     const googleHref = themeGoogleFontsHref(theme);
     const fontFaceCss = themeFontFaceCss(theme);
 
+    /* CANLI ÖNİZLEME GARANTİSİ (2026-08 düzeltmesi): tema temaları
+       `--theme-color-*` için katmansız `:root` fallback'leri tanımlayabilir
+       (ilk boyama için meşru). Enjekte ettiğimiz blok da `:root` olduğundan
+       kazanan BELGE SIRASIYDI — ve kanvas iframe'inde sıra deterministik
+       olarak aleyhimize kuruluyordu: ThemeVars mount'ta boş head'e İLK
+       eklenir, Frame sonra temanın globals.css linkini head SONUNA aynalar
+       → temanın sabit hex'i kalıcı kazanır, panel değişikliği kanvasa hiç
+       yansımaz (mova'da yaşanan bug). İki katmanlı çözüm:
+       1. `:root` → `:root:root` (özgüllük 0,2,0): sıra ne olursa olsun
+          katmansız tek-`:root` fallback'leri kaybeder. Yayın etkilenmez —
+          TecofRender kendi stilini body'de basar, bu dosya yalnız editör.
+       2. Element her uygulamada head SONUNA taşınır (appendChild mevcut
+          düğümü taşır): HMR/geç yüklenen chunk linkleri sonradan eklense
+          bile bir sonraki tema düzenlemesi sırayı geri kazanır. */
+    const boostSpecificity = (css: string) => css.replace(/:root(?![-\w])/g, ':root:root');
+
     const ensureStyle = (doc: Document, id: string, content: string) => {
       let el = doc.getElementById(id) as HTMLStyleElement | null;
       if (!el) {
         el = doc.createElement('style');
         el.id = id;
-        doc.head.appendChild(el);
       }
       if (el.textContent !== content) el.textContent = content;
+      // Yalnız GEREKTİĞİNDE sona taşı: el'den sonra tecof'a ait OLMAYAN bir
+      // stylesheet varsa (temanın aynalanan globals linki, HMR chunk'ı…) sıra
+      // kaybedilmiş demektir. Koşulsuz appendChild her apply'da stylesheet'i
+      // yeniden değerlendirtiyor ve Frame'in head MutationObserver'ını
+      // (copyStyles serileştirmesi) boşuna tetikliyordu.
+      const OURS = new Set([THEME_STYLE_ID, FONT_FACE_ID, GOOGLE_LINK_ID]);
+      let needsMove = !el.parentNode;
+      for (let n = el.nextElementSibling; n && !needsMove; n = n.nextElementSibling) {
+        if (!OURS.has(n.id)) needsMove = true;
+      }
+      if (needsMove) doc.head.appendChild(el);
     };
 
     // Google Fonts <link>: created/updated when needed, removed when nothing to
@@ -69,7 +95,7 @@ export const ThemeVars = () => {
 
     const apply = (doc: Document | null | undefined, css: string) => {
       if (!doc?.head) return;
-      ensureStyle(doc, THEME_STYLE_ID, css);
+      ensureStyle(doc, THEME_STYLE_ID, boostSpecificity(css));
       ensureStyle(doc, FONT_FACE_ID, fontFaceCss);
       ensureGoogleLink(doc, googleHref);
     };
