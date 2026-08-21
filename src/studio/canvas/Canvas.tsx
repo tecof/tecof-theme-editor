@@ -332,6 +332,7 @@ export const Canvas = () => {
         onSelect={handleSelectComponent}
         onSelectTemplate={handleSelectTemplate}
         onSelectPageTemplate={handleSelectPageTemplate}
+        isRootTarget={addSectionTarget?.zoneKey === undefined}
         config={config}
         filterType={modalFilterType}
       />

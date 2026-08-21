@@ -4,7 +4,7 @@ import { useStudio } from '../context';
 import { useEditorStore } from '../../engine/store';
 import { LayersTree } from './LayersTree';
 import { BlockThumb } from './BlockThumb';
-import { Layers, Grid, Search, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Layers, Grid, Search, Eye, EyeOff, ChevronDown, FileStack } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
 
@@ -31,6 +31,7 @@ const readCollapsedCats = (): Record<string, boolean> => {
 export const LeftPanel = () => {
   const { config } = useStudio();
   const insertNode = useEditorStore((state) => state.insertNode);
+  const insertPageTemplate = useEditorStore((state) => state.insertPageTemplate);
   const beginDrag = useEditorStore((state) => state.beginDrag);
   const endDrag = useEditorStore((state) => state.endDrag);
 
@@ -143,6 +144,68 @@ export const LeftPanel = () => {
                 {showPreviews ? <Eye size={13} /> : <EyeOff size={13} />}
               </button>
             </div>
+
+            {/* Hazır SAYFA şablonları — modaldeki sekmenin sol panel karşılığı.
+                Kategorilerden ÖNCE: sayfayı sıfırdan kurarken ilk bakılacak yer
+                burasıdır. Tıklama tüm bölümleri KÖK akışın sonuna ekler (tek
+                Geri Al); mevcut içerik silinmez. */}
+            {(() => {
+              const pageTemplates = (config.pageTemplates ?? []).filter((t) =>
+                matchesAllTerms(`${t.label} ${t.description || ''} ${(t.keywords || []).join(' ')}`, searchQuery)
+              );
+              if (pageTemplates.length === 0) return null;
+              const catTitle = 'Sayfa Şablonları';
+              const isCollapsed = !searchQuery && collapsedCats[catTitle] !== false;
+              return (
+                <div className={`tecof-block-cat${isCollapsed ? ' is-collapsed' : ''}`}>
+                  <button
+                    type="button"
+                    className="tecof-block-cat-title"
+                    onClick={() => toggleCategory(catTitle)}
+                    aria-expanded={!isCollapsed}
+                    title={isCollapsed ? 'Kategoriyi genişlet' : 'Kategoriyi daralt'}
+                  >
+                    <span className="tecof-block-cat-name">{catTitle}</span>
+                    <span className="tecof-block-cat-count">{pageTemplates.length}</span>
+                    <ChevronDown size={13} className="tecof-block-cat-chevron" aria-hidden="true" />
+                  </button>
+                  <div className="tecof-block-cat-items" aria-hidden={isCollapsed}>
+                    <div className="tecof-page-tpl-list">
+                      {pageTemplates.map((tpl) => (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          className="tecof-page-tpl"
+                          title={tpl.description || tpl.label}
+                          onClick={() =>
+                            insertPageTemplate(
+                              tpl.sections.map((sec) =>
+                                JSON.parse(JSON.stringify({ node: sec.node, zones: sec.zones || {} }))
+                              )
+                            )
+                          }
+                        >
+                          <span className="tecof-page-tpl-thumb" aria-hidden="true">
+                            {tpl.thumbnail ? (
+                              <img src={tpl.thumbnail} alt="" />
+                            ) : (
+                              <FileStack size={18} strokeWidth={1.6} />
+                            )}
+                          </span>
+                          <span className="tecof-page-tpl-text">
+                            <span className="tecof-page-tpl-label">{tpl.label}</span>
+                            <span className="tecof-page-tpl-meta">
+                              {tpl.sections.length} bölüm
+                              {tpl.description ? ` · ${tpl.description}` : ''}
+                            </span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* List Categories */}
             {Object.entries(groupedComponents).map(([catTitle, blockTypes]) => {

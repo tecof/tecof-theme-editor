@@ -3438,6 +3438,65 @@
   .tecof-block-cat-chevron {
     transition: none;
   }
+
+/* ── Sol paneldeki hazır SAYFA şablonu satırları ── */
+.tecof-page-tpl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tecof-page-tpl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  text-align: left;
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.tecof-page-tpl:hover {
+  border-color: var(--tecof-accent);
+  background: var(--tecof-accent-subtle);
+}
+.tecof-page-tpl:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: 0 0 0 2px var(--tecof-accent-ring);
+}
+.tecof-page-tpl-thumb {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 32px;
+  border-radius: var(--tecof-radius-xs);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border-subtle);
+  color: var(--tecof-text-muted);
+  overflow: hidden;
+}
+.tecof-page-tpl-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.tecof-page-tpl-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tecof-page-tpl-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tecof-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tecof-page-tpl-meta {
+  font-size: 10.5px;
+  color: var(--tecof-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 }
 
 .tecof-left-panel {

@@ -186,14 +186,24 @@ export interface AddSectionModalProps {
    * templates (by their root node type). Undefined = show everything.
    */
   filterType?: (type: string) => boolean;
+  /**
+   * Hedef KÖK içerik akışı mı (slot değil)? Sayfa şablonları yalnız kökte
+   * anlamlıdır. `filterType`'ın varlığına bakmak YANLIŞTI: modal kök akıştan
+   * açıldığında da filterType tanımlı gelir (Canvas her hedefte drop kuralı
+   * fonksiyonu üretir) — bu yüzden "Sayfa Şablonları" sekmesi HİÇ görünmüyordu.
+   */
+  isRootTarget?: boolean;
 }
 
-export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, onSelectPageTemplate, config, filterType }: AddSectionModalProps) => {
+export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, onSelectPageTemplate, config, filterType, isRootTarget }: AddSectionModalProps) => {
   const { apiClient } = useStudio();
   const allTemplates = config?.templates ?? NO_TEMPLATES;
-  /* Sayfa şablonları YALNIZ kök akışa eklenebilir: bir slot hedeflenmişken
-     (filterType dolu) tam sayfa eklemek anlamsız — sekme gizlenir. */
-  const pageTemplates = filterType ? NO_PAGE_TEMPLATES : (config?.pageTemplates ?? NO_PAGE_TEMPLATES);
+  /* Sayfa şablonları YALNIZ kök akışa eklenir (slot hedefliyken tam sayfa
+     eklemek anlamsız). Kök olup olmadığını çağıran bildirir — `filterType`
+     her hedefte dolu olduğu için ona bakmak sekmeyi tümden gizliyordu. */
+  const pageTemplates = isRootTarget
+    ? (config?.pageTemplates ?? NO_PAGE_TEMPLATES)
+    : NO_PAGE_TEMPLATES;
   const categories = config?.categories ?? NO_CATEGORIES;
   const components = config?.components ?? NO_COMPONENTS;
   const [activeCategory, setActiveCategory] = useState<string>('all');
