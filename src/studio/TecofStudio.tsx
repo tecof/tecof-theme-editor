@@ -13,6 +13,7 @@ import { Canvas } from './canvas/Canvas';
 import { SelectionOverlay } from './overlay/SelectionOverlay';
 import { NodeContextMenu } from './overlay/NodeContextMenu';
 import { AiSectionModal } from './ai/AiSectionModal';
+import { StyleSyncModal } from './style/StyleSyncModal';
 import { NodeSettingsModal } from './panels/NodeSettingsModal';
 import HelpModal from './panels/HelpModal';
 import { Inspector } from './panels/Inspector';
@@ -28,6 +29,7 @@ export const TecofStudio = ({
   accessToken,
   onSave,
   onChange,
+  onLanguageChange,
   hostOrigin,
   autoSave = false,
   autoSaveDelay = 2000,
@@ -649,8 +651,10 @@ export const TecofStudio = ({
   const studioContextValue = useMemo(() => ({
     config,
     readOnly: mode === 'preview',
-    apiClient
-  }), [config, mode, apiClient]);
+    apiClient,
+    // Sayfa bazlı uçlar (stil senkronu) kaynağı bilmek zorunda.
+    pageId
+  }), [config, mode, apiClient, pageId]);
 
   if (loading) {
     return <StudioSkeleton className={className} />;
@@ -658,7 +662,10 @@ export const TecofStudio = ({
 
   return (
     <StudioContext.Provider value={studioContextValue}>
-      <LanguageProvider>
+      {/* Aktif düzenleme dilini host'a duyur: host bunu kendi i18n
+          sağlayıcısına bağlayınca TUVAL da o dilde render olur. Editör kroması
+          (TopBar/Inspector) bundan etkilenmez — o Türkçe sabit. */}
+      <LanguageProvider onChange={onLanguageChange}>
         <div className={`tecof-studio-root ${className || ''}`.trim()}>
           <TopBar onSave={handleSaveDraft} saving={saving} saveStatus={saveStatus} dirty={dirty} autoSave={autoSave} embedded={isEmbedded} />
 
@@ -712,6 +719,9 @@ export const TecofStudio = ({
 
           <CommandPalette onSave={handleSaveDraft} onExport={handleExportJson} onImport={handleImportJson} />
           <AiSectionModal />
+          {/* Stili diğer sayfalara uygula — Inspector, komut paleti ve bağlam
+              menüsü aynı modalı açar (hedef düğüm uiStore'da tutulur). */}
+          <StyleSyncModal />
           <NodeSettingsModal />
           <HelpModal />
           <ThemeVars />

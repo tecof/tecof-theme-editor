@@ -10,7 +10,7 @@ import { NodeErrorBoundary } from './NodeErrorBoundary';
 import { postToHost, isEmbedded } from '../bridge';
 import { requestFocusFromTarget } from './canvasInteractions';
 import { compileStyles, mergeClassName } from '../style/compileStyles';
-import { STYLES_PROP } from '../style/types';
+import { STYLES_PROP, STYLE_SYNC_PROP } from '../style/types';
 import { interactionNodeClasses } from '../interactions/registry';
 import { NODE_MARKER_CLASS } from './canvasInteractions';
 import { useInlineDragRef } from './useInlineDragRef';
@@ -193,7 +193,10 @@ export const NodeRenderer = ({ node, index, zoneKey }: NodeRendererProps) => {
   // wire all of this via useInlineDragRef instead, so they opt out here.
   const editorClasses = componentConfig.inline
     ? ''
-    : ` ${NODE_MARKER_CLASS} ${wrapperClassName}${node.props.sharedComponentId ? ' is-shared' : ''}`;
+    /* `is-style-source`: bu düğüm bir STİL KAYNAĞI (`_tecofStyleSync`) —
+       kaydedildiğinde stili tema genelinde yayılır. Ortak bileşen rozetiyle
+       aynı mantık: sonucu sayfayı terk eden bir gücün kanvasta görünür izi. */
+    : ` ${NODE_MARKER_CLASS} ${wrapperClassName}${node.props.sharedComponentId ? ' is-shared' : ''}${node.props[STYLE_SYNC_PROP] ? ' is-style-source' : ''}`;
 
   const componentProps = {
     ...displayProps,

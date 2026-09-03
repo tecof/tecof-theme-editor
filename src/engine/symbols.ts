@@ -1,5 +1,8 @@
 import type { TecofDocument, TecofNode } from '../types';
 import { findNodeById, parseZoneKey, getZoneKey } from './zones';
+/* Yalnız sabit (string) — `style/types.ts` hiçbir şey import etmeyen yaprak
+   modüldür, engine → studio yönünde döngü oluşmaz. */
+import { STYLE_SYNC_PROP } from '../studio/style/types';
 
 /**
  * Symbols (reusable component instances) — the Webflow-symbol / Figma-component
@@ -33,6 +36,11 @@ const META_KEYS = new Set<string>([
   '_locked',
   '_hidden',
   '_startHidden',
+  /* Stil kaynağı bayrağı (`_tecofStyleSync`) düğüme ÖZELDİR: hangi sayfadan
+     yayıldığını taşır. Örnekler arasında kopyalanırsa aynı stil için birden
+     fazla "kaynak" doğar ve backend bunları çakışma sayıp yazımı atlar — yani
+     kullanıcının kurduğu kural sessizce çalışmaz olur. */
+  STYLE_SYNC_PROP,
 ]);
 
 export interface SymbolPathStep {

@@ -603,6 +603,16 @@ export interface TecofEditorProps {
   onSave?: (data: PuckPageData) => void;
   /** Called on every editor change */
   onChange?: (data: PuckPageData) => void;
+  /**
+   * Aktif düzenleme dili değiştiğinde (ve ilk çözümlendiğinde) çağrılır.
+   * Host bunu kendi i18n sağlayıcısına bağlayarak TUVAL İÇERİĞİNİ de o dilde
+   * gösterebilir — editör kromu (panel/menü) Türkçe kalır.
+   *
+   * Sözleşme: merchant-info gelene kadarki boş dil ("") ASLA gönderilmez; aynı
+   * kod ikinci kez gönderilmez; verilen fonksiyonun referansı her render
+   * değişse bile ek çağrı doğmaz (motor onu ref'te tutar).
+   */
+  onLanguageChange?: (code: string) => void;
   /** Legacy editor UI overrides (reserved, currently ignored by TecofStudio) */
   overrides?: Record<string, any>;
   /** Additional editor plugins (reserved for host integrations) */

@@ -7,6 +7,9 @@ export interface StudioContextType {
   metadata?: Record<string, any>;
   apiClient?: TecofApiClient;
   readOnly?: boolean;
+  /** Düzenlenen sayfanın id'si — stil senkronu gibi SAYFA BAZLI uçlar bunu
+   *  ister (kaynak sayfa hedeflerden dışlanır ve temayı o belirler). */
+  pageId?: string;
 }
 
 export const StudioContext = createContext<StudioContextType | null>(null);

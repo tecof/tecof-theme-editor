@@ -13,6 +13,7 @@ import {
   type SpacingAxis,
 } from './SpacingDragHandles';
 import { ResizeHandles, type ResizeCorner } from './ResizeHandles';
+import { isStyleSourceNode } from '../style/styleSync';
 import { measureNode } from '../canvas/nodeRect';
 
 type CoordsMap = Record<string, Coords>;
@@ -616,6 +617,16 @@ export const SelectionOverlay = () => {
   };
   const selectedIsShared = !!(nodeDetails?.node?.props as Record<string, unknown> | undefined)?.sharedComponentId;
 
+  /* Stil kaynağı tespiti — `_tecofStyleSync` taşıyan düğüm kaydedildiğinde
+     stilini TEMA GENELİNE yayar. Ortak bileşendeki mor uyarının kardeşi: etkisi
+     bu sayfayı aşan bir düğüm kanvasta işaretsiz kalmamalı. */
+  const isStyleSourceId = (id: string | null): boolean => {
+    if (!id) return false;
+    const d = findNodeById(documentState, id);
+    return isStyleSourceNode(d?.node);
+  };
+  const selectedIsStyleSource = isStyleSourceNode(nodeDetails?.node);
+
   /* İç element mi? Bir zone içinde yaşayan (kök content'te olmayan) düğüm bir
      slot çocuğudur (Title/Button/Card…). Seçim/hover çerçevesi KESİKLİ çizilir;
      section'lar (kök) DÜZ çizgi kalır — böylece neyin section neyin element
@@ -678,7 +689,7 @@ export const SelectionOverlay = () => {
         <>
           <SpacingBands coords={hoveredCoords} />
           <div
-            className={`tecof-outline is-hover${isInnerNode(hoveredId) ? ' is-inner' : ''}${isSharedNode(hoveredId) ? ' is-shared' : ''}`}
+            className={`tecof-outline is-hover${isInnerNode(hoveredId) ? ' is-inner' : ''}${isSharedNode(hoveredId) ? ' is-shared' : ''}${isStyleSourceId(hoveredId) ? ' is-style-source' : ''}`}
             style={getOutlineStyle(hoveredCoords)}
           />
         </>
@@ -699,7 +710,7 @@ export const SelectionOverlay = () => {
       {/* Selection Box & Toolbar */}
       {selectedId && selectedCoords && nodeDetails && (
         <div
-          className={`tecof-outline is-selected${nodeDetails?.path.zoneKey ? ' is-inner' : ''}${selectedIsShared ? ' is-shared' : ''}`}
+          className={`tecof-outline is-selected${nodeDetails?.path.zoneKey ? ' is-inner' : ''}${selectedIsShared ? ' is-shared' : ''}${selectedIsStyleSource ? ' is-style-source' : ''}`}
           style={getOutlineStyle(selectedCoords)}
         >
           {/* Single selection, editable, big enough to host handles: resize mode

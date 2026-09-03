@@ -820,6 +820,8 @@ const client = new TecofApiClient("https://api.example.com", "secret-key");
 | `uploadFile(file, folder?)` | Dosya yükle |
 | `getUploads(page, limit)` | Yüklenen dosyaları listele |
 | `getPages()` | Merchant sayfalarını listele |
+| `previewApplyStyles(payload)` | Stil senkronu **önizlemesi** — sayfa başına eşleşme sayısı (yazmaz) |
+| `applyStylesToPages(payload)` | Bir node'un stilini aynı temadaki diğer sayfalardaki eşleşen bileşenlere uygular |
 | `translate(text, sourceLang, locales, isHtml?)` | Metni birden çok dile çevir |
 | `cdnUrl` | CDN base URL |
 
@@ -838,6 +840,7 @@ Kütüphane aşağıdaki endpoint'leri kullanır (`x-secret-key` header ile):
 | `POST` | `/api/store/upload` | Dosya yükle |
 | `GET` | `/api/store/uploads` | Yüklenen dosyaları listele |
 | `GET` | `/api/store/pages` | Merchant sayfalarını listele |
+| `POST` | `/api/store/editor/apply-styles` | Stili diğer sayfalara uygula / önizle (JWT + team/admin) |
 | `POST` | `/api/store/translate` | Metni çok dile çevir |
 
 ---
@@ -956,6 +959,7 @@ Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, ins
 - **Çoklu seçim + kopyala/yapıştır** — `⌘/Ctrl/Shift + tık` ile çoklu seçim; kopyala/kes/yapıştır (sekmeler arası `localStorage`), toplu sil/çoğalt. Bkz. [Klavye Kısayolları](#klavye-kısayolları-studio).
 - **Görsel stil editörü (Tailwind)** — Inspector'daki "Stil" sekmesi; breakpoint + state bazlı (`md:hover:` dahil), preset token'lar, serbest (arbitrary) değerler ve **canlı tema renkleri** (`--theme-color-*`). Daha az belirgin katmandan **devralınan değerler** soluk ipucu olarak gösterilir. Bkz. [docs/TAILWIND.md](docs/TAILWIND.md).
 - **Komut paleti (⌘K)** — Tek aramadan tüm eylemler + bileşen ekleme; kısayollar listelenir, ok tuşlarıyla gezilir.
+- **Sayfalar arası stil** — Bir bileşenin stilini aynı temadaki diğer sayfalardaki eşleşen bileşenlere taşır (tek seferlik) ya da o bileşeni "stil kaynağı" yapıp her kayıtta senkronlar. Bkz. [Sayfalar Arası Stil](#sayfalar-arası-stil-stil-senkronu).
 - **Canlı tema editörü** — Seçim yokken Inspector'daki "Tema" sekmesi; renk/tipografi/spacing düzenlenir ve değişiklik hem editöre hem canvas'a `--theme-*` CSS değişkenleri olarak **anında** uygulanır. Tema `root.props._tecofTheme`'de saklanır (kayda dahil, undo/redo'lu).
 - **Boşluk (box-model) overlay'i** — Bir öğenin üzerine gelince **padding (yeşil)** içeride, **margin (amber)** dışarıda devtools tarzı renkli gösterilir.
 - **Yan yana slot düzeni** — `slot` alanlarına `orientation: 'horizontal'` verilerek çocuklar yan yana dizilir; sürükle-bırak drop yönü (sol/sağ ↔ üst/alt) otomatik algılanır.
@@ -994,6 +998,64 @@ export default {
 
 Tam entegrasyon (Tailwind v4 `@theme`, arbitrary değerler, breakpoint/state, tema renkleri) için:
 **[docs/TAILWIND.md](docs/TAILWIND.md)**.
+
+### Sayfalar Arası Stil (Stil Senkronu)
+
+Bir bileşenin boşluğunu/rengini ayarlayınca **aynı bileşen diğer sayfalarda eski
+hâlinde kalıyordu**; tek yayılım yolu ortak bileşendi (symbol) ve o da tüm
+*içeriği* paylaşır — "aynı görünüm, farklı metin" senaryosunu karşılamaz. Stil
+senkronu yalnız `_tecofStyles`'ı taşır.
+
+İki mod, tek backend ucu (`POST /api/store/editor/apply-styles`):
+
+| Mod | Nerede | Ne yapar |
+|-----|--------|----------|
+| **Tek seferlik** | Stil sekmesi → "Diğer sayfalara uygula…", ⌘K → "Stili Diğer Sayfalara Uygula…", sağ tık menüsü | Seçtiğiniz sayfalardaki eşleşen bileşenlere stili **bir kez** yazar |
+| **Sürekli senkron** | Stil sekmesi → "Bu bileşeni stil kaynağı yap" | Node'a `_tecofStyleSync` yazar; **sayfa her kaydedildiğinde** backend yayılımı kendisi koşar |
+
+**Eşleşme kuralları** (editör ve backend birebir aynı):
+
+1. `node.type` aynı olmalı.
+2. "Yalnız aynı adlı" seçilirse `props._layerName` (Katmanlar'daki ad) ya da
+   `props.name` eşit olmalı. Çok dilli (`[{code,value}]`) `name` ad sayılmaz.
+3. **Ortak bileşenler atlanır** — stilleri master'da yaşar; sayfadaki kopyaya
+   yazılan stil bir sonraki çözümlemede kaybolurdu.
+4. Hedefteki bir node da stil kaynağıysa **ezilmez**, çakışma olarak raporlanır.
+
+**Sınırlar / bilinçli kararlar**
+
+- Stil **değiştirilir, birleştirilmez** — "sildiğim padding neden geri geldi?" olmasın.
+- Yalnız **taslak** yazılır; hedef sayfaları ayrıca yayınlamanız gerekir
+  (yayındaki sayfa `published → changed` olur).
+- Yalnız **aynı tema**. Kaynak sayfa her zaman hedeflerin dışındadır.
+- Modal, o an ekrandaki (**kaydedilmemiş**) stili uygular — kaydetmeyi beklemez.
+- Başka bir sekmede açık olan sayfa değişikliği bir sonraki yüklemede görür.
+- Stil kaynağı node kanvasta **teal** kesikli izle ve seçildiğinde "Stil Kaynağı"
+  rozetiyle işaretlenir (ortak bileşenin mor rozetinin kardeşi).
+
+```tsx
+// Host kendi UI'ını kuracaksa: aynı kurallar dışa açık.
+import {
+  STYLE_SYNC_PROP,        // '_tecofStyleSync'
+  buildStyleMatch,        // node → { type, name? }
+  buildStyleSyncFlag,     // node → _tecofStyleSync değeri
+  isStyleSourceNode,
+  mergeStyleSyncPages,    // sayfa listesi + önizleme → tablo satırları
+} from "@tecof/theme-editor";
+
+const preview = await client.previewApplyStyles({
+  sourcePageId, sourceNodeId, styles, match: { type: "HeroSection" },
+});
+await client.applyStylesToPages({
+  sourcePageId, sourceNodeId, styles,
+  match: { type: "HeroSection" },
+  targetPageIds: ["…"],
+  preview: false,
+});
+```
+
+Backend sözleşmesinin tamamı (payload, yanıt, hata kodları): `docs/STYLE_SYNC.md`
+(tecof-app-backend).
 
 Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
 

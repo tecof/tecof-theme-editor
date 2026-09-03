@@ -79,8 +79,31 @@ export { getSafelist, STYLE_CONTROLS } from './studio/style/tokens';
 export { TAILWIND_PALETTE, TAILWIND_SHADES } from './studio/style/palette';
 export type { PaletteHue, TailwindShade } from './studio/style/palette';
 export { compileStyles, collectStyleClasses, collectDocumentClasses, cn } from './studio/style/compileStyles';
-export { STYLES_PROP } from './studio/style/types';
-export type { NodeStyles, Breakpoint, StateVariant } from './studio/style/types';
+export { STYLES_PROP, STYLE_SYNC_PROP } from './studio/style/types';
+export type { NodeStyles, Breakpoint, StateVariant, StyleMatch, StyleSyncFlag } from './studio/style/types';
+
+/* ─── Sayfalar arası stil senkronu ───
+   Bir düğümün stilini AYNI TEMADAKİ diğer sayfalardaki eşleşen bileşenlere
+   taşır (`TecofApiClient.applyStylesToPages` / `previewApplyStyles`), ya da
+   düğüme `_tecofStyleSync` bayrağı yazıp kayıt sonrası SÜREKLİ senkron açar.
+   Aşağıdaki saf yardımcılar backend'in eşleşme kurallarının aynısını uygular —
+   host kendi UI'ını kurarsa aynı sonucu göstersin. */
+export {
+  nodeStyleLabel,
+  isStyleSourceNode,
+  styleSyncFlagOf,
+  buildStyleMatch,
+  buildStyleSyncFlag,
+  mergeStyleSyncPages,
+  styleSyncSummary,
+} from './studio/style/styleSync';
+export type { StyleSyncPageRow } from './studio/style/styleSync';
+export type {
+  ApplyStylesPayload,
+  ApplyStylesResult,
+  ApplyStylesPageResult,
+  ApplyStylesConflict,
+} from './api';
 
 /* ─── When-then interactions ─── */
 // Declarative trigger→action behaviours stored on a node's `_interactions`.
@@ -109,6 +132,14 @@ export type { DarkModeConfig, DarkModeHandle, ColorScheme, DarkModeDefault } fro
 
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
+
+/* ─── Aktif düzenleme dili ─── */
+// Editörde tek, uygulama geneli bir "aktif dil" var (üst bardaki seçici).
+// `TecofEditor`'ün `onLanguageChange` prop'u bu dili host'a bildirir; tuvalin
+// içinde yaşayan özel host bileşenleri ise aynı dili doğrudan buradan okur.
+// Provider yoksa (yayın/standalone render) hook `null` döner — çökmez.
+export { useActiveLanguage } from './studio/language/LanguageContext';
+export type { ActiveLanguageContextType } from './studio/language/LanguageContext';
 
 /* ─── Symbols (reusable component instances) ─── */
 // Nodes sharing a `sharedComponentId` are instances of one symbol; editing one

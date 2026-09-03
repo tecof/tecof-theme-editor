@@ -46,3 +46,32 @@ export interface NodeStyles {
 
 /** The prop key under which a node's structured styles live. */
 export const STYLES_PROP = '_tecofStyles';
+
+/**
+ * Stil senkronu — "bu düğüm bir stil KAYNAĞIdır" bayrağının prop anahtarı.
+ *
+ * Bayrak taşıyan düğüm bulunan sayfa her kaydedildiğinde backend
+ * (`app/src/nodeStyleSync.ts` + `POST /api/store/editor/apply-styles`) aynı
+ * temadaki eşleşen düğümlere `_tecofStyles`'ı yayar. Değer düğüme ÖZELDİR
+ * (hangi sayfadan yayıldığını taşır), bu yüzden symbol (ortak bileşen)
+ * senkronunda META_KEYS'e girer ve örnekler arasında ASLA kopyalanmaz.
+ */
+export const STYLE_SYNC_PROP = '_tecofStyleSync';
+
+/** Hangi düğümlerin hedef sayılacağını belirleyen ölçüt (backend ile birebir). */
+export interface StyleMatch {
+  /** Bileşen tipi — zorunlu (ör. "HeroSection"). */
+  type: string;
+  /** Verilirse `props._layerName` ya da `props.name` bu değere eşit olmalı. */
+  name?: string;
+}
+
+/** `props._tecofStyleSync` değerinin şekli (backend `normalizeSyncFlag` ile aynı). */
+export interface StyleSyncFlag {
+  /** Şimdilik tek kapsam: aynı temadaki tüm sayfalar. */
+  scope: 'theme';
+  /** Bayrağın yazıldığı sayfa — hedefteki "kendi izi" bundan tanınır. */
+  sourcePageId?: string;
+  /** Boş bırakılırsa backend düğümün tipinden (varsa adından) türetir. */
+  match?: StyleMatch;
+}

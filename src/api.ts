@@ -1,4 +1,62 @@
 import type { ApiResponse, PuckPageData, PageApiData, MerchantInfoData } from './types';
+import type { NodeStyles, StyleMatch } from './studio/style/types';
+
+/* ─── Stil senkronu (POST /api/store/editor/apply-styles) ───
+   Sözleşmenin tek kaynağı BACKEND `docs/STYLE_SYNC.md`. Tipler yalnız TİP
+   olarak import edilir (derlemede silinir) — api.ts çalışma zamanında studio
+   modüllerine bağlanmaz. */
+
+/** Uygulama isteği. `preview` VARSAYILAN true'dur (backend tarafında da). */
+export interface ApplyStylesPayload {
+  /** Stilin alındığı sayfa — temayı belirler ve hedeflerden HER ZAMAN dışlanır. */
+  sourcePageId: string;
+  /** Stil kaynağı düğüm; `styles` gönderilmezse stil buradan okunur. */
+  sourceNodeId?: string;
+  /**
+   * Uygulanacak stil. `null` = hedeflerde stili TEMİZLE, alanı hiç göndermemek =
+   * "kaynak düğümden oku". Editör KAYDEDİLMEMİŞ stili de uygulayabilsin diye
+   * bellekteki değeri açıkça gönderir.
+   */
+  styles?: NodeStyles | null;
+  /** Eşleşme ölçütü; verilmezse kaynak düğümün tipi kullanılır. */
+  match?: StyleMatch;
+  /** Boş bırakılırsa temadaki TÜM sayfalar (kaynak hariç); en fazla 500 id. */
+  targetPageIds?: string[];
+  /** false = gerçekten yaz. Gönderilmezse backend önizleme sayar. */
+  preview?: boolean;
+}
+
+/** Önizleme/uygulama sonucunun sayfa satırı. */
+export interface ApplyStylesPageResult {
+  pageId: string;
+  title: string;
+  slug: string;
+  /** Yazılabilir eşleşme sayısı (çakışmalar hariç). */
+  matches: number;
+  updated: number;
+  conflicts: number;
+}
+
+/** Ezilmeyen eşleşme: hedef düğümün kendisi başka bir stil kaynağı. */
+export interface ApplyStylesConflict {
+  pageId: string;
+  title: string;
+  slug: string;
+  nodeId: string | null;
+  reason: string;
+}
+
+export interface ApplyStylesResult {
+  preview: boolean;
+  themeId: string;
+  match: StyleMatch;
+  updatedPages: number;
+  updatedNodes: number;
+  /** Sınıra takılıp gezilemeyen sayfa kaldı mı. */
+  truncated: boolean;
+  pages: ApplyStylesPageResult[];
+  conflicts: ApplyStylesConflict[];
+}
 
 /**
  * Tecof API Client — handles communication with the Tecof backend
@@ -229,6 +287,56 @@ export class TecofApiClient {
         message: error instanceof Error ? error.message : 'Failed to fetch pages',
       };
     }
+  }
+
+  /**
+   * Bir düğümün stilini AYNI TEMADAKİ diğer sayfalardaki eşleşen bileşenlere
+   * uygular (`POST /api/store/editor/apply-styles`).
+   *
+   * Yalnız TASLAK (draftData) değişir — yayın kullanıcının ayrı adımıdır; bu
+   * yüzden sonuç mesajında "yayınlamak için o sayfaları yayınlayın" denir.
+   * `themeId` gövdeye eklenir: gönderilmezse backend merchant'ın AKTİF temasına
+   * düşerdi ve editör başka bir temada çalışıyorsa yanlış sayfalar taranırdı.
+   *
+   * @param signal Modal kapanınca uçuşan önizlemeyi iptal etmek için. Abort
+   *   RETHROW edilir (iptal ≠ hata) — diğer metotlardaki desenin aynısı.
+   */
+  async applyStylesToPages(
+    payload: ApplyStylesPayload,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<ApplyStylesResult>> {
+    try {
+      const res = await fetch(`${this.apiUrl}/api/store/editor/apply-styles`, {
+        method: 'POST',
+        headers: this.headers,
+        signal,
+        body: JSON.stringify({
+          ...payload,
+          ...(this.themeId && { themeId: this.themeId }),
+        }),
+      });
+      return await res.json();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error;
+      }
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to apply styles',
+      };
+    }
+  }
+
+  /**
+   * Aynı uç, YAZMADAN: sayfa başına eşleşme sayısını döner ("Hakkımızda (2
+   * eşleşme)"). `preview` bayrağı burada AÇIKÇA true geçirilir — çağıran
+   * payload'da yanlışlıkla `preview:false` bıraksa bile önizleme önizleme kalır.
+   */
+  async previewApplyStyles(
+    payload: ApplyStylesPayload,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<ApplyStylesResult>> {
+    return this.applyStylesToPages({ ...payload, preview: true }, signal);
   }
 
   /**

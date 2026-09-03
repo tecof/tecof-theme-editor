@@ -14,6 +14,7 @@ import { usePermissions } from '../usePermissions';
 import { FieldRenderer } from '../fields-host/FieldRenderer';
 import { useResolvedFields } from '../fields-host/useResolvedFields';
 import { StyleEditor } from '../style/StyleEditor';
+import { StyleSyncSection } from '../style/StyleSyncSection';
 import { STYLES_PROP } from '../style/types';
 import { InteractionsEditor } from '../interactions/InteractionsEditor';
 import { INTERACTIONS_PROP, START_HIDDEN_PROP } from '../interactions/types';
@@ -597,10 +598,15 @@ export const NodeInspectorBody: React.FC<NodeInspectorBodyProps> = ({
           </div>
         )}
         {tab === 'style' ? (
-          <StyleEditor
-            value={node.props[STYLES_PROP]}
-            onChange={(next) => updateProps(selectedId, { [STYLES_PROP]: next })}
-          />
+          <>
+            <StyleEditor
+              value={node.props[STYLES_PROP]}
+              onChange={(next) => updateProps(selectedId, { [STYLES_PROP]: next })}
+            />
+            {/* Stil sekmesinin sonu: aynı stili DİĞER SAYFALARDAKİ eşleşen
+                bileşenlere taşıma (tek seferlik) ve sürekli senkron bayrağı. */}
+            <StyleSyncSection nodeId={selectedId} />
+          </>
         ) : tab === 'interactions' ? (
           <InteractionsEditor
             interactions={node.props[INTERACTIONS_PROP]}

@@ -83,6 +83,16 @@
   --tecof-shared-border: rgba(139, 92, 246, 0.30);
   --tecof-shared-outline: rgba(139, 92, 246, 0.55);
 
+  /* ─── Stil kaynağı (sayfalar arası stil senkronu) — TEAL ───
+     Bilinçli istisna (symbol'ün MOR'u gibi): etkisi bu sayfayı AŞAN bir düğüm,
+     accent mavisiyle aynı dilde çizilirse sıradan bir seçim sanılır. Mor zaten
+     ortak bileşenin; teal ikisinden de ayrışır. */
+  --tecof-style-source: #0d9488;
+  --tecof-style-source-fg: #ffffff;
+  --tecof-style-source-subtle: rgba(13, 148, 136, 0.08);
+  --tecof-style-source-border: rgba(13, 148, 136, 0.30);
+  --tecof-style-source-outline: rgba(13, 148, 136, 0.55);
+
   /* ─── Spacing overlay ───
      Padding MAVİ (kullanıcı kararı 2026-08-20: "kalan yeşilleri de maviye al");
      margin AMBER kalır ki iki bant ayırt edilebilsin (devtools'un yeşil/turuncu
@@ -3438,8 +3448,14 @@
   .tecof-block-cat-chevron {
     transition: none;
   }
+}
 
-/* ── Sol paneldeki hazır SAYFA şablonu satırları ── */
+/* ── Sol paneldeki hazır SAYFA şablonu satırları ──
+   ⚠ Bu blok bir zamanlar yukarıdaki `prefers-reduced-motion` medya sorgusunun
+   İÇİNDE kalmıştı (medya sorgusunun kapanış parantezi unutulmuştu). Sonuç:
+   sayfa şablonu satırları yalnız "hareketi azalt" açık olan kullanıcılarda
+   stillenip herkeste ham metin olarak görünüyordu. Yeni kural eklerken bu
+   bloğun medya sorgusunun DIŞINDA kaldığından emin ol. */
 .tecof-page-tpl-list {
   display: flex;
   flex-direction: column;
@@ -3496,7 +3512,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
 }
 
 .tecof-left-panel {
@@ -9344,3 +9359,337 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   background: var(--tecof-warning-bg);
   border-radius: var(--tecof-radius-sm);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Stil senkronu — "diğer sayfalara uygula" + stil kaynağı
+   Etkisi AÇIK SAYFAYI AŞAN tek yetenek: kanvasta teal iz, Inspector'da kendi
+   bölümü, modal'da sayfa-sayfa eşleşme sayısı. Renk gerekçesi :root'ta.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Kanvas izi: seçili olmasa da stil kaynağı fark edilsin (ortak bileşenin
+   kesikli mor izinin kardeşi). */
+.tecof-studio-root .tecof-node-wrapper.is-style-source {
+  outline: 1px dashed var(--tecof-style-source-outline);
+  outline-offset: -1px;
+}
+
+.tecof-outline.is-hover.is-style-source {
+  border-color: var(--tecof-style-source);
+  background: var(--tecof-style-source-subtle);
+}
+.tecof-outline.is-selected.is-style-source { border-color: var(--tecof-style-source); }
+
+/* Rozet SAĞ altta: ortak bileşenin "Ortak Bileşen" rozeti sol altta duruyor —
+   ikisi aynı düğümde çakışırsa üst üste binmesin. */
+.tecof-outline.is-selected.is-style-source::after {
+  content: "Stil Kaynağı";
+  position: absolute;
+  bottom: -22px;
+  right: -2px;
+  padding: 2px 8px;
+  background: var(--tecof-style-source);
+  color: var(--tecof-style-source-fg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 0 0 6px 6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ── Inspector Stil sekmesi: "Sayfalar arası stil" bölümü ── */
+.tecof-stylesync-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: var(--tecof-line);
+}
+
+.tecof-stylesync-section-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-open {
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tecof-style-source);
+  background: var(--tecof-style-source-subtle);
+  border: 1px solid var(--tecof-style-source-border);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tecof-stylesync-open:hover:not(:disabled) {
+  background: var(--tecof-style-source);
+  color: var(--tecof-style-source-fg);
+}
+
+.tecof-stylesync-open:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tecof-stylesync-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--tecof-text-soft);
+  cursor: pointer;
+}
+
+.tecof-stylesync-toggle.is-sub {
+  padding-left: 20px;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-toggle.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.tecof-stylesync-toggle input { margin-top: 2px; }
+
+.tecof-stylesync-toggle-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-section-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--tecof-warning-text);
+  background: var(--tecof-warning-bg);
+  border-radius: var(--tecof-radius-sm);
+}
+
+/* ── "Diğer sayfalara uygula" modalı ── */
+.tecof-stylesync-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius);
+  box-shadow: var(--tecof-shadow-lg);
+}
+
+.tecof-stylesync-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tecof-stylesync-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tecof-text);
+}
+
+.tecof-stylesync-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+}
+
+.tecof-stylesync-source-type {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tecof-text);
+}
+
+.tecof-stylesync-source-name {
+  font-size: 12px;
+  color: var(--tecof-style-source);
+}
+
+.tecof-stylesync-source-hint {
+  flex: 1 1 100%;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--tecof-text-soft);
+  cursor: pointer;
+}
+
+.tecof-stylesync-check.is-disabled { opacity: 0.55; cursor: not-allowed; }
+
+.tecof-stylesync-listhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-bulk { display: inline-flex; gap: 6px; }
+
+.tecof-stylesync-bulk button {
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--tecof-accent-text, var(--tecof-accent));
+  background: transparent;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-pill);
+  cursor: pointer;
+}
+
+.tecof-stylesync-list {
+  flex: 1 1 auto;
+  min-height: 90px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+}
+
+.tecof-stylesync-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--tecof-text);
+  border-bottom: var(--tecof-line-subtle);
+  cursor: pointer;
+}
+
+.tecof-stylesync-row:last-child { border-bottom: none; }
+.tecof-stylesync-row:hover { background: var(--tecof-surface-2); }
+.tecof-stylesync-row.is-empty { opacity: 0.5; cursor: not-allowed; }
+
+.tecof-stylesync-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tecof-stylesync-row-slug {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-row-count {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tecof-style-source);
+  white-space: nowrap;
+}
+
+.tecof-stylesync-row.is-empty .tecof-stylesync-row-count { color: var(--tecof-text-muted); }
+
+.tecof-stylesync-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 24px 10px;
+  font-size: 12px;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-spin { animation: tecof-stylesync-rotate 1s linear infinite; }
+
+@keyframes tecof-stylesync-rotate {
+  to { transform: rotate(360deg); }
+}
+
+.tecof-stylesync-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 12px;
+  border-radius: var(--tecof-radius-sm);
+}
+
+.tecof-stylesync-note.is-warning {
+  color: var(--tecof-warning-text);
+  background: var(--tecof-warning-bg);
+}
+
+.tecof-stylesync-note.is-error {
+  color: var(--tecof-danger-text);
+  background: var(--tecof-danger-bg);
+}
+
+.tecof-stylesync-note.is-success {
+  color: var(--tecof-success-text);
+  background: var(--tecof-success-bg);
+}
+
+.tecof-stylesync-foot {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-stylesync-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tecof-stylesync-hint { font-size: 11px; color: var(--tecof-text-muted); }
+
+.tecof-stylesync-buttons { display: inline-flex; gap: 8px; }
+
+.tecof-stylesync-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tecof-text-soft);
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius);
+  cursor: pointer;
+}
+
+.tecof-stylesync-btn:hover { color: var(--tecof-text); background: var(--tecof-surface); }

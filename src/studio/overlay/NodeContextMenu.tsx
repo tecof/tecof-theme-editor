@@ -6,6 +6,7 @@ import {
   Copy,
   CopyPlus,
   Paintbrush,
+  Share2,
   Trash2,
 } from 'lucide-react';
 import { useEditorStore, hasClipboardContent } from '../../engine/store';
@@ -56,7 +57,7 @@ interface MenuProps {
  * component), so all transient state — save panel, feedback — resets naturally.
  */
 const Menu = ({ menu, onClose }: MenuProps) => {
-  const { config, apiClient } = useStudio();
+  const { config, apiClient, pageId } = useStudio();
   const documentState = useEditorStore((s) => s.document);
   const selectNode = useEditorStore((s) => s.selectNode);
   const removeNode = useEditorStore((s) => s.removeNode);
@@ -65,6 +66,7 @@ const Menu = ({ menu, onClose }: MenuProps) => {
   const pasteClipboard = useEditorStore((s) => s.pasteClipboard);
   const updateProps = useEditorStore((s) => s.updateProps);
   const styleClipboard = useUiStore((s) => s.styleClipboard);
+  const openStyleSync = useUiStore((s) => s.openStyleSync);
   // Paste availability: the engine clipboard OR its cross-page localStorage
   // mirror — sections copied on another page/tab paste here too.
   const clipboardInMemory = useEditorStore((s) => s.clipboard != null);
@@ -218,6 +220,13 @@ const Menu = ({ menu, onClose }: MenuProps) => {
     onClose();
   };
 
+  /* Stil senkronu modalı: bu düğümün stilini diğer sayfalardaki eşleşen
+     bileşenlere taşır. Menü kapanır — modal kendi yüzeyi. */
+  const handleApplyStylesToPages = () => {
+    openStyleSync(menu.nodeId);
+    onClose();
+  };
+
   const handleDelete = () => {
     removeNode(menu.nodeId);
     onClose();
@@ -355,6 +364,15 @@ const Menu = ({ menu, onClose }: MenuProps) => {
             label="Stili Yapıştır"
             disabled={!styleClipboard || perms.edit === false}
             onSelect={handlePasteStyles}
+          />
+          {/* Yerelde düzenlenmesi kilitli bir bileşenin stili, tek tıkla
+              temadaki TÜM sayfalara yazılamamalı: komşu "Stili Yapıştır" ile
+              aynı izin kapısı (perms.edit) burada da geçerlidir. */}
+          <MenuItem
+            icon={<Share2 size={14} />}
+            label="Stili Diğer Sayfalara Uygula…"
+            disabled={!apiClient || !pageId || perms.edit === false}
+            onSelect={handleApplyStylesToPages}
           />
           <div className="tecof-ctx-sep" role="separator" />
           {node.props.sharedComponentId ? (

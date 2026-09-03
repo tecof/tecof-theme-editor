@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import {
   Undo2, Redo2, Copy, Scissors, ClipboardPaste, CopyPlus, Trash2,
   Eye, Pencil, PanelLeft, PanelRight, Save, Plus, Search, Paintbrush, Sparkles,
-  Download, Upload,
+  Download, Upload, Share2,
 } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
@@ -42,7 +42,7 @@ export interface CommandPaletteProps {
 export const CommandPalette = ({ onSave, onExport, onImport }: CommandPaletteProps) => {
   const open = useUiStore((s) => s.commandPaletteOpen);
   const setOpen = useUiStore((s) => s.setCommandPaletteOpen);
-  const { config } = useStudio();
+  const { config, apiClient, pageId } = useStudio();
 
   // Reactive bits used to enable/disable commands.
   const selectedId = useEditorStore((s) => s.selection.selectedId);
@@ -96,6 +96,12 @@ export const CommandPalette = ({ onSave, onExport, onImport }: CommandPalettePro
       { id: 'delete', label: 'Sil', group: 'Eylemler', icon: <Trash2 size={15} />, hint: '⌫', keywords: 'delete kaldır', disabled: !hasSel || perms.delete === false, run: () => s().removeNodes() },
       { id: 'copy-styles', label: 'Stili Kopyala', group: 'Stil', icon: <Paintbrush size={15} />, keywords: 'style stil kopyala copy', disabled: !hasSel, run: () => copyNodeStyles() },
       { id: 'paste-styles', label: 'Stili Yapıştır', group: 'Stil', icon: <Paintbrush size={15} />, keywords: 'style stil yapıştır paste', disabled: !hasSel || !hasStyleBuffer, run: () => pasteNodeStyles() },
+      /* Stil senkronu: seçili bileşenin stilini AYNI TEMADAKİ diğer sayfalardaki
+         eşleşenlere taşır. Sayfa bazlı bir uç olduğu için pageId + apiClient şart.
+         `perms.edit === false` (tema tarafından kilitli bileşen) da kapatır:
+         yerelde düzenlenemeyen bir stilin tüm siteye yazılması izin kapısını
+         atlamak olurdu (aynı kural NodeContextMenu ve modalda da geçerli). */
+      { id: 'apply-styles-pages', label: 'Stili Diğer Sayfalara Uygula…', group: 'Stil', icon: <Share2 size={15} />, keywords: 'style stil sayfa page uygula apply senkron sync', disabled: !hasSel || !apiClient || !pageId || perms.edit === false, run: () => selectedId && ui().openStyleSync(selectedId) },
       { id: 'mode', label: ui().mode === 'preview' ? 'Düzenleme moduna geç' : 'Önizleme moduna geç', group: 'Görünüm', icon: ui().mode === 'preview' ? <Pencil size={15} /> : <Eye size={15} />, keywords: 'preview önizleme edit düzenle', run: () => ui().toggleMode() },
       { id: 'left', label: ui().leftPanelOpen ? 'Sol paneli gizle' : 'Sol paneli göster', group: 'Görünüm', icon: <PanelLeft size={15} />, keywords: 'panel katman', run: () => ui().toggleLeftPanel() },
       { id: 'right', label: ui().rightPanelOpen ? 'Sağ paneli gizle' : 'Sağ paneli göster', group: 'Görünüm', icon: <PanelRight size={15} />, keywords: 'panel inspector ayar', run: () => ui().toggleRightPanel() },
@@ -138,7 +144,7 @@ export const CommandPalette = ({ onSave, onExport, onImport }: CommandPalettePro
 
     return [...actions, ...inserts];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, selectedId, canUndo, canRedo, onSave, onExport, onImport, hasStyleBuffer]);
+  }, [config, selectedId, canUndo, canRedo, onSave, onExport, onImport, hasStyleBuffer, apiClient, pageId]);
 
   const filtered = useMemo(() => {
     // Türkçe-güvenli arama (bkz. utils/search) — komut adları da Türkçe.

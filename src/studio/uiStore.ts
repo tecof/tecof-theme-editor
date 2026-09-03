@@ -141,6 +141,11 @@ interface UiState {
   /** Whether the node settings modal (overlay toolbar'daki kalem) is open —
    * seçili bileşenin Inspector gövdesini sağ paneli açmadan modal'da gösterir. */
   nodeSettingsOpen: boolean;
+  /** "Stili diğer sayfalara uygula" modalının hedef düğümü; null = kapalı.
+   * Seçime DEĞİL açık isteğe bağlıdır: modal açıkken kullanıcı kanvasta başka
+   * bir düğüm seçse bile uygulanacak stil değişmemelidir (Inspector, komut
+   * paleti ve bağlam menüsü aynı modalı farklı düğümler için açabilir). */
+  styleSyncNodeId: string | null;
   /** Which color scheme the canvas previews. Editor aid, session-only (NOT part
    * of the document / undo / publish): ThemeVars toggles the `.dark` class on the
    * canvas + host roots so authors can design the dark palette live. Only surfaced
@@ -184,6 +189,8 @@ interface UiState {
   setDropHover: (hover: DropHoverState | null) => void;
   setAiModalOpen: (open: boolean) => void;
   setNodeSettingsOpen: (open: boolean) => void;
+  openStyleSync: (nodeId: string) => void;
+  closeStyleSync: () => void;
   setPreviewColorScheme: (scheme: 'light' | 'dark') => void;
   togglePreviewColorScheme: () => void;
   setInlineEditingNodeId: (id: string | null) => void;
@@ -214,6 +221,7 @@ export const useUiStore = create<UiState>((set) => ({
   dropHover: null,
   aiModalOpen: false,
   nodeSettingsOpen: false,
+  styleSyncNodeId: null,
   previewColorScheme: 'light',
   inlineEditingNodeId: null,
   inspectorFocus: null,
@@ -269,6 +277,8 @@ export const useUiStore = create<UiState>((set) => ({
     }),
   setAiModalOpen: (open) => set({ aiModalOpen: open }),
   setNodeSettingsOpen: (open) => set({ nodeSettingsOpen: open }),
+  openStyleSync: (nodeId) => set({ styleSyncNodeId: nodeId || null }),
+  closeStyleSync: () => set({ styleSyncNodeId: null }),
   setPreviewColorScheme: (scheme) => set({ previewColorScheme: scheme }),
   togglePreviewColorScheme: () =>
     set((s) => ({ previewColorScheme: s.previewColorScheme === 'dark' ? 'light' : 'dark' })),

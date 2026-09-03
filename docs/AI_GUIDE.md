@@ -272,6 +272,16 @@ map'liyorsa (slot yok), kartları editöre şu attr'larla tanıtabilir:
 | `warnOnUnsavedChanges` | Sekme kapanış uyarısı | `true` |
 | `onChange` | Yaklaşık 300 ms debounce'lu değişiklik callback'i | yok |
 | `onSave` | Başarılı kayıt callback'i | yok |
+| `onLanguageChange` | Aktif düzenleme dili callback'i — `(code: string) => void` | yok |
+
+`onLanguageChange` sözleşmesi: aktif dil ilk kez çözüldüğünde (merchant
+varsayılan dili) bir kez, sonra her değişimde çağrılır. Boş dil (`""` —
+merchant-info henüz gelmedi) ASLA gönderilmez, aynı kod ardışık olarak iki
+kez gönderilmez ve host inline fonksiyon verse (her render yeni referans)
+bile ek çağrı doğmaz. Host bunu kendi i18n sağlayıcısına bağlayarak TUVAL
+içeriğini de o dilde gösterir; editör kroması (TopBar/Inspector) Türkçe
+sabittir. Tuvalin içindeki host bileşenleri aynı dili `useActiveLanguage()`
+ile doğrudan okuyabilir (provider yoksa `null` döner).
 
 ## API Client
 
