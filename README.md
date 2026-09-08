@@ -1079,3 +1079,6 @@ npm run storybook  # Storybook
 ## Lisans
 
 MIT © Tecof
+
+---
+> Son Güncelleme: 08.09.2026 22:05
