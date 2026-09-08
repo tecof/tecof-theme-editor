@@ -31,6 +31,69 @@ const readStyleClipboardStorage = (): NodeStyles | null => {
   }
 };
 
+/**
+ * Sürümlü localStorage anahtarı: sol/sağ panelin açık-kapalı tercihi. Sürüm
+ * eki (`:v1`) şema değişince bayat kaydın patlamaması içindir — yeni sürüme
+ * geçildiğinde eski anahtar okunmaz, kullanıcı varsayılana döner.
+ */
+const PANEL_LAYOUT_STORAGE_KEY = 'tecof:panel-layout:v1';
+
+interface PanelLayout {
+  left: boolean;
+  right: boolean;
+}
+
+/** İlk ziyaret (kayıt yok) = İKİ PANEL DE AÇIK — 2026-09 kullanıcı kararı. */
+const DEFAULT_PANEL_LAYOUT: PanelLayout = { left: true, right: true };
+
+const writePanelLayoutStorage = (layout: PanelLayout) => {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+  } catch {
+    /* private mod / kota dolu — tercih bu oturumda bellekte yaşar, UI kırılmaz */
+  }
+};
+
+/**
+ * Kayıtlı tercihi okur; kayıt yoksa `null` döner (çağıran varsayılanı korur).
+ * Alanlar TEK TEK doğrulanır: yalnız gerçek `boolean` bir kullanıcı kararı
+ * sayılır, eksik/bozuk alan varsayılana (açık) düşer — böylece elle kurcalanmış
+ * ya da eski şemadan kalmış bir kayıt editörü kapalı panellerle açmaz.
+ */
+const readPanelLayoutStorage = (): PanelLayout | null => {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const { left, right } = parsed as { left?: unknown; right?: unknown };
+    return {
+      left: typeof left === 'boolean' ? left : DEFAULT_PANEL_LAYOUT.left,
+      right: typeof right === 'boolean' ? right : DEFAULT_PANEL_LAYOUT.right,
+    };
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Panel durumunu değiştiren TEK KAPI: durum partial'ını üretir ve aynayı
+ * günceller, böylece yeni bir eylem eklendiğinde kaydetmeyi unutmak zorlaşır.
+ *
+ * Aynaya YALNIZ kullanıcının dokunduğu taraf yazılır; karşı taraf kayıttan
+ * (kayıt yoksa varsayılandan) taşınır — o anki bellekteki durumdan DEĞİL.
+ * Sebep: sağ panel `revealRightPanel` ile sistem tarafından geçici açılmış
+ * olabilir; bellekteki durumu kopyalasaydık, kullanıcının SOL paneli açıp
+ * kapatması sağ panelin "kapalı kalsın" tercihini sessizce silerdi.
+ */
+const applyPanel = (side: 'left' | 'right', open: boolean) => {
+  const stored = readPanelLayoutStorage() ?? DEFAULT_PANEL_LAYOUT;
+  writePanelLayoutStorage({ ...stored, [side]: open });
+  return side === 'left' ? { leftPanelOpen: open } : { rightPanelOpen: open };
+};
+
 export type EditorMode = 'edit' | 'preview';
 
 /**
@@ -93,6 +156,12 @@ export interface InspectorFocusRequest {
 interface UiState {
   /** 'edit' = clicks select nodes, links/buttons inert. 'preview' = links/buttons are live. */
   mode: EditorMode;
+  /**
+   * Sol/sağ panel görünürlüğü. VARSAYILAN AÇIK; kullanıcı kapatırsa tercih
+   * localStorage'a yazılır ve sonraki açılışta geri yüklenir. Dikkat: ilk
+   * render'da DAİMA varsayılan kullanılır, kayıtlı tercih `hydratePanelLayout`
+   * ile mount sonrası uygulanır (bkz. o eylemin yorumu).
+   */
   leftPanelOpen: boolean;
   rightPanelOpen: boolean;
   /** Whether the Cmd/Ctrl+K command palette is open. */
@@ -172,6 +241,23 @@ interface UiState {
   toggleRightPanel: () => void;
   setLeftPanelOpen: (open: boolean) => void;
   setRightPanelOpen: (open: boolean) => void;
+  /**
+   * Sağ paneli PROGRAMATİK olarak açar (kanvas tıklamasından gelen odak
+   * isteği gibi) — durumu açar ama localStorage aynasına YAZMAZ. Ayrım
+   * kasıtlı: ayna yalnız KULLANICININ kararını (TopBar toggle'ı, Cmd+K)
+   * saklar. Sistemin geçici olarak açması, kullanıcının "kapalı kalsın"
+   * tercihini silmemeli — aksi halde paneli kapatan kullanıcı kanvasta bir
+   * elemente tıkladığı anda tercihi kaybolurdu.
+   */
+  revealRightPanel: () => void;
+  /**
+   * Kayıtlı panel tercihini uygular. MOUNT SONRASI çağrılır (TecofStudio),
+   * store başlatılırken DEĞİL: bu paket Next.js temalarında sunucuda da import
+   * edilir (orada `localStorage` yok) ve sunucu ilk render'ı varsayılanla,
+   * istemci kayıtlı değerle üretirse hydration uyuşmazlığı çıkar. Kayıt yoksa
+   * durum varsayılanda (iki panel de açık) bırakılır.
+   */
+  hydratePanelLayout: () => void;
   setCommandPaletteOpen: (open: boolean) => void;
   toggleCommandPalette: () => void;
   setStyleClipboard: (styles: NodeStyles | null) => void;
@@ -202,8 +288,9 @@ interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   mode: 'edit',
-  leftPanelOpen: false,
-  rightPanelOpen: true,
+  // Kayıtlı tercih burada OKUNMAZ (SSR/hydration) — bkz. hydratePanelLayout.
+  leftPanelOpen: DEFAULT_PANEL_LAYOUT.left,
+  rightPanelOpen: DEFAULT_PANEL_LAYOUT.right,
   commandPaletteOpen: false,
   // Seeded from the cross-page mirror so styles copied on a previous page are
   // immediately pasteable here.
@@ -229,10 +316,24 @@ export const useUiStore = create<UiState>((set) => ({
 
   setMode: (mode) => set({ mode }),
   toggleMode: () => set((s) => ({ mode: s.mode === 'edit' ? 'preview' : 'edit' })),
-  toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
-  toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
-  setLeftPanelOpen: (open) => set({ leftPanelOpen: open }),
-  setRightPanelOpen: (open) => set({ rightPanelOpen: open }),
+  // Panel açık/kapalı DOKÜMANIN ya da undo geçmişinin parçası değildir; yalnız
+  // kullanıcının kroma tercihi olarak localStorage'da yaşar.
+  toggleLeftPanel: () => set((s) => applyPanel('left', !s.leftPanelOpen)),
+  toggleRightPanel: () => set((s) => applyPanel('right', !s.rightPanelOpen)),
+  setLeftPanelOpen: (open) => set(() => applyPanel('left', !!open)),
+  setRightPanelOpen: (open) => set(() => applyPanel('right', !!open)),
+  // Programatik açma: AYNAYA YAZMAZ (bkz. arayüzdeki yorum).
+  revealRightPanel: () => set((s) => (s.rightPanelOpen ? s : { rightPanelOpen: true })),
+  hydratePanelLayout: () =>
+    set((s) => {
+      const stored = readPanelLayoutStorage();
+      // Kayıt yok/bozuk → varsayılanı KORU (yeniden yazma da yapma: kullanıcı
+      // hiçbir şeye dokunmadan aynayı doldurmak, ileride varsayılan değişirse
+      // "eski varsayılanı seçmiş" gibi görünmesine yol açardı).
+      if (!stored) return s;
+      if (stored.left === s.leftPanelOpen && stored.right === s.rightPanelOpen) return s;
+      return { leftPanelOpen: stored.left, rightPanelOpen: stored.right };
+    }),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   toggleCommandPalette: () => set((s) => ({ commandPaletteOpen: !s.commandPaletteOpen })),
   setStyleClipboard: (styles) => {

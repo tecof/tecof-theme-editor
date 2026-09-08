@@ -8,6 +8,7 @@ import {
   Monitor, Tablet, Smartphone, Undo2, Redo2, Save, Check,
   PanelLeft, PanelRight, Eye, Pencil, Globe, ChevronDown, Scaling, Sun, Moon, UnfoldVertical, Info } from 'lucide-react';
 import { GridControl } from './GridControl';
+import { PresenceBar } from '../presence/PresenceBar';
 import { useStudio } from '../context';
 
 interface TopBarProps {
@@ -135,6 +136,12 @@ export const TopBar = ({ onSave, saving, saveStatus, dirty, autoSave, embedded }
         >
           <PanelLeft size={16} />
         </button>
+        {/* "Bu sayfada kimler var" — YALNIZ ikinci kişi girdiğinde kendini çizer.
+            GÖMÜLÜ modda BASILMAZ: editör panelin iframe'i olarak açıldığında
+            göstergeyi panel kabuğu çiziyor (tek deploy ile yayına çıkar; paket
+            npm zinciri + tema sürümleri gerektirir). Çift rozet olmasın diye
+            burada yalnız doğrudan /editor/<id> ile açılan editör kapsanır. */}
+        {!embedded && <PresenceBar />}
         {!embedded && (
           <div className="tecof-topbar-title">
             <span>Sayfa Düzenleyici</span>

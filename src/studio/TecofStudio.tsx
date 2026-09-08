@@ -58,7 +58,18 @@ export const TecofStudio = ({
 
   const leftPanelOpen = useUiStore((state) => state.leftPanelOpen);
   const rightPanelOpen = useUiStore((state) => state.rightPanelOpen);
+  const hydratePanelLayout = useUiStore((state) => state.hydratePanelLayout);
   const mode = useUiStore((state) => state.mode);
+
+  // Panel açık/kapalı tercihi MOUNT SONRASI geri yüklenir, store başlatılırken
+  // değil: paket Next.js temalarında sunucuda da import ediliyor (orada
+  // `localStorage` yok) ve sunucu ilk render'ı varsayılanla, istemci kayıtlı
+  // değerle üretirse hydration uyuşmazlığı çıkardı. İlk render herkeste
+  // varsayılan (iki panel de AÇIK) → hemen ardından tercih uygulanır. Kullanıcı
+  // arada "açılıp kapanma" görmez: belge yüklenene kadar zaten iskelet basılıyor.
+  useEffect(() => {
+    hydratePanelLayout();
+  }, [hydratePanelLayout]);
 
   const documentStateRef = useRef(documentState);
   documentStateRef.current = documentState;

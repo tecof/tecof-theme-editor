@@ -98,6 +98,18 @@ export class TecofApiClient {
     this.accessToken = token;
   }
 
+  /**
+   * Canlı bağlantı (Socket.IO) için gereken asgari bilgi.
+   *
+   * `apiUrl` ve `accessToken` bilinçli olarak PRIVATE; canlı katılım göstergesi
+   * ("bu sayfada kimler var") backend'e ayrı bir soket bağlantısı açtığı için
+   * ikisini birlikte, salt-okunur şekilde dışarı veren TEK yüzey budur —
+   * alanları public yapmak her tüketiciye yazma izni de verirdi.
+   */
+  getRealtimeConfig(): { url: string; token?: string } {
+    return { url: this.apiUrl, token: this.accessToken };
+  }
+
   /** FilePond gibi this.headers'ı kullanamayan akışların JWT'yi ekleyebilmesi için. */
   getAccessToken(): string | undefined {
     return this.accessToken;

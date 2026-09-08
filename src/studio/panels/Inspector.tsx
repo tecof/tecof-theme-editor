@@ -31,18 +31,20 @@ export const Inspector = () => {
      geç, sağ paneli aç, hedef node'un aggregate satırı daraltılmışsa aç.
      Kaydırma + vurgu NodeInspectorBody'de (hedef DOM'u orada yaşar). */
   const inspectorFocus = useUiStore((s) => s.inspectorFocus);
-  const setRightPanelOpen = useUiStore((s) => s.setRightPanelOpen);
+  /* `revealRightPanel` (setRightPanelOpen DEĞİL): bu açılış SİSTEM kararıdır,
+     kullanıcının kapalı tercihini localStorage aynasında ezmemeli. */
+  const revealRightPanel = useUiStore((s) => s.revealRightPanel);
   useEffect(() => {
     if (!inspectorFocus) return;
     setNodeTab('content');
-    setRightPanelOpen(true);
+    revealRightPanel();
     setNodeCollapsed((prev) => {
       if (!prev.has(inspectorFocus.nodeId)) return prev;
       const next = new Set(prev);
       next.delete(inspectorFocus.nodeId);
       return next;
     });
-  }, [inspectorFocus, setRightPanelOpen]);
+  }, [inspectorFocus, revealRightPanel]);
 
   // 1. Component selected state — body extracted to NodeInspectorBody.
   if (selectedId) {
