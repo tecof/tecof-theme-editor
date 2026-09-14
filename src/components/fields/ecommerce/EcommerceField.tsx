@@ -406,7 +406,7 @@ const EcommerceFieldInner = ({
              Metin + doğrudan o ekrana giden düğme birlikte verilir. */
           <div className="tecof-cmdk-empty tecof-panel-empty">
             <p className="tecof-panel-empty-text">{source.emptyLabel}</p>
-            <PanelLink path={source.panelPath} variant="button">
+            <PanelLink path={source.panelNewPath ?? source.panelPath} variant="button">
               {source.panelLabel}
             </PanelLink>
           </div>

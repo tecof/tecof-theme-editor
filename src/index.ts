@@ -134,8 +134,9 @@ export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
 
 /* ─── Drawer kabuğu + onay/uyarı kuyruğu ───
-   Editördeki her pencere StudioDrawer'dır (vaul). Host'un kendi eklentileri
-   aynı kabuğu kullansın; `studioDialog.confirm/alert` window.confirm/alert
+   Editördeki her pencere StudioDrawer'dır (Radix Dialog, modal={false}).
+   Host'un kendi eklentileri aynı kabuğu kullansın;
+   `studioDialog.confirm/alert` window.confirm/alert
    yerine geçer (DialogHost TecofStudio içinde mount edilir). */
 export { StudioDrawer, isStudioDrawerOpen } from './studio/ui/StudioDrawer';
 export type { StudioDrawerProps, StudioDrawerSize, StudioDrawerTone } from './studio/ui/StudioDrawer';

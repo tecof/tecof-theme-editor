@@ -8,7 +8,7 @@ import { StudioDrawer } from '../ui/StudioDrawer';
  * (StudioDrawer 'lg').
  *
  * Desen: NodeSettingsModal ile birebir (uiStore bayrağı + TecofStudio'da
- * koşulsuz mount; ESC/dış tıklama vaul'dan). İçerik statiktir ve editörün
+ * koşulsuz mount; ESC/dış tıklama StudioDrawer'dan). İçerik statiktir ve editörün
  * GERÇEK davranışlarını anlatır; bir özellik değişirse burası da
  * güncellenmelidir (kısayollar TecofStudio.tsx'teki handler'la eşleşmeli).
  */

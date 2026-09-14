@@ -110,6 +110,7 @@ const config = {
     },
   },
   templates: [],
+  pageTemplates: [],
   permissions: {
     drag: true,
     delete: true,
@@ -126,6 +127,15 @@ Component config; `fields`, `defaultProps`, `render`, `inline`,
 `acceptsChildren`, `maxItems`, `allowedParents`, `permissions`,
 `resolvePermissions`, `resolveFields` ve `resolveData` seçeneklerini
 destekler.
+
+`templates` TEK bölüm ekler (`SectionTemplate`); `pageTemplates` TÜM sayfayı
+kurar (`PageTemplate`: `id`, `label`, `description?`, `thumbnail?`,
+`keywords?`, `sections[]`, `previewUrl?`). Sayfa şablonuna tıklamak bölümleri
+doğrudan eklemez: önce onay drawer'ı açılır. `previewUrl` verilmişse drawer o
+adresi iframe'de GERÇEK çıktı olarak gösterir (göreli olabilir:
+`/preview-template/<id>` — editörün çalıştığı origin'e göre çözülür); yoksa
+bölümlerin canlı önizlemesi üst üste dizilir. Onaydan sonra tüm id'ler taze
+üretilir; ekleme tek commit ve tek "Geri Al"dır.
 
 ## Alanlar
 
@@ -147,7 +157,11 @@ Gelişmiş alan factory'leri:
 
 - `createLanguageField`: Merchant dilleri ve çeviri
 - `createEditorField`: TipTap zengin metin editörü
-- `createUploadField`: Medya kütüphanesi, FilePond, sıkıştırma ve Doka
+- `createUploadField`: Medya kütüphanesi, FilePond, sıkıştırma, Doka ve
+  **odak noktası** (görsel tile'ında nişangâh düğmesi → `focalPoint` `{x,y}`
+  yüzde olarak dosyanın içine yazılır; `TecofPicture` bunu `object-position`
+  olarak uygular, yani `object-fit: cover` kırpmalarında o nokta kadrajda
+  kalır. Odak yoksa/merkezdeyse DOM çıktısı değişmez.)
 - `createLinkField`: Merchant sayfası veya manuel URL seçimi
 - `createColorField`: HEX, alpha, swatch ve EyeDropper
 - `createCodeEditorField`: Monaco kod editörü
@@ -185,6 +199,15 @@ header'a ekler. Kimlik çözülemezse liste boş gösterilmez, HATA basılır �
 Snapshot **seçim anında donar**: panelde kampanyanın tarihi ya da markanın adı
 sonradan değişirse sayfa eski değeri göstermeye devam eder; merchant alanı
 yeniden seçmelidir.
+
+Bu seçicilerin **boş durumları panele bağlıdır**: liste boşsa "Panelde ürün
+ekle / marka ekle / koleksiyon oluştur" düğmesi, liste doluyken de başlık
+satırında küçük bir "Panelde yönet" bağlantısı çizilir (aynısı
+`LinkField` seçicisinin ve `createCmsCollectionField` açılırının boş
+durumlarında da vardır). Adresler `panelUrl` + `PANEL_PATHS` üzerinden
+kurulur ve **yeni sekmede** açılır; kullanıcı panelde kaydı ekledikten sonra
+seçicideki **Yenile** ile listeyi tazeler. Arama kutusu doluyken bu bağlantı
+çizilmez — "sonuç yok" ile "kayıt yok" karışmasın.
 
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render

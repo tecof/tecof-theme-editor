@@ -351,4 +351,19 @@ describe('kaynakların panel bağlantıları', () => {
   it('markanın yolu marka ayarları ekranıdır', () => {
     expect(brandSource.panelPath).toBe('/app/ecommerce/settings/brands');
   });
+
+  /* `panelPath` başlıktaki kalıcı "Panelde yönet" bağlantısıdır: her kaynakta
+     LİSTE ekranı olmalı. Oluşturma formuna yalnız boş durumdaki düğme gider
+     (`panelNewPath`). Kategori bir zamanlar tek alanla ikisini birden taşıyor
+     ve kullanıcıyı boş "Yeni kategori" formuna düşürüyordu. */
+  it('panelPath hiçbir kaynakta oluşturma formu değildir', () => {
+    for (const source of allSources) {
+      expect(source.panelPath.endsWith('/new')).toBe(false);
+    }
+  });
+
+  it('kategoride yönetim listesi ile ekleme formu ayrıdır', () => {
+    expect(categorySource.panelPath).toBe('/app/ecommerce/categories');
+    expect(categorySource.panelNewPath).toBe('/app/ecommerce/categories/new');
+  });
 });

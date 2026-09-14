@@ -255,9 +255,14 @@ const ProductFieldInner = ({
             <p className="tecof-panel-empty-text">
               {debounced ? `“${debounced}” için ürün bulunamadı` : 'Yayında ürün yok.'}
             </p>
-            <PanelLink path={PANEL_PATHS.productNew} variant="button">
-              Panelde ürün ekle
-            </PanelLink>
+            {/* Arama sonuçsuzken panel bağlantısı YOK: sorun büyük ihtimalle
+                yazım hatası, yeni ürün eklemek değil. LinkPickerDrawer ve
+                CmsCollectionField de aynı ayrımı yapar. */}
+            {!debounced && (
+              <PanelLink path={PANEL_PATHS.productNew} variant="button">
+                Panelde ürün ekle
+              </PanelLink>
+            )}
           </div>
         ) : (
           <>

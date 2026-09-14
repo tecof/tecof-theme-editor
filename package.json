@@ -1,6 +1,6 @@
 {
   "name": "@tecof/theme-editor",
-  "version": "0.0.90",
+  "version": "0.0.91",
   "description": "React theme editor and renderer library for Tecof projects",
   "keywords": [
     "react",
@@ -91,6 +91,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
     "@storybook/react-vite": "^8.0.0",

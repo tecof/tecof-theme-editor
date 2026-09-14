@@ -24,7 +24,11 @@ export const PageTemplateMiniPreview = ({
   if (sections.length === 0) return null;
 
   return (
-    <span className="tecof-page-tpl-preview" aria-hidden="true">
+    /* `inert`: canlı önizleme temanın gerçek <button>/<a href> öğelerini
+       çiziyor. `pointer-events:none` fareyi yutuyor ama odak sırasını
+       etkilemiyordu — Tab ile görünmez bir bağlantıya odaklanıp Enter'la
+       editörden çıkılabiliyordu. */
+    <span className="tecof-page-tpl-preview" aria-hidden="true" inert>
       <span className="tecof-page-tpl-preview-stack">
         {sections.map((section, index) => (
           <span

@@ -196,12 +196,25 @@ export const LeftPanel = () => {
                         const hasLivePreview =
                           !tpl.thumbnail && showPreviews && !isCollapsed && tpl.sections.length > 0;
                         return (
-                          <button
+                          /* <button> DEĞİL: canlı önizleme temanın gerçek
+                             bölümlerini çiziyor ve onlar <button>/<a href>
+                             içeriyor — iç içe buton geçersiz DOM'dur ve Tab ile
+                             kartın değil önizlemedeki bağlantının tetiklenmesine
+                             yol açıyordu. Katalog kartıyla (GridCard) aynı
+                             role="button" kalıbı. */
+                          <div
                             key={tpl.id}
-                            type="button"
+                            role="button"
+                            tabIndex={0}
                             className={`tecof-page-tpl${tpl.thumbnail || hasLivePreview ? ' has-preview' : ''}`}
                             title={tpl.description || tpl.label}
                             onClick={() => setPendingTemplate(tpl)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setPendingTemplate(tpl);
+                              }
+                            }}
                           >
                             {tpl.thumbnail ? (
                               <span className="tecof-page-tpl-preview" aria-hidden="true">
@@ -221,7 +234,7 @@ export const LeftPanel = () => {
                                 {tpl.description ? ` · ${tpl.description}` : ''}
                               </span>
                             </span>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>

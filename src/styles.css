@@ -7319,7 +7319,9 @@
 .tecof-font-select-caret { flex-shrink: 0; color: var(--tecof-text-muted); }
 
 .tecof-font-menu {
-  z-index: 10002;
+  /* Portallı popover bandı (1000000): drawer kartı 99999'da olduğu için
+     10002 kalsaydı drawer içinden açılan font menüsü kartın ARKASINDA kalırdı. */
+  z-index: 1000000;
   width: 240px;
   max-height: 320px;
   overflow-y: auto;
@@ -9461,11 +9463,14 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 
 /* ═══════════════════════════════════════════════════════════════════
    Studio — Drawer kabuğu (StudioDrawer / ConfirmDrawer / PickerDrawer)
-   Editördeki TÜM pencereler bu kabuğu kullanır (vaul, alttan yükselen kart).
+   Editördeki TÜM pencereler bu kabuğu kullanır (Radix Dialog modal={false},
+   alttan yükselen kart — vaul DEĞİL, bkz. src/studio/ui/StudioDrawer.tsx).
    Katman: overlay 99998 / kart 99999 — eski .tecof-modal-overlay bandı; drawer
-   içinden açılan popover'lar (100000+), MediaDrawer/LinkPicker (999999+) ve
-   komut paleti (1000000) üstte kalır. Aynı banttaki iki drawer için DOM sırası
-   yeter (sonra açılan üstte). Bkz. src/studio/ui/StudioDrawer.tsx.
+   içinden açılan portallı popover'lar (.tecof-color-popover / .tecof-icon-dropdown
+   / .tecof-bind-popover / .tecof-font-menu — hepsi 1000000), MediaDrawer ve
+   LinkPicker (999999+), komut paleti (1000000) üstte kalır.
+   Üst üste iki drawer'da DOM sırası YETMEZ (alttaki kart 99999 > üstteki scrim
+   99998): üstteki `is-elevated` ile 100002/100003'e çıkar, alttaki `inert` olur.
    ═══════════════════════════════════════════════════════════════════ */
 .tecof-drawer-overlay {
   position: fixed;
@@ -9479,8 +9484,17 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-drawer-overlay[data-state="closed"] {
   animation: tecof-drawer-fade-out 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
+/* Başka bir drawer'ın ÜSTÜNDE açılan drawer (ör. ekleme kataloğu üstünde
+   şablon onayı): karartma alttaki kartı da örtsün diye bir üst bant. */
+.tecof-drawer-overlay.is-elevated { z-index: 100002; }
 @keyframes tecof-drawer-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tecof-drawer-fade-out { to { opacity: 0; } }
+
+/* Kart açılış/kapanış animasyonu. vaul'un enjekte ettiği CSS'in yerine geçer
+   (kabuk artık doğrudan Radix Dialog); Radix Presence çıkış animasyonu bitene
+   kadar düğümü mount tutar. */
+@keyframes tecof-drawer-slide-in { from { transform: translate3d(0, 100%, 0); } to { transform: translate3d(0, 0, 0); } }
+@keyframes tecof-drawer-slide-out { to { transform: translate3d(0, 100%, 0); } }
 
 .tecof-drawer {
   position: fixed;
@@ -9508,25 +9522,21 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-drawer.is-md { max-width: 560px; }
 .tecof-drawer.is-lg { max-width: 820px; }
 .tecof-drawer.is-xl { max-width: 1180px; height: min(88vh, 900px); }
+.tecof-drawer.is-elevated { z-index: 100003; }
+.tecof-drawer[data-state="open"] { animation: tecof-drawer-slide-in 0.5s cubic-bezier(0.32, 0.72, 0, 1); }
+.tecof-drawer[data-state="closed"] { animation: tecof-drawer-slide-out 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
 
-/* vaul, fare/trackpad'de kartta metin seçimini kapatır (sürükleme için);
-   masaüstü editörde içerik seçilebilir kalmalı. Sürükleme yalnız tutamaktan. */
-.tecof-drawer[data-vaul-drawer] { user-select: text; }
-/* vaul'un aşırı kaydırma için karta eklediği ::after (arka plan uzantısı)
-   kart 16px yukarıda durduğu için altta beyaz şerit olarak görünürdü. */
-.tecof-drawer[data-vaul-drawer]::after { display: none; }
-
-.tecof-drawer-handle.tecof-drawer-handle[data-vaul-handle] {
+/* Tutamak yalnız GÖRSEL: kabuk kimliğini (panelin SheetModal'ı) korur,
+   sürükleyerek kapatma yok — kapatma ESC / scrim / X düğmesiyle. */
+.tecof-drawer-handle {
+  display: block;
   width: 40px;
   height: 6px;
   margin: -8px auto 16px;
   border-radius: 999px;
   background: var(--tecof-border);
-  opacity: 1;
   flex: none;
-  cursor: grab;
 }
-.tecof-drawer-handle.tecof-drawer-handle[data-vaul-handle]:hover { background: var(--tecof-border-strong); }
 
 .tecof-drawer-head {
   display: flex;
@@ -9722,7 +9732,10 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-picker-drawer-list { padding: 0; }
 
 @media (max-width: 560px) {
-  .tecof-drawer { left: 8px; right: 8px; bottom: 8px; padding: 20px; max-height: calc(100vh - 16px); }
+  /* `padding` KISAYOLU KULLANMA: .tecof-add-section-drawer'ın padding-bottom:0
+     istisnasını (katalog gövdesi kart alt kenarına yapışır) sessizce ezer. */
+  .tecof-drawer { left: 8px; right: 8px; bottom: 8px; padding-block: 20px; padding-inline: 20px; max-height: calc(100vh - 16px); }
+  .tecof-add-section-drawer { padding-bottom: 0; }
   .tecof-drawer-head-actions { flex-basis: 100%; order: 10; justify-content: stretch; }
   .tecof-drawer-head { flex-wrap: wrap; }
   .tecof-add-section-drawer-body { margin-left: -20px; margin-right: -20px; }
@@ -9731,7 +9744,9 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 @media (prefers-reduced-motion: reduce) {
   .tecof-drawer-overlay,
   .tecof-drawer-overlay[data-state="closed"] { animation: none; }
-  .tecof-drawer[data-vaul-drawer] { animation: none !important; transition: none !important; }
+  .tecof-drawer,
+  .tecof-drawer[data-state="open"],
+  .tecof-drawer[data-state="closed"] { animation: none !important; transition: none !important; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -10122,7 +10137,10 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   cursor: pointer;
 }
 
-.tecof-modal-group-head:hover .tecof-modal-group-title { color: var(--tecof-text); }
+.tecof-modal-group-head:hover:not(:disabled) .tecof-modal-group-title { color: var(--tecof-text); }
+/* Arama sırasında gruplar zorla açık: başlık aç/kapa yapmaz, tıklanabilir de
+   görünmez (chevron da çizilmez — bkz. AddSectionModal). */
+.tecof-modal-group-head:disabled { cursor: default; }
 
 .tecof-modal-group-head:focus-visible {
   outline: none;

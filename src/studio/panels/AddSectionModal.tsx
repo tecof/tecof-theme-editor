@@ -236,9 +236,12 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
      kendi ekleme yolu (onSelectPageTemplate) aynen çalışır. */
   const [pendingTemplate, setPendingTemplate] = useState<PageTemplate | null>(null);
 
-  const toggleGroup = (key: string) => {
+  /* DEPOLANAN değeri değil ETKİN durumu yazar. `isCollapsed` arama varken
+     zorla `false` türetildiğinden `!prev[key]` yazmak, kullanıcının bilerek
+     kapattığı grubu ekranda hiçbir şey değişmeden sessizce açıyordu. */
+  const setGroupCollapsed = (key: string, collapsed: boolean) => {
     setCollapsedGroups((prev) => {
-      const next = { ...prev, [key]: !prev[key] };
+      const next = { ...prev, [key]: collapsed };
       try {
         window.localStorage.setItem(GROUP_COLLAPSE_KEY, JSON.stringify(next));
       } catch {
@@ -557,8 +560,8 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
   return (
     <>
     {/* Dış kabuk StudioDrawer (xl); iç düzen — kenar çubuğu, arama başlığı,
-        grid — ve `tecof-modal-*` sınıfları aynen korunur. ESC / dış tıklama /
-        tutamak vaul'dan gelir. */}
+        grid — ve `tecof-modal-*` sınıfları aynen korunur. ESC / dış tıklama
+        StudioDrawer'dan gelir. */}
     <StudioDrawer
       open={isOpen}
       onOpenChange={(next) => {
@@ -571,6 +574,10 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
       description={`${activeCategoryTitle} · ${totalVisible} bileşen`}
       className="tecof-add-section-drawer"
       bodyClassName="tecof-add-section-drawer-body"
+      /* Onay drawer'ı açıkken katalog kartı tıklama+odak DIŞINDA kalır:
+         karartmanın altındaki bir bileşen kartına tıklanıp bileşen ONAYSIZ
+         eklenemesin (ve Tab arama kutusuna geri dönemesin). */
+      inert={pendingTemplate != null}
       onOpenAutoFocus={(e) => {
         if (!searchRef.current) return;
         e.preventDefault();
@@ -621,8 +628,11 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
           <div className="tecof-modal-groups">
             {displayGroups.map((group) => {
               /* Arama yazılıyken her grup AÇIK: eşleşen kart kapalı bir
-                 başlığın arkasında saklı kalmasın. */
-              const isCollapsed = !searchQuery.trim() && !!collapsedGroups[group.key];
+                 başlığın arkasında saklı kalmasın. O sırada başlık da devre
+                 DIŞI: tıklanabilir görünüp hiçbir şey yapmayan (ve kayıtlı
+                 tercihi bozan) bir kontrol kalmasın. */
+              const searching = !!searchQuery.trim();
+              const isCollapsed = !searching && !!collapsedGroups[group.key];
               return (
                 <section
                   key={group.key}
@@ -631,15 +641,24 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
                   <button
                     type="button"
                     className="tecof-modal-group-head"
-                    onClick={() => toggleGroup(group.key)}
+                    onClick={() => setGroupCollapsed(group.key, !isCollapsed)}
+                    disabled={searching}
                     aria-expanded={!isCollapsed}
-                    title={isCollapsed ? 'Grubu genişlet' : 'Grubu daralt'}
+                    title={
+                      searching
+                        ? 'Arama sırasında tüm gruplar açık kalır'
+                        : isCollapsed
+                          ? 'Grubu genişlet'
+                          : 'Grubu daralt'
+                    }
                   >
-                    <ChevronDown
-                      size={13}
-                      className="tecof-modal-group-chevron"
-                      aria-hidden="true"
-                    />
+                    {!searching && (
+                      <ChevronDown
+                        size={13}
+                        className="tecof-modal-group-chevron"
+                        aria-hidden="true"
+                      />
+                    )}
                     <span className="tecof-modal-group-title">{group.title}</span>
                     <span className="tecof-modal-group-count">{group.items.length}</span>
                   </button>
@@ -661,9 +680,12 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
       </div>
       </StudioDrawer>
 
-      {/* Ekleme drawer'ının ÜSTÜNDE bağımsız onay drawer'ı (nested değil):
-          portalı sonra eklendiği için aynı z-index bandında üstte durur. */}
+      {/* Ekleme drawer'ının ÜSTÜNDE bağımsız onay drawer'ı (nested değil).
+          DOM sırası YETMEZ: alttaki kart (99999) bu drawer'ın scrim'inden
+          (99998) yüksek olduğu için karartma altta kalırdı — `elevated` ile
+          overlay+kart bir üst banda (100002/100003) çıkar. */}
       <PageTemplateConfirmDrawer
+        elevated
         template={pendingTemplate}
         config={config}
         onConfirm={(tpl) => {

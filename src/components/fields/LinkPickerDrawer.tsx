@@ -575,7 +575,7 @@ export const LinkPickerDrawer = ({
                 renderSkeleton()
               ) : activeTab === 'pages' ? (
                 filteredPages.length === 0 ? (
-                  renderEmpty('Henüz sayfa yok', { path: PANEL_PATHS.pages(themeId), label: 'Panelde sayfa ekle' })
+                  renderEmpty('Henüz sayfa yok', { path: PANEL_PATHS.pages, label: 'Panelde sayfa ekle' })
                 ) : (
                   <div className="tecof-link-page-list">
                     {groupedPages.normal.length > 0 && groupedPages.system.length > 0 && (

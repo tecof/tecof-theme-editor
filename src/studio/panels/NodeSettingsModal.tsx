@@ -19,7 +19,7 @@ import { NodeInspectorBody } from './NodeInspectorBody';
  * başlık (bileşen adı + id) drawer baş satırındadır, "Seçimi Kaldır" burada
  * anlamsız olurdu.
  *
- * ESC / dış tıklama / tutamak vaul'dan gelir; stüdyonun global ESC'si drawer
+ * ESC / dış tıklama StudioDrawer'dan gelir; stüdyonun global ESC'si drawer
  * açıkken susturulur (bkz. isStudioDrawerOpen). Alan popover'ları (renk, ikon,
  * CMS bağlama) ve MediaDrawer drawer'ın ÜSTÜNDE açılır.
  *

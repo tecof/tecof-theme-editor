@@ -75,6 +75,8 @@ Tecof Studio sayfa editörü. Otomatik fetch/save, iframe postMessage desteği, 
 | `onSave` | `(data) => void` | Kayıt sonrası callback |
 | `onChange` | `(data) => void` | Her değişiklikte callback (≈300ms debounce'lu) |
 | `hostOrigin` | `string` | Embed senaryosunda izin verilen parent origin. Verilirse hem gönderilen hem **gelen** postMessage'lar bu origin'e kısıtlanır (güvenlik). Verilmezse `'*'` (geriye uyumlu). |
+| `panelUrl` | `string` | Panelin taban adresi (varsayılan `https://app.tecof.com`). Alanlardaki "Panelde yönet / Panelde ürün ekle" bağlantıları bunun üzerine kurulur ve **yeni sekmede** açılır. |
+| `warnOnUnsavedChanges` | `boolean` | Sekme kapatma/yenileme uyarısı (varsayılan `true`). Bu uyarı tarayıcının **yerel** `beforeunload` penceresidir; özel UI'ya izin verilmez. Editörün kendi onayları `studioDialog` drawer'ıdır. |
 | `className` | `string` | Ek CSS sınıfı |
 
 > `TecofEditor`, `TecofStudio`'nun takma adıdır (`TecofEditor = TecofStudio`) — ikisi de aynı editörü açar.
@@ -124,6 +126,73 @@ import Image from "next/image";
 | `ImageComponent` | `ComponentType` | Özel image bileşeni (örn: Next.js Image) |
 | `imageProps` | `Record<string,any>` | ImageComponent'e ek prop'lar |
 | `fancybox` | `boolean` | Fancybox lightbox desteği |
+
+**Odak noktası (focal point).** Dosya nesnesinde `focalPoint` (`{ x, y }`, yüzde `0..100`, `50/50` = merkez) varsa `TecofPicture` bunu `object-position: "X% Y%"` olarak img/video style'ına yazar — görsel `object-fit: cover` ile kırpıldığında (hero, kart, 1:1 kutu) bu nokta kadrajda kalır. Alan, medya yöneticisindeki **Odak noktası** düğmesiyle seçilir ve dosyanın içinde saklanır; backend tarafında şema değişikliği gerekmez.
+
+```tsx
+import { focalPointToObjectPosition } from "@tecof/theme-editor";
+
+// data.focalPoint = { x: 30, y: 70 }  →  object-position: "30% 70%"
+<TecofPicture data={file} fill />
+
+// Kendi object-position'ınızı verirseniz o kazanır:
+<TecofPicture data={file} fill imgStyle={{ objectPosition: "top" }} />
+```
+
+Odak yoksa veya merkezdeyse DOM çıktısı **değişmez** (geriye dönük uyumlu). Yardımcılar: `clampFocalPoint`, `focalPointToObjectPosition`, `isDefaultFocalPoint`, tip `FocalPoint`.
+
+### Drawer bileşenleri
+
+Editördeki **her pencere** (ayarlar, yardım, bölüm ekleme, seçiciler, onaylar) aynı kabuğu kullanır: `StudioDrawer`. Kabuk Radix Dialog üzerine `modal={false}` ile kuruludur — böylece drawer içinden açılan renk/ikon/CMS popover'ları (body'ye portallanır) tıklanabilir ve yazılabilir kalır. Kapatma ESC, karartmaya tıklama veya sağ üstteki X ile olur (tutamaktan sürükleyerek kapatma yoktur).
+
+```tsx
+import { StudioDrawer, ConfirmDrawer, studioDialog } from "@tecof/theme-editor";
+import { Sparkles } from "lucide-react";
+
+<StudioDrawer
+  open={open}
+  onOpenChange={setOpen}
+  title="Bölüm Ayarları"
+  description="Bu bölümün görünürlüğü ve kimliği"
+  icon={<Sparkles size={20} />}
+  tone="primary"
+  size="md"
+  footer={<button className="tecof-drawer-btn tecof-drawer-btn--primary">Kaydet</button>}
+>
+  {/* gövde */}
+</StudioDrawer>
+```
+
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `open` / `onOpenChange` | `boolean` / `(open) => void` | Açıklık durumu; kapatma isteği `false` ile gelir |
+| `title` | `ReactNode` | Başlık (zorunlu — a11y için de kullanılır) |
+| `description` | `ReactNode?` | Başlık altı açıklama; verilmezse başlık ekran okuyucuya tekrarlanır |
+| `icon` | `ReactNode?` | Baş satırındaki ikon rozeti (lucide) |
+| `tone` | `default \| primary \| danger` | Rozet tonu |
+| `size` | `sm \| md \| lg \| xl` | 400 / 560 / 820 / 1180px (varsayılan `md`) |
+| `busy` | `boolean?` | İş sürerken kapatma yollarını kilitler (`aria-busy`) |
+| `footer` / `headerActions` | `ReactNode?` | Alt eylem satırı / baş satırındaki ek kontroller |
+| `hideClose` | `boolean?` | Sağ üstteki X'i gizler |
+| `elevated` | `boolean?` | Başka bir drawer'ın ÜSTÜNDE açılıyorsa üst katmana çıkar (karartma alttaki kartı da örter) |
+| `inert` | `boolean?` | Kartı tıklama ve odak dışına alır (üstünde onay drawer'ı açıkken) |
+| `className` / `bodyClassName` | `string?` | Kart / gövde ek sınıfı |
+| `onOpenAutoFocus` / `onCloseAutoFocus` | `(e: Event) => void` | Odak yönetimini devral (`preventDefault`) |
+
+**Onay ve uyarı.** `window.confirm` / `window.alert` yerine kuyruklu drawer kullanılır:
+
+```tsx
+if (await studioDialog.confirm({
+  title: "Ortak bileşeni sil",
+  description: "Bu bileşeni kullanan tüm sayfalar etkilenir.",
+  confirmLabel: "Sil",
+  danger: true,
+})) { /* ... */ }
+
+await studioDialog.alert({ title: "İçe aktarma tamamlandı" });
+```
+
+`ConfirmDrawer` bu kuyruğun görsel karşılığıdır (`sm` boy, iki düğme; `danger` ise kırmızı onay + `AlertTriangle`, `hideCancel` ile tek "Tamam" düğmeli uyarı hâli). Kuyruğu çizen `DialogHost` `TecofStudio` içinde bir kez mount edilir; host'un kendi eklentileri de `useDialogStore` / `studioDialog` üzerinden aynı kuyruğu kullanabilir. Bir drawer açıkken stüdyonun global kısayolları (ESC, Delete, ⌘Z, G/R/B) tetiklenmez — kontrol `isStudioDrawerOpen()`.
 
 ---
 
@@ -206,6 +275,7 @@ fields: {
 - ➕ **Tek giriş noktası** — Bir "ekle" tile'ı drawer'ı açar; tüm kaynaklar **sekme** halinde: **Kütüphane** (sunucudaki dosyalar), **Yükle** (FilePond), **Referans** (CMS değişkeni).
 - 🔗 **CMS Referansı** — `{{ data.alan }}` ile dinamik görsel bağlama (CMS şablon sayfaları için).
 - 🖌️ **Doka Görsel Düzenleyici** — Kırp, döndür, parlaklık, kontrast, markup, çıkartma.
+- 🎯 **Odak noktası** — Görsel tile'ında hover'daki nişangâh düğmesi odak drawer'ını açar: solda tıkla/sürükle (ok tuşlarıyla 1'er, Shift ile 10'ar), sağda 16:9 / 1:1 / 9:16 canlı kırpma önizlemeleri ve "Merkeze al". Seçim dosyanın `focalPoint` alanına yazılır; `TecofPicture` her yerde `object-position` olarak uygular. Merkez dışındaki dosyalarda tile'da küçük bir rozet görünür.
 - 🗜️ **Resim Sıkıştırma** — Otomatik WebP dönüşümü (browser-image-compression).
 - 📄 24+ dosya türü desteği (görseller, PDF, Office, CSV, video).
 - 🇹🇷 Tamamen Türkçe etiketler (FilePond + Doka).
@@ -747,6 +817,51 @@ const config = {
 | `thumbnail` | `string?` | Opsiyonel önizleme görseli URL'i (yoksa jenerik ikon) |
 | `payload.node` | `TecofNode` | Eklenecek kök node |
 | `payload.zones` | `Record<string, TecofNode[]>?` | Kök node'un alt zone'ları (anahtar: `nodeId:slotAdı`) |
+
+### Sayfa Şablonları — `config.pageTemplates`
+
+`templates` **tek bölüm** ekler; `pageTemplates` ise **tüm sayfayı** kuran hazır bölüm dizisidir (Ana Sayfa, Hakkımızda, İletişim…). Sol paneldeki "Sayfa Şablonları" akordeonunda ve "Bölüm Ekle" drawer'ında görünür.
+
+```tsx
+const config = {
+  components: { /* ... */ },
+  pageTemplates: [
+    {
+      id: "core-home",
+      label: "Ana Sayfa",
+      description: "Hero, hizmetler, referanslar ve iletişim CTA'sı",
+      keywords: ["kurumsal", "landing"],
+      // Tema bu rotayı sunuyorsa kullanıcı şablonu EKLEMEDEN ÖNCE gerçek çıktıyı görür
+      previewUrl: "/preview-template/core-home",
+      sections: [
+        { node: { type: "Hero", props: { id: "t-hero", title: "Başlık" } } },
+        { node: { type: "Services", props: { id: "t-svc" } }, zones: { "t-svc:items": [] } },
+      ],
+    },
+  ],
+};
+```
+
+**`PageTemplate` tipi:**
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `id` | `string` | Kararlı kimlik (React key) |
+| `label` | `string` | Kartta görünen ad |
+| `description` | `string?` | Kartın altındaki kısa açıklama |
+| `thumbnail` | `string?` | Önizleme görseli URL'i |
+| `previewUrl` | `string?` | **Tam sayfa** önizleme adresi; onay drawer'ında iframe'e konur. Göreli olabilir (`/preview-template/<id>`) — bu durumda editörün çalıştığı origin'e göre çözülür |
+| `keywords` | `string[]?` | Aramada da taranan etiketler |
+| `sections` | `Array<{ node, zones? }>` | Sırayla eklenecek bölümler; `SectionTemplate.payload` ile aynı biçim |
+
+**Onay drawer'ı.** Bir sayfa şablonuna tıklamak bölümleri doğrudan eklemez; önce `size="lg"` bir onay drawer'ı açılır:
+
+- `previewUrl` varsa 1280px referans genişlikte render edilip `transform: scale()` ile kutuya sığdırılan bir iframe (yüklenene kadar iskelet, `loading="lazy"`, sandbox'lı ve tıklanamaz),
+- yoksa bölümlerin canlı önizlemesi (`LiveBlockPreview`) üst üste dizilir,
+- altında sıra + tip etiketi çipleriyle bölüm listesi ve "Mevcut içerik silinmez; bölümler eklenir, **tek Geri Al** ile kaldırılır" notu,
+- footer: **Vazgeç** / **Şablonu Ekle**.
+
+Onaydan sonra ekleme mevcut yoldan yürür: tüm id'ler taze üretilir ve tek commit/tek undo olur. Aynı drawer hem sol panelden hem "Bölüm Ekle" drawer'ından açılır (ikincisinde `elevated` olarak, alttaki kartı örterek).
 
 ### Inline Bileşenler — `inline`
 

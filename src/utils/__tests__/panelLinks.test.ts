@@ -56,10 +56,10 @@ describe('PANEL_PATHS', () => {
     expect(PANEL_PATHS.cmsItemNew('a/b')).toBe('/app/cms/a%2Fb/new');
   });
 
-  it('pages tema id ile ve id olmadan farklı yol döner', () => {
-    expect(PANEL_PATHS.pages()).toBe('/app/themes');
-    expect(PANEL_PATHS.pages('')).toBe('/app/themes');
-    expect(PANEL_PATHS.pages('abc123')).toBe('/app/themes/abc123');
+  /* Panelde `/app/themes/<id>` rotası YOK (yalnız `[themaId]/code` ve
+     `[themaId]/design/[pageId]`), tema id'siyle bağlanmak 404'tü. */
+  it('pages her zaman tema listesi ekranıdır', () => {
+    expect(PANEL_PATHS.pages).toBe('/app/themes');
   });
 
   it('productEdit ürün ekranını hedefler', () => {

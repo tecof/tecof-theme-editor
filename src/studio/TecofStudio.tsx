@@ -518,7 +518,7 @@ export const TecofStudio = ({
         return;
       }
 
-      // Escape -> önce palet; açık bir drawer varsa kapatmayı vaul'a bırak ve
+      // Escape -> önce palet; açık bir drawer varsa kapatmayı ona bırak ve
       // seçime DOKUNMA (eskiden pencere kapanırken seçim de siliniyordu).
       // Drawer'lar (StudioDrawer, MediaDrawer, LinkPicker, onay penceresi) DOM
       // niteliğinden tanınır (isStudioDrawerOpen); uiStore bayrakları ilk

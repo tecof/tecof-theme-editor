@@ -68,13 +68,17 @@ export interface EcommerceSource {
   /** Modal başlığı. */
   title: string;
   /**
-   * Kaydın panelde yönetildiği ekranın yolu (`PANEL_PATHS`).
-   *
-   * Boş listede "nereye gideceğim?" sorusunu ortadan kaldırır: alan hem boş
-   * durumda düğme, hem de başlık satırında küçük bir "Panelde yönet" bağlantısı
-   * çizer. Bağlantı YENİ SEKMEDE açılır — editördeki taslak kaybolmaz.
+   * Kaydın panelde YÖNETİLDİĞİ ekranın (listenin) yolu (`PANEL_PATHS`).
+   * Başlık satırındaki kalıcı "Panelde yönet" bağlantısı buraya gider —
+   * yani her zaman bir LİSTE olmalı, oluşturma formu değil.
+   * Bağlantı YENİ SEKMEDE açılır — editördeki taslak kaybolmaz.
    */
   panelPath: string;
+  /**
+   * Boş durumdaki düğmenin hedefi: doğrudan "yeni kayıt" ekranı. Verilmezse
+   * `panelPath` (liste) kullanılır — listede zaten "Ekle" düğmesi vardır.
+   */
+  panelNewPath?: string;
   /** Boş durumdaki düğme metni ("Panelde marka ekle"). */
   panelLabel: string;
   /** Veriyi çeken çağrı. `totalData` liste kırpıldıysa uyarı basmak için okunur. */
@@ -242,7 +246,11 @@ export const categorySource: EcommerceSource = {
   title: 'Kategori seç',
   placeholder: 'Kategori seç',
   emptyLabel: 'Kayıtlı kategori yok — panelden kategori ekleyin.',
-  panelPath: PANEL_PATHS.categoryNew,
+  /* Başlıktaki "Panelde yönet" LİSTEYE gider; "ekle" düğmesi oluşturma
+     formuna. Tek alan kullanılınca yönetmek isteyen kullanıcı boş bir
+     "Yeni kategori" formuna düşüyordu. */
+  panelPath: PANEL_PATHS.categories,
+  panelNewPath: PANEL_PATHS.categoryNew,
   panelLabel: 'Panelde kategori ekle',
   load: ({ apiClient, locale }) => apiClient.getEcommerceCategories(locale),
   toOptions: (rows, { locale }) => {

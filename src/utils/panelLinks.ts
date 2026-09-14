@@ -48,11 +48,13 @@ export const PANEL_PATHS = {
   cmsItemNew: (collectionId: string): string =>
     `/app/cms/${encodeURIComponent(String(collectionId || '').trim())}/new`,
 
-  /** Tema sayfaları. Tema id'si verilirse o temanın sayfa listesine gider. */
-  pages: (themeId?: string | null): string => {
-    const id = String(themeId || '').trim();
-    return id ? `/app/themes/${encodeURIComponent(id)}` : '/app/themes';
-  },
+  /**
+   * Tema sayfaları = tema LİSTESİ ekranı. Panelde `/app/themes/<id>` diye bir
+   * sayfa YOK (`pages/app/themes/[themaId]/` altında yalnız `code` ve
+   * `design/[pageId]` var, rewrite de tanımlı değil) — tema id'siyle bağlanmak
+   * doğrudan 404 veriyordu. Sayfa yönetimi tema kartından açılır.
+   */
+  pages: '/app/themes',
 } as const;
 
 /**

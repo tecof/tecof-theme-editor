@@ -8,7 +8,7 @@ import { useDialogStore, type DialogRequest } from './dialogStore';
  * gelenler sırada bekler.
  *
  * Çıkış animasyonu: istek sonuçlanınca kuyruktan hemen düşer (Promise anında
- * çözülür) ama drawer `open=false` ile ekranda kalır; vaul'un kapanış
+ * çözülür) ama drawer `open=false` ile ekranda kalır; Radix Presence'ın kapanış
  * geçişi (0.5s) bitince sıradaki istek yeni bir drawer (yeni key) olarak açılır.
  */
 const EXIT_MS = 520;

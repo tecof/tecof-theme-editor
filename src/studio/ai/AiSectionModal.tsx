@@ -23,7 +23,7 @@ const SUGGESTIONS = [
  * standard `insertNode` path (fresh ids, one undo step) and gets selected.
  *
  * Renders nothing unless the host wired `config.ai`; the drawer itself opens
- * with the uiStore flag. ⌘⏎ generates; ESC/dış tıklama vaul'dan.
+ * with the uiStore flag. ⌘⏎ generates; ESC/dış tıklama StudioDrawer'dan.
  */
 export const AiSectionModal = () => {
   const { config } = useStudio();

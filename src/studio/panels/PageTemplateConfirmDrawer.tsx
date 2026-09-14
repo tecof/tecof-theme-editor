@@ -127,6 +127,12 @@ export interface PageTemplateConfirmDrawerProps {
   onClose: () => void;
   /** Bilgi notundaki hedef adı ("sayfanın sonuna" varsayılan). */
   targetLabel?: string;
+  /**
+   * BAŞKA bir drawer'ın üstünde açılıyor (Bölüm Ekle kataloğu). Karartmanın
+   * alttaki kartı da örtmesi için üst katman bandına çıkar. Sol panelden
+   * açıldığında gerekmez.
+   */
+  elevated?: boolean;
 }
 
 export const PageTemplateConfirmDrawer = ({
@@ -135,6 +141,7 @@ export const PageTemplateConfirmDrawer = ({
   onConfirm,
   onClose,
   targetLabel,
+  elevated = false,
 }: PageTemplateConfirmDrawerProps) => {
   const sections = summarizeTemplateSections(config, template?.sections);
   const countText = formatSectionCount(sections.length);
@@ -147,6 +154,7 @@ export const PageTemplateConfirmDrawer = ({
       }}
       size="lg"
       tone="primary"
+      elevated={elevated}
       icon={<FileStack size={22} strokeWidth={1.9} />}
       title={template?.label ?? 'Sayfa şablonu'}
       description={

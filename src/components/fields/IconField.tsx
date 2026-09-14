@@ -155,7 +155,8 @@ export const IconField = ({ value, onChange, readOnly }: IconFieldProps) => {
             width: triggerRef.current?.offsetWidth,
             right: 'auto',
             marginTop: 0,
-            zIndex: 10001,
+            /* zIndex VERME: inline stil `.tecof-icon-dropdown { z-index: 1000000 }`
+               kuralını ezer ve dropdown drawer kartının (99999) ARKASINDA kalır. */
           }}
         >
           <div className="tecof-icon-search-wrapper">
