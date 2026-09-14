@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Sparkles, X } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useStudio } from '../context';
 import { useUiStore } from '../uiStore';
 import { useEditorStore } from '../../engine/store';
 import { generateId } from '../../engine/ids';
+import { StudioDrawer } from '../ui/StudioDrawer';
 import { buildSectionSystemPrompt, buildSectionUserPrompt } from './prompt';
 import { parseAiSection, AiParseError } from './parse';
 
@@ -15,13 +16,14 @@ const SUGGESTIONS = [
 ];
 
 /**
- * "AI ile bölüm üret" — prompt in, section out. The library builds the system
- * prompt from the component catalog and validates the response
- * (`prompt.ts`/`parse.ts`); the HOST's `config.ai.complete` performs the actual
- * LLM call. The validated folded node inserts through the standard
- * `insertNode` path (fresh ids, one undo step) and gets selected.
+ * "AI ile bölüm üret" — prompt in, section out (StudioDrawer 'md'). The
+ * library builds the system prompt from the component catalog and validates
+ * the response (`prompt.ts`/`parse.ts`); the HOST's `config.ai.complete`
+ * performs the actual LLM call. The validated folded node inserts through the
+ * standard `insertNode` path (fresh ids, one undo step) and gets selected.
  *
- * Renders nothing unless the host wired `config.ai` AND the modal is open.
+ * Renders nothing unless the host wired `config.ai`; the drawer itself opens
+ * with the uiStore flag. ⌘⏎ generates; ESC/dış tıklama vaul'dan.
  */
 export const AiSectionModal = () => {
   const { config } = useStudio();
@@ -33,8 +35,9 @@ export const AiSectionModal = () => {
   const [prompt, setPrompt] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // The generate call can outlive the modal (close mid-flight) — drop the result.
+  // The generate call can outlive the drawer (close mid-flight) — drop the result.
   const cancelledRef = useRef(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const close = useCallback(() => {
     cancelledRef.current = true;
@@ -51,22 +54,10 @@ export const AiSectionModal = () => {
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        close();
-      }
-    };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [open, close]);
-
   const ai = config.ai;
-  if (!open || !ai) return null;
 
   const generate = async () => {
+    if (!ai) return;
     const request = prompt.trim();
     if (!request || busy) return;
     setBusy(true);
@@ -96,75 +87,82 @@ export const AiSectionModal = () => {
     }
   };
 
+  if (!ai) return null;
+
   return (
-    <div className="tecof-modal-overlay" onClick={close}>
-      <div
-        className="tecof-ai-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="AI ile bölüm üret"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="tecof-ai-modal-head">
-          <span className="tecof-ai-modal-title">
-            <Sparkles size={15} aria-hidden="true" />
-            AI ile bölüm üret
-          </span>
-          <button type="button" className="tecof-modal-close" onClick={close} title="Kapat">
-            <X size={16} />
-          </button>
-        </div>
-
-        <textarea
-          className="tecof-ai-modal-input"
-          placeholder="Ne eklemek istiyorsun? Örn: 3 kolonlu fiyatlandırma bölümü…"
-          value={prompt}
-          autoFocus
-          rows={3}
-          disabled={busy}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              generate();
-            }
-          }}
-        />
-
-        <div className="tecof-ai-modal-suggestions">
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              className="tecof-ai-modal-chip"
-              disabled={busy}
-              onClick={() => setPrompt(s)}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-
-        {error && (
-          <div className="tecof-ai-modal-error" role="alert">
-            {error}
-          </div>
-        )}
-
-        <div className="tecof-ai-modal-actions">
-          <span className="tecof-ai-modal-hint">⌘⏎ ile üret · sonuç geri alınabilir</span>
+    <StudioDrawer
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) close();
+      }}
+      size="md"
+      tone="primary"
+      icon={<Sparkles size={22} />}
+      title="AI ile bölüm üret"
+      description="Ne istediğini yaz; üretilen bölüm sayfanın sonuna eklenir ve seçili gelir."
+      busy={busy}
+      className="tecof-ai-drawer"
+      bodyClassName="tecof-ai-drawer-body"
+      onOpenAutoFocus={(e) => {
+        if (!inputRef.current) return;
+        e.preventDefault();
+        inputRef.current.focus({ preventScroll: true });
+      }}
+      footer={
+        <>
+          <span className="tecof-drawer-footer-note">⌘⏎ ile üret · sonuç geri alınabilir</span>
           <button
             type="button"
-            className="tecof-btn-primary"
+            className="tecof-drawer-btn tecof-drawer-btn--primary"
             disabled={!prompt.trim() || busy}
             onClick={generate}
           >
-            <Sparkles size={14} />
+            {busy ? (
+              <Loader2 size={15} className="tecof-upload-spin" aria-hidden="true" />
+            ) : (
+              <Sparkles size={14} aria-hidden="true" />
+            )}
             {busy ? 'Üretiliyor…' : 'Üret'}
           </button>
-        </div>
+        </>
+      }
+    >
+      <textarea
+        ref={inputRef}
+        className="tecof-ai-modal-input"
+        placeholder="Ne eklemek istiyorsun? Örn: 3 kolonlu fiyatlandırma bölümü…"
+        value={prompt}
+        rows={3}
+        disabled={busy}
+        onChange={(e) => setPrompt(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            generate();
+          }
+        }}
+      />
+
+      <div className="tecof-ai-modal-suggestions">
+        {SUGGESTIONS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            className="tecof-ai-modal-chip"
+            disabled={busy}
+            onClick={() => setPrompt(s)}
+          >
+            {s}
+          </button>
+        ))}
       </div>
-    </div>
+
+      {error && (
+        <div className="tecof-ai-modal-error" role="alert">
+          {error}
+        </div>
+      )}
+    </StudioDrawer>
   );
 };
 

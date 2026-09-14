@@ -1,24 +1,29 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
 import { useEditorStore } from '../../engine/store';
 import { findNodeById } from '../../engine/zones';
 import { useStudio } from '../context';
 import { useUiStore } from '../uiStore';
+import { StudioDrawer } from '../ui/StudioDrawer';
 import { NodeInspectorBody } from './NodeInspectorBody';
 
 /**
  * NodeSettingsModal — seçili bileşenin Inspector gövdesini (içerik/stil/
- * etkileşim) sağ paneli açmadan ORTADA bir modal'da gösterir. Overlay
- * toolbar'daki kalem butonuyla açılır (AiSectionModal kalıbı: uiStore bayrağı,
- * TecofStudio'da koşulsuz mount).
+ * etkileşim) sağ paneli açmadan bir DRAWER'da gösterir (StudioDrawer 'md').
+ * Overlay toolbar'daki kalem butonuyla açılır (uiStore bayrağı, TecofStudio'da
+ * koşulsuz mount).
  *
  * Gövde Inspector ile AYNI bileşendir (NodeInspectorBody) — alan render
  * mantığı kopyalanmaz; her iki yüzey store'a abone olduğundan panel açıkken
- * modal'da yapılan düzenleme panelde de anında görünür. showHeader=false:
- * modal kendi başlığını (bileşen adı + kapat) çizer, "Seçimi Kaldır" burada
+ * drawer'da yapılan düzenleme panelde de anında görünür. showHeader=false:
+ * başlık (bileşen adı + id) drawer baş satırındadır, "Seçimi Kaldır" burada
  * anlamsız olurdu.
  *
- * Seçim kalkarsa/silinirse (selectedId null) modal kendini kapatır.
+ * ESC / dış tıklama / tutamak vaul'dan gelir; stüdyonun global ESC'si drawer
+ * açıkken susturulur (bkz. isStudioDrawerOpen). Alan popover'ları (renk, ikon,
+ * CMS bağlama) ve MediaDrawer drawer'ın ÜSTÜNDE açılır.
+ *
+ * Seçim kalkarsa/silinirse (selectedId null) drawer kendini kapatır.
  */
 export const NodeSettingsModal = () => {
   const { config } = useStudio();
@@ -30,63 +35,31 @@ export const NodeSettingsModal = () => {
   );
 
   const close = useCallback(() => setOpen(false), [setOpen]);
-  const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // Seçim yokken (düğüm silindi, seçim kaldırıldı) modal açık kalamaz.
+  // Seçim yokken (düğüm silindi, seçim kaldırıldı) drawer açık kalamaz.
   useEffect(() => {
     if (open && !selectedId) setOpen(false);
   }, [open, selectedId, setOpen]);
 
-  /* Açılışta paneli odakla: ESC panel-scoped onKeyDown ile yakalanır. Bilinçli
-     olarak GLOBAL capture listener KULLANILMAZ — window-capture + stopPropagation,
-     içteki katmanların (renk popover'ı ESC'si, vaul drawer'ları, komut paleti)
-     kendi ESC işleyicilerini gasp edip yanlış katmanı kapatıyordu. Panel-scoped
-     yaklaşımda odak hangi katmandaysa ESC'yi O işler: popover body'ye portallı
-     olduğundan kendi ESC'sini alır, modal yalnız odak kendi içindeyken kapanır. */
-  useEffect(() => {
-    if (open) panelRef.current?.focus();
-  }, [open]);
-
-  if (!open || !selectedId) return null;
-
+  const isOpen = open && !!selectedId;
   const label = (node && (config.components[node.type]?.label || node.type)) || 'Bileşen';
 
   return (
-    /* onMouseDown + hedef kontrolü (onClick değil): modal içinden başlayıp
-       backdrop'ta biten metin seçimi sürüklemesi modalı istemeden kapatmasın */
-    <div
-      className="tecof-modal-overlay"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) close();
+    <StudioDrawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) close();
       }}
+      size="md"
+      tone="primary"
+      icon={<SlidersHorizontal size={22} />}
+      title={label}
+      description={selectedId ?? undefined}
+      className="tecof-node-settings-drawer"
+      bodyClassName="tecof-node-settings-drawer-body"
     >
-      <div
-        ref={panelRef}
-        tabIndex={-1}
-        className="tecof-node-settings-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${label} ayarları`}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.stopPropagation(); // stüdyonun ESC'si (seçim kaldırma) tetiklenmesin
-            close();
-          }
-        }}
-      >
-        <div className="tecof-node-settings-head">
-          <div>
-            <h3 className="tecof-inspector-title">{label}</h3>
-            <span className="tecof-inspector-id">{selectedId}</span>
-          </div>
-          <button type="button" className="tecof-modal-close" onClick={close} title="Kapat">
-            <X size={16} />
-          </button>
-        </div>
-
-        <NodeInspectorBody showHeader={false} />
-      </div>
-    </div>
+      {selectedId ? <NodeInspectorBody showHeader={false} /> : null}
+    </StudioDrawer>
   );
 };
 

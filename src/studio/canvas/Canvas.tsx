@@ -197,9 +197,16 @@ export const Canvas = () => {
     // Clicks inside the iframe are handled by Frame/Canvas root. This clears
     // selection only when the user clicks the editor chrome around the page.
     if ((e.target as HTMLElement).closest('.tecof-canvas-viewport')) return;
-    // AddSectionModal bu container'ın İÇİNDE render edilir — modalda gezinen
+    // AddSectionModal bu container'ın React ağacında (vaul portalı body'de olsa
+    // da sentetik olaylar buraya köpürür) — drawer'da ya da karartmasında gezinen
     // mousedown seçimi silip host'a itemDeselected yollamamalı.
-    if ((e.target as HTMLElement).closest('.tecof-modal-overlay')) return;
+    if (
+      (e.target as HTMLElement).closest(
+        '.tecof-modal-overlay, .tecof-drawer-overlay, [data-vaul-drawer], [data-vaul-overlay]'
+      )
+    ) {
+      return;
+    }
     clearSelection();
   };
 

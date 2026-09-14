@@ -320,3 +320,35 @@ describe('campaignSource', () => {
     expect(opt.hint).toContain('kod: BAHAR');
   });
 });
+
+/**
+ * Panel bağlantısı sözleşmesi.
+ *
+ * Boş liste bir çıkmazdır: kayıt editörde açılamaz. Her kaynağın panelde bir
+ * karşılığı OLMAK ZORUNDA — biri eksik kalırsa o alanın boş durumu yine
+ * "hiçbir şey yapamazsın" ekranına döner ve bu sessizce olur.
+ */
+describe('kaynakların panel bağlantıları', () => {
+  const allSources = [
+    brandSource,
+    categorySource,
+    tagSource,
+    attributeSource,
+    variantTypeSource,
+    flashSaleSource,
+    campaignSource,
+    discountSource,
+  ];
+
+  it('sekiz kaynağın hepsi panelPath + panelLabel taşır', () => {
+    expect(allSources).toHaveLength(8);
+    for (const source of allSources) {
+      expect(source.panelPath.startsWith('/app/')).toBe(true);
+      expect(source.panelLabel.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('markanın yolu marka ayarları ekranıdır', () => {
+    expect(brandSource.panelPath).toBe('/app/ecommerce/settings/brands');
+  });
+});

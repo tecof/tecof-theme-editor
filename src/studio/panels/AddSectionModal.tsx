@@ -1,9 +1,29 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Bookmark, FileStack, LayoutGrid, LayoutTemplate, Plus, Search, Trash2, X } from 'lucide-react';
+import { Bookmark, ChevronDown, FileStack, LayoutGrid, LayoutTemplate, Plus, Search, Trash2 } from 'lucide-react';
 import type { PageTemplate, SectionTemplate, StudioConfig } from '../../types';
 import { matchesAllTerms } from '../../utils/search';
 import { useStudio } from '../context';
+import { StudioDrawer } from '../ui/StudioDrawer';
+import { studioDialog } from '../ui/dialogStore';
 import { LiveBlockPreview } from './LivePreview';
+import { PageTemplateConfirmDrawer } from './PageTemplateConfirmDrawer';
+
+/**
+ * Grup (başlık) accordion durumu — oturumlar arası hatırlanır.
+ * Kayıt yok = AÇIK (kullanıcı bir şey kapatmadıkça katalog tam görünür);
+ * `true` yazılı olan grup kapalıdır.
+ */
+const GROUP_COLLAPSE_KEY = 'tecof:add-section:collapsed:v1';
+
+const readCollapsedGroups = (): Record<string, boolean> => {
+  try {
+    const raw = window.localStorage.getItem(GROUP_COLLAPSE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
 
 /** Stable fallbacks so `config?.x || {}` doesn't produce a new reference per render. */
 const NO_TEMPLATES: SectionTemplate[] = [];
@@ -209,6 +229,24 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [savedComponents, setSavedComponents] = useState<SavedSharedComponent[]>([]);
+  /* Grup başlıkları aç/kapa — kapalı grubun grid'i HİÇ render edilmez
+     (canlı önizlemeler boşa çizilmesin). */
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>(readCollapsedGroups);
+  /* Sayfa şablonu tıklaması önce onay drawer'ını açar; onaydan sonra çağıranın
+     kendi ekleme yolu (onSelectPageTemplate) aynen çalışır. */
+  const [pendingTemplate, setPendingTemplate] = useState<PageTemplate | null>(null);
+
+  const toggleGroup = (key: string) => {
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try {
+        window.localStorage.setItem(GROUP_COLLAPSE_KEY, JSON.stringify(next));
+      } catch {
+        /* private mode / quota — tercih yalnız bu oturumda kalır */
+      }
+      return next;
+    });
+  };
   /* İstek uçtayken ikinci tıklama işlem başlatmasın (çifte DELETE koruması).
      Ref, handler'ı useCallback ile stabil tutar — state olsaydı displayGroups
      memo'sundaki closure bayatlar ya da memo her silmede boşa patlardı. */
@@ -220,25 +258,37 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
      kalkar. Onay metni tam olarak bunu söyler — korkutmadan, doğru beklentiyle. */
   const handleDeleteSaved = useCallback(async (item: SavedSharedComponent) => {
     if (!apiClient || deletingRef.current) return;
-    const ok = window.confirm(
-      `"${item.name}" ortak bileşeni silinsin mi?\n\n` +
-      `Bu bileşeni kullanan sayfalardaki kopyalar aynen kalır ama bağımsızlaşır — ` +
-      `artık birinde yapılan düzenleme diğerlerine yansımaz. Bu işlem geri alınamaz.`
-    );
-    if (!ok) return;
-
+    /* Onay beklerken de kilitli: ikinci tıklama ikinci bir onay penceresi
+       kuyruğa eklemesin. */
     deletingRef.current = true;
     try {
+      const ok = await studioDialog.confirm({
+        title: `"${item.name}" ortak bileşeni silinsin mi?`,
+        description:
+          'Bu bileşeni kullanan sayfalardaki kopyalar aynen kalır ama bağımsızlaşır — ' +
+          'artık birinde yapılan düzenleme diğerlerine yansımaz. Bu işlem geri alınamaz.',
+        confirmLabel: 'Sil',
+        cancelLabel: 'Vazgeç',
+        danger: true,
+      });
+      if (!ok) return;
+
       const res = await apiClient.deleteSharedComponent(item._id);
       if (res?.success) {
         setSavedComponents((prev) => prev.filter((s) => s._id !== item._id));
       } else {
         console.error('Ortak bileşen silinemedi:', res?.message);
-        window.alert(res?.message || 'Ortak bileşen silinemedi, tekrar deneyin.');
+        void studioDialog.alert({
+          title: 'Ortak bileşen silinemedi',
+          description: res?.message || 'Tekrar deneyin.',
+        });
       }
     } catch (err) {
       console.error('Ortak bileşen silinemedi:', err);
-      window.alert('Ortak bileşen silinemedi, tekrar deneyin.');
+      void studioDialog.alert({
+        title: 'Ortak bileşen silinemedi',
+        description: 'Bağlantıyı kontrol edip tekrar deneyin.',
+      });
     } finally {
       deletingRef.current = false;
     }
@@ -262,16 +312,6 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
     };
   }, [isOpen, apiClient]);
 
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
-
   // Her açılışta arama/kategori sıfırlanır — bileşen unmount olmadığı için
   // önceki oturumun filtresi yaşıyor, yeni açılış "Uyumlu bileşen bulunamadı"
   // ile boş görünebiliyordu.
@@ -281,11 +321,15 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
     setSearchQuery('');
   }, [isOpen]);
 
-  /* Backdrop kapatması mousedown+mouseup ÇİFTİNE bağlı: yalnız her ikisi de
-     backdrop'ta başlarsa kapanır. Eskiden tek onClick'ti — şeride çift tıklayan
-     kullanıcının ikinci tıkı ya da arama input'undan backdrop'a biten bir metin
-     sürüklemesi modalı anında kapatıyordu ("buton bozuk" algısı). */
-  const backdropArmedRef = useRef(false);
+  // Ekleme drawer'ı kapanınca bekleyen onay da düşer (kapalı modalin üstünde
+  // yalnız başına duran bir onay drawer'ı kalmasın).
+  useEffect(() => {
+    if (!isOpen) setPendingTemplate(null);
+  }, [isOpen]);
+
+  /* Arama kutusu açılışta odaklanır (vaul odak yönetimi yerine — aksi hâlde
+     ilk odaklanabilir olan kenar çubuğu düğmesi seçilirdi). */
+  const searchRef = useRef<HTMLInputElement>(null);
 
   // filterType (zone hedefli açılış) uygulanmış görünür kümeler.
   const templates = useMemo(
@@ -371,7 +415,7 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
           id: `page:${t.id}`,
           name: t.label,
           typeText: `${t.sections.length} bölüm`,
-          onActivate: () => onSelectPageTemplate(t),
+          onActivate: () => setPendingTemplate(t),
           renderPreview: () =>
             t.thumbnail ? (
               <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
@@ -507,112 +551,129 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
     return entries;
   }, [templates.length, pageTemplates.length, onSelectPageTemplate, visibleSaved.length, componentCategories, typesByCategory]);
 
-  if (!isOpen) return null;
-
   const activeCategoryTitle =
     sidebarEntries.find((entry) => entry.key === activeCategory)?.title || 'Tümü';
 
   return (
-    <div
-      className="tecof-modal-overlay"
-      onMouseDown={(e) => {
-        backdropArmedRef.current = e.target === e.currentTarget;
+    <>
+    {/* Dış kabuk StudioDrawer (xl); iç düzen — kenar çubuğu, arama başlığı,
+        grid — ve `tecof-modal-*` sınıfları aynen korunur. ESC / dış tıklama /
+        tutamak vaul'dan gelir. */}
+    <StudioDrawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
       }}
-      onClick={(e) => {
-        const armed = backdropArmedRef.current;
-        backdropArmedRef.current = false;
-        if (armed && e.target === e.currentTarget) onClose();
+      size="xl"
+      tone="primary"
+      icon={<LayoutGrid size={22} strokeWidth={2} />}
+      title="Bölüm Ekle"
+      description={`${activeCategoryTitle} · ${totalVisible} bileşen`}
+      className="tecof-add-section-drawer"
+      bodyClassName="tecof-add-section-drawer-body"
+      onOpenAutoFocus={(e) => {
+        if (!searchRef.current) return;
+        e.preventDefault();
+        searchRef.current.focus({ preventScroll: true });
       }}
     >
-      <div
-        className="tecof-add-section-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Bölüm Ekle"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="tecof-modal-header">
-          <div className="tecof-modal-title-wrap">
-            <span className="tecof-modal-title-icon" aria-hidden="true">
-              <LayoutGrid size={18} strokeWidth={2} />
-            </span>
-            <div>
-              <h2 className="tecof-modal-title">Bölüm Ekle</h2>
-              <span className="tecof-modal-subtitle">
-                {activeCategoryTitle} · {totalVisible} bileşen
-              </span>
-            </div>
-          </div>
-          <button type="button" className="tecof-modal-close" onClick={onClose} title="Kapat">
-            <X size={18} />
-          </button>
+      <div className="tecof-modal-body">
+        {/* Sidebar */}
+        <div className="tecof-modal-sidebar">
+          <div className="tecof-modal-sidebar-title">Kategoriler</div>
+          <ul className="tecof-modal-cat-list">
+            {sidebarEntries.map(entry => (
+              <li key={entry.key}>
+                <button
+                  type="button"
+                  className={`tecof-modal-cat-btn ${activeCategory === entry.key ? 'is-active' : ''}`}
+                  onClick={() => setActiveCategory(entry.key)}
+                >
+                  <span className="tecof-modal-cat-btn-title">
+                    {entry.key === 'saved' && <Bookmark size={12} aria-hidden="true" />}
+                    {entry.key === 'templates' && <LayoutTemplate size={12} aria-hidden="true" />}
+                    {entry.title}
+                  </span>
+                  <span className="tecof-modal-cat-count">{entry.count}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Body Container */}
-        <div className="tecof-modal-body">
-          {/* Sidebar */}
-          <div className="tecof-modal-sidebar">
-            <div className="tecof-modal-sidebar-title">Kategoriler</div>
-            <ul className="tecof-modal-cat-list">
-              {sidebarEntries.map(entry => (
-                <li key={entry.key}>
-                  <button
-                    type="button"
-                    className={`tecof-modal-cat-btn ${activeCategory === entry.key ? 'is-active' : ''}`}
-                    onClick={() => setActiveCategory(entry.key)}
-                  >
-                    <span className="tecof-modal-cat-btn-title">
-                      {entry.key === 'saved' && <Bookmark size={12} aria-hidden="true" />}
-                      {entry.key === 'templates' && <LayoutTemplate size={12} aria-hidden="true" />}
-                      {entry.title}
-                    </span>
-                    <span className="tecof-modal-cat-count">{entry.count}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+        {/* Grid Content */}
+        <div className="tecof-modal-content">
+          <div className="tecof-modal-content-head">
+            <div className="tecof-modal-search-bar">
+              <Search size={16} className="tecof-icon-muted" />
+              <input
+                type="text"
+                placeholder="Bileşen ara..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="tecof-modal-search-input"
+                ref={searchRef}
+              />
+            </div>
+            <span className="tecof-modal-result-count">{totalVisible}</span>
           </div>
 
-          {/* Grid Content */}
-          <div className="tecof-modal-content">
-            <div className="tecof-modal-content-head">
-              <div className="tecof-modal-search-bar">
-                <Search size={16} className="tecof-icon-muted" />
-                <input
-                  type="text"
-                  placeholder="Bileşen ara..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="tecof-modal-search-input"
-                  autoFocus
-                />
-              </div>
-              <span className="tecof-modal-result-count">{totalVisible}</span>
-            </div>
-
-            <div className="tecof-modal-groups">
-              {displayGroups.map((group) => (
-                <section key={group.key} className="tecof-modal-group">
-                  <div className="tecof-modal-group-head">
+          <div className="tecof-modal-groups">
+            {displayGroups.map((group) => {
+              /* Arama yazılıyken her grup AÇIK: eşleşen kart kapalı bir
+                 başlığın arkasında saklı kalmasın. */
+              const isCollapsed = !searchQuery.trim() && !!collapsedGroups[group.key];
+              return (
+                <section
+                  key={group.key}
+                  className={`tecof-modal-group${isCollapsed ? ' is-collapsed' : ''}`}
+                >
+                  <button
+                    type="button"
+                    className="tecof-modal-group-head"
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={!isCollapsed}
+                    title={isCollapsed ? 'Grubu genişlet' : 'Grubu daralt'}
+                  >
+                    <ChevronDown
+                      size={13}
+                      className="tecof-modal-group-chevron"
+                      aria-hidden="true"
+                    />
                     <span className="tecof-modal-group-title">{group.title}</span>
                     <span className="tecof-modal-group-count">{group.items.length}</span>
-                  </div>
-                  <div className={`tecof-modal-grid ${group.isElement ? 'is-elements' : 'is-sections'}`}>
-                    {group.items.map(({ id, ...item }) => (
-                      <GridCard key={id} {...item} />
-                    ))}
-                  </div>
+                  </button>
+                  {!isCollapsed && (
+                    <div className={`tecof-modal-grid ${group.isElement ? 'is-elements' : 'is-sections'}`}>
+                      {group.items.map(({ id, ...item }) => (
+                        <GridCard key={id} {...item} />
+                      ))}
+                    </div>
+                  )}
                 </section>
-              ))}
-              {totalVisible === 0 && (
-                <div className="tecof-modal-empty">Uyumlu bileşen bulunamadı.</div>
-              )}
-            </div>
+              );
+            })}
+            {totalVisible === 0 && (
+              <div className="tecof-modal-empty">Uyumlu bileşen bulunamadı.</div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+      </StudioDrawer>
+
+      {/* Ekleme drawer'ının ÜSTÜNDE bağımsız onay drawer'ı (nested değil):
+          portalı sonra eklendiği için aynı z-index bandında üstte durur. */}
+      <PageTemplateConfirmDrawer
+        template={pendingTemplate}
+        config={config}
+        onConfirm={(tpl) => {
+          setPendingTemplate(null);
+          onSelectPageTemplate?.(tpl);
+        }}
+        onClose={() => setPendingTemplate(null)}
+        targetLabel={isRootTarget ? 'sayfanın seçilen yerine' : undefined}
+      />
+    </>
   );
 };
 

@@ -452,6 +452,13 @@ export interface PageTemplate {
   description?: string;
   /** Opsiyonel önizleme görseli (yoksa ikon çizilir). */
   thumbnail?: string;
+  /**
+   * Onay drawer'ında iframe'e konabilecek TAM SAYFA önizleme adresi (göreli
+   * olabilir: `/preview-template/core-home`). Tema bu rotayı sunuyorsa
+   * kullanıcı şablonu EKLEMEDEN ÖNCE gerçek çıktıyı görür; yoksa drawer
+   * bölümlerin canlı önizlemesini üst üste dizer.
+   */
+  previewUrl?: string;
   /** Aramada da taranan etiketler: ["kurumsal","landing"]. */
   keywords?: string[];
   /**
@@ -627,8 +634,21 @@ export interface TecofEditorProps {
   /**
    * Show the browser's native "unsaved changes" prompt on navigation/close while
    * there are unpersisted edits. Default true; set false to suppress it.
+   *
+   * Bu uyarı `beforeunload` ile tarayıcının KENDİ penceresidir ve bilerek öyle
+   * kalır: tarayıcılar sekme kapatma/yenileme için özel UI'ya izin vermez.
+   * Editör içi onay/uyarılar ise drawer'dır (`studioDialog`).
    */
   warnOnUnsavedChanges?: boolean;
+  /**
+   * Panelin (app.tecof.com) taban adresi. Alanlardaki "Panelde yönet" / "Panelde
+   * ürün ekle" bağlantıları bunun üzerine kurulur ve YENİ SEKMEDE açılır.
+   *
+   * Varsayılan `https://app.tecof.com`. Kendi ortamını çalıştıran host'lar
+   * (staging paneli, yerel geliştirme) burayı ezerek editördeki bütün panel
+   * bağlantılarını tek noktadan yönlendirir.
+   */
+  panelUrl?: string;
   /** Additional class name */
   className?: string;
 }
@@ -669,6 +689,17 @@ export interface LanguageFieldValue {
 
 /* ─── Uploaded File ─── */
 
+/**
+ * Görsel odak noktası — yüzde cinsinden (0..100). 50/50 = merkez.
+ * Görsel `object-fit: cover` ile kırpıldığı her yerde bu nokta görünür
+ * kalır (`object-position`). Dosya nesnesinin İÇİNDE saklanır; backend
+ * `draftData`yı Mixed şema olarak aynen yazar, ek alan gerekmez.
+ */
+export interface FocalPoint {
+  x: number;
+  y: number;
+}
+
 export interface UploadedFile {
   _id?: string;
   name: string;
@@ -679,6 +710,11 @@ export interface UploadedFile {
   url?: string;
   folder?: string;
   provider?: string;       // "sftp" | "external"
+  /**
+   * Kırpma odak noktası (yüzde). Yoksa ya da 50/50 ise tarayıcı
+   * varsayılanı (merkez) geçerlidir ve DOM çıktısı değişmez.
+   */
+  focalPoint?: FocalPoint;
   meta?: {
     width?: number;
     height?: number;

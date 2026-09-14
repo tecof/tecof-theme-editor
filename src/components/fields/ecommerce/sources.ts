@@ -24,6 +24,7 @@
  */
 
 import type { TecofApiClient } from '../../../api';
+import { PANEL_PATHS } from '../../../utils/panelLinks';
 
 /* ─── Ortak tipler ─── */
 
@@ -66,6 +67,16 @@ export interface EcommerceSource {
   emptyLabel: string;
   /** Modal başlığı. */
   title: string;
+  /**
+   * Kaydın panelde yönetildiği ekranın yolu (`PANEL_PATHS`).
+   *
+   * Boş listede "nereye gideceğim?" sorusunu ortadan kaldırır: alan hem boş
+   * durumda düğme, hem de başlık satırında küçük bir "Panelde yönet" bağlantısı
+   * çizer. Bağlantı YENİ SEKMEDE açılır — editördeki taslak kaybolmaz.
+   */
+  panelPath: string;
+  /** Boş durumdaki düğme metni ("Panelde marka ekle"). */
+  panelLabel: string;
   /** Veriyi çeken çağrı. `totalData` liste kırpıldıysa uyarı basmak için okunur. */
   load: (ctx: SourceContext) => Promise<{
     success: boolean;
@@ -198,6 +209,8 @@ export const brandSource: EcommerceSource = {
   /* PUBLIC uç yalnız `status: active` markaları döndürür — "hiç marka yok" ile
      "hepsi pasif" ayrımı merchant'a bırakılır. */
   emptyLabel: 'Aktif marka bulunamadı — panelden marka ekleyin ya da mevcut markaları aktifleştirin.',
+  panelPath: PANEL_PATHS.brands,
+  panelLabel: 'Panelde marka ekle',
   load: ({ apiClient, locale }) => apiClient.getEcommerceBrands(locale),
   toOptions: (rows, { locale }) =>
     rows.map((row) => {
@@ -229,6 +242,8 @@ export const categorySource: EcommerceSource = {
   title: 'Kategori seç',
   placeholder: 'Kategori seç',
   emptyLabel: 'Kayıtlı kategori yok — panelden kategori ekleyin.',
+  panelPath: PANEL_PATHS.categoryNew,
+  panelLabel: 'Panelde kategori ekle',
   load: ({ apiClient, locale }) => apiClient.getEcommerceCategories(locale),
   toOptions: (rows, { locale }) => {
     const out: EcommerceOption[] = [];
@@ -272,6 +287,8 @@ export const tagSource: EcommerceSource = {
   title: 'Etiket seç',
   placeholder: 'Etiket seç',
   emptyLabel: 'Kayıtlı etiket yok — panelden etiket ekleyin.',
+  panelPath: PANEL_PATHS.tags,
+  panelLabel: 'Panelde etiket ekle',
   load: ({ apiClient }) => apiClient.getEcommerceTags(),
   toOptions: (rows, { locale }) =>
     rows
@@ -305,6 +322,8 @@ export const attributeSource: EcommerceSource = {
   title: 'Ürün özelliği seç',
   placeholder: 'Özellik seç',
   emptyLabel: 'Kayıtlı özellik yok — panelden özellik tanımlayın.',
+  panelPath: PANEL_PATHS.attributes,
+  panelLabel: 'Panelde özellik tanımla',
   load: ({ apiClient }) => apiClient.getEcommerceAttributes(),
   /* _crud yalnız `deleteCode` filtreler; pasife alınmış özellikler de gelir.
      Vitrinde gösterilmeyecek bir özelliği seçtirmemek için burada elenir. */
@@ -348,6 +367,8 @@ export const variantTypeSource: EcommerceSource = {
   title: 'Varyant tipi seç',
   placeholder: 'Varyant tipi seç',
   emptyLabel: 'Kayıtlı varyant tipi yok — panelden tanımlayın.',
+  panelPath: PANEL_PATHS.variantTypes,
+  panelLabel: 'Panelde varyant tipi tanımla',
   load: ({ apiClient }) => apiClient.getEcommerceVariantTypes(),
   toOptions: (rows, { locale }) =>
     rows.map((row) => {
@@ -389,6 +410,8 @@ export const flashSaleSource: EcommerceSource = {
   title: 'Flaş satış seç',
   placeholder: 'Flaş satış seç',
   emptyLabel: 'Kayıtlı flaş satış yok — panelden oluşturun.',
+  panelPath: PANEL_PATHS.flashSales,
+  panelLabel: 'Panelde flaş satış oluştur',
   load: ({ apiClient }) => apiClient.getEcommerceFlashSales(),
   toOptions: (rows) =>
     rows.map((row) => ({
@@ -427,6 +450,8 @@ export const campaignSource: EcommerceSource = {
   title: 'Kampanya seç',
   placeholder: 'Kampanya seç',
   emptyLabel: 'Kayıtlı kampanya yok — panelden oluşturun.',
+  panelPath: PANEL_PATHS.campaigns,
+  panelLabel: 'Panelde kampanya oluştur',
   load: ({ apiClient }) => apiClient.getEcommerceCampaigns(),
   toOptions: (rows) =>
     rows.map((row) => ({
@@ -455,6 +480,8 @@ export const discountSource: EcommerceSource = {
   title: 'Kupon seç',
   placeholder: 'Kupon seç',
   emptyLabel: 'Kayıtlı kupon yok — panelden indirim kodu oluşturun.',
+  panelPath: PANEL_PATHS.discounts,
+  panelLabel: 'Panelde kupon oluştur',
   load: ({ apiClient }) => apiClient.getEcommerceDiscounts(),
   toOptions: (rows) =>
     rows.map((row) => {

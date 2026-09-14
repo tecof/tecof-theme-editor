@@ -21,11 +21,12 @@
  * düşürür; merchant panelde yeni kayıt açıp editöre dönünce onu görebilsin.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { createPortal } from 'react-dom';
-import { Check, ChevronDown, ChevronUp, RefreshCcw, Search, ShoppingBag, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Check, ChevronDown, ChevronUp, ShoppingBag, X } from 'lucide-react';
 import { FieldLabel } from '../FieldLabel';
 import { FieldErrorBoundary } from '../FieldErrorBoundary';
+import { PickerDrawer } from '../PickerDrawer';
+import { PanelLink } from '../PanelLink';
 import { useTecof } from '../../TecofProvider';
 import { useLanguages } from '../useLanguages';
 import { useActiveLanguage } from '../../../studio/language/LanguageContext';
@@ -167,102 +168,9 @@ const matches = (option: EcommerceOption, query: string): boolean => {
   return fold(`${option.label} ${option.hint || ''} ${option.badge || ''}`).includes(q);
 };
 
-/* ─── Modal kabuğu ─── */
-
-export interface PickerShellProps {
-  title: string;
-  query: string;
-  onQueryChange: (value: string) => void;
-  onReload?: () => void;
-  onClose: () => void;
-  loading?: boolean;
-  /** false ise arama kutusu yerine düz başlık basılır (varyant 2. adımı). */
-  searchable?: boolean;
-  children: React.ReactNode;
-}
-
-/**
- * Ortak modal çerçevesi — ExternalField'ın cmdk görünümüyle aynı sınıfları
- * kullanır, böylece editörde tek bir "veri seç" dili olur.
- */
-export const PickerShell = ({
-  title,
-  query,
-  onQueryChange,
-  onReload,
-  onClose,
-  loading,
-  searchable = true,
-  children,
-}: PickerShellProps) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  /* Odak modala girer ve kapanınca ÇAĞIRAN öğeye geri döner — aksi hâlde
-     klavye kullanıcısı modalı kapattığında odak <body>'ye düşüyor ve panelde
-     baştan gezinmek gerekiyordu. */
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    requestAnimationFrame(() => inputRef.current?.focus());
-    return () => previous?.focus?.();
-  }, []);
-
-  /* Esc her yerden kapatır — odak listedeyken de çalışsın diye document'te. */
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
-  }, [onClose]);
-
-  return createPortal(
-    <div className="tecof-cmdk-overlay" onMouseDown={onClose}>
-      <div
-        className="tecof-cmdk-panel tecof-ecom-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="tecof-cmdk-input-row">
-          <Search size={16} className="tecof-cmdk-search-icon" />
-          {searchable ? (
-            <input
-              ref={inputRef}
-              type="text"
-              className="tecof-cmdk-input"
-              placeholder={`${title} — ara…`}
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-            />
-          ) : (
-            <span className="tecof-cmdk-input">{title}</span>
-          )}
-          {onReload && (
-            <button
-              type="button"
-              className="tecof-external-reload"
-              onClick={onReload}
-              title="Listeyi yenile"
-              aria-label="Listeyi yenile"
-              disabled={loading}
-            >
-              <RefreshCcw size={14} className={loading ? 'tecof-upload-spin' : ''} />
-            </button>
-          )}
-          <button type="button" className="tecof-external-reload" onClick={onClose} title="Kapat" aria-label="Kapat">
-            <X size={14} />
-          </button>
-        </div>
-        <div className="tecof-cmdk-list">{children}</div>
-      </div>
-    </div>,
-    document.body
-  );
-};
+/* ─── Seçici kabuğu ───
+   Pencere `../PickerDrawer` (StudioDrawer 'md'); ProductField/VariantField de
+   aynı kabuğu kullanır. Burada yalnız liste satırı kalır. */
 
 /** Liste satırı — tekli/çoklu fark etmeksizin aynı görünüm. */
 export const PickerRow = ({
@@ -394,6 +302,9 @@ const EcommerceFieldInner = ({
       label={fieldOptions.label || name}
       icon={fieldOptions.labelIcon}
       readOnly={readOnly}
+      /* Liste DOLUYKEN de görünür: kaydı düzenlemek/yenisini eklemek isteyen
+         merchant, alanı boşaltıp boş durumu görmek zorunda kalmasın. */
+      action={<PanelLink path={source.panelPath}>Panelde yönet</PanelLink>}
     >
       <div className="tecof-ecom-field">
         <div className="tecof-external">
@@ -471,56 +382,63 @@ const EcommerceFieldInner = ({
         )}
       </div>
 
-      {open && (
-        <PickerShell
-          title={source.title}
-          query={query}
-          onQueryChange={setQuery}
-          onReload={reload}
-          onClose={() => setOpen(false)}
-          loading={loading}
-        >
-          {loading ? (
-            <div className="tecof-cmdk-empty">Yükleniyor…</div>
-          ) : error ? (
-            <div className="tecof-external-error">
-              <p>{error}</p>
-              <button type="button" onClick={reload}>
-                Tekrar dene
-              </button>
-            </div>
-          ) : options.length === 0 ? (
-            <div className="tecof-cmdk-empty">{source.emptyLabel}</div>
-          ) : visible.length === 0 ? (
-            <div className="tecof-cmdk-empty">“{query}” için sonuç yok</div>
-          ) : (
-            <>
-              {limitReached && (
-                <div className="tecof-ecom-note">
-                  En fazla {fieldOptions.max} kayıt seçilebilir — eklemek için birini çıkarın.
-                </div>
-              )}
-              {/* Sunucu listeyi kırptıysa bunu SÖYLE: arama istemcide çalıştığı
-                  için kırpılan kayıt aramayla da bulunamaz, sessiz kalmak
-                  "böyle bir kayıt yok" izlenimi verirdi. */}
-              {total > options.length && (
-                <div className="tecof-ecom-note">
-                  {total} kayıttan ilk {options.length} tanesi gösteriliyor — panelden
-                  eski kayıtları temizleyin ya da aramayı daraltın.
-                </div>
-              )}
-              {visible.map((option) => (
-                <PickerRow
-                  key={option.id}
-                  option={option}
-                  selected={selectedIds.has(option.id)}
-                  onSelect={() => handlePick(option)}
-                />
-              ))}
-            </>
-          )}
-        </PickerShell>
-      )}
+      {/* Drawer hep mount kalır (kapanış animasyonu); veri yalnız `open` iken çekilir. */}
+      <PickerDrawer
+        open={open}
+        title={source.title}
+        query={query}
+        onQueryChange={setQuery}
+        onReload={reload}
+        onClose={() => setOpen(false)}
+        loading={loading}
+      >
+        {loading ? (
+          <div className="tecof-cmdk-empty">Yükleniyor…</div>
+        ) : error ? (
+          <div className="tecof-external-error">
+            <p>{error}</p>
+            <button type="button" onClick={reload}>
+              Tekrar dene
+            </button>
+          </div>
+        ) : options.length === 0 ? (
+          /* Boş liste bir ÇIKMAZ: kayıt editörde açılamaz, panelde açılır.
+             Metin + doğrudan o ekrana giden düğme birlikte verilir. */
+          <div className="tecof-cmdk-empty tecof-panel-empty">
+            <p className="tecof-panel-empty-text">{source.emptyLabel}</p>
+            <PanelLink path={source.panelPath} variant="button">
+              {source.panelLabel}
+            </PanelLink>
+          </div>
+        ) : visible.length === 0 ? (
+          <div className="tecof-cmdk-empty">“{query}” için sonuç yok</div>
+        ) : (
+          <>
+            {limitReached && (
+              <div className="tecof-ecom-note">
+                En fazla {fieldOptions.max} kayıt seçilebilir — eklemek için birini çıkarın.
+              </div>
+            )}
+            {/* Sunucu listeyi kırptıysa bunu SÖYLE: arama istemcide çalıştığı
+                için kırpılan kayıt aramayla da bulunamaz, sessiz kalmak
+                "böyle bir kayıt yok" izlenimi verirdi. */}
+            {total > options.length && (
+              <div className="tecof-ecom-note">
+                {total} kayıttan ilk {options.length} tanesi gösteriliyor — panelden
+                eski kayıtları temizleyin ya da aramayı daraltın.
+              </div>
+            )}
+            {visible.map((option) => (
+              <PickerRow
+                key={option.id}
+                option={option}
+                selected={selectedIds.has(option.id)}
+                onSelect={() => handlePick(option)}
+              />
+            ))}
+          </>
+        )}
+      </PickerDrawer>
     </FieldLabel>
   );
 };

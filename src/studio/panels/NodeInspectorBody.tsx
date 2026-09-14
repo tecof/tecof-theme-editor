@@ -30,7 +30,7 @@ import { INTERACTIONS_PROP, START_HIDDEN_PROP } from '../interactions/types';
  * olarak bağımsızdır — modal kapanınca panel sekmesi bozulmaz).
  *
  * Panel-özel varsayım taşımaz: genişlik/scroll dış sarmalayıcıdan gelir
- * (.tecof-inspector veya .tecof-node-settings-modal — ikisi de sınırlı
+ * (.tecof-inspector veya .tecof-node-settings-drawer-body — ikisi de sınırlı
  * yükseklikte flex column; içteki .tecof-inspector-fields tek scroll bölgesi).
  */
 

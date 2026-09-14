@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
 import { useTecof } from '../TecofProvider';
+import { PanelLink } from './PanelLink';
+import { PANEL_PATHS } from '../../utils/panelLinks';
 import {
   ChevronDown,
   Database,
@@ -308,7 +310,18 @@ export const CmsCollectionField = ({
             {/* Options */}
             <div className="tecof-cms-col-options">
               {filteredCollections.length === 0 ? (
-                <div className="tecof-cms-col-empty">Koleksiyon bulunamadı</div>
+                /* Koleksiyon editörde yaratılamaz — şema panelde tanımlanır.
+                   Arama sonuçsuzsa metin farklı: sorun aramada olabilir. */
+                <div className="tecof-cms-col-empty tecof-panel-empty">
+                  <p className="tecof-panel-empty-text">
+                    {searchQuery ? 'Koleksiyon bulunamadı' : 'Henüz koleksiyon yok.'}
+                  </p>
+                  {!searchQuery && (
+                    <PanelLink path={PANEL_PATHS.cmsCollectionNew} variant="button">
+                      Panelde koleksiyon oluştur
+                    </PanelLink>
+                  )}
+                </div>
               ) : (
                 filteredCollections.map(col => (
                   <button
@@ -328,6 +341,12 @@ export const CmsCollectionField = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Koleksiyon şeması (alanlar, sıralama, içerikler) panelde yönetilir —
+          bağlantı KALICI: liste doluyken de merchant oraya gidebilmeli. */}
+      <div className="tecof-cms-col-panel-row">
+        <PanelLink path={PANEL_PATHS.cms}>Koleksiyonları panelde yönet</PanelLink>
       </div>
 
       {/* Settings (limit + sort) — only when a collection is selected */}

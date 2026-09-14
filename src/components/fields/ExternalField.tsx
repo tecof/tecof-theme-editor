@@ -3,17 +3,18 @@
  *
  * Unlike CmsCollectionField (hardwired to the Tecof CMS), this field is fully
  * decoupled: the host supplies an async `fetchList` and optional mappers. The
- * user opens a modal, the rows returned by `fetchList` are listed (searchable),
- * and selecting a row stores `mapProp(row)` (or the raw row) on the prop.
+ * user opens a picker drawer, the rows returned by `fetchList` are listed
+ * (searchable), and selecting a row stores `mapProp(row)` (or the raw row) on
+ * the prop.
  *
  * Rendered by FieldRenderer for `{ type: 'external' }`.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { Database, Search, X, Check, RefreshCcw, ChevronRight } from 'lucide-react';
+import { Database, X, Check, ChevronRight } from 'lucide-react';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
+import { PickerDrawer } from './PickerDrawer';
 import { deepEqual } from '../../utils';
 
 /* ─── Types ─── */
@@ -58,16 +59,21 @@ export const rowColumns = (field: ExternalFieldConfig, row: any): Record<string,
   return { value: row };
 };
 
-/* ─── Modal ─── */
+/* ─── Picker ─── */
 
-interface PickerModalProps {
+interface ExternalPickerProps {
+  open: boolean;
   field: ExternalFieldConfig;
   value: any;
   onSelect: (row: any) => void;
   onClose: () => void;
 }
 
-const PickerModal = ({ field, value, onSelect, onClose }: PickerModalProps) => {
+/**
+ * Seçici pencere (PickerDrawer). Drawer hep mount kalır (kapanış animasyonu);
+ * veri yalnız `open` iken çekilir ve her açılışta arama sıfırlanır.
+ */
+const ExternalPicker = ({ open, field, value, onSelect, onClose }: ExternalPickerProps) => {
   const showSearch = field.showSearch !== false;
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
@@ -75,13 +81,16 @@ const PickerModal = ({ field, value, onSelect, onClose }: PickerModalProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   // Drops stale async responses when a newer request has been issued.
   const reqIdRef = useRef(0);
 
+  // Her açılışta taze arama.
   useEffect(() => {
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }, []);
+    if (open) {
+      setQuery('');
+      setDebounced('');
+    }
+  }, [open]);
 
   // Debounce the search query.
   useEffect(() => {
@@ -89,8 +98,9 @@ const PickerModal = ({ field, value, onSelect, onClose }: PickerModalProps) => {
     return () => clearTimeout(t);
   }, [query]);
 
-  // Fetch whenever the debounced query (or manual reload) changes.
+  // Fetch whenever the drawer opens or the debounced query / manual reload changes.
   useEffect(() => {
+    if (!open) return;
     const reqId = ++reqIdRef.current;
     setLoading(true);
     setError(null);
@@ -106,7 +116,7 @@ const PickerModal = ({ field, value, onSelect, onClose }: PickerModalProps) => {
         setRows([]);
         setLoading(false);
       });
-  }, [field, debounced, reloadKey]);
+  }, [open, field, debounced, reloadKey]);
 
   const isSelected = useCallback(
     (row: any) => {
@@ -116,90 +126,62 @@ const PickerModal = ({ field, value, onSelect, onClose }: PickerModalProps) => {
     [field, value]
   );
 
-  return createPortal(
-    <div className="tecof-cmdk-overlay" onMouseDown={onClose}>
-      <div
-        className="tecof-cmdk-panel"
-        role="dialog"
-        aria-label={field.label || 'Veri seç'}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="tecof-cmdk-input-row">
-          <Search size={16} className="tecof-cmdk-search-icon" />
-          {showSearch ? (
-            <input
-              ref={inputRef}
-              type="text"
-              className="tecof-cmdk-input"
-              placeholder="Ara…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          ) : (
-            <span className="tecof-cmdk-input">{field.label || 'Veri seç'}</span>
-          )}
-          <button
-            type="button"
-            className="tecof-external-reload"
-            onClick={() => setReloadKey((k) => k + 1)}
-            title="Yenile"
-            disabled={loading}
-          >
-            <RefreshCcw size={14} className={loading ? 'tecof-upload-spin' : ''} />
-          </button>
-          <button type="button" className="tecof-external-reload" onClick={onClose} title="Kapat">
-            <X size={14} />
+  return (
+    <PickerDrawer
+      open={open}
+      title={field.label || 'Veri seç'}
+      query={query}
+      onQueryChange={setQuery}
+      onReload={() => setReloadKey((k) => k + 1)}
+      onClose={onClose}
+      loading={loading}
+      searchable={showSearch}
+      placeholder="Ara…"
+    >
+      {loading ? (
+        <div className="tecof-cmdk-empty">Yükleniyor…</div>
+      ) : error ? (
+        <div className="tecof-external-error">
+          <p>{error}</p>
+          <button type="button" onClick={() => setReloadKey((k) => k + 1)}>
+            Tekrar dene
           </button>
         </div>
-
-        <div className="tecof-cmdk-list">
-          {loading ? (
-            <div className="tecof-cmdk-empty">Yükleniyor…</div>
-          ) : error ? (
-            <div className="tecof-external-error">
-              <p>{error}</p>
-              <button type="button" onClick={() => setReloadKey((k) => k + 1)}>
-                Tekrar dene
-              </button>
-            </div>
-          ) : rows.length === 0 ? (
-            <div className="tecof-cmdk-empty">Sonuç yok</div>
-          ) : (
-            rows.map((row, idx) => {
-              const cols = rowColumns(field, row);
-              const entries = Object.entries(cols);
-              const [firstKey, firstVal] = entries[0] ?? ['', ''];
-              const primary = field.getItemSummary
-                ? field.getItemSummary(field.mapProp ? field.mapProp(row) : row)
-                : String(firstVal ?? firstKey);
-              const rest = entries.slice(1);
-              const selected = isSelected(row);
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`tecof-cmdk-item${selected ? ' is-active' : ''}`}
-                  onClick={() => onSelect(row)}
-                >
-                  <span className="tecof-cmdk-item-icon">
-                    {selected ? <Check size={15} /> : <ChevronRight size={15} />}
+      ) : rows.length === 0 ? (
+        <div className="tecof-cmdk-empty">Sonuç yok</div>
+      ) : (
+        rows.map((row, idx) => {
+          const cols = rowColumns(field, row);
+          const entries = Object.entries(cols);
+          const [firstKey, firstVal] = entries[0] ?? ['', ''];
+          const primary = field.getItemSummary
+            ? field.getItemSummary(field.mapProp ? field.mapProp(row) : row)
+            : String(firstVal ?? firstKey);
+          const rest = entries.slice(1);
+          const selected = isSelected(row);
+          return (
+            <button
+              key={idx}
+              type="button"
+              className={`tecof-cmdk-item${selected ? ' is-active' : ''}`}
+              onClick={() => onSelect(row)}
+            >
+              <span className="tecof-cmdk-item-icon">
+                {selected ? <Check size={15} /> : <ChevronRight size={15} />}
+              </span>
+              <span className="tecof-external-row-text">
+                <span className="tecof-cmdk-item-label">{primary}</span>
+                {rest.length > 0 && (
+                  <span className="tecof-external-row-sub">
+                    {rest.map(([k, v]) => `${k}: ${String(v)}`).join(' · ')}
                   </span>
-                  <span className="tecof-external-row-text">
-                    <span className="tecof-cmdk-item-label">{primary}</span>
-                    {rest.length > 0 && (
-                      <span className="tecof-external-row-sub">
-                        {rest.map(([k, v]) => `${k}: ${String(v)}`).join(' · ')}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
+                )}
+              </span>
+            </button>
+          );
+        })
+      )}
+    </PickerDrawer>
   );
 };
 
@@ -246,14 +228,13 @@ export const ExternalField = ({ field, name, value, onChange, readOnly }: Extern
         </div>
       </FieldLabel>
 
-      {open && (
-        <PickerModal
-          field={field}
-          value={value}
-          onSelect={handleSelect}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      <ExternalPicker
+        open={open}
+        field={field}
+        value={value}
+        onSelect={handleSelect}
+        onClose={() => setOpen(false)}
+      />
     </FieldErrorBoundary>
   );
 };

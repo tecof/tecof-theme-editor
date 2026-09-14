@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { useTecof } from './TecofProvider';
 import { cdnFileUrl } from '../utils';
+import { focalPointToObjectPosition } from '../utils/focalPoint';
 import type { UploadedFile } from '../types';
 
 /* ─── Helpers ─── */
@@ -165,6 +166,15 @@ export const TecofPicture = memo(({
   const imgHeight = height || data?.meta?.height || 500;
   const sizes = getSizes(size);
 
+  /* Odak noktası → object-position. Odak yoksa/merkezdeyse `imgStyle` olduğu
+     gibi geçer (DOM çıktısı değişmez). Çağıran `imgStyle.objectPosition`
+     verdiyse o kazanır — tema kendi kırpma kararını verebilmeli. */
+  const focalPosition = focalPointToObjectPosition(data.focalPoint);
+  const mediaStyle: React.CSSProperties | undefined =
+    focalPosition && imgStyle?.objectPosition === undefined
+      ? { ...imgStyle, objectPosition: focalPosition }
+      : imgStyle;
+
   const renderVideo = () => (
     <video
       src={fileURL}
@@ -174,7 +184,7 @@ export const TecofPicture = memo(({
       playsInline
       preload="metadata"
       className={`tecof-picture-video ${imgClassName || ''}`.trim()}
-      style={imgStyle}
+      style={mediaStyle}
     />
   );
 
@@ -192,7 +202,7 @@ export const TecofPicture = memo(({
       loading,
       sizes,
       className: computedImgClass,
-      style: imgStyle,
+      style: mediaStyle,
       onLoad: () => setLoadedUrl(fileURL),
     };
 

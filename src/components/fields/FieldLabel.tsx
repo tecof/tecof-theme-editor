@@ -6,6 +6,14 @@ export interface FieldLabelProps {
   readOnly?: boolean;
   children?: React.ReactNode;
   el?: 'div' | 'label';
+  /**
+   * Başlık satırının SAĞINA konan küçük eylem (ör. "Panelde yönet" bağlantısı).
+   *
+   * `el="label"` iken buraya tıklanabilir bir şey koymak, HTML label
+   * aktivasyonu yüzünden alanın ilk kontrolünü de tetikler — eylem veren
+   * alanlar `el="div"` kullanmalıdır.
+   */
+  action?: React.ReactNode;
 }
 
 export const FieldLabel = ({
@@ -14,6 +22,7 @@ export const FieldLabel = ({
   readOnly,
   children,
   el = 'label',
+  action,
 }: FieldLabelProps) => {
   const Component = el;
 
@@ -27,6 +36,7 @@ export const FieldLabel = ({
             Salt Okunur
           </span>
         )}
+        {action && <span className="tecof-field-label-action">{action}</span>}
       </div>
       <div className="tecof-field-label-content">
         {children}

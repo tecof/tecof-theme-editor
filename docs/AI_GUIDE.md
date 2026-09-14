@@ -269,10 +269,11 @@ map'liyorsa (slot yok), kartları editöre şu attr'larla tanıtabilir:
 | `hostOrigin` | Güvenli postMessage origin'i | `*` |
 | `autoSave` | Debounce'lu otomatik draft kaydı | `false` |
 | `autoSaveDelay` | Autosave gecikmesi | `2000` ms |
-| `warnOnUnsavedChanges` | Sekme kapanış uyarısı | `true` |
+| `warnOnUnsavedChanges` | Sekme kapanış uyarısı (tarayıcının yerel `beforeunload` penceresi; özel UI'ya izin verilmez — editör içi onaylar `studioDialog` drawer'ıdır) | `true` |
 | `onChange` | Yaklaşık 300 ms debounce'lu değişiklik callback'i | yok |
 | `onSave` | Başarılı kayıt callback'i | yok |
 | `onLanguageChange` | Aktif düzenleme dili callback'i — `(code: string) => void` | yok |
+| `panelUrl` | Panelin taban adresi — alanlardaki "Panelde yönet" bağlantıları (yeni sekme) bunun üzerine kurulur | `https://app.tecof.com` |
 
 `onLanguageChange` sözleşmesi: aktif dil ilk kez çözüldüğünde (merchant
 varsayılan dili) bir kez, sonra her değişimde çağrılır. Boş dil (`""` —

@@ -16,11 +16,15 @@ import { AiSectionModal } from './ai/AiSectionModal';
 import { StyleSyncModal } from './style/StyleSyncModal';
 import { NodeSettingsModal } from './panels/NodeSettingsModal';
 import HelpModal from './panels/HelpModal';
+import { DialogHost } from './ui/DialogHost';
+import { studioDialog } from './ui/dialogStore';
+import { isStudioDrawerOpen } from './ui/StudioDrawer';
 import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
 import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost } from './bridge';
+import { DEFAULT_PANEL_URL } from '../utils/panelLinks';
 import type { TecofEditorProps } from '../types';
 
 export const TecofStudio = ({
@@ -34,6 +38,7 @@ export const TecofStudio = ({
   autoSave = false,
   autoSaveDelay = 2000,
   warnOnUnsavedChanges = true,
+  panelUrl = DEFAULT_PANEL_URL,
   className,
 }: TecofEditorProps) => {
   const { apiClient } = useTecof();
@@ -324,7 +329,10 @@ export const TecofStudio = ({
   const handleImportJson = useCallback(() => {
     // Revizyon önizlemesi salt okunur — palet bu durumu bilmediği için nöbet burada.
     if (revisionPreviewId) {
-      window.alert('Revizyon önizlemesi salt okunurdur — içe aktarma için normal editörü kullanın.');
+      void studioDialog.alert({
+        title: 'Revizyon önizlemesi salt okunur',
+        description: 'İçe aktarma için normal editörü kullanın.',
+      });
       return;
     }
 
@@ -343,21 +351,29 @@ export const TecofStudio = ({
 
         const validationError = validatePageData(raw);
         if (validationError) {
-          window.alert(`İçe aktarma başarısız: ${validationError}`);
+          await studioDialog.alert({ title: 'İçe aktarma başarısız', description: validationError });
           return;
         }
 
-        const confirmed = window.confirm(
-          'Mevcut sayfa içeriği içe aktarılan veriyle DEĞİŞTİRİLECEK. ' +
-          'Bu işlem Geri Al (Cmd+Z) ile geri alınabilir; kalıcı olması için kaydetmeniz gerekir. Devam edilsin mi?'
-        );
+        const confirmed = await studioDialog.confirm({
+          title: 'Sayfa içeriği değiştirilsin mi?',
+          description:
+            'Mevcut sayfa içeriği içe aktarılan veriyle DEĞİŞTİRİLECEK. ' +
+            'Bu işlem Geri Al (Cmd+Z) ile geri alınabilir; kalıcı olması için kaydetmeniz gerekir.',
+          confirmLabel: 'İçe aktar',
+          cancelLabel: 'Vazgeç',
+          danger: true,
+        });
         if (!confirmed) return;
 
         // Yükleme akışıyla birebir aynı boru hattı: parse → migrate → store.
         const doc = migrateDocument(parseDocument(raw), config.migrations);
         useEditorStore.getState().replaceDocument(doc);
       } catch (err: any) {
-        window.alert(`İçe aktarma başarısız: ${err?.message || 'Dosya okunamadı.'}`);
+        void studioDialog.alert({
+          title: 'İçe aktarma başarısız',
+          description: err?.message || 'Dosya okunamadı.',
+        });
       }
     };
     input.click();
@@ -502,17 +518,28 @@ export const TecofStudio = ({
         return;
       }
 
-      // Escape -> önce palet; açık bir modal varsa kapatmayı MODALIN kendi
-      // listener'ına bırak ve seçime DOKUNMA (eskiden modal kapanırken seçim de
-      // siliniyordu). Seçim varken bir üst kata çık (Figma); kök seviyedeyse
-      // bırak.
+      // Escape -> önce palet; açık bir drawer varsa kapatmayı vaul'a bırak ve
+      // seçime DOKUNMA (eskiden pencere kapanırken seçim de siliniyordu).
+      // Drawer'lar (StudioDrawer, MediaDrawer, LinkPicker, onay penceresi) DOM
+      // niteliğinden tanınır (isStudioDrawerOpen); uiStore bayrakları ilk
+      // kareyi de kapsar. Seçim varken bir üst kata çık (Figma); kök
+      // seviyedeyse bırak.
       if (e.key === 'Escape') {
         const ui = useUiStore.getState();
         if (ui.commandPaletteOpen) {
           ui.setCommandPaletteOpen(false);
           return;
         }
-        if (ui.addSectionTarget != null || ui.nodeSettingsOpen || ui.aiModalOpen || ui.helpModalOpen) return;
+        if (
+          ui.addSectionTarget != null ||
+          ui.nodeSettingsOpen ||
+          ui.aiModalOpen ||
+          ui.helpModalOpen ||
+          ui.styleSyncNodeId != null ||
+          isStudioDrawerOpen()
+        ) {
+          return;
+        }
         const editor = useEditorStore.getState();
         const currentId = editor.selection.selectedId;
         const parentId = currentId ? getParentId(editor.document, currentId) : null;
@@ -532,19 +559,21 @@ export const TecofStudio = ({
       }
 
       // Undo / Redo
-      // Bir MODAL açıkken kanvas kısayolları (G/R/B, Delete, ok tuşları,
-      // kopyala/yapıştır, Cmd+D…) ÇALIŞMAMALI: HelpModal'da hiç input
-      // olmadığından odak panel div'inde kalıyor ve ör. kılavuzu okurken
-      // Delete'e basmak modalın ARKASINDAKİ seçili node'u siliyordu.
-      // (Escape yukarıda kendi guard'ıyla işlendi; Cmd+K da modal-üstü.)
-      // Undo/redo dahil: modal açıkken görünmez doküman değişikliği olmamalı.
+      // Bir DRAWER açıkken kanvas kısayolları (G/R/B, Delete, ok tuşları,
+      // kopyala/yapıştır, Cmd+D…) ÇALIŞMAMALI: kılavuzda hiç input
+      // olmadığından odak kartta kalıyor ve ör. kılavuzu okurken Delete'e
+      // basmak kartın ARKASINDAKİ seçili node'u siliyordu.
+      // (Escape yukarıda kendi guard'ıyla işlendi; Cmd+K da drawer-üstü.)
+      // Undo/redo dahil: drawer açıkken görünmez doküman değişikliği olmamalı.
       {
         const uiNow = useUiStore.getState();
         if (
           uiNow.addSectionTarget != null ||
           uiNow.nodeSettingsOpen ||
           uiNow.aiModalOpen ||
-          uiNow.helpModalOpen
+          uiNow.helpModalOpen ||
+          uiNow.styleSyncNodeId != null ||
+          isStudioDrawerOpen()
         ) {
           return;
         }
@@ -664,8 +693,10 @@ export const TecofStudio = ({
     readOnly: mode === 'preview',
     apiClient,
     // Sayfa bazlı uçlar (stil senkronu) kaynağı bilmek zorunda.
-    pageId
-  }), [config, mode, apiClient, pageId]);
+    pageId,
+    // Alanlardaki "Panelde yönet" bağlantılarının tabanı.
+    panelUrl
+  }), [config, mode, apiClient, pageId, panelUrl]);
 
   if (loading) {
     return <StudioSkeleton className={className} />;
@@ -735,6 +766,8 @@ export const TecofStudio = ({
           <StyleSyncModal />
           <NodeSettingsModal />
           <HelpModal />
+          {/* confirm/alert kuyruğu — studioDialog isteklerini ConfirmDrawer ile çizer. */}
+          <DialogHost />
           <ThemeVars />
         </div>
       </LanguageProvider>

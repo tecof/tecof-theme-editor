@@ -3466,6 +3466,11 @@
   align-items: center;
   gap: 10px;
   width: 100%;
+  /* 280px sol panelde taşma yok: dolgu+kenarlık genişliğe DAHİL ve satır
+     daralabilir (min-width:auto varsayılanı içerik genişliğini taban yapıp
+     kartı paneli aşırtıyordu). */
+  min-width: 0;
+  box-sizing: border-box;
   padding: 8px;
   text-align: left;
   background: var(--tecof-surface);
@@ -3497,7 +3502,7 @@
   overflow: hidden;
 }
 .tecof-page-tpl-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.tecof-page-tpl-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tecof-page-tpl-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .tecof-page-tpl-label {
   font-size: 12px;
   font-weight: 600;
@@ -3655,7 +3660,12 @@
 
 .tecof-block-cat.is-collapsed .tecof-block-cat-items { grid-template-rows: 0fr; }
 
-.tecof-block-cat-items > .tecof-block-grid {
+/* ⚠ Seçici TÜM doğrudan çocuklara bakar (`> *`), yalnız `.tecof-block-grid`'e
+   değil: sayfa şablonu listesi `.tecof-page-tpl-list` olduğu için eski kural
+   ona uygulanmıyordu ve kategori KAPALIYKEN (0fr satır) liste kutudan
+   taşıyordu. Yeni bir liste türü eklenince aynı hatanın tekrarlanmaması için
+   de tip yerine "her çocuk" kuralı doğru olanıdır. */
+.tecof-block-cat-items > * {
   overflow: hidden;
   min-height: 0;
   visibility: visible;
@@ -3663,7 +3673,7 @@
 }
 
 /* Kapalıyken içerik odak/tab sırasından da çıkar (animasyon bitince). */
-.tecof-block-cat.is-collapsed .tecof-block-cat-items > .tecof-block-grid {
+.tecof-block-cat.is-collapsed .tecof-block-cat-items > * {
   visibility: hidden;
   transition: visibility 0s linear 0.2s;
 }
@@ -6261,7 +6271,10 @@
   }
 }
 
-/* ── Squarespace-style Add Section Modal Overlay & Grid ── */
+/* ── Squarespace-style Add Section Modal Overlay & Grid ──
+   NOT (2026-09): dış kabuk artık StudioDrawer (bkz. dosya sonu "Drawer kabuğu");
+   .tecof-modal-overlay yalnız Canvas'ın tıklama korumasında ad olarak yaşar,
+   iç düzen sınıfları (.tecof-modal-body/-sidebar/-content/-grid…) aynen kullanılır. */
 .tecof-modal-overlay {
   position: fixed;
   top: 0;
@@ -6278,57 +6291,7 @@
   box-sizing: border-box;
 }
 
-.tecof-add-section-modal {
-  background: var(--tecof-surface);
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 14px;
-  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28), 0 1px 0 rgba(255, 255, 255, 0.72) inset;
-  width: min(1180px, 100%);
-  height: min(760px, calc(100vh - 48px));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: tecof-modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes tecof-modal-in {
-  from { opacity: 0; transform: scale(0.97) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-/* ─── Bileşen ayarları modalı (NodeSettingsModal) ───
-   Inspector gövdesini (NodeInspectorBody) ortada gösterir. Sınırlı yükseklikte
-   flex column: içerideki .tecof-inspector-fields (flex:1 + min-height:0) tek
-   scroll bölgesi olur — panel davranışıyla birebir aynı. */
-.tecof-node-settings-modal {
-  /* Panel açılışta programatik odaklanır (ESC panel-scoped yakalanır) —
-     tarayıcı odak halkası modal çerçevesinde gereksiz */
-  outline: none;
-  background: var(--tecof-surface);
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 14px;
-  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28), 0 1px 0 rgba(255, 255, 255, 0.72) inset;
-  width: min(460px, 100%);
-  max-height: min(760px, calc(100vh - 48px));
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  animation: tecof-modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* ── Kullanım kılavuzu modalı (TopBar ⓘ) ── */
-.tecof-help-modal {
-  width: min(640px, calc(100vw - 32px));
-  max-height: min(760px, calc(100vh - 48px));
-  display: flex;
-  flex-direction: column;
-  background: var(--tecof-surface);
-  border-radius: var(--tecof-radius-lg);
-  box-shadow: var(--tecof-shadow-lg);
-  overflow: hidden;
-  animation: tecof-modal-in 0.18s ease;
-  outline: none;
-}
+/* ── Kullanım kılavuzu (HelpModal → StudioDrawer 'lg') — gövde ── */
 .tecof-help-body {
   overflow-y: auto;
   padding: 4px 20px 20px;
@@ -6366,90 +6329,6 @@
   color: var(--tecof-text-soft);
 }
 .tecof-help-list li::marker { color: var(--tecof-text-subtle); }
-
-.tecof-node-settings-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid var(--tecof-border);
-  flex: none;
-}
-
-/* Sekme çubuğu modal içinde sabit kalsın — scroll yalnız alan listesinde */
-.tecof-node-settings-modal .tecof-inspector-tabs {
-  flex: none;
-}
-
-.tecof-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 72px;
-  padding: 14px 18px 14px 24px;
-  border-bottom: 1px solid var(--tecof-border);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.88)),
-    var(--tecof-surface);
-}
-
-.tecof-modal-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-
-.tecof-modal-title-icon {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  border-radius: 10px;
-  background: var(--tecof-accent-subtle);
-  color: var(--tecof-accent-text);
-  border: 1px solid var(--tecof-accent-border);
-}
-
-.tecof-modal-title {
-  font-size: 18px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: var(--tecof-text);
-  margin: 0;
-}
-
-.tecof-modal-subtitle {
-  display: block;
-  margin-top: 3px;
-  font-size: 12px;
-  line-height: 1.2;
-  color: var(--tecof-text-muted);
-}
-
-.tecof-modal-close {
-  width: 36px;
-  height: 36px;
-  background: var(--tecof-surface);
-  border: 1px solid transparent;
-  color: var(--tecof-text-muted);
-  cursor: pointer;
-  padding: 0;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--tecof-transition);
-}
-
-.tecof-modal-close:hover {
-  background: var(--tecof-bg);
-  border-color: var(--tecof-border);
-  color: var(--tecof-text);
-}
 
 .tecof-modal-body {
   display: flex;
@@ -7023,10 +6902,6 @@
     padding: 12px;
   }
 
-  .tecof-add-section-modal {
-    height: calc(100vh - 24px);
-  }
-
   .tecof-modal-body {
     flex-direction: column;
   }
@@ -7340,31 +7215,7 @@
   box-shadow: var(--tecof-focus-ring);
 }
 
-/* ── AI section modal ── */
-.tecof-ai-modal {
-  width: min(520px, calc(100vw - 32px));
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  background: var(--tecof-surface);
-  border: var(--tecof-line);
-  border-radius: var(--tecof-radius);
-  box-shadow: var(--tecof-shadow-lg);
-}
-.tecof-ai-modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.tecof-ai-modal-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--tecof-text);
-}
+/* ── AI section (AiSectionModal → StudioDrawer 'md') — gövde ── */
 .tecof-ai-modal-input {
   width: 100%;
   box-sizing: border-box;
@@ -7397,13 +7248,6 @@
   background: rgba(239, 68, 68, 0.08);
   border-radius: var(--tecof-radius-sm);
 }
-.tecof-ai-modal-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.tecof-ai-modal-hint { font-size: 11px; color: var(--tecof-text-muted); }
 
 /* ── Component variant switcher (Inspector) ── */
 .tecof-variant-switcher {
@@ -8238,23 +8082,6 @@
 }
 
 .tecof-external-clear:hover {
-  color: var(--tecof-text);
-}
-
-.tecof-external-reload {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  border: none;
-  background: transparent;
-  color: var(--tecof-text-muted);
-  cursor: pointer;
-  border-radius: var(--tecof-radius-xs);
-}
-
-.tecof-external-reload:hover:not(:disabled) {
   color: var(--tecof-text);
 }
 
@@ -9221,11 +9048,6 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   gap: 8px;
 }
 
-/* Liste satırları iki satır metin + rozet taşıdığı için panel biraz daha uzun. */
-.tecof-ecom-panel {
-  max-height: 68vh;
-}
-
 /* Renk kutucuğu — satır ikonunun yerine geçer (renk özelliği/varyant değeri). */
 .tecof-ecom-swatch {
   display: block;
@@ -9480,34 +9302,7 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   border-radius: var(--tecof-radius-sm);
 }
 
-/* ── "Diğer sayfalara uygula" modalı ── */
-.tecof-stylesync-modal {
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100vh - 64px);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  background: var(--tecof-surface);
-  border: var(--tecof-line);
-  border-radius: var(--tecof-radius);
-  box-shadow: var(--tecof-shadow-lg);
-}
-
-.tecof-stylesync-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tecof-stylesync-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--tecof-text);
-}
+/* ── "Diğer sayfalara uygula" (StyleSyncModal → StudioDrawer 'md') — gövde ── */
 
 .tecof-stylesync-source {
   display: flex;
@@ -9529,12 +9324,6 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-stylesync-source-name {
   font-size: 12px;
   color: var(--tecof-style-source);
-}
-
-.tecof-stylesync-source-hint {
-  flex: 1 1 100%;
-  font-size: 11px;
-  color: var(--tecof-text-muted);
 }
 
 .tecof-stylesync-check {
@@ -9670,26 +9459,846 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   color: var(--tecof-text-muted);
 }
 
-.tecof-stylesync-actions {
+/* ═══════════════════════════════════════════════════════════════════
+   Studio — Drawer kabuğu (StudioDrawer / ConfirmDrawer / PickerDrawer)
+   Editördeki TÜM pencereler bu kabuğu kullanır (vaul, alttan yükselen kart).
+   Katman: overlay 99998 / kart 99999 — eski .tecof-modal-overlay bandı; drawer
+   içinden açılan popover'lar (100000+), MediaDrawer/LinkPicker (999999+) ve
+   komut paleti (1000000) üstte kalır. Aynı banttaki iki drawer için DOM sırası
+   yeter (sonra açılan üstte). Bkz. src/studio/ui/StudioDrawer.tsx.
+   ═══════════════════════════════════════════════════════════════════ */
+.tecof-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--tecof-overlay-scrim);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 99998;
+  animation: tecof-drawer-fade-in 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.tecof-drawer-overlay[data-state="closed"] {
+  animation: tecof-drawer-fade-out 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+@keyframes tecof-drawer-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tecof-drawer-fade-out { to { opacity: 0; } }
+
+.tecof-drawer {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 32px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border-subtle);
+  border-radius: 28px;
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.28);
+  outline: none;
+  z-index: 99999;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--tecof-text);
+}
+.tecof-drawer.is-sm { max-width: 400px; }
+.tecof-drawer.is-md { max-width: 560px; }
+.tecof-drawer.is-lg { max-width: 820px; }
+.tecof-drawer.is-xl { max-width: 1180px; height: min(88vh, 900px); }
+
+/* vaul, fare/trackpad'de kartta metin seçimini kapatır (sürükleme için);
+   masaüstü editörde içerik seçilebilir kalmalı. Sürükleme yalnız tutamaktan. */
+.tecof-drawer[data-vaul-drawer] { user-select: text; }
+/* vaul'un aşırı kaydırma için karta eklediği ::after (arka plan uzantısı)
+   kart 16px yukarıda durduğu için altta beyaz şerit olarak görünürdü. */
+.tecof-drawer[data-vaul-drawer]::after { display: none; }
+
+.tecof-drawer-handle.tecof-drawer-handle[data-vaul-handle] {
+  width: 40px;
+  height: 6px;
+  margin: -8px auto 16px;
+  border-radius: 999px;
+  background: var(--tecof-border);
+  opacity: 1;
+  flex: none;
+  cursor: grab;
+}
+.tecof-drawer-handle.tecof-drawer-handle[data-vaul-handle]:hover { background: var(--tecof-border-strong); }
+
+.tecof-drawer-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
+  flex: none;
+  min-width: 0;
+}
+.tecof-drawer-head-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tecof-drawer-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.tecof-drawer-icon {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: var(--tecof-bg);
+  color: var(--tecof-text-soft);
+}
+.tecof-drawer-icon.is-primary { background: var(--tecof-accent-subtle); color: var(--tecof-accent-text); }
+.tecof-drawer-icon.is-danger { background: var(--tecof-danger-bg); color: var(--tecof-danger); }
+
+.tecof-drawer-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tecof-text);
+  overflow-wrap: anywhere;
+}
+.tecof-drawer-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--tecof-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.tecof-drawer-close {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--tecof-bg);
+  color: var(--tecof-text-muted);
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+.tecof-drawer-close:hover:not(:disabled) { background: var(--tecof-border); color: var(--tecof-text); }
+.tecof-drawer-close:focus-visible { outline: none; box-shadow: var(--tecof-focus-ring-strong); }
+.tecof-drawer-close:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.tecof-drawer-body {
+  margin-top: 20px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--tecof-text-soft);
+}
+
+.tecof-drawer-footer {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+/* Footer'da düğmelerin solunda kalan bilgi metni (sayaç, kısayol ipucu). */
+.tecof-drawer-footer-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-drawer-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+  white-space: nowrap;
+}
+.tecof-drawer-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tecof-drawer-btn:focus-visible { outline: none; box-shadow: var(--tecof-focus-ring-strong); }
+.tecof-drawer-btn--secondary { background: var(--tecof-bg); color: var(--tecof-text); }
+.tecof-drawer-btn--secondary:hover:not(:disabled) { background: var(--tecof-border); }
+.tecof-drawer-btn--primary { background: var(--tecof-accent); color: var(--tecof-accent-fg); }
+.tecof-drawer-btn--primary:hover:not(:disabled) { background: var(--tecof-accent-hover); box-shadow: 0 2px 8px var(--tecof-accent-ring); }
+.tecof-drawer-btn--danger { background: var(--tecof-danger); color: #ffffff; }
+.tecof-drawer-btn--danger:hover:not(:disabled) { background: var(--tecof-danger-hover); }
+.tecof-drawer-btn--danger:focus-visible { box-shadow: var(--tecof-danger-ring); }
+.tecof-drawer-btn:active:not(:disabled) { transform: translateY(1px); }
+
+/* ── İçerik uyarlamaları ── */
+/* Bileşen ayarları: Inspector gövdesi (sekmeler sabit, alan listesi kayar). */
+.tecof-node-settings-drawer-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.tecof-node-settings-drawer-body .tecof-inspector-tabs { flex: none; margin-left: 0; margin-right: 0; }
+.tecof-node-settings-drawer-body .tecof-inspector-fields { padding-left: 0; padding-right: 0; }
+
+/* Kılavuz: eski modal paddingi kaldırılır, drawer padding'i yeter. */
+.tecof-help-drawer .tecof-help-body { padding: 0; }
+
+/* Bölüm Ekle: iç düzen (kenar çubuğu + grid) aynen; gövde flex sütun olur ki
+   .tecof-modal-body kartın kalan yüksekliğini alsın ve içi kaysın. */
+.tecof-add-section-drawer { padding-bottom: 0; }
+.tecof-add-section-drawer-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 16px -24px 0;
+  border-top: 1px solid var(--tecof-border);
+}
+.tecof-add-section-drawer-body .tecof-modal-body { min-height: 0; }
+.tecof-add-section-drawer-body .tecof-modal-sidebar { border-bottom-left-radius: 28px; }
+.tecof-add-section-drawer-body .tecof-modal-content { border-bottom-right-radius: 28px; }
+
+/* Stil senkronu ve AI üretimi: gövde dikey yığın. */
+.tecof-stylesync-drawer-body,
+.tecof-ai-drawer-body {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-.tecof-stylesync-hint { font-size: 11px; color: var(--tecof-text-muted); }
-
-.tecof-stylesync-buttons { display: inline-flex; gap: 8px; }
-
-.tecof-stylesync-btn {
-  padding: 8px 14px;
+/* Veri seçici: arama kutusu baş satırında, liste gövdede. */
+.tecof-picker-drawer-search {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--tecof-bg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: var(--tecof-transition);
+}
+.tecof-picker-drawer-search:focus-within { background: var(--tecof-surface); border-color: var(--tecof-accent); box-shadow: var(--tecof-focus-ring); }
+.tecof-picker-drawer-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--tecof-text-soft);
+  font-family: inherit;
+  color: var(--tecof-text);
+}
+.tecof-picker-drawer-input::placeholder { color: var(--tecof-text-subtle); }
+.tecof-picker-drawer-body { margin-top: 16px; }
+.tecof-picker-drawer-list { padding: 0; }
+
+@media (max-width: 560px) {
+  .tecof-drawer { left: 8px; right: 8px; bottom: 8px; padding: 20px; max-height: calc(100vh - 16px); }
+  .tecof-drawer-head-actions { flex-basis: 100%; order: 10; justify-content: stretch; }
+  .tecof-drawer-head { flex-wrap: wrap; }
+  .tecof-add-section-drawer-body { margin-left: -20px; margin-right: -20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-drawer-overlay,
+  .tecof-drawer-overlay[data-state="closed"] { animation: none; }
+  .tecof-drawer[data-vaul-drawer] { animation: none !important; transition: none !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Odak noktası — medya karosu düğmesi/rozeti + FocalPointDrawer
+   (src/components/fields/FocalPointDrawer.tsx, UploadField.impl MediaTile)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Karo: hover'da sol üstte "Odak noktası" düğmesi (kaldır düğmesinin simetriği). */
+.tecof-media-tile-focal-btn {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: #fff;
+  background: rgba(9, 9, 11, 0.55);
+  border: none;
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.tecof-media-tile-preview:hover .tecof-media-tile-focal-btn,
+.tecof-media-tile-focal-btn:focus-visible {
+  opacity: 1;
+}
+.tecof-media-tile-focal-btn:hover { background: var(--tecof-accent); }
+.tecof-media-tile-focal-btn:focus-visible { outline: none; box-shadow: var(--tecof-focus-ring-strong); }
+
+/* Karo: odak merkez dışındaysa sol altta küçük rozet (her zaman görünür). */
+.tecof-media-tile-focal {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--tecof-accent);
+  color: var(--tecof-accent-fg);
+  box-shadow: 0 0 0 1.5px var(--tecof-surface);
+  pointer-events: none;
+}
+
+/* Drawer gövdesi: iki sütun, sol görsel esner, sağ önizleme şeridi sabit. */
+.tecof-focal-drawer-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tecof-focal-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  min-height: 0;
+}
+.tecof-focal-stage-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Sahne: inline-block sarmalayıcı görselle aynı boyuttadır; nişangâh yüzdesi
+   doğrudan görsel yüzeyine denk düşer (contain kutusu boşluğu yok). */
+.tecof-focal-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  border-radius: var(--tecof-radius-lg);
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, var(--tecof-border-subtle) 25%, transparent 25%, transparent 75%, var(--tecof-border-subtle) 75%),
+    linear-gradient(45deg, var(--tecof-border-subtle) 25%, transparent 25%, transparent 75%, var(--tecof-border-subtle) 75%);
+  background-color: var(--tecof-surface-2);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+.tecof-focal-stage:focus-visible { box-shadow: var(--tecof-focus-ring-strong); }
+.tecof-focal-image {
+  display: block;
+  max-width: 100%;
+  max-height: min(56vh, 520px);
+  width: auto;
+  height: auto;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* Nişangâh: merkezi yüzde konumunda; halka + ince artı. */
+.tecof-focal-marker {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: rgba(47, 124, 246, 0.35);
+  box-shadow: 0 0 0 1px rgba(9, 9, 11, 0.45), 0 2px 8px rgba(9, 9, 11, 0.35);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: left 0.08s ease, top 0.08s ease;
+}
+.tecof-focal-marker::before,
+.tecof-focal-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+}
+.tecof-focal-marker::before { width: 10px; height: 1.5px; }
+.tecof-focal-marker::after { width: 1.5px; height: 10px; }
+
+.tecof-focal-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--tecof-text-muted);
+  text-align: center;
+}
+
+/* Sağ sütun: üç kırpma önizlemesi + X/Y değerleri. */
+.tecof-focal-side {
+  flex: 0 0 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tecof-focal-previews {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.tecof-focal-preview {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.tecof-focal-preview.is-wide { grid-column: 1 / -1; }
+.tecof-focal-preview-box {
+  width: 100%;
+  border-radius: var(--tecof-radius);
+  overflow: hidden;
   background: var(--tecof-surface-2);
   border: var(--tecof-line);
+}
+.tecof-focal-preview-box img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tecof-focal-preview figcaption {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--tecof-text-muted);
+  text-align: center;
+}
+
+.tecof-focal-values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tecof-focal-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-bg);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tecof-text);
+}
+.tecof-focal-value small {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tecof-text-muted);
+}
+.tecof-focal-center-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
+  margin-left: auto;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  background: var(--tecof-surface);
+  color: var(--tecof-text-soft);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+.tecof-focal-center-btn:hover:not(:disabled) { background: var(--tecof-bg); color: var(--tecof-text); }
+.tecof-focal-center-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.tecof-focal-center-btn:focus-visible { outline: none; box-shadow: var(--tecof-focus-ring-strong); }
+
+/* Dar ekran: sütunlar alt alta, önizlemeler tek satır. */
+@media (max-width: 640px) {
+  .tecof-focal-layout { flex-direction: column; align-items: stretch; }
+  .tecof-focal-side { flex: none; }
+  .tecof-focal-previews { grid-template-columns: repeat(3, 1fr); }
+  .tecof-focal-preview.is-wide { grid-column: auto; }
+  .tecof-focal-image { max-height: 40vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-focal-marker { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Panel bağlantıları — "Panelde yönet" / "Panelde ürün ekle"
+   ═══════════════════════════════════════════════════════════════════
+   Editörde yaratılamayan kayıtlar (ürün, marka, koleksiyon…) için panele
+   çıkan bağlantı. İki biçim: başlık satırındaki sessiz `is-inline` ve boş
+   durumdaki vurgulu `is-button`. */
+
+.tecof-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--tecof-transition);
+}
+.tecof-panel-link:focus-visible {
+  outline: none;
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+.tecof-panel-link svg {
+  flex: none;
+}
+
+/* Başlık satırı — alan etiketinin yanında, dikkat çalmayan metin bağlantısı. */
+.tecof-panel-link.is-inline {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tecof-text-muted);
+  border-radius: var(--tecof-radius-xs);
+  padding: 1px 3px;
+  margin-inline-start: auto;
+}
+.tecof-panel-link.is-inline:hover {
+  color: var(--tecof-accent-text);
+}
+
+/* Boş durum — tek yapılabilir iş olduğu için vurgulu düğme. */
+.tecof-panel-link.is-button {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--tecof-accent-border);
   border-radius: var(--tecof-radius);
+  background: var(--tecof-accent-subtle);
+  color: var(--tecof-accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tecof-panel-link.is-button:hover {
+  background: var(--tecof-accent-subtle-hover);
+}
+
+/* Boş durum kabı: metin + düğme alt alta, ortalanmış. Mevcut boş-durum
+   sınıflarının (tecof-cmdk-empty / tecof-cms-col-empty) ÜSTÜNE binerek
+   yalnız düzeni ekler; renk ve dolgu onlardan gelir. */
+.tecof-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.tecof-panel-empty-text {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Alan etiketi satırındaki eylem yuvası (FieldLabel `action`). */
+.tecof-field-label-action {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* CMS koleksiyon alanının altındaki kalıcı panel bağlantısı satırı. */
+.tecof-cms-col-panel-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.tecof-cms-col-panel-row .tecof-panel-link.is-inline {
+  margin-inline-start: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Sayfa şablonu: sol panel kartı önizlemesi + onay drawer'ı
+   (2026-09 sözleşmesi, madde 5). Yeni kurallar dosyanın SONUNA eklenir;
+   yukarıdaki .tecof-page-tpl* temel kuralları olduğu gibi durur.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Önizlemeli kart dikey düzene geçer: üstte geniş görsel, altta metin.
+   40×32 ikon kutusuyla (.tecof-page-tpl-thumb) aynı satırda kalmaz. */
+.tecof-page-tpl.has-preview {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 6px;
+}
+
+.tecof-page-tpl-preview {
+  display: block;
+  position: relative;
+  width: 100%;
+  /* 16:9 kutu — ilk bölümlerin yığını buraya kırpılır. */
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  border-radius: var(--tecof-radius-xs);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border-subtle);
+  overflow: hidden;
+  /* Canlı önizleme tıklamayı yutmasın: kart butonunun tamamı tıklanır. */
+  pointer-events: none;
+}
+
+.tecof-page-tpl-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Bölümler üst üste: her biri 1280×500 referansından ölçeklenir
+   (AutoScalePreview mode-section), taşan kısım kutuda kırpılır. */
+.tecof-page-tpl-preview-stack {
+  display: block;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.tecof-page-tpl-preview-item {
+  display: block;
+  position: relative;
+  width: 100%;
+  /* 1280/500 — bölüm önizlemesinin doğal en/boy oranı. */
+  aspect-ratio: 1280 / 500;
+}
+
+.tecof-page-tpl.has-preview .tecof-page-tpl-text { flex: 0 0 auto; }
+.tecof-page-tpl.has-preview .tecof-page-tpl-label,
+.tecof-page-tpl.has-preview .tecof-page-tpl-meta { white-space: normal; }
+.tecof-page-tpl.has-preview .tecof-page-tpl-meta {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Bölüm Ekle drawer'ında grup başlığı accordion'u ── */
+.tecof-modal-group-head {
+  width: 100%;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.tecof-stylesync-btn:hover { color: var(--tecof-text); background: var(--tecof-surface); }
+.tecof-modal-group-head:hover .tecof-modal-group-title { color: var(--tecof-text); }
+
+.tecof-modal-group-head:focus-visible {
+  outline: none;
+  box-shadow: var(--tecof-focus-ring);
+  border-radius: var(--tecof-radius-xs);
+}
+
+.tecof-modal-group-chevron {
+  flex: none;
+  color: var(--tecof-text-subtle);
+  transition: transform 0.18s ease;
+}
+
+.tecof-modal-group.is-collapsed .tecof-modal-group-chevron { transform: rotate(-90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-modal-group-chevron { transition: none; }
+}
+
+/* ── Onay drawer'ı ── */
+.tecof-tpl-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* iframe kutusu: yükseklik JS'te (~60vh) hesaplanır, içerik 1280px
+   referans genişlikten transform ile küçültülür. */
+.tecof-tpl-confirm-stage {
+  position: relative;
+  width: 100%;
+  border-radius: var(--tecof-radius);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border);
+  overflow: hidden;
+}
+
+.tecof-tpl-confirm-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: top left;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  /* Önizleme salt görüntüdür: kaydırma/tıklama editörde kalır. */
+  pointer-events: none;
+}
+
+.tecof-tpl-confirm-frame.is-loaded { opacity: 1; }
+
+.tecof-tpl-confirm-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--tecof-surface-2);
+}
+
+.tecof-tpl-confirm-skeleton-bar {
+  display: block;
+  border-radius: var(--tecof-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--tecof-bg) 25%,
+    var(--tecof-border-subtle) 37%,
+    var(--tecof-bg) 63%
+  );
+  background-size: 400% 100%;
+  animation: tecof-tpl-skeleton 1.4s ease infinite;
+}
+
+.tecof-tpl-confirm-skeleton-bar:nth-child(1) { height: 40%; }
+.tecof-tpl-confirm-skeleton-bar:nth-child(2) { height: 26%; }
+.tecof-tpl-confirm-skeleton-bar:nth-child(3) { flex: 1; }
+
+@keyframes tecof-tpl-skeleton {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tecof-tpl-confirm-skeleton-bar { animation: none; }
+  .tecof-tpl-confirm-frame { transition: none; }
+}
+
+/* previewUrl yoksa: bölümlerin canlı önizlemesi üst üste, kaydırılabilir. */
+.tecof-tpl-confirm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: var(--tecof-radius);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border);
+}
+
+.tecof-tpl-confirm-stack-item {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1280 / 500;
+  border-radius: var(--tecof-radius-xs);
+  background: var(--tecof-surface);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tecof-tpl-confirm-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tecof-tpl-confirm-sections-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-tpl-confirm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tecof-tpl-confirm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px 0 4px;
+  border-radius: var(--tecof-radius-pill);
+  background: var(--tecof-bg);
+  border: 1px solid var(--tecof-border-subtle);
+  font-size: 11.5px;
+  color: var(--tecof-text-soft);
+  max-width: 100%;
+}
+
+.tecof-tpl-confirm-chip-order {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--tecof-surface);
+  border: 1px solid var(--tecof-border);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-tpl-confirm-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tecof-tpl-confirm-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--tecof-radius);
+  background: var(--tecof-accent-subtle);
+  border: 1px solid var(--tecof-accent-border);
+  color: var(--tecof-accent-text);
+  font-size: 12px;
+  line-height: 1.5;
+}

@@ -19,7 +19,10 @@ import { FieldErrorBoundary } from '../FieldErrorBoundary';
 import { useTecof } from '../../TecofProvider';
 import { useLanguages } from '../useLanguages';
 import { useActiveLanguage } from '../../../studio/language/LanguageContext';
-import { PickerShell, PickerRow } from './EcommerceField';
+import { PickerRow } from './EcommerceField';
+import { PickerDrawer } from '../PickerDrawer';
+import { PanelLink } from '../PanelLink';
+import { PANEL_PATHS } from '../../../utils/panelLinks';
 import { readLang, rowsOf, type EcommerceOption } from './sources';
 
 /** Prop'a yazılan değer. `type` olmasının sebebi: `EcommerceOption.value`
@@ -218,7 +221,14 @@ const VariantFieldInner = ({
   const summary = value ? `${value.productName} — ${value.title}` : '';
 
   return (
-    <FieldLabel label={fieldOptions.label || name} readOnly={readOnly}>
+    /* `el="div"`: başlık satırındaki panel bağlantısı <label> içinde olsaydı
+       tıklama HTML label aktivasyonuyla seçiciyi de açardı. */
+    <FieldLabel
+      el="div"
+      label={fieldOptions.label || name}
+      readOnly={readOnly}
+      action={<PanelLink path={PANEL_PATHS.products}>Ürünleri yönet</PanelLink>}
+    >
       <div className="tecof-external">
         <button
           type="button"
@@ -244,65 +254,76 @@ const VariantFieldInner = ({
         )}
       </div>
 
-      {open && (
-        <PickerShell
-          title={product ? 'Varyant seç' : 'Ürün ara'}
-          /* 2. adımda arama kutusu KAPALI: varyant listesi zaten kısa ve
-             tek ürüne ait. Açık bırakılsaydı input değeri '' sabitlenirken
-             tuş vuruşları arka plandaki ürün sorgusunu değiştirirdi. */
-          searchable={!product}
-          query={query}
-          onQueryChange={setQuery}
-          onClose={close}
-          loading={loading}
-        >
-          {product ? (
-            <>
-              {/* Adım 2 başlığı — geri dönüş yolu her zaman görünür olmalı,
-                  aksi hâlde yanlış ürüne giren merchant modalı kapatmak
-                  zorunda kalıyor. */}
-              <button type="button" className="tecof-ecom-back" onClick={() => setProduct(null)}>
-                <ChevronLeft size={14} />
-                <span>{readLang(product.name, locale) || product.slug}</span>
-              </button>
-              {variantOptions.length === 0 ? (
-                <div className="tecof-cmdk-empty">Bu ürünün varyantı yok.</div>
-              ) : (
-                variantOptions.map((option) => (
-                  <PickerRow
-                    key={option.id}
-                    option={option}
-                    selected={!!value && value.variantId === option.id}
-                    onSelect={() => {
-                      onChange(option.value as unknown as VariantFieldValue);
-                      close();
-                    }}
-                  />
-                ))
-              )}
-            </>
-          ) : loading ? (
-            <div className="tecof-cmdk-empty">Yükleniyor…</div>
-          ) : error ? (
-            <div className="tecof-external-error">
-              <p>{error}</p>
-            </div>
-          ) : productOptions.length === 0 ? (
-            <div className="tecof-cmdk-empty">
+      <PickerDrawer
+        open={open}
+        title={product ? 'Varyant seç' : 'Ürün ara'}
+        /* 2. adımda arama kutusu KAPALI: varyant listesi zaten kısa ve
+           tek ürüne ait. Açık bırakılsaydı input değeri '' sabitlenirken
+           tuş vuruşları arka plandaki ürün sorgusunu değiştirirdi. */
+        searchable={!product}
+        query={query}
+        onQueryChange={setQuery}
+        onClose={close}
+        loading={loading}
+      >
+        {product ? (
+          <>
+            {/* Adım 2 başlığı — geri dönüş yolu her zaman görünür olmalı,
+                aksi hâlde yanlış ürüne giren merchant modalı kapatmak
+                zorunda kalıyor. */}
+            <button type="button" className="tecof-ecom-back" onClick={() => setProduct(null)}>
+              <ChevronLeft size={14} />
+              <span>{readLang(product.name, locale) || product.slug}</span>
+            </button>
+            {variantOptions.length === 0 ? (
+              /* Varyant ürünün İÇİNDE yaşar; editörde eklenemez. Bağlantı
+                 doğrudan o ürünün panel ekranını açar. */
+              <div className="tecof-cmdk-empty tecof-panel-empty">
+                <p className="tecof-panel-empty-text">Bu ürünün varyantı yok.</p>
+                <PanelLink path={PANEL_PATHS.productEdit(String(product._id))} variant="button">
+                  Panelde varyant ekle
+                </PanelLink>
+              </div>
+            ) : (
+              variantOptions.map((option) => (
+                <PickerRow
+                  key={option.id}
+                  option={option}
+                  selected={!!value && value.variantId === option.id}
+                  onSelect={() => {
+                    onChange(option.value as unknown as VariantFieldValue);
+                    close();
+                  }}
+                />
+              ))
+            )}
+          </>
+        ) : loading ? (
+          <div className="tecof-cmdk-empty">Yükleniyor…</div>
+        ) : error ? (
+          <div className="tecof-external-error">
+            <p>{error}</p>
+          </div>
+        ) : productOptions.length === 0 ? (
+          <div className="tecof-cmdk-empty tecof-panel-empty">
+            <p className="tecof-panel-empty-text">
               {debounced ? `“${debounced}” için ürün bulunamadı` : 'Yayında ürün yok.'}
-            </div>
-          ) : (
-            productOptions.map((option) => (
-              <PickerRow
-                key={option.id}
-                option={option}
-                selected={!!value && value.productId === option.id}
-                onSelect={() => pickProduct(option.value)}
-              />
-            ))
-          )}
-        </PickerShell>
-      )}
+            </p>
+            <PanelLink path={PANEL_PATHS.productNew} variant="button">
+              Panelde ürün ekle
+            </PanelLink>
+          </div>
+        ) : (
+          productOptions.map((option) => (
+            <PickerRow
+              key={option.id}
+              option={option}
+              selected={!!value && value.productId === option.id}
+              onSelect={() => pickProduct(option.value)}
+            />
+          ))
+        )}
+      </PickerDrawer>
     </FieldLabel>
   );
 };

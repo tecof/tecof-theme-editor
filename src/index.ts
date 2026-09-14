@@ -133,6 +133,17 @@ export type { DarkModeConfig, DarkModeHandle, ColorScheme, DarkModeDefault } fro
 export { useUiStore } from './studio/uiStore';
 export { useEditorStore } from './engine/store';
 
+/* ─── Drawer kabuğu + onay/uyarı kuyruğu ───
+   Editördeki her pencere StudioDrawer'dır (vaul). Host'un kendi eklentileri
+   aynı kabuğu kullansın; `studioDialog.confirm/alert` window.confirm/alert
+   yerine geçer (DialogHost TecofStudio içinde mount edilir). */
+export { StudioDrawer, isStudioDrawerOpen } from './studio/ui/StudioDrawer';
+export type { StudioDrawerProps, StudioDrawerSize, StudioDrawerTone } from './studio/ui/StudioDrawer';
+export { ConfirmDrawer } from './studio/ui/ConfirmDrawer';
+export type { ConfirmDrawerProps } from './studio/ui/ConfirmDrawer';
+export { useDialogStore, studioDialog } from './studio/ui/dialogStore';
+export type { DialogConfirmOptions, DialogAlertOptions, DialogRequest, DialogState } from './studio/ui/dialogStore';
+
 /* ─── Aktif düzenleme dili ─── */
 // Editörde tek, uygulama geneli bir "aktif dil" var (üst bardaki seçici).
 // `TecofEditor`'ün `onLanguageChange` prop'u bu dili host'a bildirir; tuvalin
@@ -230,4 +241,25 @@ export type {
 } from './types';
 export type { TecofPictureProps } from './components/TecofPicture';
 
+/* ─── Görsel odak noktası ─── */
+export {
+  DEFAULT_FOCAL_POINT,
+  clampFocalPoint,
+  focalPointToObjectPosition,
+  isDefaultFocalPoint,
+} from './utils/focalPoint';
+export type { FocalPoint } from './types';
+export { FocalPointDrawer } from './components/fields/FocalPointDrawer';
+export type { FocalPointDrawerProps } from './components/fields/FocalPointDrawer';
+
 export { normalizeSearch, matchesSearch, matchesAllTerms } from './utils/search';
+
+/* ─── Panel bağlantıları ───
+   Editörde YARATILAMAYAN kayıtlar (ürün, marka, koleksiyon…) için panele çıkan
+   yollar tek dosyada durur; taban adres `TecofEditorProps.panelUrl`'den gelir.
+   Host kendi ekranlarında aynı bağlantı dilini kullanabilsin diye dışa açıktır. */
+export { PANEL_PATHS, buildPanelUrl, DEFAULT_PANEL_URL } from './utils/panelLinks';
+export { PanelLink, PANEL_LINK_HINT } from './components/fields/PanelLink';
+export type { PanelLinkProps } from './components/fields/PanelLink';
+export { useStudioOptional } from './studio/context';
+export type { StudioContextType } from './studio/context';

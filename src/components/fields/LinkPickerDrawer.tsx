@@ -26,6 +26,8 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { useTecof } from '../TecofProvider';
+import { PanelLink } from './PanelLink';
+import { PANEL_PATHS } from '../../utils/panelLinks';
 import type { LinkFieldValue, MerchantInfoData } from '../../types';
 
 /* ─── Modül düzeyi veri cache'i (EcommerceField kalıbı) ───
@@ -387,13 +389,28 @@ export const LinkPickerDrawer = ({
 
   /* ── Render yardımcıları ── */
 
-  const renderEmpty = (message: string) => (
+  /**
+   * Boş liste.
+   *
+   * Arama sonuçsuzsa sorun ARAMADADIR; liste baştan boşsa kayıt hiç yoktur ve
+   * merchant'ın yapması gereken iş panelde. Bu yüzden panel bağlantısı yalnız
+   * arama kutusu boşken çizilir — "sonuç yok" ile "kayıt yok" karışmasın.
+   */
+  const renderEmpty = (message: string, panel?: { path: string; label: string }) => (
     <div className="tecof-upload-gallery-empty">
       <div className="tecof-upload-gallery-empty-icon">
         <Search size={24} className="tecof-icon-muted" />
       </div>
       <p className="tecof-upload-empty-heading">{searchQuery ? 'Sonuç bulunamadı' : message}</p>
-      {searchQuery && <p className="tecof-upload-empty-subheading">Farklı bir arama terimi deneyin</p>}
+      {searchQuery ? (
+        <p className="tecof-upload-empty-subheading">Farklı bir arama terimi deneyin</p>
+      ) : (
+        panel && (
+          <PanelLink path={panel.path} variant="button">
+            {panel.label}
+          </PanelLink>
+        )
+      )}
     </div>
   );
 
@@ -558,7 +575,7 @@ export const LinkPickerDrawer = ({
                 renderSkeleton()
               ) : activeTab === 'pages' ? (
                 filteredPages.length === 0 ? (
-                  renderEmpty('Henüz sayfa yok')
+                  renderEmpty('Henüz sayfa yok', { path: PANEL_PATHS.pages(themeId), label: 'Panelde sayfa ekle' })
                 ) : (
                   <div className="tecof-link-page-list">
                     {groupedPages.normal.length > 0 && groupedPages.system.length > 0 && (
@@ -573,7 +590,7 @@ export const LinkPickerDrawer = ({
                 )
               ) : activeTab === 'categories' ? (
                 filteredCategories.length === 0 ? (
-                  renderEmpty('Henüz kategori yok')
+                  renderEmpty('Henüz kategori yok', { path: PANEL_PATHS.categoryNew, label: 'Panelde kategori ekle' })
                 ) : (
                   <div className="tecof-link-page-list">
                     {filteredCategories.map((category) =>
@@ -596,7 +613,7 @@ export const LinkPickerDrawer = ({
                 )
               ) : activeTab === 'brands' ? (
                 filteredBrands.length === 0 ? (
-                  renderEmpty('Henüz marka yok')
+                  renderEmpty('Henüz marka yok', { path: PANEL_PATHS.brands, label: 'Panelde marka ekle' })
                 ) : (
                   <div className="tecof-link-page-list">
                     {filteredBrands.map((brand) =>
@@ -620,7 +637,7 @@ export const LinkPickerDrawer = ({
                 filteredProductsView(products, renderEmpty, renderRow, pick)
               ) : activeTab === 'cms' && !cmsCollection ? (
                 filteredCmsCollections.length === 0 ? (
-                  renderEmpty('Henüz koleksiyon yok')
+                  renderEmpty('Henüz koleksiyon yok', { path: PANEL_PATHS.cmsCollectionNew, label: 'Panelde koleksiyon oluştur' })
                 ) : (
                   <div className="tecof-link-page-list">
                     {filteredCmsCollections.map((collection) => (
@@ -643,7 +660,10 @@ export const LinkPickerDrawer = ({
                 )
               ) : (
                 filteredCmsItems.length === 0 ? (
-                  renderEmpty('Bu koleksiyonda içerik yok')
+                  renderEmpty('Bu koleksiyonda içerik yok', {
+                    path: PANEL_PATHS.cmsItemNew(String(cmsCollection._id || cmsCollection.slug)),
+                    label: 'Panelde içerik ekle',
+                  })
                 ) : (
                   <div className="tecof-link-page-list">
                     {filteredCmsItems.map((item) =>
@@ -675,7 +695,7 @@ export const LinkPickerDrawer = ({
 /* Ürün listesi — arama sunucu taraflı olduğundan filtre yok, doğrudan liste. */
 const filteredProductsView = (
   products: any[],
-  renderEmpty: (message: string) => ReactNode,
+  renderEmpty: (message: string, panel?: { path: string; label: string }) => ReactNode,
   renderRow: (options: {
     key: string;
     title: string;
@@ -685,7 +705,8 @@ const filteredProductsView = (
   }) => ReactNode,
   pick: (value: LinkFieldValue) => void
 ) => {
-  if (products.length === 0) return renderEmpty('Henüz ürün yok');
+  if (products.length === 0)
+    return renderEmpty('Henüz ürün yok', { path: PANEL_PATHS.productNew, label: 'Panelde ürün ekle' });
   return (
     <div className="tecof-link-page-list">
       {products.map((product) =>

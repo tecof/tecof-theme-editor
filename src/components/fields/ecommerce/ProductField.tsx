@@ -18,7 +18,10 @@ import { FieldErrorBoundary } from '../FieldErrorBoundary';
 import { useTecof } from '../../TecofProvider';
 import { useLanguages } from '../useLanguages';
 import { useActiveLanguage } from '../../../studio/language/LanguageContext';
-import { PickerShell, PickerRow } from './EcommerceField';
+import { PickerRow } from './EcommerceField';
+import { PickerDrawer } from '../PickerDrawer';
+import { PanelLink } from '../PanelLink';
+import { PANEL_PATHS } from '../../../utils/panelLinks';
 import { readLang, rowsOf, type EcommerceOption } from './sources';
 
 export type ProductFieldValue = {
@@ -172,6 +175,7 @@ const ProductFieldInner = ({
       label={fieldOptions.label || name}
       icon={fieldOptions.labelIcon}
       readOnly={readOnly}
+      action={<PanelLink path={PANEL_PATHS.products}>Ürünleri yönet</PanelLink>}
     >
       <div className="tecof-ecom-field">
         <div className="tecof-external">
@@ -230,43 +234,49 @@ const ProductFieldInner = ({
         )}
       </div>
 
-      {open && (
-        <PickerShell
-          title="Ürün ara"
-          query={query}
-          onQueryChange={setQuery}
-          onClose={() => setOpen(false)}
-          loading={loading}
-        >
-          {loading ? (
-            <div className="tecof-cmdk-empty">Yükleniyor…</div>
-          ) : error ? (
-            <div className="tecof-external-error">
-              <p>{error}</p>
-            </div>
-          ) : productOptions.length === 0 ? (
-            <div className="tecof-cmdk-empty">
+      <PickerDrawer
+        open={open}
+        title="Ürün ara"
+        query={query}
+        onQueryChange={setQuery}
+        onClose={() => setOpen(false)}
+        loading={loading}
+      >
+        {loading ? (
+          <div className="tecof-cmdk-empty">Yükleniyor…</div>
+        ) : error ? (
+          <div className="tecof-external-error">
+            <p>{error}</p>
+          </div>
+        ) : productOptions.length === 0 ? (
+          /* Arama sonuçsuzsa sorun aramada olabilir; liste BAŞTAN boşsa
+             mağazada yayında ürün yoktur — o zaman panele yönlendir. */
+          <div className="tecof-cmdk-empty tecof-panel-empty">
+            <p className="tecof-panel-empty-text">
               {debounced ? `“${debounced}” için ürün bulunamadı` : 'Yayında ürün yok.'}
-            </div>
-          ) : (
-            <>
-              {limitReached && (
-                <div className="tecof-ecom-note">
-                  En fazla {fieldOptions.max} ürün seçilebilir — eklemek için birini çıkarın.
-                </div>
-              )}
-              {productOptions.map((option) => (
-                <PickerRow
-                  key={option.id}
-                  option={option}
-                  selected={selectedIds.has(option.id)}
-                  onSelect={() => pick(option)}
-                />
-              ))}
-            </>
-          )}
-        </PickerShell>
-      )}
+            </p>
+            <PanelLink path={PANEL_PATHS.productNew} variant="button">
+              Panelde ürün ekle
+            </PanelLink>
+          </div>
+        ) : (
+          <>
+            {limitReached && (
+              <div className="tecof-ecom-note">
+                En fazla {fieldOptions.max} ürün seçilebilir — eklemek için birini çıkarın.
+              </div>
+            )}
+            {productOptions.map((option) => (
+              <PickerRow
+                key={option.id}
+                option={option}
+                selected={selectedIds.has(option.id)}
+                onSelect={() => pick(option)}
+              />
+            ))}
+          </>
+        )}
+      </PickerDrawer>
     </FieldLabel>
   );
 };

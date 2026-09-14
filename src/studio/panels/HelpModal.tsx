@@ -1,14 +1,15 @@
-import React, { useEffect, useRef } from 'react';
-import { X, MousePointerClick, PlusCircle, Type, LayoutGrid, Palette, Keyboard } from 'lucide-react';
+import React from 'react';
+import { BookOpen, MousePointerClick, PlusCircle, Type, LayoutGrid, Palette, Keyboard } from 'lucide-react';
 import { useUiStore } from '../uiStore';
+import { StudioDrawer } from '../ui/StudioDrawer';
 
 /**
- * "Editör nasıl kullanılır?" kılavuz modalı — TopBar'daki ⓘ butonundan açılır.
+ * "Editör nasıl kullanılır?" kılavuzu — TopBar'daki ⓘ butonundan açılır
+ * (StudioDrawer 'lg').
  *
  * Desen: NodeSettingsModal ile birebir (uiStore bayrağı + TecofStudio'da
- * koşulsuz mount + panel-scoped ESC — global capture listener iç katmanların
- * ESC'sini gasp ettiği için BİLEREK kullanılmıyor). İçerik statiktir ve
- * editörün GERÇEK davranışlarını anlatır; bir özellik değişirse burası da
+ * koşulsuz mount; ESC/dış tıklama vaul'dan). İçerik statiktir ve editörün
+ * GERÇEK davranışlarını anlatır; bir özellik değişirse burası da
  * güncellenmelidir (kısayollar TecofStudio.tsx'teki handler'la eşleşmeli).
  */
 
@@ -83,66 +84,34 @@ const SECTIONS: Array<{
 export const HelpModal: React.FC = () => {
   const open = useUiStore((s) => s.helpModalOpen);
   const setOpen = useUiStore((s) => s.setHelpModalOpen);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (open) panelRef.current?.focus();
-  }, [open]);
-
-  if (!open) return null;
 
   return (
-    <div
-      className="tecof-modal-overlay"
-      onMouseDown={(e) => {
-        // Yalnız backdrop'a basınca kapat — panel içi metin seçimi sürüklemesi
-        // overlay'e taşarsa modal kapanmasın (NodeSettingsModal deseni).
-        if (e.target === e.currentTarget) setOpen(false);
-      }}
+    <StudioDrawer
+      open={open}
+      onOpenChange={setOpen}
+      size="lg"
+      tone="primary"
+      icon={<BookOpen size={22} />}
+      title="Editör nasıl kullanılır?"
+      description="Seçme, ekleme, taşıma, stil ve kısayollar — kısa kılavuz."
+      className="tecof-help-drawer"
     >
-      <div
-        ref={panelRef}
-        className="tecof-help-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Editör kullanım kılavuzu"
-        tabIndex={-1}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.stopPropagation();
-            setOpen(false);
-          }
-        }}
-      >
-        <div className="tecof-node-settings-head">
-          <h3 className="tecof-inspector-title">Editör nasıl kullanılır?</h3>
-          <button
-            type="button"
-            className="tecof-modal-close"
-            onClick={() => setOpen(false)}
-            aria-label="Kapat"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="tecof-help-body">
-          {SECTIONS.map((sec) => (
-            <section key={sec.title} className="tecof-help-section">
-              <h4 className="tecof-help-section-title">
-                <span className="tecof-help-section-icon">{sec.icon}</span>
-                {sec.title}
-              </h4>
-              <ul className="tecof-help-list">
-                {sec.items.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+      <div className="tecof-help-body">
+        {SECTIONS.map((sec) => (
+          <section key={sec.title} className="tecof-help-section">
+            <h4 className="tecof-help-section-title">
+              <span className="tecof-help-section-icon">{sec.icon}</span>
+              {sec.title}
+            </h4>
+            <ul className="tecof-help-list">
+              {sec.items.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
-    </div>
+    </StudioDrawer>
   );
 };
 

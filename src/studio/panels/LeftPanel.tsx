@@ -7,6 +7,10 @@ import { BlockThumb } from './BlockThumb';
 import { Layers, Grid, Search, Eye, EyeOff, ChevronDown, FileStack } from 'lucide-react';
 import { setDragGhost } from '../canvas/dragGhost';
 import { createNode, writeDragData } from '../canvas/dndUtils';
+import type { PageTemplate } from '../../types';
+import { PageTemplateConfirmDrawer } from './PageTemplateConfirmDrawer';
+import { PageTemplateMiniPreview } from './PageTemplateMiniPreview';
+import { formatSectionCount } from './pageTemplatePreview';
 
 /**
  * Blok kategorisi accordion durumu — oturumlar arası hatırlanır.
@@ -43,6 +47,19 @@ export const LeftPanel = () => {
   const [showPreviews, setShowPreviews] = useState(true);
   // Accordion: hangi kategoriler kapalı — kullanıcının tercihi localStorage'da.
   const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>(readCollapsedCats);
+  /* Sayfa şablonu tıklaması ARTIK doğrudan eklemez: önce onay drawer'ı açılır
+     (ne ekleneceğini gösterir). Onaydan sonra AYNI `insertPageTemplate` yolu
+     çalışır — tek commit, tek Geri Al. */
+  const [pendingTemplate, setPendingTemplate] = useState<PageTemplate | null>(null);
+
+  const confirmPageTemplate = (tpl: PageTemplate) => {
+    insertPageTemplate(
+      tpl.sections.map((sec) =>
+        JSON.parse(JSON.stringify({ node: sec.node, zones: sec.zones || {} }))
+      )
+    );
+    setPendingTemplate(null);
+  };
 
   const toggleCategory = (title: string) => {
     setCollapsedCats((prev) => {
@@ -171,36 +188,42 @@ export const LeftPanel = () => {
                   </button>
                   <div className="tecof-block-cat-items" aria-hidden={isCollapsed}>
                     <div className="tecof-page-tpl-list">
-                      {pageTemplates.map((tpl) => (
-                        <button
-                          key={tpl.id}
-                          type="button"
-                          className="tecof-page-tpl"
-                          title={tpl.description || tpl.label}
-                          onClick={() =>
-                            insertPageTemplate(
-                              tpl.sections.map((sec) =>
-                                JSON.parse(JSON.stringify({ node: sec.node, zones: sec.zones || {} }))
-                              )
-                            )
-                          }
-                        >
-                          <span className="tecof-page-tpl-thumb" aria-hidden="true">
+                      {pageTemplates.map((tpl) => {
+                        /* Kart görseli üç dalda: hazır thumbnail > (önizlemeler
+                           açıksa) ilk bölümlerin minik canlı yığını > ikon. */
+                        /* Kategori kapalıyken canlı yığın HİÇ mount edilmez:
+                           görünmeyen 3 bölümü render etmek bedavaya CPU. */
+                        const hasLivePreview =
+                          !tpl.thumbnail && showPreviews && !isCollapsed && tpl.sections.length > 0;
+                        return (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            className={`tecof-page-tpl${tpl.thumbnail || hasLivePreview ? ' has-preview' : ''}`}
+                            title={tpl.description || tpl.label}
+                            onClick={() => setPendingTemplate(tpl)}
+                          >
                             {tpl.thumbnail ? (
-                              <img src={tpl.thumbnail} alt="" />
+                              <span className="tecof-page-tpl-preview" aria-hidden="true">
+                                <img src={tpl.thumbnail} alt="" />
+                              </span>
+                            ) : hasLivePreview ? (
+                              <PageTemplateMiniPreview config={config} template={tpl} />
                             ) : (
-                              <FileStack size={18} strokeWidth={1.6} />
+                              <span className="tecof-page-tpl-thumb" aria-hidden="true">
+                                <FileStack size={18} strokeWidth={1.6} />
+                              </span>
                             )}
-                          </span>
-                          <span className="tecof-page-tpl-text">
-                            <span className="tecof-page-tpl-label">{tpl.label}</span>
-                            <span className="tecof-page-tpl-meta">
-                              {tpl.sections.length} bölüm
-                              {tpl.description ? ` · ${tpl.description}` : ''}
+                            <span className="tecof-page-tpl-text">
+                              <span className="tecof-page-tpl-label">{tpl.label}</span>
+                              <span className="tecof-page-tpl-meta">
+                                {formatSectionCount(tpl.sections.length)}
+                                {tpl.description ? ` · ${tpl.description}` : ''}
+                              </span>
                             </span>
-                          </span>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -269,6 +292,15 @@ export const LeftPanel = () => {
           <LayersTree />
         )}
       </div>
+
+      {/* Sayfa şablonu onayı — sol panelden gelen tıklamanın kapısı. */}
+      <PageTemplateConfirmDrawer
+        template={pendingTemplate}
+        config={config}
+        onConfirm={confirmPageTemplate}
+        onClose={() => setPendingTemplate(null)}
+        targetLabel="sayfanın sonuna"
+      />
     </div>
   );
 };

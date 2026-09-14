@@ -1,8 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
 import { MediaDrawer, type MediaDrawerTab } from './MediaDrawer';
+import { FocalPointDrawer } from './FocalPointDrawer';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
-import type { UploadedFile } from '../../types';
+import { isDefaultFocalPoint } from '../../utils/focalPoint';
+import type { FocalPoint, UploadedFile } from '../../types';
 import type { UploadFieldProps, UploadFieldOptions } from './UploadField';
 
 // FilePond Imports
@@ -29,6 +31,7 @@ import {
   FileIcon,
   ImagePlus,
   Code,
+  Crosshair,
 } from 'lucide-react';
 
 registerPlugin(
@@ -89,15 +92,22 @@ const getFileExtension = (filename: string) => {
 const MediaTile = ({
   file,
   onRemove,
+  onFocal,
   readOnly,
 }: {
   file: UploadedFile;
   onRemove?: () => void;
+  /** Odak noktası düzenleyicisini aç (yalnız önizlenebilir görsellerde). */
+  onFocal?: () => void;
   readOnly?: boolean;
 }) => {
   const ext = getFileExtension(file.name);
   const displayName = file.meta?.originalName || file.name;
   const isReference = file.type === 'image/reference';
+  const previewable = !isReference && isPreviewableImage(file);
+  /* Referans ({{ data.x }}) arkasında gerçek dosya yok; odak seçilemez. */
+  const canFocal = previewable && !readOnly && !!onFocal;
+  const hasFocal = previewable && !isDefaultFocalPoint(file.focalPoint);
 
   return (
     <div className="tecof-media-tile" title={displayName}>
@@ -106,7 +116,7 @@ const MediaTile = ({
           <div className="tecof-media-tile-ref">
             <Code size={18} />
           </div>
-        ) : isPreviewableImage(file) ? (
+        ) : previewable ? (
           <TecofPicture
             data={file}
             alt={displayName}
@@ -118,6 +128,26 @@ const MediaTile = ({
             <FileIcon size={20} />
             {ext && <span className="tecof-media-tile-ext">{ext}</span>}
           </div>
+        )}
+        {canFocal && (
+          <button
+            type="button"
+            className="tecof-media-tile-focal-btn"
+            onClick={onFocal}
+            title="Odak noktası"
+            aria-label="Odak noktası"
+          >
+            <Crosshair size={13} />
+          </button>
+        )}
+        {hasFocal && (
+          <span
+            className="tecof-media-tile-focal"
+            title={`Odak: %${file.focalPoint!.x} / %${file.focalPoint!.y}`}
+            aria-label={`Odak noktası %${file.focalPoint!.x} / %${file.focalPoint!.y}`}
+          >
+            <Crosshair size={9} />
+          </span>
         )}
         {!readOnly && onRemove && (
           <button
@@ -278,6 +308,8 @@ const UploadFieldImpl = ({
 
   const [filesForPond, setFilesForPond] = useState<any[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  /* Odak noktası düzenlenen karo (dizindeki sıra). null = kapalı. */
+  const [focalIndex, setFocalIndex] = useState<number | null>(null);
   const [refCode, setRefCode] = useState('{{ data. }}');
 
   // Source → _id tracking for edit/remove
@@ -522,6 +554,21 @@ const UploadFieldImpl = ({
     ),
   };
 
+  /* Odak kaydı: merkez seçildiyse alan silinir (DOM/JSON çıktısı odak
+     verilmemiş hâliyle aynı kalır); değilse dosya nesnesine yazılır. */
+  const handleFocalSave = useCallback((fp: FocalPoint) => {
+    if (focalIndex == null) return;
+    onChange(value.map((f, i) => {
+      if (i !== focalIndex) return f;
+      const rest: UploadedFile = { ...f };
+      delete rest.focalPoint;
+      return isDefaultFocalPoint(fp) ? rest : { ...rest, focalPoint: fp };
+    }));
+    setFocalIndex(null);
+  }, [focalIndex, value, onChange]);
+
+  const focalFile = focalIndex != null ? value[focalIndex] ?? null : null;
+
   return (
     <div className="tecof-upload-container">
       <div className="tecof-media-grid">
@@ -531,6 +578,7 @@ const UploadFieldImpl = ({
             file={file}
             readOnly={readOnly}
             onRemove={readOnly ? undefined : () => handleRemove(idx)}
+            onFocal={readOnly ? undefined : () => setFocalIndex(idx)}
           />
         ))}
 
@@ -556,6 +604,13 @@ const UploadFieldImpl = ({
         title="Medya"
         enableStock={!readOnly}
         extraTabs={readOnly ? [] : [uploadTab, referenceTab]}
+      />
+
+      <FocalPointDrawer
+        open={focalIndex != null}
+        file={focalFile}
+        onClose={() => setFocalIndex(null)}
+        onSave={handleFocalSave}
       />
     </div>
   );
