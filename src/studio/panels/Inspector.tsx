@@ -19,7 +19,11 @@ export const Inspector = () => {
   const setRootProps = useEditorStore((state) => state.setRootProps);
 
   const { config, readOnly } = useStudio();
-  const [rootTab, setRootTab] = useState<'page' | 'theme'>('page');
+  /* Sayfa seçili değilken açılan sekme TEMA'dır (kullanıcı kararı 2026-09-14):
+     sayfa ayarı tek bir alan (e-ticaret açık/kapalı) iken tema paleti/tipografi
+     her ziyarette kullanılıyor — panel boş bir listeyle değil, işe yarar
+     içerikle açılsın. Sıra da aynı gerekçeyle Tema → Sayfa. */
+  const [rootTab, setRootTab] = useState<'page' | 'theme'>('theme');
 
   /* Sekme + daraltma state'i BURADA yaşar (Inspector her zaman mount):
      seçim kaldırılıp yeniden seçilince aktif sekme ve daraltılmış satırlar
@@ -79,22 +83,22 @@ export const Inspector = () => {
         <button
           type="button"
           role="tab"
-          aria-selected={rootTab === 'page'}
-          className={`tecof-inspector-tab tecof-tip${rootTab === 'page' ? ' is-active' : ''}`}
-          data-tip="Yalnız bu sayfaya özel ayarlar"
-          onClick={() => setRootTab('page')}
-        >
-          Sayfa
-        </button>
-        <button
-          type="button"
-          role="tab"
           aria-selected={rootTab === 'theme'}
           className={`tecof-inspector-tab tecof-tip${rootTab === 'theme' ? ' is-active' : ''}`}
           data-tip="Tüm sitede geçerli renk ve yazı tipi ayarları"
           onClick={() => setRootTab('theme')}
         >
           Tema
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={rootTab === 'page'}
+          className={`tecof-inspector-tab tecof-tip${rootTab === 'page' ? ' is-active' : ''}`}
+          data-tip="Yalnız bu sayfaya özel ayarlar"
+          onClick={() => setRootTab('page')}
+        >
+          Sayfa
         </button>
       </div>
 

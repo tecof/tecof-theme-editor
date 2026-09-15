@@ -7,6 +7,7 @@ import { StudioDrawer } from '../ui/StudioDrawer';
 import { studioDialog } from '../ui/dialogStore';
 import { LiveBlockPreview } from './LivePreview';
 import { PageTemplateConfirmDrawer } from './PageTemplateConfirmDrawer';
+import { PageTemplateMiniPreview } from './PageTemplateMiniPreview';
 
 /**
  * Grup (başlık) accordion durumu — oturumlar arası hatırlanır.
@@ -24,6 +25,9 @@ const readCollapsedGroups = (): Record<string, boolean> => {
     return {};
   }
 };
+
+/** "Bölüm Ekle" kartı sol paneldeki mini karttan büyük — daha çok bölüm sığar. */
+const CARD_PREVIEW_SECTIONS = 4;
 
 /** Stable fallbacks so `config?.x || {}` doesn't produce a new reference per render. */
 const NO_TEMPLATES: SectionTemplate[] = [];
@@ -419,9 +423,15 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
           name: t.label,
           typeText: `${t.sections.length} bölüm`,
           onActivate: () => setPendingTemplate(t),
+          /* Thumbnail yoksa ÇİZGİLİ YER TUTUCU yerine gerçek önizleme: şablonun
+             ilk bölümleri kartta canlı çizilir (sol paneldeki mini yığının aynısı,
+             `fill` varyantıyla kart çerçevesini doldurur). Eskiden bütün sayfa
+             şablonu kartları boş görünüyordu (2026-09-14). */
           renderPreview: () =>
             t.thumbnail ? (
               <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
+            ) : t.sections?.length ? (
+              <PageTemplateMiniPreview config={config} template={t} fill sectionCount={CARD_PREVIEW_SECTIONS} />
             ) : (
               <div className="tecof-modal-template-icon">
                 <FileStack size={28} strokeWidth={1.6} />
@@ -441,9 +451,18 @@ export const AddSectionModal = ({ isOpen, onClose, onSelect, onSelectTemplate, o
           name: t.label,
           typeText: 'Şablon',
           onActivate: () => onSelectTemplate?.(t),
+          /* Bölüm şablonu: kökü zaten tek bir bileşen — kayıtlı ortak bileşen
+             kartlarıyla AYNI canlı önizleme yolundan geçer. */
           renderPreview: () =>
             t.thumbnail ? (
               <img src={t.thumbnail} alt={t.label} className="tecof-modal-template-thumb" />
+            ) : t.payload?.node?.type ? (
+              <LiveBlockPreview
+                config={config}
+                type={t.payload.node.type}
+                props={t.payload.node.props as Record<string, unknown> | undefined}
+                mode="section"
+              />
             ) : (
               <div className="tecof-modal-template-icon">
                 <LayoutTemplate size={28} strokeWidth={1.6} />

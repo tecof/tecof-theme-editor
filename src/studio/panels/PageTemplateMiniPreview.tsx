@@ -16,12 +16,46 @@ import { MINI_PREVIEW_SECTION_COUNT } from './pageTemplatePreview';
 export const PageTemplateMiniPreview = ({
   config,
   template,
+  /** `true`: kendi 16:9 kutusunu ÇİZMEZ, kapsayıcı çerçeveyi doldurur —
+   *  "Bölüm Ekle" kartının `.tecof-modal-preview-frame`'i zaten 1280/500
+   *  oranında ve `position:relative` (2026-09-14). */
+  fill = false,
+  /** Kaç bölüm çizilsin (kart büyüdükçe artırılabilir). */
+  sectionCount = MINI_PREVIEW_SECTION_COUNT,
 }: {
   config: StudioConfig;
   template: PageTemplate;
+  fill?: boolean;
+  sectionCount?: number;
 }) => {
-  const sections = (template.sections ?? []).slice(0, MINI_PREVIEW_SECTION_COUNT);
+  const sections = (template.sections ?? []).slice(0, Math.max(1, sectionCount));
   if (sections.length === 0) return null;
+
+  const stack = (
+    <span className="tecof-page-tpl-preview-stack">
+      {sections.map((section, index) => (
+        <span
+          key={(section?.node?.props?.id as string | undefined) ?? `s-${index}`}
+          className="tecof-page-tpl-preview-item"
+        >
+          <LiveBlockPreview
+            config={config}
+            type={section?.node?.type ?? ''}
+            props={section?.node?.props as Record<string, unknown> | undefined}
+            mode="section"
+          />
+        </span>
+      ))}
+    </span>
+  );
+
+  if (fill) {
+    return (
+      <span className="tecof-tpl-card-preview" aria-hidden="true" inert>
+        {stack}
+      </span>
+    );
+  }
 
   return (
     /* `inert`: canlı önizleme temanın gerçek <button>/<a href> öğelerini
@@ -29,21 +63,7 @@ export const PageTemplateMiniPreview = ({
        etkilemiyordu — Tab ile görünmez bir bağlantıya odaklanıp Enter'la
        editörden çıkılabiliyordu. */
     <span className="tecof-page-tpl-preview" aria-hidden="true" inert>
-      <span className="tecof-page-tpl-preview-stack">
-        {sections.map((section, index) => (
-          <span
-            key={(section?.node?.props?.id as string | undefined) ?? `s-${index}`}
-            className="tecof-page-tpl-preview-item"
-          >
-            <LiveBlockPreview
-              config={config}
-              type={section?.node?.type ?? ''}
-              props={section?.node?.props as Record<string, unknown> | undefined}
-              mode="section"
-            />
-          </span>
-        ))}
-      </span>
+      {stack}
     </span>
   );
 };

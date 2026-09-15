@@ -10117,6 +10117,17 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
   aspect-ratio: 1280 / 500;
 }
 
+/* "Bölüm Ekle" kartındaki canlı şablon önizlemesi: kart çerçevesi
+   (.tecof-modal-preview-frame) zaten 1280/500 oranlı ve position:relative,
+   bu yüzden kendi kutusunu çizmeden doldurur. */
+.tecof-tpl-card-preview {
+  display: block;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .tecof-page-tpl.has-preview .tecof-page-tpl-text { flex: 0 0 auto; }
 .tecof-page-tpl.has-preview .tecof-page-tpl-label,
 .tecof-page-tpl.has-preview .tecof-page-tpl-meta { white-space: normal; }
@@ -10245,6 +10256,11 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
 .tecof-tpl-confirm-stack-item {
   position: relative;
   width: 100%;
+  /* ⚠ `flex: none` ŞART: kap `display:flex; flex-direction:column` + `max-height:60vh`.
+     Varsayılan `flex-shrink:1` ile 13 bölüm 60vh'a SIĞDIRILIYOR — her biri ~25px'lik
+     bir şeride iniyor ve önizleme bozuk görünüyordu (2026-09-14). Öğeler doğal
+     yüksekliğini korur, kap kaydırılır. */
+  flex: 0 0 auto;
   aspect-ratio: 1280 / 500;
   border-radius: var(--tecof-radius-xs);
   background: var(--tecof-surface);
