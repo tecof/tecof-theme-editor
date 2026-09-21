@@ -350,4 +350,69 @@ describe('send-ready HTML compiler', () => {
     expect(serialized).toContain('{{cart.total}}');
     expect(serialized).not.toContain('{{product.');
   });
+
+  it('keeps the bank-transfer-instructions preset inside its payment data contract', () => {
+    const document = EMAIL_PRESETS.find(
+      (preset) => preset.key === 'bank-transfer-instructions'
+    )!.build();
+    const serialized = JSON.stringify(document);
+
+    expect(serialized).toContain('{{payment.iban}}');
+    expect(serialized).toContain('{{payment.reference}}');
+    expect(serialized).toContain('{{payment.dueDate}}');
+    expect(serialized).toContain('{{order.url}}');
+    expect(serialized).not.toContain('{{return.');
+    expect(serialized).not.toContain('{{cart.');
+  });
+
+  it('keeps the back-in-stock preset inside its product data contract', () => {
+    const document = EMAIL_PRESETS.find((preset) => preset.key === 'back-in-stock')!.build();
+    const serialized = JSON.stringify(document);
+
+    expect(serialized).toContain('{{product.url}}');
+    expect(serialized).toContain('{{product.name}}');
+    expect(serialized).toContain('{{product.price}}');
+    expect(serialized).not.toContain('{{order.');
+    expect(serialized).not.toContain('{{payment.');
+    expect(serialized).not.toContain('{{cart.');
+  });
+
+  it('carries the store instruction note on the return-approved preset', () => {
+    const document = EMAIL_PRESETS.find((preset) => preset.key === 'return-approved')!.build();
+    const serialized = JSON.stringify(document);
+
+    expect(serialized).toContain('{{return.note}}');
+    expect(serialized).toContain('{{return.items}}');
+    expect(serialized).toContain('{{return.url}}');
+    expect(serialized).not.toContain('{{cart.');
+  });
+
+  it('publishes a transactional preset for every automation-bound key', () => {
+    const automationPresetKeys = [
+      'account-welcome',
+      'order-confirmation',
+      'order-processing',
+      'order-delivered',
+      'order-cancelled',
+      'order-refunded',
+      'bank-transfer-instructions',
+      'payment-confirmed',
+      'bank-transfer-reminder',
+      'order-shipped',
+      'order-shipping-updated',
+      'return-requested',
+      'return-approved',
+      'return-rejected',
+      'return-received',
+      'return-resolved',
+      'back-in-stock',
+    ];
+
+    for (const key of automationPresetKeys) {
+      const preset = EMAIL_PRESETS.find((item) => item.key === key);
+      expect(preset, `preset eksik: ${key}`).toBeDefined();
+      expect(preset!.purpose).toBe('transactional');
+      expect(JSON.stringify(preset!.build())).not.toContain('{{unsubscribeUrl}}');
+    }
+  });
 });

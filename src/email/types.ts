@@ -182,7 +182,17 @@ export interface EmailMergeTag {
   key: string;
   token: string;
   label: string;
-  group: 'customer' | 'merchant' | 'campaign' | 'coupon' | 'product' | 'order' | 'cart' | 'system';
+  group:
+    | 'customer'
+    | 'merchant'
+    | 'campaign'
+    | 'coupon'
+    | 'product'
+    | 'order'
+    | 'payment'
+    | 'return'
+    | 'cart'
+    | 'system';
   description: string;
 }
 
