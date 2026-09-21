@@ -918,6 +918,26 @@ Portal olarak işaretlenen eleman (ve tüm alt elemanları) editörün node hand
 
 ---
 
+## E-posta doküman modeli (`@tecof/theme-editor/email`)
+
+Pazarlama e-postaları için sürümlü blok dokümanı (`kind:"tecof-email"`, `version:1`), fabrika/normalize, doğrulama,
+tablo tabanlı HTML render'ı ve hazır preset'ler. Doğruluk kaynağı **backend** derleyicisidir
+(`tecof-app-backend/app/modules/merchant/ecommerce/_emailDocument.ts`); bu paket aynı sözleşmeyi taşır ve
+`renderEmailHtml` çıktısı backend ile birebir tutulur (parite testi backend tarafında).
+
+Blok kataloğu (2026-09-21, 0.0.94): yaprak `logo, heading, text, button, image, divider, spacer, social, coupon, product,
+video, footer, menu, html`; kap `section` (yalnız en üst düzey; içine columns ya da yaprak) ve `columns`
+(`layout` 1 | 1:1 | 1:1:1 | 1:1:1:1 | 1:2 | 2:1 | 1:3 | 3:1; yalnız yaprak alır). Kap kuralı `canPlaceEmailBlock`;
+ağaç gezme `walkEmailBlocks`. `html` bloğu paket tarafında olduğu gibi basılır (temizlik backend kaydında);
+doğrulama aktif içerik için uyarı verir. `heading.text`/`text.text` satır içi biçim alt kümesi taşıyabilir
+(`strong/b, em/i, u, s, a[href], br, ul, ol, li`; kalanı metin olarak kaçırılır, güvensiz href düşer). `footer.showUnsubscribe` abonelikten çıkış zorunluluğunu karşılar.
+
+```ts
+import { createEmailBlock, createEmailDocument, renderEmailHtml, validateEmailDocument } from '@tecof/theme-editor/email';
+const doc = createEmailDocument({ blocks: [createEmailBlock('columns', { layout: '1:2', columns: [[createEmailBlock('image')], [createEmailBlock('text')]] }), createEmailBlock('footer')] });
+validateEmailDocument(doc); // [] → renderEmailHtml(doc, { mergeData, preserveMergeTags: false })
+```
+
 ## API Client
 
 ```tsx

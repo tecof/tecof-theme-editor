@@ -20,6 +20,15 @@ export interface EmailTheme {
   borderRadius: number;
 }
 
+export type EmailVerticalAlign = 'top' | 'middle' | 'bottom';
+export type EmailMenuSeparator = 'dot' | 'pipe' | 'space' | 'none';
+export type EmailColumnsLayout = '1' | '1:1' | '1:1:1' | '1:1:1:1' | '1:2' | '2:1' | '1:3' | '3:1';
+
+/**
+ * Blok kataloğu v1 (2026-09-21 genişletmesi): yaprak + kap blokları.
+ * Doğruluk kaynağı backend `_emailDocument.ts`; burası aynı sözleşme.
+ * Kap kuralı: section yalnız en üst düzeyde, columns yalnız yaprak alır.
+ */
 export type EmailBlockType =
   | 'logo'
   | 'heading'
@@ -30,7 +39,21 @@ export type EmailBlockType =
   | 'spacer'
   | 'social'
   | 'coupon'
-  | 'product';
+  | 'product'
+  | 'video'
+  | 'footer'
+  | 'menu'
+  | 'html'
+  | 'section'
+  | 'columns';
+
+export type EmailContainerBlockType = 'section' | 'columns';
+export type EmailLeafBlockType = Exclude<EmailBlockType, EmailContainerBlockType>;
+
+export interface EmailLink {
+  label: string;
+  url: string;
+}
 
 export interface EmailLogoProps {
   src: string;
@@ -146,6 +169,59 @@ export interface EmailProductProps {
   padding: EmailSpacing;
 }
 
+export interface EmailVideoProps {
+  thumbnailUrl: string;
+  videoUrl: string;
+  alt: string;
+  caption: string;
+  showCaption: boolean;
+  width: number;
+  align: EmailAlign;
+  padding: EmailSpacing;
+}
+
+export interface EmailFooterProps {
+  text: string;
+  color: string;
+  fontSize: number;
+  align: EmailAlign;
+  links: EmailLink[];
+  showUnsubscribe: boolean;
+  unsubscribeLabel: string;
+  padding: EmailSpacing;
+}
+
+export interface EmailMenuProps {
+  items: EmailLink[];
+  color: string;
+  fontSize: number;
+  fontWeight: number;
+  align: EmailAlign;
+  separator: EmailMenuSeparator;
+  padding: EmailSpacing;
+}
+
+export interface EmailHtmlProps {
+  html: string;
+  padding: EmailSpacing;
+}
+
+export interface EmailSectionProps {
+  backgroundColor: string;
+  borderRadius: number;
+  padding: EmailSpacing;
+  blocks: EmailBlock[];
+}
+
+export interface EmailColumnsProps {
+  layout: EmailColumnsLayout;
+  gap: number;
+  verticalAlign: EmailVerticalAlign;
+  stackOnMobile: boolean;
+  padding: EmailSpacing;
+  columns: EmailBlock[][];
+}
+
 export interface EmailBlockPropsMap {
   logo: EmailLogoProps;
   heading: EmailHeadingProps;
@@ -157,6 +233,12 @@ export interface EmailBlockPropsMap {
   social: EmailSocialProps;
   coupon: EmailCouponProps;
   product: EmailProductProps;
+  video: EmailVideoProps;
+  footer: EmailFooterProps;
+  menu: EmailMenuProps;
+  html: EmailHtmlProps;
+  section: EmailSectionProps;
+  columns: EmailColumnsProps;
 }
 
 export type EmailBlockOfType<T extends EmailBlockType> = {
@@ -209,6 +291,8 @@ export interface EmailValidationIssue {
   code: string;
   message: string;
   severity: 'error' | 'warning';
+  /** Sorunun ait olduğu blok (kap içindekiler dâhil) */
+  blockId?: string;
 }
 
 export type EmailMergeData = Record<string, unknown>;

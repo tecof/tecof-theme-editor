@@ -1,10 +1,13 @@
 export {
   DEFAULT_EMAIL_THEME,
   EMAIL_BLOCK_CATALOG,
+  EMAIL_COLUMN_LAYOUTS,
+  EMAIL_CONTAINER_BLOCK_TYPES,
   EMAIL_DOCUMENT_VERSION,
+  EMAIL_HTML_BLOCK_MAX_BYTES,
   EMAIL_MERGE_TAGS,
 } from './constants';
-export { createEmailBlock, createEmailDocument, normalizeEmailDocument } from './factory';
+export { canPlaceEmailBlock, createEmailBlock, createEmailDocument, normalizeEmailDocument, walkEmailBlocks } from './factory';
 export { EMAIL_PRESETS } from './presets';
 export { renderEmailHtml } from './render';
 export {
@@ -21,17 +24,27 @@ export type {
   EmailBlockPropsMap,
   EmailBlockType,
   EmailButtonProps,
+  EmailColumnsLayout,
+  EmailColumnsProps,
+  EmailContainerBlockType,
   EmailCouponProps,
   EmailDividerProps,
   EmailDocument,
   EmailDocumentVersion,
+  EmailFooterProps,
   EmailHeadingProps,
+  EmailHtmlProps,
   EmailImageProps,
+  EmailLeafBlockType,
+  EmailLink,
   EmailLogoProps,
+  EmailMenuProps,
+  EmailMenuSeparator,
   EmailMergeData,
   EmailMergeTag,
   EmailPreset,
   EmailProductProps,
+  EmailSectionProps,
   EmailSocialLink,
   EmailSocialNetwork,
   EmailSocialProps,
@@ -40,5 +53,7 @@ export type {
   EmailTextProps,
   EmailTheme,
   EmailValidationIssue,
+  EmailVerticalAlign,
+  EmailVideoProps,
   RenderEmailOptions,
 } from './types';

@@ -1,5 +1,12 @@
-import { EMAIL_BLOCK_TYPES, EMAIL_SOCIAL_NETWORKS } from './constants';
-import { normalizeEmailDocument } from './factory';
+import {
+  EMAIL_BLOCK_TYPES,
+  EMAIL_COLUMN_LAYOUTS,
+  EMAIL_HTML_BLOCK_MAX_BYTES,
+  EMAIL_MENU_SEPARATORS,
+  EMAIL_SOCIAL_NETWORKS,
+  EMAIL_VERTICAL_ALIGNMENTS,
+} from './constants';
+import { canPlaceEmailBlock, normalizeEmailDocument, walkEmailBlocks } from './factory';
 import {
   ALLOWED_MERGE_TAG_KEYS,
   isSafeFontFamily,
@@ -130,29 +137,69 @@ const commonPaddedBlock = (
 
 const UNSUBSCRIBE_TOKEN_PATTERN = /{{\s*unsubscribeUrl\s*}}/;
 
-const hasClickableUnsubscribe = (blocks: EmailBlock[]): boolean =>
-  blocks.some((block) => {
+const validateLinkList = (issues: EmailValidationIssue[], value: unknown, path: string, max: number, labelMax: number): void => {
+  if (!Array.isArray(value)) {
+    issues.push(issue(path, 'links.invalid', 'Bağlantı listesi bekleniyor.'));
+    return;
+  }
+  if (value.length > max) issues.push(issue(path, 'links.too_many', `En fazla ${max} bağlantı olabilir.`));
+  value.forEach((item, index) => {
+    const record = isRecord(item) ? item : {};
+    validateString(issues, record.label, `${path}.${index}.label`, { required: true, max: labelMax });
+    validateUrl(issues, record.url, `${path}.${index}.url`, 'link');
+  });
+};
+
+/** Ağacın herhangi bir düzeyinde tıklanabilir abonelikten çıkış (footer bloğu dâhil) */
+const hasClickableUnsubscribe = (blocks: EmailBlock[]): boolean => {
+  let found = false;
+  walkEmailBlocks(blocks, (block) => {
     switch (block.type) {
       case 'logo':
       case 'image':
       case 'button':
-        return UNSUBSCRIBE_TOKEN_PATTERN.test(block.props.href);
+        if (UNSUBSCRIBE_TOKEN_PATTERN.test(block.props.href)) found = true;
+        break;
       case 'social':
-        return block.props.links.some((link) => UNSUBSCRIBE_TOKEN_PATTERN.test(link.url));
+        if (block.props.links.some((link) => UNSUBSCRIBE_TOKEN_PATTERN.test(link.url))) found = true;
+        break;
       case 'product':
-        return UNSUBSCRIBE_TOKEN_PATTERN.test(block.props.url);
+        if (UNSUBSCRIBE_TOKEN_PATTERN.test(block.props.url)) found = true;
+        break;
+      case 'footer':
+        if (block.props.showUnsubscribe || block.props.links.some((link) => UNSUBSCRIBE_TOKEN_PATTERN.test(link.url))) found = true;
+        break;
+      case 'menu':
+        if (block.props.items.some((item) => UNSUBSCRIBE_TOKEN_PATTERN.test(item.url))) found = true;
+        break;
+      case 'html':
+        if (UNSUBSCRIBE_TOKEN_PATTERN.test(block.props.html)) found = true;
+        break;
       default:
-        return false;
+        break;
     }
   });
+  return found;
+};
 
-const validateBlock = (issues: EmailValidationIssue[], block: EmailBlock, index: number): void => {
-  const path = `blocks.${index}`;
+const byteLength = (value: string): number => {
+  try {
+    return new TextEncoder().encode(value).byteLength;
+  } catch {
+    return value.length;
+  }
+};
+
+const validateBlock = (issues: EmailValidationIssue[], block: EmailBlock, path: string, parentType: string | null): void => {
   const runtimeBlock = block as unknown as Record<string, unknown>;
   const type = runtimeBlock.type;
 
   if (!EMAIL_BLOCK_TYPES.includes(type as EmailBlock['type'])) {
     issues.push(issue(`${path}.type`, 'block.unknown_type', `Desteklenmeyen blok türü: ${String(type)}`));
+    return;
+  }
+  if (!canPlaceEmailBlock(String(type), parentType)) {
+    issues.push(issue(`${path}.type`, 'block.nesting', String(type) === 'section' ? 'Bölüm yalnız en üst düzeyde olabilir.' : 'Sütun içine kap blok konamaz.'));
     return;
   }
 
@@ -271,6 +318,68 @@ const validateBlock = (issues: EmailValidationIssue[], block: EmailBlock, index:
       validateColor(issues, props.backgroundColor, `${path}.props.backgroundColor`);
       commonPaddedBlock(issues, props, `${path}.props`);
       break;
+    case 'video':
+      validateUrl(issues, props.thumbnailUrl, `${path}.props.thumbnailUrl`, 'image');
+      validateUrl(issues, props.videoUrl, `${path}.props.videoUrl`, 'link');
+      validateString(issues, props.alt, `${path}.props.alt`, { required: true, max: 240 });
+      validateString(issues, props.caption, `${path}.props.caption`, { max: 80 });
+      validateNumber(issues, props.width, `${path}.props.width`, 40, 700);
+      validateAlign(issues, props.align, `${path}.props.align`);
+      commonPaddedBlock(issues, props, `${path}.props`);
+      break;
+    case 'footer':
+      validateString(issues, props.text, `${path}.props.text`, { max: 1_000 });
+      validateColor(issues, props.color, `${path}.props.color`);
+      validateNumber(issues, props.fontSize, `${path}.props.fontSize`, 10, 16);
+      validateAlign(issues, props.align, `${path}.props.align`);
+      validateLinkList(issues, props.links, `${path}.props.links`, 6, 50);
+      validateString(issues, props.unsubscribeLabel, `${path}.props.unsubscribeLabel`, { max: 60 });
+      commonPaddedBlock(issues, props, `${path}.props`);
+      break;
+    case 'menu':
+      validateLinkList(issues, props.items, `${path}.props.items`, 8, 40);
+      validateColor(issues, props.color, `${path}.props.color`);
+      validateNumber(issues, props.fontSize, `${path}.props.fontSize`, 10, 20);
+      validateNumber(issues, props.fontWeight, `${path}.props.fontWeight`, 400, 900);
+      validateAlign(issues, props.align, `${path}.props.align`);
+      if (!EMAIL_MENU_SEPARATORS.includes(props.separator as (typeof EMAIL_MENU_SEPARATORS)[number])) {
+        issues.push(issue(`${path}.props.separator`, 'menu.separator_invalid', 'Ayraç dot, pipe, space ya da none olmalıdır.'));
+      }
+      commonPaddedBlock(issues, props, `${path}.props`);
+      break;
+    case 'html':
+      validateString(issues, props.html, `${path}.props.html`, { max: EMAIL_HTML_BLOCK_MAX_BYTES });
+      if (typeof props.html === 'string' && byteLength(props.html) > EMAIL_HTML_BLOCK_MAX_BYTES) {
+        issues.push(issue(`${path}.props.html`, 'html.too_large', 'HTML bloğu 24 KB sınırını aşıyor.'));
+      }
+      if (typeof props.html === 'string' && /<script|<iframe|javascript:|on[a-z]+\s*=/i.test(props.html)) {
+        issues.push(issue(`${path}.props.html`, 'html.active_content', 'Script, iframe ve olay öznitelikleri gönderimde temizlenir.', 'warning'));
+      }
+      commonPaddedBlock(issues, props, `${path}.props`);
+      break;
+    case 'section':
+      validateColor(issues, props.backgroundColor, `${path}.props.backgroundColor`);
+      validateNumber(issues, props.borderRadius, `${path}.props.borderRadius`, 0, 32);
+      commonPaddedBlock(issues, props, `${path}.props`);
+      if (!Array.isArray(props.blocks)) issues.push(issue(`${path}.props.blocks`, 'section.blocks_invalid', 'Bölüm blok listesi bekleniyor.'));
+      else if (props.blocks.length === 0) issues.push(issue(`${path}.props.blocks`, 'section.empty', 'Bölüm boş.', 'warning'));
+      break;
+    case 'columns': {
+      const weights = EMAIL_COLUMN_LAYOUTS[props.layout as keyof typeof EMAIL_COLUMN_LAYOUTS];
+      if (!weights) issues.push(issue(`${path}.props.layout`, 'columns.layout_invalid', 'Sütun düzeni desteklenmiyor.'));
+      else if (!Array.isArray(props.columns) || props.columns.length !== weights.length) {
+        issues.push(issue(`${path}.props.columns`, 'columns.count_mismatch', 'Sütun sayısı düzenle uyuşmuyor.'));
+      }
+      validateNumber(issues, props.gap, `${path}.props.gap`, 0, 48);
+      if (!EMAIL_VERTICAL_ALIGNMENTS.includes(props.verticalAlign as (typeof EMAIL_VERTICAL_ALIGNMENTS)[number])) {
+        issues.push(issue(`${path}.props.verticalAlign`, 'columns.valign_invalid', 'Dikey hizalama top, middle ya da bottom olmalıdır.'));
+      }
+      commonPaddedBlock(issues, props, `${path}.props`);
+      if (Array.isArray(props.columns) && props.columns.every((column) => !Array.isArray(column) || column.length === 0)) {
+        issues.push(issue(`${path}.props.columns`, 'columns.empty', 'Sütunlar boş.', 'warning'));
+      }
+      break;
+    }
   }
 };
 
@@ -319,9 +428,13 @@ export const validateEmailDocument = (input: unknown): EmailValidationIssue[] =>
     issues.push(issue('theme.fontFamily', 'font_family.invalid', 'Yazı tipi ailesi güvenli bir CSS font listesi olmalıdır.'));
   }
 
-  if (document.blocks.length > 200) {
+  let total = 0;
+  walkEmailBlocks(document.blocks, () => {
+    total += 1;
+  });
+  if (total > 200) {
     issues.push(issue('blocks', 'blocks.too_many', 'Bir e-postada en fazla 200 blok kullanılabilir.'));
-  } else if (document.blocks.length > 100) {
+  } else if (total > 100) {
     issues.push(
       issue(
         'blocks',
@@ -336,17 +449,32 @@ export const validateEmailDocument = (input: unknown): EmailValidationIssue[] =>
   }
 
   const ids = new Set<string>();
-  document.blocks.forEach((block, index) => {
-    const runtimeBlock = block as unknown as Record<string, unknown>;
-    if (typeof runtimeBlock.id !== 'string' || !ID_PATTERN.test(runtimeBlock.id)) {
-      issues.push(issue(`blocks.${index}.id`, 'block.id_invalid', 'Blok kimliği harfle başlamalı ve güvenli karakterler içermelidir.'));
-    } else if (ids.has(runtimeBlock.id)) {
-      issues.push(issue(`blocks.${index}.id`, 'block.id_duplicate', 'Blok kimliği benzersiz olmalıdır.'));
-    } else {
-      ids.add(runtimeBlock.id);
-    }
-    validateBlock(issues, block, index);
-  });
+  const visit = (blocks: EmailBlock[], basePath: string, parentType: string | null): void => {
+    blocks.forEach((block, index) => {
+      const path = `${basePath}.${index}`;
+      const runtimeBlock = block as unknown as Record<string, unknown>;
+      const before = issues.length;
+      if (typeof runtimeBlock.id !== 'string' || !ID_PATTERN.test(runtimeBlock.id)) {
+        issues.push(issue(`${path}.id`, 'block.id_invalid', 'Blok kimliği harfle başlamalı ve güvenli karakterler içermelidir.'));
+      } else if (ids.has(runtimeBlock.id)) {
+        issues.push(issue(`${path}.id`, 'block.id_duplicate', 'Blok kimliği benzersiz olmalıdır.'));
+      } else {
+        ids.add(runtimeBlock.id);
+      }
+      validateBlock(issues, block, path, parentType);
+      /* Bu bloğa ait sorunlar blockId taşır (editör rozetleri) */
+      if (typeof runtimeBlock.id === 'string') {
+        for (let i = before; i < issues.length; i += 1) if (!issues[i].blockId) issues[i].blockId = runtimeBlock.id;
+      }
+      if (block.type === 'section' && Array.isArray(block.props.blocks)) visit(block.props.blocks, `${path}.props.blocks`, 'section');
+      if (block.type === 'columns' && Array.isArray(block.props.columns)) {
+        block.props.columns.forEach((column, columnIndex) => {
+          if (Array.isArray(column)) visit(column, `${path}.props.columns.${columnIndex}`, 'columns');
+        });
+      }
+    });
+  };
+  visit(document.blocks, 'blocks', null);
 
   if (!hasClickableUnsubscribe(document.blocks)) {
     issues.push(

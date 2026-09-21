@@ -27,6 +27,12 @@ describe('e-mail document core', () => {
       'social',
       'coupon',
       'product',
+      'video',
+      'footer',
+      'menu',
+      'html',
+      'section',
+      'columns',
     ]);
     expect(new Set(EMAIL_MERGE_TAGS.map((tag) => tag.key)).size).toBe(EMAIL_MERGE_TAGS.length);
   });
@@ -414,5 +420,86 @@ describe('send-ready HTML compiler', () => {
       expect(preset!.purpose).toBe('transactional');
       expect(JSON.stringify(preset!.build())).not.toContain('{{unsubscribeUrl}}');
     }
+  });
+});
+
+describe('e-mail layout blocks (2026-09-21)', () => {
+  it('renders section > columns > leaf with mobile stacking and footer unsubscribe', () => {
+    const document = createEmailDocument({
+      blocks: [
+        createEmailBlock('section', {
+          backgroundColor: '#111111',
+          padding: { top: 16, right: 16, bottom: 16, left: 16 },
+          blocks: [
+            createEmailBlock('columns', {
+              layout: '1:2',
+              gap: 20,
+              columns: [
+                [createEmailBlock('image', { src: 'https://cdn.example.com/a.png', alt: 'a', width: 300 }, 'img-1')],
+                [createEmailBlock('heading', { text: 'Sol {{customer.firstName}}' }, 'h-1'), createEmailBlock('button', { href: 'https://example.com', width: 160 }, 'btn-1')],
+              ],
+            }, 'cols-1'),
+          ],
+        }, 'sec-1'),
+        createEmailBlock('menu', { items: [{ label: 'Kadın', url: 'https://example.com/k' }, { label: 'Erkek', url: 'https://example.com/e' }], separator: 'pipe' }, 'menu-1'),
+        createEmailBlock('video', { thumbnailUrl: 'https://cdn.example.com/t.jpg', videoUrl: 'https://youtu.be/x' }, 'video-1'),
+        createEmailBlock('html', { html: '<p style="margin:0">Ham</p>' }, 'html-1'),
+        createEmailBlock('footer', { text: 'Acme', links: [{ label: 'Gizlilik', url: 'https://example.com/p' }] }, 'footer-1'),
+      ],
+    });
+    const issues = validateEmailDocument(document);
+    expect(issues.filter((item) => item.severity === 'error')).toEqual([]);
+    expect(issues.some((item) => item.code === 'compliance.unsubscribe_missing')).toBe(false);
+    const html = renderEmailHtml(document);
+    expect(html).toContain('class="tecof-email-col tecof-email-col-stack"');
+    expect(html).toContain('href="{{unsubscribeUrl}}"');
+    expect(html).toContain('&#9654;&nbsp;Videoyu izle');
+    expect(html).toContain('&nbsp;|&nbsp;');
+    expect(html).toContain('<p style="margin:0">Ham</p>');
+    expect(html).toContain('.tecof-email-col-stack{display:block!important');
+  });
+
+  it('reports nesting violations instead of dropping content', () => {
+    const document = normalizeEmailDocument({
+      kind: 'tecof-email',
+      version: 1,
+      subject: 'x',
+      blocks: [
+        { id: 'c1', type: 'columns', props: { columns: [[{ id: 'c2', type: 'columns', props: {} }], []] } },
+        { id: 's1', type: 'section', props: { blocks: [{ id: 's2', type: 'section', props: {} }] } },
+      ],
+    });
+    const codes = validateEmailDocument(document).map((item) => item.code);
+    expect(codes.filter((code) => code === 'block.nesting')).toHaveLength(2);
+  });
+
+  it('flags active content in html blocks and keeps legacy aliases', () => {
+    const document = normalizeEmailDocument({
+      kind: 'tecof-email',
+      version: 1,
+      subject: 'x',
+      blocks: [
+        { id: 'a', type: 'code', props: { html: '<p onclick="x()">hi</p>' } },
+        { id: 'b', type: 'nav', props: {} },
+        { id: 'c', type: 'row', props: {} },
+        { id: 'd', type: 'container', props: {} },
+      ],
+    });
+    expect(document.blocks.map((block) => block.type)).toEqual(['html', 'menu', 'columns', 'section']);
+    expect(validateEmailDocument(document).some((item) => item.code === 'html.active_content')).toBe(true);
+  });
+});
+
+describe('inline rich text subset', () => {
+  it('keeps the allowed tags, escapes the rest, drops unsafe hrefs and balances tags', () => {
+    const document = createEmailDocument({
+      theme: { primaryColor: '#0ea5e9' },
+      blocks: [createEmailBlock('text', { text: 'Merhaba <b>{{customer.firstName}}</b> <a href="javascript:alert(1)">kötü</a> <a href="https://x.com">iyi</a>\n<script>x</script> <u>alt<b>iç</u>' }, 't-1')],
+    });
+    const html = renderEmailHtml(document);
+    expect(html).toContain('Merhaba <strong>{{customer.firstName}}</strong>');
+    expect(html).toContain('<a style="color:#0ea5e9;text-decoration:underline;">kötü</a>');
+    expect(html).toContain('<a href="https://x.com" target="_blank" style="color:#0ea5e9;text-decoration:underline;">iyi</a>');
+    expect(html).toContain('<br>&lt;script&gt;x&lt;/script&gt; <u>alt<strong>iç</strong></u>');
   });
 });

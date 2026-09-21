@@ -2,6 +2,7 @@ import type {
   EmailBlockCatalogItem,
   EmailBlockPropsMap,
   EmailBlockType,
+  EmailColumnsLayout,
   EmailMergeTag,
   EmailSpacing,
   EmailTheme,
@@ -117,7 +118,73 @@ export const EMAIL_BLOCK_DEFAULTS: Readonly<EmailBlockPropsMap> = Object.freeze<
     backgroundColor: '#fafafa',
     padding: spacing(16, 32, 20, 32),
   },
+  /* 2026-09-21 stüdyo blokları — backend DEFAULT_PROPS ile birebir */
+  video: {
+    thumbnailUrl: '{{campaign.heroImageUrl}}',
+    videoUrl: '{{merchant.storeUrl}}',
+    alt: 'Video',
+    caption: 'Videoyu izle',
+    showCaption: true,
+    width: 536,
+    align: 'center',
+    padding: spacing(12, 32, 12, 32),
+  },
+  footer: {
+    text: '{{merchant.name}}\n{{merchant.address}}',
+    color: '#71717a',
+    fontSize: 12,
+    align: 'center',
+    links: [],
+    showUnsubscribe: true,
+    unsubscribeLabel: 'Abonelikten çık',
+    padding: spacing(20, 32, 28, 32),
+  },
+  menu: {
+    items: [],
+    color: '#3f3f46',
+    fontSize: 14,
+    fontWeight: 600,
+    align: 'center',
+    separator: 'dot',
+    padding: spacing(12, 32, 12, 32),
+  },
+  html: {
+    html: '',
+    padding: spacing(0, 32, 0, 32),
+  },
+  section: {
+    backgroundColor: '#ffffff',
+    borderRadius: 0,
+    padding: spacing(0, 0, 0, 0),
+    blocks: [],
+  },
+  columns: {
+    layout: '1:1',
+    gap: 16,
+    verticalAlign: 'top',
+    stackOnMobile: true,
+    padding: spacing(0, 32, 0, 32),
+    columns: [[], []],
+  },
 });
+
+/** Sütun düzenleri — ağırlık listesi (backend EMAIL_COLUMN_LAYOUTS ile aynı) */
+export const EMAIL_COLUMN_LAYOUTS: Readonly<Record<EmailColumnsLayout, readonly number[]>> = Object.freeze({
+  '1': [1],
+  '1:1': [1, 1],
+  '1:1:1': [1, 1, 1],
+  '1:1:1:1': [1, 1, 1, 1],
+  '1:2': [1, 2],
+  '2:1': [2, 1],
+  '1:3': [1, 3],
+  '3:1': [3, 1],
+});
+
+export const EMAIL_CONTAINER_BLOCK_TYPES = Object.freeze(['section', 'columns'] as const);
+export const EMAIL_MENU_SEPARATORS = Object.freeze(['dot', 'pipe', 'space', 'none'] as const);
+export const EMAIL_VERTICAL_ALIGNMENTS = Object.freeze(['top', 'middle', 'bottom'] as const);
+/** Ham HTML bloğunun sınırı (backend MAX_EMAIL_HTML_BLOCK_BYTES) */
+export const EMAIL_HTML_BLOCK_MAX_BYTES = 24 * 1024;
 
 const catalogItem = <T extends EmailBlockType>(
   type: T,
@@ -143,6 +210,12 @@ export const EMAIL_BLOCK_CATALOG: readonly EmailBlockCatalogItem[] = Object.free
   catalogItem('social', 'Sosyal bağlantılar', 'İzinli sosyal ağ bağlantıları', 'content'),
   catalogItem('coupon', 'Kupon', 'Öne çıkan indirim kodu alanı', 'commerce'),
   catalogItem('product', 'Ürün', 'Mobilde alt alta geçen ürün kartı', 'commerce'),
+  catalogItem('video', 'Video', 'Kapak görseli ve oynatma bağlantısı', 'content'),
+  catalogItem('footer', 'Alt bilgi', 'Adres, yasal metin ve abonelikten çıkış', 'content'),
+  catalogItem('menu', 'Menü', 'Yatay bağlantı listesi', 'content'),
+  catalogItem('html', 'Kod', 'Ham HTML bloğu (gönderimde temizlenir)', 'content'),
+  catalogItem('section', 'Bölüm', 'Renkli zeminli bant; içine sütun ya da blok alır', 'layout'),
+  catalogItem('columns', 'Sütunlar', '1-4 sütunlu düzen; yalnız yaprak blok alır', 'layout'),
 ]);
 
 const mergeTag = (
