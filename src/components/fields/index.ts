@@ -6,6 +6,8 @@ export type { EditorFieldProps, EditorFieldOptions } from './EditorField';
 
 export { UploadField, createUploadField } from './UploadField';
 export type { UploadFieldProps, UploadFieldOptions } from './UploadField';
+export { LocalizedUploadField, createLocalizedUploadField } from './LocalizedUploadField';
+export type { LocalizedUploadFieldProps, LocalizedUploadFieldOptions } from './LocalizedUploadField';
 
 export { CodeEditorField, createCodeEditorField } from './CodeEditorField';
 export type { CodeEditorFieldProps, CodeEditorFieldOptions } from './CodeEditorField';
@@ -15,6 +17,22 @@ export type { LinkFieldProps, LinkFieldOptions } from './LinkField';
 
 export { ColorField, createColorField } from './ColorField';
 export type { ColorFieldProps, ColorFieldOptions } from './ColorField';
+/* ColorField v2 — popover, canlı tema paleti ve saf renk yardımcıları */
+export { ColorPickerPopover } from './color/ColorPicker';
+export type { ColorPickerPopoverProps } from './color/ColorPicker';
+export { useThemePalette } from './color/useThemePalette';
+export type { ThemePaletteEntry } from './color/useThemePalette';
+export {
+  parseColor,
+  formatHex,
+  normalizeValue as normalizeColorValue,
+  classifyValue as classifyColorValue,
+  contrastRatio,
+  wcagLevel,
+  themeColorVar,
+  parseThemeColorVar,
+} from './color/colorMath';
+export type { ParsedColor, ColorFormat, ClassifiedValue as ClassifiedColorValue } from './color/colorMath';
 
 export { RepeaterField, createRepeaterField } from './RepeaterField';
 export type { RepeaterFieldProps, RepeaterFieldOptions } from './RepeaterField';
@@ -69,3 +87,27 @@ export { FieldErrorBoundary } from './FieldErrorBoundary';
 export { useLanguages } from './useLanguages';
 export { FieldLabel } from './FieldLabel';
 export type { FieldLabelProps } from './FieldLabel';
+
+/* Çok dilli alanların ortak dil araçları (Hızlı Doldur / Çevir) — özel çok dilli
+   alan yazanlar aynı çubuğu ve fillLanguages<T> / translateLanguages yolunu kullanır */
+export { LanguageToolsBar, useLanguageToolsStatus } from './LanguageToolsBar';
+export type { LanguageToolsBarProps, LanguageToolsStatus } from './LanguageToolsBar';
+export {
+  fillLanguages,
+  mergeTranslations,
+  translateLanguages,
+  targetLocales,
+  normalizeLocalizedValues,
+  isEmptyText,
+  isEmptyHtml,
+  isEmptyLink,
+  LANGUAGE_TOOL_MESSAGES,
+} from './languageTools';
+export type {
+  LocalizedEntry,
+  FillOptions,
+  FillResult,
+  TranslateFn,
+  TranslateOutcome,
+  TranslateLanguagesArgs,
+} from './languageTools';

@@ -35,7 +35,7 @@ import { X } from 'lucide-react';
  *
  * ── Katman sırası ───────────────────────────────────────────────────────
  * overlay 99998 / kart 99999: eski `.tecof-modal-overlay` bandıyla aynı.
- * Drawer içinden açılan portallı popover'lar (`.tecof-color-popover`,
+ * Drawer içinden açılan portallı popover'lar (`.tecof-cp-popover`,
  * `.tecof-icon-dropdown`, `.tecof-bind-popover`, `.tecof-font-menu` — hepsi
  * 1000000), MediaDrawer/LinkPickerDrawer (999999+) ve komut paleti (1000000)
  * drawer'ın ÜSTÜNDE kalır.
@@ -121,7 +121,7 @@ export const isStudioDrawerOpen = (): boolean =>
  * önce yakalar — bu yüzden liste burada tutulup Radix'in kapatması engellenir.
  */
 const PORTALED_POPOVERS =
-  '.tecof-color-popover, .tecof-icon-dropdown, .tecof-bind-popover, .tecof-font-menu, .tecof-info-popover';
+  '.tecof-cp-popover, .tecof-icon-dropdown, .tecof-bind-popover, .tecof-font-menu, .tecof-info-popover';
 
 /**
  * Drawer AÇIKKEN odağın gidebileceği katmanlar. Radix non-modal'da FocusScope

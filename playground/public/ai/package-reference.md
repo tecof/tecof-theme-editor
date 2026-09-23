@@ -75,6 +75,8 @@ Tecof Studio sayfa editörü. Otomatik fetch/save, iframe postMessage desteği, 
 | `onSave` | `(data) => void` | Kayıt sonrası callback |
 | `onChange` | `(data) => void` | Her değişiklikte callback (≈300ms debounce'lu) |
 | `hostOrigin` | `string` | Embed senaryosunda izin verilen parent origin. Verilirse hem gönderilen hem **gelen** postMessage'lar bu origin'e kısıtlanır (güvenlik). Verilmezse `'*'` (geriye uyumlu). |
+| `panelUrl` | `string` | Panelin taban adresi (varsayılan `https://app.tecof.com`). Alanlardaki "Panelde yönet / Panelde ürün ekle" bağlantıları bunun üzerine kurulur ve **yeni sekmede** açılır. |
+| `warnOnUnsavedChanges` | `boolean` | Sekme kapatma/yenileme uyarısı (varsayılan `true`). Bu uyarı tarayıcının **yerel** `beforeunload` penceresidir; özel UI'ya izin verilmez. Editörün kendi onayları `studioDialog` drawer'ıdır. |
 | `className` | `string` | Ek CSS sınıfı |
 
 > `TecofEditor`, `TecofStudio`'nun takma adıdır (`TecofEditor = TecofStudio`) — ikisi de aynı editörü açar.
@@ -125,6 +127,109 @@ import Image from "next/image";
 | `imageProps` | `Record<string,any>` | ImageComponent'e ek prop'lar |
 | `fancybox` | `boolean` | Fancybox lightbox desteği |
 
+**Odak noktası (focal point).** Dosya nesnesinde `focalPoint` (`{ x, y }`, yüzde `0..100`, `50/50` = merkez) varsa `TecofPicture` bunu `object-position: "X% Y%"` olarak img/video style'ına yazar — görsel `object-fit: cover` ile kırpıldığında (hero, kart, 1:1 kutu) bu nokta kadrajda kalır. Alan, medya yöneticisindeki **Odak noktası** düğmesiyle seçilir ve dosyanın içinde saklanır; backend tarafında şema değişikliği gerekmez.
+
+```tsx
+import { focalPointToObjectPosition } from "@tecof/theme-editor";
+
+// data.focalPoint = { x: 30, y: 70 }  →  object-position: "30% 70%"
+<TecofPicture data={file} fill />
+
+// Kendi object-position'ınızı verirseniz o kazanır:
+<TecofPicture data={file} fill imgStyle={{ objectPosition: "top" }} />
+```
+
+Odak yoksa veya merkezdeyse DOM çıktısı **değişmez** (geriye dönük uyumlu). Yardımcılar: `clampFocalPoint`, `focalPointToObjectPosition`, `isDefaultFocalPoint`, tip `FocalPoint`.
+
+### `<PoweredBy />` — "Powered by Tecof" bandı
+
+Admin panelinde (Ayarlar → Powered by bandı) yazılan bandı basar. `merchant-info`'yu SWR ile kendisi çeker ya da SSR'dan `initialData` ile başlar; dili ve açık/koyu modu ortamdan çözer, band CSS'ini her örnekle birlikte `<style>` olarak basar, JS'i sürüm başına bir kez enjekte eder, body'ye `has-powered-band` sınıfını ekler. Hak yoksa (`showPoweredBy=false`), mağaza askıdaysa veya yapım aşamasındaysa hiçbir şey basmaz — bu bayrakları **kendi çektiği** `merchant-info`'dan okur; `initialData` yalnız bandı taşıdığından SSR yolunda askı/yapım süzgecini tema uygular (aşağıdaki örnek).
+
+```tsx
+import { PoweredBy } from "@tecof/theme-editor";
+
+// Vitrin (Next.js layout, SSR): sunucudaki merchant-info ile ilk boyama, istemci fetch'i yok.
+// Askı/yapım aşamasında null geçilir: initialData bayrak taşımaz, süzgeç burada yapılır.
+const band = merchantInfo.isSuspended || merchantInfo.isUnderConstruction ? null : merchantInfo.poweredBy ?? null;
+<PoweredBy initialData={band} defaultLanguage={merchantInfo.defaultLanguage} locale={locale} apiUrl={API_URL} secretKey={SECRET_KEY} />
+
+// <TecofProvider> içinde: kendi çeker
+<PoweredBy />
+
+// JS'siz/SSR'da sıfır flaş: iki varyant + prefers-color-scheme (eski core davranışı)
+<PoweredBy initialData={band} locale="tr" renderBoth />
+```
+
+| Prop | Tip | Açıklama |
+|---|---|---|
+| `locale` | `string` | Dil; yoksa Studio aktif dili → `<html lang>` (mount sonrası) → varsayılan dil → ilk dil. Her aday band anahtarlarıyla eşlenir (`tr-TR` → `tr-tr` → `tr`); eşleşmeyen aday atlanır |
+| `defaultLanguage` | `string` | SSR'da `merchantInfo.defaultLanguage`; `initialData` yalnız bandı taşıdığından bu verilmezse `locale`'siz sunucu render'ı ilk dile düşer (dil flaşı) |
+| `mode` | `'light' \| 'dark'` | Mod; yoksa `<html class="dark">` → (dark-mode stratejisi aktifse `light`) → `prefers-color-scheme` |
+| `initialData` | `PoweredByBandData \| null` | SSR'dan gelen `merchantInfo.poweredBy`; `null` = band yok (fetch yapılmaz), `undefined` = kendisi çeker. Bayrak (`showPoweredBy`, askı, yapım) taşımaz |
+| `apiUrl`, `secretKey` | `string` | `<TecofProvider>` dışında fetch için |
+| `revalidateOnMount` | `boolean` | Varsayılan: `initialData` yoksa `true` |
+| `renderBoth` | `boolean` | İki varyantı basar, seçimi CSS yapar |
+| `className` | `string` | Sarmalayıcı `[data-powered-band]`'a eklenir |
+
+DOM: `<style data-powered-band-style data-version>` + her zaman İKİ `<div data-powered-band data-mode="light|dark" data-version>`. Tek varyant modunda (varsayılan) ikisi de `data-single` taşır ve aktif olmayan `hidden` alır — mod değişince yalnız öznitelik değişir, innerHTML yeniden basılmaz, admin JS'inin bağladığı dinleyiciler yaşar; `renderBoth`'ta seçimi `prefers-color-scheme` CSS'i yapar. Band JS'i mount sonrası `script[data-powered-band-script][data-version]` olarak bir kez eklenir, unmount'ta kaldırılmaz. `.dark` sınıfı ve OS tercihi canlı izlenir (MutationObserver + `matchMedia`), band anında mod değiştirir. Bandın `<style>`'ı `[data-powered-by]{display:none}` kuralını da içerir: temanın sabit rozeti ilk HTML'de (JS'siz/crawler görünümünde) gizlenir; temadaki `.has-powered-band [data-powered-by]{display:none}` kuralı isteğe bağlı yedektir (`has-powered-band` hidrasyondan sonra gelir). Bilinen fark: tek varyantta band JS'i parse anında değil hidrasyon sonrası çalışır; `document.currentScript`'e dayanan admin script'i kırılır.
+
+**`usePoweredBy(options)`** aynı seçenekleri alır; `{ band, variants, html, css, js, version, locale, mode, visible, isLoading, error, refresh }` döner — kendi işaretlemenizi basmak için. SWR ayarları: 10 dk tekilleştirme, odakta/yeniden bağlanmada yenileme yok, hata → önceki band korunur; aynı `apiUrl+secretKey` için tüm `usePoweredBy` örnekleri tek SWR anahtarını (tek isteği) paylaşır. `useLanguages` ise kendi Map önbelleğini kullanır (SWR değil): alanlar + `<PoweredBy>` aynı sayfadaysa iki ayrı `merchant-info` isteği görülür.
+
+**Tipler:** `PoweredByProps`, `UsePoweredByOptions`, `UsePoweredByResult`, `PoweredByMode` (`'light' | 'dark'`) ve `PoweredByBandData` (`{ html: Record<dil, { light, dark }>, css, js, version? }`) dışa aktarılır. `MerchantInfoData` (`getMerchantInfo()` yanıtı) artık `showPoweredBy`, `poweredBy`, `isSuspended` ve `suspendMessage` alanlarını da taşır. `swr` paketin bağımlılığıdır (dış bağımlılık; host'un SWR'ıyla tek örnek).
+
+### Drawer bileşenleri
+
+Editördeki **her pencere** (ayarlar, yardım, bölüm ekleme, seçiciler, onaylar) aynı kabuğu kullanır: `StudioDrawer`. Kabuk Radix Dialog üzerine `modal={false}` ile kuruludur — böylece drawer içinden açılan renk/ikon/CMS popover'ları (body'ye portallanır) tıklanabilir ve yazılabilir kalır. Kapatma ESC, karartmaya tıklama veya sağ üstteki X ile olur (tutamaktan sürükleyerek kapatma yoktur).
+
+```tsx
+import { StudioDrawer, ConfirmDrawer, studioDialog } from "@tecof/theme-editor";
+import { Sparkles } from "lucide-react";
+
+<StudioDrawer
+  open={open}
+  onOpenChange={setOpen}
+  title="Bölüm Ayarları"
+  description="Bu bölümün görünürlüğü ve kimliği"
+  icon={<Sparkles size={20} />}
+  tone="primary"
+  size="md"
+  footer={<button className="tecof-drawer-btn tecof-drawer-btn--primary">Kaydet</button>}
+>
+  {/* gövde */}
+</StudioDrawer>
+```
+
+| Prop | Tip | Açıklama |
+|------|-----|----------|
+| `open` / `onOpenChange` | `boolean` / `(open) => void` | Açıklık durumu; kapatma isteği `false` ile gelir |
+| `title` | `ReactNode` | Başlık (zorunlu — a11y için de kullanılır) |
+| `description` | `ReactNode?` | Başlık altı açıklama; verilmezse başlık ekran okuyucuya tekrarlanır |
+| `icon` | `ReactNode?` | Baş satırındaki ikon rozeti (lucide) |
+| `tone` | `default \| primary \| danger` | Rozet tonu |
+| `size` | `sm \| md \| lg \| xl` | 400 / 560 / 820 / 1180px (varsayılan `md`) |
+| `busy` | `boolean?` | İş sürerken kapatma yollarını kilitler (`aria-busy`) |
+| `footer` / `headerActions` | `ReactNode?` | Alt eylem satırı / baş satırındaki ek kontroller |
+| `hideClose` | `boolean?` | Sağ üstteki X'i gizler |
+| `elevated` | `boolean?` | Başka bir drawer'ın ÜSTÜNDE açılıyorsa üst katmana çıkar (karartma alttaki kartı da örter) |
+| `inert` | `boolean?` | Kartı tıklama ve odak dışına alır (üstünde onay drawer'ı açıkken) |
+| `className` / `bodyClassName` | `string?` | Kart / gövde ek sınıfı |
+| `onOpenAutoFocus` / `onCloseAutoFocus` | `(e: Event) => void` | Odak yönetimini devral (`preventDefault`) |
+
+**Onay ve uyarı.** `window.confirm` / `window.alert` yerine kuyruklu drawer kullanılır:
+
+```tsx
+if (await studioDialog.confirm({
+  title: "Ortak bileşeni sil",
+  description: "Bu bileşeni kullanan tüm sayfalar etkilenir.",
+  confirmLabel: "Sil",
+  danger: true,
+})) { /* ... */ }
+
+await studioDialog.alert({ title: "İçe aktarma tamamlandı" });
+```
+
+`ConfirmDrawer` bu kuyruğun görsel karşılığıdır (`sm` boy, iki düğme; `danger` ise kırmızı onay + `AlertTriangle`, `hideCancel` ile tek "Tamam" düğmeli uyarı hâli). Kuyruğu çizen `DialogHost` `TecofStudio` içinde bir kez mount edilir; host'un kendi eklentileri de `useDialogStore` / `studioDialog` üzerinden aynı kuyruğu kullanabilir. Bir drawer açıkken stüdyonun global kısayolları (ESC, Delete, ⌘Z, G/R/B) tetiklenmez — kontrol `isStudioDrawerOpen()`.
+
 ---
 
 ## Custom Fields (Editör Alanları)
@@ -158,6 +263,40 @@ fields: {
 - 🔄 **Çevir** — Aktif metni API üzerinden diğer dillere otomatik çevirir (DeepL / Google / OpenAI / Ollama)
 - `isHtml` desteği — HTML taglarını koruyarak çeviri yapar
 
+**Dil araçları ortaktır:** Hızlı Doldur ve Çevir düğmeleri `LanguageToolsBar` bileşeni ve `fillLanguages` / `translateLanguages` yardımcılarıyla çalışır; aynı araçlar `EditorField`, (`Hızlı Doldur`) `LinkField` ve `LocalizedUploadField`'da da vardır. Çubuk yalnız birden fazla dil varken ve `readOnly` değilken görünür. Kaynak her alanda **aktif sekmedir**; `LanguageField`/`EditorField` Hızlı Doldur'u tüm dillerin üzerine yazar, `LinkField`/`LocalizedUploadField` yalnız boş dilleri doldurur.
+
+**Kendi çok dilli alanınızda:** aynı çubuk ve saf yardımcılar dışa aktarılır — `LanguageToolsBar` (`onFill`, `fillDisabled`, `fillLabel`, `fillTitle`, `onTranslate` verilmezse Çevir düğmesi çizilmez, `translateDisabled`, `translating`, `status`), `useLanguageToolsStatus()` → `{ status, translating, setTranslating, flash(status, ms), clear }` (zamanlayıcı unmount'ta temizlenir), `normalizeLocalizedValues(raw, languages, makeEmpty)`, `fillLanguages(values, languages, sourceCode, { onlyEmpty, isEmpty, clone })` → `{ values, filled } | null` (kaynak boşsa ya da doldurulacak dil yoksa `null`; `onlyEmpty=false` listede olmayan kodları düşürür, `true` korur ve dolu dili ezmez), `translateLanguages({ values | () => values, languages, sourceCode, translate, isHtml, isEmpty })` → `{ ok: true, values, translations } | { ok: false, message }` (getter verilirse cevap gelene kadar yazılanlar korunur), `mergeTranslations`, `targetLocales`, boşluk tanımları `isEmptyText` / `isEmptyHtml` (medya etiketi dolu sayılır) / `isEmptyLink` ve durum metinleri `LANGUAGE_TOOL_MESSAGES`. Tipler: `LocalizedEntry<T>`, `FillOptions<T>`, `FillResult<T>`, `TranslateFn`, `TranslateOutcome`, `TranslateLanguagesArgs`, `LanguageToolsBarProps`, `LanguageToolsStatus`.
+
+```tsx
+const { status, translating, setTranslating, flash } = useLanguageToolsStatus();
+const values = normalizeLocalizedValues<string>(value, merchantInfo.languages, () => "");
+
+const fill = () => {
+  const res = fillLanguages(values, merchantInfo.languages, activeTab, { isEmpty: isEmptyText });
+  if (!res) return; // kaynak boş — düğme zaten pasif
+  onChange(res.values);
+  flash({ text: LANGUAGE_TOOL_MESSAGES.filledAll, type: "success" }, 2000);
+};
+
+const translate = async () => {
+  setTranslating(true);
+  try {
+    const out = await translateLanguages({
+      values: () => valuesRef.current, // getter (ref'teki güncel dizi): API cevabı gelene kadar yazılanlar kaybolmaz
+      languages: merchantInfo.languages,
+      sourceCode: activeTab,
+      translate: apiClient.translate.bind(apiClient),
+    });
+    if (out.ok) onChange(out.values);
+    flash(out.ok ? { text: LANGUAGE_TOOL_MESSAGES.translated, type: "success" } : { text: out.message, type: "error" }, 3000);
+  } finally {
+    setTranslating(false);
+  }
+};
+
+<LanguageToolsBar onFill={fill} onTranslate={translate} translating={translating} status={status} />
+```
+
 | Option | Tip | Default | Açıklama |
 |--------|-----|---------|----------|
 | `isTextarea` | `boolean` | `false` | Textarea modu |
@@ -177,7 +316,11 @@ fields: {
 }
 ```
 
-**Özellikler:** Bold, italic, link, liste, heading ve daha fazlası.
+**Özellikler:**
+- Bold, italic, link, liste, heading ve daha fazlası
+- 📋 **Hızlı Doldur** — Aktif dildeki HTML'i tüm dillere kopyalar (boş `<p></p>` içerikte pasif)
+- 🔄 **Çevir** — Aktif HTML'i etiketleri koruyarak (`isHtml`) diğer dillere çevirir; yalnız `TecofProvider` `apiClient` varken görünür
+- Araçlar aktif dilin içeriğini değiştirmediği için editördeki imleç/odak korunur
 
 ---
 
@@ -206,6 +349,7 @@ fields: {
 - ➕ **Tek giriş noktası** — Bir "ekle" tile'ı drawer'ı açar; tüm kaynaklar **sekme** halinde: **Kütüphane** (sunucudaki dosyalar), **Yükle** (FilePond), **Referans** (CMS değişkeni).
 - 🔗 **CMS Referansı** — `{{ data.alan }}` ile dinamik görsel bağlama (CMS şablon sayfaları için).
 - 🖌️ **Doka Görsel Düzenleyici** — Kırp, döndür, parlaklık, kontrast, markup, çıkartma.
+- 🎯 **Odak noktası** — Görsel tile'ında hover'daki nişangâh düğmesi odak drawer'ını açar: solda tıkla/sürükle (ok tuşlarıyla 1'er, Shift ile 10'ar), sağda 16:9 / 1:1 / 9:16 canlı kırpma önizlemeleri ve "Merkeze al". Seçim dosyanın `focalPoint` alanına yazılır; `TecofPicture` her yerde `object-position` olarak uygular. Merkez dışındaki dosyalarda tile'da küçük bir rozet görünür.
 - 🗜️ **Resim Sıkıştırma** — Otomatik WebP dönüşümü (browser-image-compression).
 - 📄 24+ dosya türü desteği (görseller, PDF, Office, CSV, video).
 - 🇹🇷 Tamamen Türkçe etiketler (FilePond + Doka).
@@ -225,9 +369,55 @@ fields: {
 
 ---
 
+### LocalizedUploadField — Çok Dilli Görsel / Dosya
+
+`UploadField`'ın dil sekmeli sürümü. Her dil için ayrı dosya listesi tutar; boş dilde sitede varsayılan dilin dosyası gösterilir. Gövde (medya drawer'ı, FilePond, Doka, odak noktası, CMS referansı) `UploadField` ile birebir aynıdır; seçenekleri de aynıdır.
+
+```tsx
+fields: {
+  banner: createLocalizedUploadField({ label: "Kampanya Görseli", allowMultiple: false }),
+  catalog: createLocalizedUploadField({ label: "Katalog PDF", acceptedTypes: ["application/pdf"] }),
+}
+defaultProps: { banner: [], catalog: [] }
+```
+
+**Özellikler:**
+- 🌐 **Dil sekmeleri** — `LanguageField` ile aynı sekme çubuğu; Studio'da üst çubuktaki global dil kullanılır, sekme gizlenir. Dil değişince FilePond kuyruğu ve drawer durumu o dil için sıfırlanır.
+- 📋 **Hızlı Doldur** — Aktif sekmedeki dosyaları **boş** dillere kopyalar; dolu dillerin üzerine yazmaz. Kopyalar sığ klondur (`_id` aynı = aynı CDN dosyası), odak noktası dahil kopyalanır.
+- 🪂 **Yedek zinciri** — Sitede istenen dil boşsa varsayılan dil, o da boşsa ilk dolu dil gösterilir (`resolveLocalizedUpload`). Editörde boş dilde "Bu dilde görsel yok — sitede TR görseli gösterilir." ipucu çıkar.
+- 🔁 **Geri uyum** — Eski düz `UploadedFile[]` kayıt varsayılan dil altında açılır, ilk düzenlemede yeni biçimde kaydedilir (mount'ta kayıt kirletilmez). Merchant listesinde olmayan dil kodları silinmez, korunur.
+- ✂️ **Çevir yok** — Dosya çevrilmez; araç çubuğunda yalnız Hızlı Doldur vardır.
+
+| Option | Tip | Default | Açıklama |
+|--------|-----|---------|----------|
+| _(tümü)_ | — | — | `UploadField` seçeneklerinin aynısı (`allowMultiple`, `maxFiles`, `acceptedTypes`, `folder`, …) |
+
+**Değer Tipi (`LocalizedUploadFieldValue[]`):**
+```ts
+[
+  { code: "tr", value: UploadedFile[] },  // dil başına dosya listesi
+  { code: "en", value: [] },              // boş = bu dilde dosya yok → yedek zinciri
+]
+```
+
+**Temada okuma:**
+```tsx
+import { resolveLocalizedUploadFile, TecofPicture } from "@tecof/theme-editor";
+
+const file = resolveLocalizedUploadFile(props.banner, locale, "tr"); // UploadedFile | null
+{file && <TecofPicture data={file} alt="…" />}
+```
+Çoklu dosya için `resolveLocalizedUpload(value, locale, defaultLanguage)` → `UploadedFile[]` (`defaultLanguage` verilmezse `"tr"`). Her iki yardımcı düz `UploadedFile[]`'i, tek nesneyi ve eski string kaydı da kabul eder; `TecofPicture` değişmez. Core `getL` bu alan için **kullanılmaz** (boş diziyi dolu sayar, yedek zincirine düşmez). Ayrıca `normalizeLocalizedUpload(value, { languages, defaultLanguage }?)` her biçimi `[{code, value}]`'e çevirir (eski düz dizi varsayılan dile yazılır; `langs` verilmezse yalnız `tr`), `isLocalizedUploadValue(value)` tip koruyucusudur; tipler `LocalizedUploadFieldValue` ve `LocalizedUploadLanguages` dışa aktarılır.
+
+> **Bilinen sınır:** Ters yön (`createLocalizedUploadField` → `createUploadField`) desteklenmez; `UploadField` `[{code,value}]` dizisini karo olarak basmaya çalışır.
+
+> Şema parser'ı: `createLocalizedUploadField` → `fieldType: "localized-upload"`. Bu tipi tanıması gerekenler: core `lib/parseComponentSchema.ts` `FACTORY_MAP` (`createLocalizedUploadField: "localized-upload"`), `scripts/check-theme-templates.mjs` (dolu şablon değeri `tr`/`en` girdileriyle denetlenir) ve backend MCP alan sözlüğü (`app/src/tools/document/fields.ts`: değer biçimi, normalizasyon, dil birleştirme) — üçü de bu paket sürümüyle aynı turda eklendi. Her tema kendi parser kopyasını taşır: türev temaların (`tecof-theme-vita`, `tecof-theme-main`, `tecof-theme-zenith`) ve `tecof-mcp/src/catalog/parseComponentSchema.ts` katalog kopyasının `FACTORY_MAP`'inde eşleme **henüz yok**; eşleme olmayan parser'da `fieldType` fabrika adına düşer ve ajan/MCP alanı dolduramaz. AI/MCP bu alana `[{code, value: uploadValue[]}]` yazar, düz `uploadValue[]` varsayılan dile sarılır. Core'dan türeyen eski temalar core'u güncellemeden bu alanı kullanmamalı.
+
+---
+
 ### LinkField — Sayfa / URL Seçici
 
-Mevcut sayfalardan seçim veya manuel URL girişi.
+Mevcut sayfalardan seçim veya manuel URL girişi. Dil sekmelidir (`LanguageField` ile aynı sekme çubuğu; Studio'da üst çubuktaki global dil kullanılır, sekme gizlenir) ve değer dil başına saklanır.
 
 ```tsx
 fields: {
@@ -245,19 +435,20 @@ fields: {
 - 🔗 **Manuel Link** — URL + etiket + hedef (aynı/yeni sekme) girişi
 - 🟢 Durum göstergesi (yayınlanmış / değiştirilmiş / taslak)
 - 🏷️ Tip badge'i (Sayfa / Link)
+- 📋 **Hızlı Doldur** — Aktif sekmedeki bağlantıyı **boş** dillere kopyalar (kaynak diğer dil alanlarıyla aynı: aktif sekme); dolu diller (ör. dile özel `/hakkimizda` ↔ `/about`) asla ezilmez. Çevir düğmesi yoktur (`label` vitrinde basılmaz; görünen metin ayrı `LanguageField`'dan gelir). Çubuk manuel URL formu açıkken gizlenir; düğme aktif dil boşken ya da doldurulacak boş dil yokken pasiftir; durum metni "Boş dillere kopyalandı: EN, DE".
 
 | Option | Tip | Default | Açıklama |
 |--------|-----|---------|----------|
 | `showTarget` | `boolean` | `true` | Hedef sekme seçici |
 | `placeholder` | `string` | `https://...` | URL placeholder |
 
-**Değer Tipi (`LinkFieldValue`):**
+**Değer Tipi:** saklanan değer dil başına `LocalizedLinkFieldValue[]` = `[{ code: "tr", value: LinkFieldValue }, …]`; temalar aktif dilin `value`'sunu okur. Eski düz `LinkFieldValue` kayıt merchant dillerine göre normalize edilir.
 ```ts
-{
+interface LinkFieldValue {
   url: string;       // "/about" veya "https://..."
   label?: string;    // "Hakkımızda"
   target?: "_self" | "_blank";
-  type?: "page" | "custom";
+  type?: "page" | "custom" | "category" | "brand" | "product" | "cms"; // seçimin kaynağı; render yalnız url/target okur
 }
 ```
 
@@ -284,43 +475,37 @@ fields: {
 
 ### ColorField — Renk Seçici
 
-Popover tabanlı gelişmiş renk seçici: doygunluk/parlaklık karesi, hue + alpha kaydırıcıları, swatch paleti, ekrandan renk seçme (EyeDropper) ve inline HEX girişi.
+Figma/Craft sadeliğinde popover renk seçici: doygunluk/parlaklık alanı, ton + opaklık kaydırıcıları, HEX/RGB/HSL kanal girdileri, ekrandan renk seçme (EyeDropper), canlı tema paleti, Tailwind paleti, son kullanılanlar, kontrast önizlemesi ve tam klavye erişimi. Renk matematiği bağımlılıksızdır.
 
 ```tsx
 import { createColorField } from "@tecof/theme-editor";
 
 fields: {
   bgColor: createColorField({ label: "Arka Plan Rengi" }),
-  textColor: createColorField({
-    label: "Metin Rengi",
-    showOpacity: true,
-    defaultColor: "#18181b",
-  }),
-  accentColor: createColorField({
-    label: "Vurgu Rengi",
-    swatches: ["#18181b", "#74b500", "#ffffff", "#ef4444"],
-  }),
+  overlay: createColorField({ label: "Kaplama", showOpacity: true, defaultColor: "#00000080" }),
+  accent: createColorField({ label: "Vurgu", themeVars: true }),        // tema renklerini var(--theme-color-*) olarak bağlar
+  brand: createColorField({ label: "Marka", swatches: ["#18181b", "#74b500", "#ffffff"], palette: false }),
 }
 ```
 
-**Özellikler:**
-- 🎨 **SV Karesi + Hue/Alpha** — Doygunluk/parlaklık karesi ve hue + (opsiyonel) alpha kaydırıcıları; pointer ile sürüklenir.
-- 🔤 **Inline HEX** — Monospace alanda doğrudan HEX kodu yazma (3/6/8 haneli).
-- 🎯 **Swatch Paleti** — Hızlı seçim için özelleştirilebilir renk noktaları.
-- 💧 **EyeDropper** — Destekleyen tarayıcılarda ekranın herhangi bir yerinden renk seçme.
-- 🕘 **Son Kullanılanlar** — `localStorage` üzerinden son renkler.
-- 🔲 **Opaklık** — Opsiyonel alpha kaydırıcısı (8 haneli hex + checkerboard önizleme).
-- ↩️ **Sıfırla** — Varsayılan renge geri dönme butonu.
+| Seçenek | Tip | Varsayılan | Açıklama |
+|---|---|---|---|
+| `showOpacity` | `boolean` | `false` | Opaklık kaydırıcısı; değer `#rrggbbaa`, "Şeffaf" düğmesi |
+| `defaultColor` | `string` | `''` | Sıfırlama hedefi |
+| `placeholder` | `string` | `'#000000'` | HEX girdisi yer tutucusu (boş değerde "Renk seç…" görünür) |
+| `showReset` | `boolean` | `true` | Sıfırla düğmesi (değer `defaultColor`dan farklıyken) |
+| `swatches` | `string[]` | `[]` | "Hızlı seçim" satırı |
+| `themeColors` | `boolean` | `true` | Studio'da canlı tema renkleri (Studio dışında otomatik gizli) |
+| `themeVars` | `boolean` | `false` | Tema noktası `var(--theme-color-<anahtar>)` yazar; kapalıyken kanonik **açık** palet hex'ini kopyalar (nokta koyu önizlemede koyu görünse de) |
+| `palette` | `boolean` | `true` | Tailwind paleti (22 ton × 11 nüans) |
+| `contrast` | `boolean` | `true` | Kontrast çipleri (WCAG AA/AAA) |
+| `contrastAgainst` | `string` | — | Kontrast zemini hex (verilmezse tema arka plan/metin, Studio dışında beyaz/siyah) |
 
-| Option | Tip | Default | Açıklama |
-|--------|-----|---------|----------|
-| `showOpacity` | `boolean` | `false` | Alpha/opaklık kaydırıcısı |
-| `swatches` | `string[]` | `[built-in]` | Popover'daki hızlı renk noktaları (hex listesi) |
-| `defaultColor` | `string` | `''` | Varsayılan/sıfırlama rengi |
-| `placeholder` | `string` | `#000000` | HEX giriş placeholder |
-| `showReset` | `boolean` | `true` | Sıfırlama butonu göster |
+**Değer:** `''`, `#rrggbb`, `#rrggbbaa` (yalnız `showOpacity`) veya `var(--theme-color-*)` (yalnız `themeVars`). `rgb()/hsl()/transparent` kabul edilip hex'e çevrilir; tanınmayan değerler (`var(--x)` vb.) korunur ve yalnız temizlenebilir. Büyük harfli hex ilk düzenlemede küçük harfe normalize olur. Tema bağı çipindeki "Bağı kopar" değeri açık palet hex'ine çevirir; Studio dışında yalnız host belgesinde `--theme-color-*` değişkeni çözülebiliyorsa görünür (çözüm yoksa alan silinmez). Metin girdisi yazılırken kısa hex (`#2`, `#2f`) hata sayılmaz; yalnız hex alfabesi dışı ya da kapanmış-ama-geçersiz `rgb()/hsl()` kırmızıya döner. Klavye: SV alanı ve kaydırıcılar ok tuşları (Shift ×10, Home/End, ton için PageUp/Down ±30), kanal girdileri ↑/↓, nokta satırları roving tabindex (←/→, hue ↔ ton için ↑/↓), Esc kapatır ve odağı tetikleyiciye geri verir. Son kullanılanlar `localStorage['tecof-recent-colors']` (≤10), biçim tercihi `tecof-color-format`.
 
-> ⚠️ Eski `showPresets` / `presetColors` seçenekleri kaldırıldı; yerine `swatches` kullanın.
+> ⚠️ v2 ile `swatches` varsayılanı boş; palet bölümü hazır renkleri karşılar. Eski `showPresets`/`presetColors` yok. Tema noktası `themeVars` açılmadıkça `var()` yazmaz (hex matematiği yapan temalar ve MCP/AI "color" şeması için güvenli).
+
+`ColorPickerPopover` (`anchor`, `color: ParsedColor | null`, `themeKey`, görünüm bayrakları `showOpacity` / `swatches` / `palette` / `contrast` / `contrastAgainst` / `themePalette` / `themeVars`, `onChange(hex)` rAF kısıtlı normalize hex, `onPickThemeVar(key)`, `onClear`, `onClose`, `returnFocusTo`), `useThemePalette(enabled)` → `ThemePaletteEntry[] | null` (`{ key, cssKey, label, varRef, light, dark, current }`), `THEME_COLOR_KEYS` + `toThemeCssKey` (`generateCSSVariables` ile aynı kebab dönüşümü — tema renk anahtarlarının tek kaynağı) ve saf yardımcılar (`parseColor`, `formatHex`, `normalizeColorValue`, `classifyColorValue`, `contrastRatio`, `wcagLevel`, `themeColorVar`, `parseThemeColorVar`) paketten dışa aktarılır. Tipler: `ColorFieldOptions`, `ColorPickerPopoverProps`, `ThemePaletteEntry`, `ThemeColorKey`, `ParsedColor`, `ColorFormat`, `ClassifiedColorValue`.
 
 ---
 
@@ -748,6 +933,51 @@ const config = {
 | `payload.node` | `TecofNode` | Eklenecek kök node |
 | `payload.zones` | `Record<string, TecofNode[]>?` | Kök node'un alt zone'ları (anahtar: `nodeId:slotAdı`) |
 
+### Sayfa Şablonları — `config.pageTemplates`
+
+`templates` **tek bölüm** ekler; `pageTemplates` ise **tüm sayfayı** kuran hazır bölüm dizisidir (Ana Sayfa, Hakkımızda, İletişim…). Sol paneldeki "Sayfa Şablonları" akordeonunda ve "Bölüm Ekle" drawer'ında görünür.
+
+```tsx
+const config = {
+  components: { /* ... */ },
+  pageTemplates: [
+    {
+      id: "core-home",
+      label: "Ana Sayfa",
+      description: "Hero, hizmetler, referanslar ve iletişim CTA'sı",
+      keywords: ["kurumsal", "landing"],
+      // Tema bu rotayı sunuyorsa kullanıcı şablonu EKLEMEDEN ÖNCE gerçek çıktıyı görür
+      previewUrl: "/preview-template/core-home",
+      sections: [
+        { node: { type: "Hero", props: { id: "t-hero", title: "Başlık" } } },
+        { node: { type: "Services", props: { id: "t-svc" } }, zones: { "t-svc:items": [] } },
+      ],
+    },
+  ],
+};
+```
+
+**`PageTemplate` tipi:**
+
+| Alan | Tip | Açıklama |
+|------|-----|----------|
+| `id` | `string` | Kararlı kimlik (React key) |
+| `label` | `string` | Kartta görünen ad |
+| `description` | `string?` | Kartın altındaki kısa açıklama |
+| `thumbnail` | `string?` | Önizleme görseli URL'i |
+| `previewUrl` | `string?` | **Tam sayfa** önizleme adresi; onay drawer'ında iframe'e konur. Göreli olabilir (`/preview-template/<id>`) — bu durumda editörün çalıştığı origin'e göre çözülür |
+| `keywords` | `string[]?` | Aramada da taranan etiketler |
+| `sections` | `Array<{ node, zones? }>` | Sırayla eklenecek bölümler; `SectionTemplate.payload` ile aynı biçim |
+
+**Onay drawer'ı.** Bir sayfa şablonuna tıklamak bölümleri doğrudan eklemez; önce `size="lg"` bir onay drawer'ı açılır:
+
+- `previewUrl` varsa 1280px referans genişlikte render edilip `transform: scale()` ile kutuya sığdırılan bir iframe (yüklenene kadar iskelet, `loading="lazy"`, sandbox'lı ve tıklanamaz),
+- yoksa bölümlerin canlı önizlemesi (`LiveBlockPreview`) üst üste dizilir,
+- altında sıra + tip etiketi çipleriyle bölüm listesi ve "Mevcut içerik silinmez; bölümler eklenir, **tek Geri Al** ile kaldırılır" notu,
+- footer: **Vazgeç** / **Şablonu Ekle**.
+
+Onaydan sonra ekleme mevcut yoldan yürür: tüm id'ler taze üretilir ve tek commit/tek undo olur. Aynı drawer hem sol panelden hem "Bölüm Ekle" drawer'ından açılır (ikincisinde `elevated` olarak, alttaki kartı örterek).
+
 ### Inline Bileşenler — `inline`
 
 Varsayılan olarak editör her bileşeni bir `.tecof-node-wrapper` div'i ile sarar (seçim/hover/drag bu wrapper üzerinden çalışır). Bileşenin **kendi kök elemanının** sürükleme tutamacı olması gerekiyorsa (ör. sarmalayıcı div'in düzeni bozduğu durumlar), `ComponentConfig`'te `inline: true` verin ve bileşen `puck.dragRef`'i kök elemanına bağlasın.
@@ -803,6 +1033,26 @@ Portal olarak işaretlenen eleman (ve tüm alt elemanları) editörün node hand
 
 ---
 
+## E-posta doküman modeli (`@tecof/theme-editor/email`)
+
+Pazarlama e-postaları için sürümlü blok dokümanı (`kind:"tecof-email"`, `version:1`), fabrika/normalize, doğrulama,
+tablo tabanlı HTML render'ı ve hazır preset'ler. Doğruluk kaynağı **backend** derleyicisidir
+(`tecof-app-backend/app/modules/merchant/ecommerce/_emailDocument.ts`); bu paket aynı sözleşmeyi taşır ve
+`renderEmailHtml` çıktısı backend ile birebir tutulur (parite testi backend tarafında).
+
+Blok kataloğu (2026-09-21, 0.0.94): yaprak `logo, heading, text, button, image, divider, spacer, social, coupon, product,
+video, footer, menu, html`; kap `section` (yalnız en üst düzey; içine columns ya da yaprak) ve `columns`
+(`layout` 1 | 1:1 | 1:1:1 | 1:1:1:1 | 1:2 | 2:1 | 1:3 | 3:1; yalnız yaprak alır). Kap kuralı `canPlaceEmailBlock`;
+ağaç gezme `walkEmailBlocks`. `html` bloğu paket tarafında olduğu gibi basılır (temizlik backend kaydında);
+doğrulama aktif içerik için uyarı verir. `heading.text`/`text.text` satır içi biçim alt kümesi taşıyabilir
+(`strong/b, em/i, u, s, a[href], br, ul, ol, li`; kalanı metin olarak kaçırılır, güvensiz href düşer). `footer.showUnsubscribe` abonelikten çıkış zorunluluğunu karşılar.
+
+```ts
+import { createEmailBlock, createEmailDocument, renderEmailHtml, validateEmailDocument } from '@tecof/theme-editor/email';
+const doc = createEmailDocument({ blocks: [createEmailBlock('columns', { layout: '1:2', columns: [[createEmailBlock('image')], [createEmailBlock('text')]] }), createEmailBlock('footer')] });
+validateEmailDocument(doc); // [] → renderEmailHtml(doc, { mergeData, preserveMergeTags: false })
+```
+
 ## API Client
 
 ```tsx
@@ -816,10 +1066,12 @@ const client = new TecofApiClient("https://api.example.com", "secret-key");
 | `getPage(id)` | Sayfa draft'ını getir |
 | `savePage(id, data)` | Sayfa kaydet |
 | `getPublishedPage(slug, locale?)` | Yayınlanmış sayfayı getir |
-| `getMerchantInfo()` | Dil ayarlarını getir |
+| `getMerchantInfo()` | Dil ayarları + `showPoweredBy` / `poweredBy` bandı + askı/yapım bayrakları (`MerchantInfoData`) |
 | `uploadFile(file, folder?)` | Dosya yükle |
 | `getUploads(page, limit)` | Yüklenen dosyaları listele |
 | `getPages()` | Merchant sayfalarını listele |
+| `previewApplyStyles(payload)` | Stil senkronu **önizlemesi** — sayfa başına eşleşme sayısı (yazmaz) |
+| `applyStylesToPages(payload)` | Bir node'un stilini aynı temadaki diğer sayfalardaki eşleşen bileşenlere uygular |
 | `translate(text, sourceLang, locales, isHtml?)` | Metni birden çok dile çevir |
 | `cdnUrl` | CDN base URL |
 
@@ -834,10 +1086,11 @@ Kütüphane aşağıdaki endpoint'leri kullanır (`x-secret-key` header ile):
 | `GET` | `/api/store/editor/:id` | Sayfa draft'ını getir |
 | `PUT` | `/api/store/editor/:id` | Sayfa kaydet |
 | `POST` | `/api/store/render` | Yayınlanmış sayfayı getir (slug + locale) |
-| `GET` | `/api/store/merchant-info` | Merchant dil ayarları |
+| `GET` | `/api/store/merchant-info` | Merchant dil ayarları, `poweredBy` bandı, askı/yapım bayrakları |
 | `POST` | `/api/store/upload` | Dosya yükle |
 | `GET` | `/api/store/uploads` | Yüklenen dosyaları listele |
 | `GET` | `/api/store/pages` | Merchant sayfalarını listele |
+| `POST` | `/api/store/editor/apply-styles` | Stili diğer sayfalara uygula / önizle (JWT + team/admin) |
 | `POST` | `/api/store/translate` | Metni çok dile çevir |
 
 ---
@@ -948,10 +1201,15 @@ Studio arayüzü de aynı sistemdedir: canvas, drop zone, selection overlay, ins
 ### Studio Editör Özellikleri
 
 - **Düzenleme / Önizleme modu** — Üst bardaki toggle ile. Düzenleme'de tıklayınca bileşen seçilir, link/butonlar pasiftir; Önizleme'de link ve butonlar canlı çalışır, editör çerçevesi gizlenir.
-- **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; düzenlenen öğe accent kenarlıkla işaretlenir (öğenin kendi arka plan/yazı rengi korunur), Enter kaydeder, Esc iptal eder. Bileşenler düzenlenebilir metni `data-tecof-prop="propAdı"` (ve çok dilli için `data-tecof-lang`) ile işaretleyebilir; aksi halde string-eşleştirme fallback'i devreye girer.
+- **Inline metin düzenleme** — Canvas'taki metne çift tıklayın; yazım sırasında seçim chrome'u tamamen gizlenir (yalnız imleç görünür), Enter kaydeder, Esc iptal eder. Bileşenler düzenlenebilir metni `data-tecof-prop="propAdı"` (ve çok dilli için `data-tecof-lang`) ile işaretleyebilir; aksi halde string-eşleştirme fallback'i devreye girer.
+- **Hazır sayfa şablonları** — `StudioConfig.pageTemplates` ile tema tam sayfa iskeletleri sunar ("Ana Sayfa", "Hakkımızda"); "Bölüm Ekle" modalında ayrı sekmede görünür, seçilince tüm bölümler TEK commit'te (tek Geri Al) eklenir ve mevcut içerik korunur.
+- **Türkçe-güvenli arama** — bileşen/komut/katman aramaları `normalizeSearch` ile İ/ı ve aksan farklarını yok sayar: "HAKKIMIZDA", "hakkimizda", "hakkımızda" aynı sonucu bulur.
+- **Repeater/array kartları** — Bileşen `type:'array'` prop'undan map'lediği kart köküne `data-tecof-item="<field>:<index>"`, satır-içi metinlere `data-tecof-item-prop="<alan>"` basarsa: kart edit modunda hover çerçevesi alır, tıklama Inspector'da ilgili array satırını açıp kaydırır, çift tıklama satır alanını yerinde düzenler (çok dilli satır alanları `data-tecof-lang` ile uyumlu). Bilinçli olarak `data-tecof-prop`'tan AYRI attr: eski sürümler bu işaretleri tanımaz ve zarar görmez.
+- **Canvas → panel odağı** — Bir elemente tıklamak sağ paneli İçerik sekmesine geçirir, ilgili alan bloğuna kaydırır ve kısa bir vurgu yakar (`data-tecof-prop`/`data-tecof-item` işaretleri hedefi keskinleştirir).
 - **Çoklu seçim + kopyala/yapıştır** — `⌘/Ctrl/Shift + tık` ile çoklu seçim; kopyala/kes/yapıştır (sekmeler arası `localStorage`), toplu sil/çoğalt. Bkz. [Klavye Kısayolları](#klavye-kısayolları-studio).
 - **Görsel stil editörü (Tailwind)** — Inspector'daki "Stil" sekmesi; breakpoint + state bazlı (`md:hover:` dahil), preset token'lar, serbest (arbitrary) değerler ve **canlı tema renkleri** (`--theme-color-*`). Daha az belirgin katmandan **devralınan değerler** soluk ipucu olarak gösterilir. Bkz. [docs/TAILWIND.md](docs/TAILWIND.md).
 - **Komut paleti (⌘K)** — Tek aramadan tüm eylemler + bileşen ekleme; kısayollar listelenir, ok tuşlarıyla gezilir.
+- **Sayfalar arası stil** — Bir bileşenin stilini aynı temadaki diğer sayfalardaki eşleşen bileşenlere taşır (tek seferlik) ya da o bileşeni "stil kaynağı" yapıp her kayıtta senkronlar. Bkz. [Sayfalar Arası Stil](#sayfalar-arası-stil-stil-senkronu).
 - **Canlı tema editörü** — Seçim yokken Inspector'daki "Tema" sekmesi; renk/tipografi/spacing düzenlenir ve değişiklik hem editöre hem canvas'a `--theme-*` CSS değişkenleri olarak **anında** uygulanır. Tema `root.props._tecofTheme`'de saklanır (kayda dahil, undo/redo'lu).
 - **Boşluk (box-model) overlay'i** — Bir öğenin üzerine gelince **padding (yeşil)** içeride, **margin (amber)** dışarıda devtools tarzı renkli gösterilir.
 - **Yan yana slot düzeni** — `slot` alanlarına `orientation: 'horizontal'` verilerek çocuklar yan yana dizilir; sürükle-bırak drop yönü (sol/sağ ↔ üst/alt) otomatik algılanır.
@@ -991,6 +1249,64 @@ export default {
 Tam entegrasyon (Tailwind v4 `@theme`, arbitrary değerler, breakpoint/state, tema renkleri) için:
 **[docs/TAILWIND.md](docs/TAILWIND.md)**.
 
+### Sayfalar Arası Stil (Stil Senkronu)
+
+Bir bileşenin boşluğunu/rengini ayarlayınca **aynı bileşen diğer sayfalarda eski
+hâlinde kalıyordu**; tek yayılım yolu ortak bileşendi (symbol) ve o da tüm
+*içeriği* paylaşır — "aynı görünüm, farklı metin" senaryosunu karşılamaz. Stil
+senkronu yalnız `_tecofStyles`'ı taşır.
+
+İki mod, tek backend ucu (`POST /api/store/editor/apply-styles`):
+
+| Mod | Nerede | Ne yapar |
+|-----|--------|----------|
+| **Tek seferlik** | Stil sekmesi → "Diğer sayfalara uygula…", ⌘K → "Stili Diğer Sayfalara Uygula…", sağ tık menüsü | Seçtiğiniz sayfalardaki eşleşen bileşenlere stili **bir kez** yazar |
+| **Sürekli senkron** | Stil sekmesi → "Bu bileşeni stil kaynağı yap" | Node'a `_tecofStyleSync` yazar; **sayfa her kaydedildiğinde** backend yayılımı kendisi koşar |
+
+**Eşleşme kuralları** (editör ve backend birebir aynı):
+
+1. `node.type` aynı olmalı.
+2. "Yalnız aynı adlı" seçilirse `props._layerName` (Katmanlar'daki ad) ya da
+   `props.name` eşit olmalı. Çok dilli (`[{code,value}]`) `name` ad sayılmaz.
+3. **Ortak bileşenler atlanır** — stilleri master'da yaşar; sayfadaki kopyaya
+   yazılan stil bir sonraki çözümlemede kaybolurdu.
+4. Hedefteki bir node da stil kaynağıysa **ezilmez**, çakışma olarak raporlanır.
+
+**Sınırlar / bilinçli kararlar**
+
+- Stil **değiştirilir, birleştirilmez** — "sildiğim padding neden geri geldi?" olmasın.
+- Yalnız **taslak** yazılır; hedef sayfaları ayrıca yayınlamanız gerekir
+  (yayındaki sayfa `published → changed` olur).
+- Yalnız **aynı tema**. Kaynak sayfa her zaman hedeflerin dışındadır.
+- Modal, o an ekrandaki (**kaydedilmemiş**) stili uygular — kaydetmeyi beklemez.
+- Başka bir sekmede açık olan sayfa değişikliği bir sonraki yüklemede görür.
+- Stil kaynağı node kanvasta **teal** kesikli izle ve seçildiğinde "Stil Kaynağı"
+  rozetiyle işaretlenir (ortak bileşenin mor rozetinin kardeşi).
+
+```tsx
+// Host kendi UI'ını kuracaksa: aynı kurallar dışa açık.
+import {
+  STYLE_SYNC_PROP,        // '_tecofStyleSync'
+  buildStyleMatch,        // node → { type, name? }
+  buildStyleSyncFlag,     // node → _tecofStyleSync değeri
+  isStyleSourceNode,
+  mergeStyleSyncPages,    // sayfa listesi + önizleme → tablo satırları
+} from "@tecof/theme-editor";
+
+const preview = await client.previewApplyStyles({
+  sourcePageId, sourceNodeId, styles, match: { type: "HeroSection" },
+});
+await client.applyStylesToPages({
+  sourcePageId, sourceNodeId, styles,
+  match: { type: "HeroSection" },
+  targetPageIds: ["…"],
+  preview: false,
+});
+```
+
+Backend sözleşmesinin tamamı (payload, yanıt, hata kodları): `docs/STYLE_SYNC.md`
+(tecof-app-backend).
+
 Editör alanlarının tam verimle (FilePond, Doka Editor vs.) düzgün işleyebilmesi için bu CSS dosyasını layout ana dosyanıza dahil edin:
 
 ```tsx
@@ -1013,3 +1329,6 @@ npm run storybook  # Storybook
 ## Lisans
 
 MIT © Tecof
+
+---
+> Son Güncelleme: 08.09.2026 22:05

@@ -7,6 +7,7 @@ import { ColorField } from '../../components/fields/ColorField';
 import type { ThemeColors, ThemeConfig, CustomFont } from '../../types';
 import { deriveDarkColors, cdnFileUrl } from '../../utils';
 import { resolveTheme, THEME_PROP } from './theme';
+import { THEME_COLOR_KEYS } from './colorKeys';
 import { FontSelect } from './FontSelect';
 import { findFontByStack, getBuiltinFont, fontIdFromFamily, type ThemeFont } from './fonts';
 
@@ -18,21 +19,9 @@ const FONT_FORMATS: Record<string, string> = {
   otf: 'opentype',
 };
 
-/* ─── Field metadata ─── */
-
-const COLOR_FIELDS: { key: keyof ThemeColors; label: string }[] = [
-  { key: 'primary', label: 'Ana renk' },
-  { key: 'secondary', label: 'İkincil' },
-  { key: 'accent', label: 'Vurgu' },
-  { key: 'background', label: 'Arka plan' },
-  { key: 'foreground', label: 'Metin' },
-  { key: 'muted', label: 'Soluk' },
-  { key: 'mutedForeground', label: 'Soluk metin' },
-  { key: 'border', label: 'Kenarlık' },
-  { key: 'card', label: 'Kart' },
-  { key: 'cardForeground', label: 'Kart metin' },
-  { key: 'destructive', label: 'Uyarı' },
-];
+/* ─── Field metadata ───
+   Renk satırları `THEME_COLOR_KEYS`'ten (tek kaynak: ColorField tema paleti ve
+   var() çözümlemesi de aynı listeyi okur). */
 
 const SPACING_FIELDS: { key: keyof ThemeConfig['spacing']; label: string }[] = [
   { key: 'containerMaxWidth', label: 'Kapsayıcı maks. (px)' },
@@ -222,7 +211,10 @@ export const ThemeEditor = () => {
       {/* Colors */}
       <div className="tecof-theme-section">
         <div className="tecof-theme-section-title">Renkler</div>
-        {COLOR_FIELDS.map(({ key, label }) => (
+        {/* themeVars={false} ZORUNLU: deriveDarkColors/hexToHsl var() kabul etmez
+            (hexToHsl('var(…)') = {0,0,0}); tema noktası burada hex KOPYALAR
+            ("Kart = Arka plan ile aynı" kullanımı serbest). */}
+        {THEME_COLOR_KEYS.map(({ key, label }) => (
           <div key={key} className="tecof-theme-row">
             <span className="tecof-theme-row-label">{label}</span>
             <div className="tecof-theme-color">
@@ -233,6 +225,11 @@ export const ThemeEditor = () => {
                 value={theme.colors[key]}
                 onChange={(v) => setColor(key, v)}
                 showReset={false}
+                themeVars={false}
+                /* 'Arka plan' satırı kendi zeminine karşı ölçülürdü (1.0:1 → daima
+                   "yetersiz"); zemin rolünde kontrast çipi anlamsız, kapalı. */
+                contrast={key !== 'background'}
+                contrastAgainst={theme.colors.background}
               />
             </div>
           </div>
@@ -249,7 +246,7 @@ export const ThemeEditor = () => {
             <Sparkles size={14} />
             Koyu palet üret
           </button>
-          {COLOR_FIELDS.map(({ key, label }) => (
+          {THEME_COLOR_KEYS.map(({ key, label }) => (
             <div key={key} className="tecof-theme-row">
               <span className="tecof-theme-row-label">{label}</span>
               <div className="tecof-theme-color">
@@ -260,6 +257,11 @@ export const ThemeEditor = () => {
                   value={theme.darkColors?.[key] ?? theme.colors[key]}
                   onChange={(v) => setDarkColor(key, v)}
                   showReset={false}
+                  themeVars={false}
+                  contrast={key !== 'background'}
+                  /* Koyu satırın kontrast zemini koyu arka plandır — açık zemine
+                     göre ölçmek koyu metni "yetersiz" gösterirdi. */
+                  contrastAgainst={theme.darkColors?.background ?? theme.colors.background}
                 />
               </div>
             </div>

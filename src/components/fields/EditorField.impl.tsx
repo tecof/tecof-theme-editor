@@ -52,6 +52,14 @@ import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
 import type { UploadedFile } from '../../types';
 import type { EditorFieldProps, EditorFieldOptions } from './EditorField';
+import { LanguageToolsBar, useLanguageToolsStatus } from './LanguageToolsBar';
+import {
+  fillLanguages,
+  translateLanguages,
+  normalizeLocalizedValues,
+  isEmptyHtml,
+  LANGUAGE_TOOL_MESSAGES,
+} from './languageTools';
 
 /* ─── Extensions preset ─── */
 
@@ -269,16 +277,18 @@ const TipTapInstance = ({
     return () => { isMountedRef.current = false; };
   }, []);
 
-  // Sync external content changes (e.g. when switching language tabs)
+  // Dış içerik değişimini senkronla (undo/redo, AI düzenlemesi, tuval içi
+  // düzenleme). Hızlı Doldur / Çevir aktif dilin string'ini DEĞİŞTİRMEDİĞİ için
+  // buraya girmez → imleç ve odak korunur. `emitUpdate:false` (TipTap v3 resmi
+  // seçeneği) onUpdate'i bastırır; eski `isMountedRef=false + rAF` hilesi rAF
+  // penceresinde gelen tuş vuruşunu yutabiliyordu, o yüzden kaldırıldı.
   const lastExternalContent = useRef(content);
   useEffect(() => {
     if (editor && content !== lastExternalContent.current) {
       lastExternalContent.current = content;
       const currentHtml = editor.getHTML();
       if (currentHtml !== content) {
-        isMountedRef.current = false;
-        editor.commands.setContent(content || '');
-        requestAnimationFrame(() => { isMountedRef.current = true; });
+        editor.commands.setContent(content || '', { emitUpdate: false });
       }
     }
   }, [content, editor]);
@@ -346,15 +356,14 @@ const EditorFieldImpl = ({
   // has an API client (there'd be no collections to bind to otherwise).
   const showBinding = bindable !== false && !!apiClient;
 
+  // Durum mesajı + çeviri bayrağı (LanguageField ile aynı hook)
+  const { status, translating, setTranslating, flash } = useLanguageToolsStatus();
+
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
     // AI-written data can leave a bare string here — never let .find crash the field
-    const current = Array.isArray(value) ? value : [];
-    if (!merchantInfo) return current;
-    return merchantInfo.languages.map(code => {
-      const existing = current.find(v => v.code === code);
-      return existing || { code, value: '' };
-    });
+    if (!merchantInfo) return Array.isArray(value) ? value : [];
+    return normalizeLocalizedValues<string>(value, merchantInfo.languages, () => '');
   }, [value, merchantInfo]);
 
   // Stable refs for callbacks
@@ -362,6 +371,43 @@ const EditorFieldImpl = ({
   valuesRef.current = values;
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+
+  // ── Hızlı Doldur: aktif HTML'i tüm dillere kopyala (üzerine yazar — LanguageField paritesi).
+  // Aktif dil aynı string'i aldığı için TipTapInstance senkron efekti tetiklenmez.
+  const handleFastFill = useCallback(() => {
+    if (!merchantInfo) return;
+    const res = fillLanguages(valuesRef.current, merchantInfo.languages, activeTab, {
+      isEmpty: isEmptyHtml,
+    });
+    if (!res) return; // boş <p></p> — düğme zaten pasif
+    onChangeRef.current(res.values);
+    flash({ text: LANGUAGE_TOOL_MESSAGES.filledAll, type: 'success' }, 2000);
+  }, [merchantInfo, activeTab, flash]);
+
+  // ── Çevir: aktif HTML'i etiketleri koruyarak (isHtml) diğer dillere çevir.
+  // Sonuç yalnız diğer dillere yazılır; aktif editör dokunulmaz kalır.
+  const handleTranslate = useCallback(async () => {
+    if (!merchantInfo) return;
+    setTranslating(true);
+    try {
+      const outcome = await translateLanguages({
+        values: () => valuesRef.current,
+        languages: merchantInfo.languages,
+        sourceCode: activeTab,
+        translate: apiClient.translate.bind(apiClient),
+        isHtml: true,
+        isEmpty: isEmptyHtml,
+      });
+      if (outcome.ok) {
+        onChangeRef.current(outcome.values);
+        flash({ text: LANGUAGE_TOOL_MESSAGES.translated, type: 'success' }, 3000);
+      } else {
+        flash({ text: outcome.message, type: 'error' }, 3000);
+      }
+    } finally {
+      setTranslating(false);
+    }
+  }, [merchantInfo, activeTab, apiClient, flash, setTranslating]);
 
   // Handle editor content change
   const handleChange = useCallback((code: string, html: string) => {
@@ -381,6 +427,9 @@ const EditorFieldImpl = ({
   if (!merchantInfo) return null;
 
   const { languages, defaultLanguage } = merchantInfo;
+  // Boşluk tanımı HTML'e göre: TipTap boş belgede <p></p> üretir.
+  const hasContent = !isEmptyHtml(values.find(v => v.code === activeTab)?.value || '');
+  const hasMultipleLanguages = languages.length > 1;
 
   return (
     <div className="tecof-lang-container tecof-editor-field">
@@ -409,6 +458,18 @@ const EditorFieldImpl = ({
           </div>
         );
       })}
+
+      {/* Araç çubuğu: Hızlı Doldur + Çevir. Çevir yalnız apiClient varken (showBinding kapısıyla aynı mantık). */}
+      {!readOnly && hasMultipleLanguages && (
+        <LanguageToolsBar
+          onFill={handleFastFill}
+          fillDisabled={!hasContent}
+          onTranslate={apiClient ? handleTranslate : undefined}
+          translateDisabled={!hasContent}
+          translating={translating}
+          status={status}
+        />
+      )}
     </div>
   );
 };

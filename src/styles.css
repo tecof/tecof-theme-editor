@@ -175,180 +175,27 @@
   outline: none;
 }
 
-/* ─── ColorField ─── */
-.tecof-color-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-}
+/* ─── ColorField v2 (`tecof-cp-*`) ───
+   Eski `.tecof-color-*` ALAN kuralları (ColorField + Popover bloğu) silindi:
+   Studio stil editörünün ColorPicker'ı aynı sınıf adlarını (tecof-color-hue,
+   tecof-color-hex-input) farklı ölçülerle tanımlıyordu ve aynı özgüllükte sonraki
+   kural kazandığı için alan seçicisi bozuluyordu. v2 kendi ad alanını kullanır;
+   Studio'nun `.tecof-color-*` kurallarına dokunulmaz. Yalnız açık chrome. */
 
-.tecof-color-preview-row {
+.tecof-cp {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.tecof-color-swatch {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  border: 2px solid var(--tecof-border);
-  cursor: pointer;
-  flex-shrink: 0;
-  overflow: hidden;
-  padding: 0;
-  /* Checkerboard so alpha shows through the fill layer. */
-  background-color: #fff;
-  background-image:
-    linear-gradient(45deg, #d4d4d8 25%, transparent 25%),
-    linear-gradient(-45deg, #d4d4d8 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #d4d4d8 75%),
-    linear-gradient(-45deg, transparent 75%, #d4d4d8 75%);
-  background-size: 10px 10px;
-  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.tecof-color-swatch:disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.tecof-color-swatch.focused {
-  border-color: var(--tecof-accent);
-  box-shadow: var(--tecof-focus-ring);
-}
-
-.tecof-color-swatch-fill {
-  position: absolute;
-  inset: 0;
-  display: block;
-}
-
-.tecof-color-hex-input {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 12px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--tecof-text);
-  background: var(--tecof-surface);
-  border: var(--tecof-line);
-  border-radius: var(--tecof-radius);
-  outline: none;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  letter-spacing: 0.5px;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tecof-color-hex-input:focus {
-  border-color: var(--tecof-accent);
-  box-shadow: var(--tecof-focus-ring);
-}
-
-.tecof-color-hex-input.invalid {
-  border-color: var(--tecof-danger);
-  box-shadow: var(--tecof-danger-ring);
-}
-
-.tecof-color-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  color: var(--tecof-text-muted);
-  background: var(--tecof-bg);
-  border: var(--tecof-line);
-  border-radius: var(--tecof-radius);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.tecof-color-action-btn:hover {
-  background: var(--tecof-border);
-  color: var(--tecof-text-soft);
-}
-
-/* ─── ColorField · Popover ─── */
-.tecof-color-popover {
-  position: fixed;
-  /* Node ayarları modalının (99999) üstünde kalmalı — drawer bandı */
-  z-index: 1000000;
-  width: 244px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px;
-  background: var(--tecof-surface);
-  border: var(--tecof-line);
-  border-radius: var(--tecof-radius-lg);
-  box-shadow: var(--tecof-shadow-lg);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.tecof-color-sv {
-  position: relative;
-  width: 100%;
-  height: 140px;
-  border-radius: var(--tecof-radius);
-  overflow: hidden;
-  cursor: crosshair;
-  touch-action: none;
-}
-
-.tecof-color-sv-white {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
-}
-
-.tecof-color-sv-black {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, #000, rgba(0, 0, 0, 0));
-}
-
-.tecof-color-sv-thumb {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.tecof-color-sliders {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.tecof-color-track {
-  position: relative;
-  height: 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  touch-action: none;
-}
-
-.tecof-color-hue {
-  background: linear-gradient(to right,
-    #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%,
-    #0000ff 67%, #ff00ff 83%, #ff0000 100%);
-}
-
-.tecof-color-alpha {
+/* Dama zemini: alpha görünsün diye dolgu katmanının ALTINDA (tetikleyici, önizleme,
+   opaklık rayı, chip noktası). Yarı saydam noktalar ayrı kural (aşağıda). */
+.tecof-cp-trigger,
+.tecof-cp-preview,
+.tecof-cp-track.is-alpha,
+.tecof-cp-chip-dot {
   background-color: #fff;
   background-image:
     linear-gradient(45deg, #d4d4d8 25%, transparent 25%),
@@ -359,84 +206,734 @@
   background-position: 0 0, 0 4px, 4px -4px, -4px 0;
 }
 
-.tecof-color-alpha-fill {
+/* ── Tetikleyici satırı ── */
+.tecof-cp-trigger {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.tecof-cp-trigger:hover {
+  border-color: var(--tecof-border-strong);
+}
+
+.tecof-cp-trigger.is-open,
+.tecof-cp-trigger:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tecof-cp-trigger-fill {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  display: block;
+  transition: background-color 120ms ease;
 }
 
-.tecof-color-track-thumb {
-  position: absolute;
-  top: 50%;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+.tecof-cp-input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  font-family: var(--tecof-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  color: var(--tecof-text);
   background: var(--tecof-surface);
-  border: 2px solid var(--tecof-surface);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), var(--tecof-shadow-sm);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.tecof-color-swatch-row {
+.tecof-cp-input::placeholder {
+  color: var(--tecof-text-subtle);
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.tecof-cp-input:focus-visible {
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-input.is-invalid {
+  border-color: var(--tecof-danger);
+  box-shadow: var(--tecof-danger-ring);
+}
+
+.tecof-cp-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tema bağı / bilinmeyen CSS değeri çipi */
+.tecof-cp-chip {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 8px;
+  box-sizing: border-box;
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  font-size: 12px;
+  color: var(--tecof-text);
+  transition: background-color 120ms ease;
+}
+
+.tecof-cp-chip-dot {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+}
+
+.tecof-cp-chip-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.tecof-cp-chip-hint {
+  flex-shrink: 0;
+  padding-right: 4px;
+  font-size: 10px;
+  color: var(--tecof-text-subtle);
+}
+
+.tecof-cp-chip-unlink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  padding: 0;
+  color: var(--tecof-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.tecof-cp-chip-unlink:hover {
+  background: var(--tecof-border);
+  color: var(--tecof-text);
+}
+
+.tecof-cp-chip-unlink:focus-visible {
+  outline: none;
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-chip-unlink:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tecof-cp-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0;
+  color: var(--tecof-text-muted);
+  background: var(--tecof-bg);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.tecof-cp-action:hover {
+  background: var(--tecof-border);
+  color: var(--tecof-text-soft);
+}
+
+.tecof-cp-action:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Popover ── */
+@keyframes tecof-cp-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tecof-cp-popover {
+  position: fixed;
+  /* Node ayarları modalı (99999) ve drawer kartının üstünde kalmalı */
+  z-index: 1000000;
+  width: 264px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  color: var(--tecof-text);
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-lg);
+  box-shadow: var(--tecof-shadow-lg);
+  font-family: 'Inter', system-ui, sans-serif;
+  animation: tecof-cp-in 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top left;
+}
+
+.tecof-cp-popover[data-side="top"] {
+  transform-origin: bottom left;
+}
+
+.tecof-cp-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 
-.tecof-color-eyedropper {
-  display: flex;
+.tecof-cp-formats {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--tecof-surface-2);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+}
+
+.tecof-cp-format {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+  color: var(--tecof-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.tecof-cp-format:hover {
+  color: var(--tecof-text);
+}
+
+.tecof-cp-format.is-active {
+  background: var(--tecof-surface);
+  color: var(--tecof-text);
+  box-shadow: var(--tecof-shadow-sm);
+}
+
+.tecof-cp-format:focus-visible {
+  outline: none;
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-eyedropper {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
   flex-shrink: 0;
+  padding: 0;
   color: var(--tecof-text-muted);
   background: var(--tecof-surface);
   border: var(--tecof-line);
   border-radius: var(--tecof-radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
 }
 
-.tecof-color-eyedropper:hover {
+.tecof-cp-eyedropper:hover {
   color: var(--tecof-text);
   border-color: var(--tecof-border-strong);
   background: var(--tecof-surface-2);
 }
 
-.tecof-color-swatches {
+.tecof-cp-eyedropper:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+/* SV alanı (odaklanabilir iki boyutlu kaydırıcı) */
+.tecof-cp-sv {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  border-radius: var(--tecof-radius);
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+.tecof-cp-sv:focus-visible {
+  box-shadow: var(--tecof-focus-ring-strong), inset 0 0 0 1px var(--tecof-accent);
+}
+
+.tecof-cp-sv-white {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0));
+}
+
+.tecof-cp-sv-black {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, #000, rgba(0, 0, 0, 0));
+}
+
+/* Başparmaklar: KONUMDA geçiş yok (left/top anlık), yalnız ölçek 100 ms. */
+.tecof-cp-sv-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: transform 100ms ease;
+}
+
+.tecof-cp-sv:hover .tecof-cp-sv-thumb,
+.tecof-cp-sv:active .tecof-cp-sv-thumb,
+.tecof-cp-sv:focus-visible .tecof-cp-sv-thumb {
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.tecof-cp-sv:focus-visible .tecof-cp-sv-thumb {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(47, 124, 246, 0.35);
+}
+
+/* Kaydırıcılar */
+.tecof-cp-sliders {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.tecof-cp-preview {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: var(--tecof-line);
+  overflow: hidden;
+}
+
+.tecof-cp-preview-fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  transition: background-color 120ms ease;
+}
+
+.tecof-cp-tracks {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tecof-cp-track {
+  position: relative;
+  height: 12px;
+  border-radius: var(--tecof-radius-pill);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+.tecof-cp-track.is-hue {
+  background: linear-gradient(to right,
+    #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%,
+    #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+}
+
+.tecof-cp-track-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--tecof-radius-pill);
+}
+
+.tecof-cp-thumb {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), var(--tecof-shadow-sm);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: transform 100ms ease;
+}
+
+.tecof-cp-track:hover .tecof-cp-thumb,
+.tecof-cp-track:active .tecof-cp-thumb,
+.tecof-cp-track:focus-visible .tecof-cp-thumb {
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.tecof-cp-track:focus-visible {
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-track:focus-visible .tecof-cp-thumb {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(47, 124, 246, 0.35);
+}
+
+/* Kanal girdileri */
+.tecof-cp-channels {
+  display: flex;
   gap: 6px;
 }
 
-.tecof-color-swatch-dot {
-  width: 20px;
-  height: 20px;
+.tecof-cp-channel-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tecof-cp-channel-wrap.is-wide {
+  flex: 3 1 0;
+}
+
+.tecof-cp-channel {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  text-align: center;
+  font-family: var(--tecof-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  color: var(--tecof-text);
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
   border-radius: var(--tecof-radius-sm);
-  border: 1px solid var(--tecof-border);
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.1s ease;
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.tecof-color-swatch-dot:hover {
-  transform: scale(1.12);
+.tecof-cp-channel-wrap.is-wide .tecof-cp-channel {
+  text-align: left;
 }
 
-.tecof-color-recent {
+.tecof-cp-channel:focus-visible {
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-channel.is-invalid {
+  border-color: var(--tecof-danger);
+  box-shadow: var(--tecof-danger-ring);
+}
+
+.tecof-cp-channel-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--tecof-text-subtle);
+}
+
+/* Bölümler ve nokta satırları (roving tabindex) */
+.tecof-cp-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.tecof-color-recent-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--tecof-text-subtle);
-  text-transform: uppercase;
+/* 11px + muted: 10px subtle (#a1a1aa) beyaz üstünde ≈2.3:1 idi, 3:1 altı. */
+.tecof-cp-section-title {
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-cp-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 18 px + 4 px aralık: 11 nokta (tema/ton) = 238 px → 240 px iç genişlikte TEK satır. */
+.tecof-cp-dot {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 120ms ease;
+}
+
+.tecof-cp-dot:hover {
+  transform: scale(1.1);
+}
+
+.tecof-cp-dot:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-dot.is-active {
+  box-shadow: 0 0 0 2px var(--tecof-surface), 0 0 0 4px var(--tecof-accent);
+}
+
+/* Roving tabindex durağı aktif noktadır: odak halkası aktif halkayla aynı olursa
+   satıra klavyeyle girildiği anlaşılmaz (WCAG 2.4.7) — dış outline eklenir. */
+.tecof-cp-dot.is-active:focus-visible {
+  box-shadow: 0 0 0 2px var(--tecof-surface), 0 0 0 4px var(--tecof-accent);
+  outline: 2px solid var(--tecof-accent);
+  outline-offset: 4px;
+}
+
+/* Yarı saydam nokta: dolgu `--tecof-cp-fill` ile gelir (inline), dama altında kalır. */
+.tecof-cp-dot.is-alpha {
+  background-color: #fff;
+  background-image:
+    linear-gradient(var(--tecof-cp-fill), var(--tecof-cp-fill)),
+    linear-gradient(45deg, #d4d4d8 25%, transparent 25%),
+    linear-gradient(-45deg, #d4d4d8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4d4d8 75%),
+    linear-gradient(-45deg, transparent 75%, #d4d4d8 75%);
+  background-size: 100% 100%, 6px 6px, 6px 6px, 6px 6px, 6px 6px;
+  background-position: 0 0, 0 0, 0 3px, 3px -3px, -3px 0;
+}
+
+/* Tam şeffaf nokta: dama + kırmızı çapraz çizgi. */
+.tecof-cp-dot.is-transparent {
+  background-image:
+    linear-gradient(to top right, transparent 45%, var(--tecof-danger) 45%, var(--tecof-danger) 55%, transparent 55%),
+    linear-gradient(45deg, #d4d4d8 25%, transparent 25%),
+    linear-gradient(-45deg, #d4d4d8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4d4d8 75%),
+    linear-gradient(-45deg, transparent 75%, #d4d4d8 75%);
+}
+
+.tecof-cp-hues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 22 hue × 16 px → iki satır (11 × 16 + 10 × 4 = 216 px). */
+.tecof-cp-hue {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 100ms ease, box-shadow 120ms ease;
+}
+
+.tecof-cp-hue:hover {
+  transform: scale(1.1);
+}
+
+.tecof-cp-hue:focus-visible {
+  outline: none;
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+.tecof-cp-hue.is-active {
+  box-shadow: 0 0 0 2px var(--tecof-surface), 0 0 0 3.5px var(--tecof-text);
+}
+
+.tecof-cp-hue.is-active:focus-visible {
+  box-shadow: 0 0 0 2px var(--tecof-surface), 0 0 0 3.5px var(--tecof-text);
+  outline: 2px solid var(--tecof-accent);
+  outline-offset: 4px;
+}
+
+/* `.tecof-cp-shades` `.tecof-cp-dots` ile birlikte kullanılır; ek ölçü gerekmez. */
+
+/* Kontrast çipleri */
+.tecof-cp-contrast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tecof-cp-contrast-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 6px 0 0;
+  box-sizing: border-box;
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tecof-text-muted);
+}
+
+.tecof-cp-contrast-sample {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  border-radius: 5px 0 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tecof-cp-contrast-ratio {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rozetin kendisi kontrastı geçmeli: 10px beyaz metin #10b981 üstünde ≈2.5:1 idi.
+   Koyu metin + açık zemin çiftleri (success/warning token'ları) ve 11px. */
+.tecof-cp-contrast-badge {
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--tecof-text);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.tecof-cp-contrast-badge.is-aaa,
+.tecof-cp-contrast-badge.is-aa {
+  color: var(--tecof-success-text);
+  background: var(--tecof-success-bg);
+  border-color: transparent;
+}
+
+.tecof-cp-contrast-badge.is-large {
+  color: var(--tecof-warning-text);
+  background: var(--tecof-warning-bg);
+  border-color: transparent;
+}
+
+.tecof-cp-contrast-badge.is-fail {
+  color: var(--tecof-text-muted);
+  background: var(--tecof-surface-2);
+  border: 1px solid var(--tecof-border);
+}
+
+/* Alt satır: kontrast + Şeffaf/Temizle; sığmazsa düğmeler alt satıra iner. */
+.tecof-cp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+}
+
+.tecof-cp-foot-actions {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.tecof-cp-foot-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tecof-text-muted);
+  background: var(--tecof-surface);
+  border: var(--tecof-line);
+  border-radius: var(--tecof-radius-sm);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.tecof-cp-foot-btn:hover {
+  color: var(--tecof-text);
+  background: var(--tecof-surface-2);
+}
+
+.tecof-cp-foot-btn:focus-visible {
+  outline: none;
+  border-color: var(--tecof-accent);
+  box-shadow: var(--tecof-focus-ring-strong);
+}
+
+/* Hareket azaltma: açılış animasyonu ve tüm tecof-cp-* geçişleri kapalı. */
+@media (prefers-reduced-motion: reduce) {
+  .tecof-cp-popover {
+    animation: none;
+  }
+  [class^="tecof-cp-"],
+  [class*=" tecof-cp-"] {
+    transition: none;
+  }
 }
 
 /* ─── EditorField ─── */
@@ -1020,6 +1517,11 @@
 
 .tecof-link-change-btn:hover {
   text-decoration: underline;
+}
+
+/* LinkField içinde dil araç çubuğu: kap zaten 8px gap veriyor, çift boşluk olmasın */
+.tecof-link-container > .tecof-lang-action-bar {
+  margin-top: 0;
 }
 
 .tecof-link-badge-entity {
@@ -9466,7 +9968,7 @@ html.tecof-has-js .tecof-reveal-zoom:not(.is-visible) { transform: scale(0.92); 
    Editördeki TÜM pencereler bu kabuğu kullanır (Radix Dialog modal={false},
    alttan yükselen kart — vaul DEĞİL, bkz. src/studio/ui/StudioDrawer.tsx).
    Katman: overlay 99998 / kart 99999 — eski .tecof-modal-overlay bandı; drawer
-   içinden açılan portallı popover'lar (.tecof-color-popover / .tecof-icon-dropdown
+   içinden açılan portallı popover'lar (.tecof-cp-popover / .tecof-icon-dropdown
    / .tecof-bind-popover / .tecof-font-menu — hepsi 1000000), MediaDrawer ve
    LinkPicker (999999+), komut paleti (1000000) üstte kalır.
    Üst üste iki drawer'da DOM sırası YETMEZ (alttaki kart 99999 > üstteki scrim

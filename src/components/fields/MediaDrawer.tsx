@@ -209,7 +209,6 @@ const StockPanel = ({ onImported }: { onImported: (file: UploadedFile) => void }
               title={photo.alt}
             >
               <div className="tecof-upload-gallery-thumb">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={photo.thumbUrl} alt={photo.alt} loading="lazy" />
                 {importingId === photo.id && (
                   <div className="tecof-stock-importing">

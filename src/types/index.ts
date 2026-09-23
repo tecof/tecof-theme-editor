@@ -1,3 +1,5 @@
+import type { PoweredByBandData } from '../components/poweredBy/resolve';
+
 /* ─── Color Types ─── */
 
 export interface ThemeColors {
@@ -678,6 +680,13 @@ export interface MerchantInfoData {
   isUnderConstruction?: boolean;
   /** "ecommerce" | "website" — link seçici e-ticaret sekmelerini buna göre gösterir. */
   productType?: 'ecommerce' | 'website';
+  /** Paket hakkına göre EFEKTİF değer; false = removeBranding (backend band üretmez). */
+  showPoweredBy?: boolean;
+  /** Hak yok / ayar kapalı / şablon hatalı → null; eski backend → undefined. */
+  poweredBy?: PoweredByBandData | null;
+  /** Admin askısı — vitrin içeriği basılmaz, band da basılmaz. */
+  isSuspended?: boolean;
+  suspendMessage?: string | null;
 }
 
 /* ─── Language Field Value ─── */
@@ -744,6 +753,24 @@ export interface LocalizedLinkFieldValue {
   value: LinkFieldValue;
 }
 
+/* ─── Çok dilli medya (LocalizedUploadField) ─── */
+
+/**
+ * Dil başına dosya listesi: `[{ code, value: UploadedFile[] }]`. Boş dizi =
+ * bu dilde dosya yok → yayında varsayılan dile düşer. Tanım ve çözümleyiciler
+ * `utils/localizedUpload.ts`'te (React'siz; tema render'ı da aynı modülü kullanır).
+ */
+export type { LocalizedUploadFieldValue } from '../utils/localizedUpload';
+
+/* Çok dilli alan dil araçları tipleri — kaynak: components/fields/languageTools.ts (yalnız tip, derlemede silinir) */
+export type {
+  LocalizedEntry,
+  FillOptions,
+  FillResult,
+  TranslateFn,
+  TranslateOutcome,
+} from '../components/fields/languageTools';
+
 /* ─── Tecof Studio Types ─── */
 
 export interface TecofNode {
@@ -756,3 +783,6 @@ export interface TecofDocument {
   content: TecofNode[];
   zones: Record<string, TecofNode[]>;
 }
+
+/* ─── Powered by bandı (backend poweredByBand.ts çıktısı) ─── */
+export type { PoweredByBandData } from '../components/poweredBy/resolve';

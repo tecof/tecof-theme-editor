@@ -306,7 +306,9 @@ export const RepeaterField = ({
     const row: Record<string, any> = {};
     for (const [key, fieldDef] of Object.entries(subFields)) {
       const ft = (fieldDef as any)?._fieldType;
-      if (ft === 'language' || ft === 'editor' || ft === 'upload' || ft === 'link') {
+      if (ft === 'language' || ft === 'editor' || ft === 'upload' || ft === 'link' || ft === 'localized-upload') {
+        // Dil/medya alanlarının sözleşmesi dizidir; '' başlangıcı MCP validate_document
+        // ve AI şemasında "dizi bekleniyordu, string geldi" tutarsızlığı yaratırdı.
         row[key] = [];
       } else if (ft === 'color') {
         row[key] = '#000000';

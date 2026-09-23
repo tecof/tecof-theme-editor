@@ -4,9 +4,16 @@ import { useLanguages } from './useLanguages';
 import { useActiveLanguage } from '../../studio/language/LanguageContext';
 import { useTecof } from '../TecofProvider';
 import type { LanguageFieldValue } from '../../types';
-import { Languages, Copy, Loader2 } from 'lucide-react';
 import { FieldLabel } from './FieldLabel';
 import { FieldErrorBoundary } from './FieldErrorBoundary';
+import { LanguageToolsBar, useLanguageToolsStatus } from './LanguageToolsBar';
+import {
+  fillLanguages,
+  translateLanguages,
+  normalizeLocalizedValues,
+  isEmptyText,
+  LANGUAGE_TOOL_MESSAGES,
+} from './languageTools';
 
 /* ─── Shared Tab Bar Component ─── */
 
@@ -203,18 +210,14 @@ export const LanguageField = ({
   const activeTab = globalLang ? globalLang.activeLanguage : localActiveTab;
   const setActiveTab = globalLang ? globalLang.setActiveLanguage : localSetActiveTab;
   const { apiClient } = useTecof();
-  const [translating, setTranslating] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  // Durum mesajı + çeviri bayrağı ortak hook'ta; zamanlayıcı unmount'ta temizlenir.
+  const { status, translating, setTranslating, flash } = useLanguageToolsStatus();
 
   // Ensure values array has entries for all languages
   const values = useMemo<LanguageFieldValue[]>(() => {
     // AI-written data can leave a bare string here — never let .find crash the field
-    const current = Array.isArray(value) ? value : [];
-    if (!merchantInfo) return current;
-    return merchantInfo.languages.map(code => {
-      const existing = current.find(v => v.code === code);
-      return existing || { code, value: '' };
-    });
+    if (!merchantInfo) return Array.isArray(value) ? value : [];
+    return normalizeLocalizedValues<string>(value, merchantInfo.languages, () => '');
   }, [value, merchantInfo]);
 
   // Keep a ref to current values for callbacks
@@ -243,56 +246,41 @@ export const LanguageField = ({
     return valuesRef.current.find(v => v.code === activeTab)?.value || '';
   }, [activeTab]);
 
-  // ── Fast Fill: copy active text to ALL languages ──
+  // ── Hızlı Doldur: aktif metni TÜM dillere kopyala (üzerine yazar — parite) ──
   const handleFastFill = useCallback(() => {
-    const text = getCurrentText();
-    if (!text) return;
-
     if (!merchantInfo) return;
-    const updated = merchantInfo.languages.map(code => ({
-      code,
-      value: text,
-    }));
-    onChangeRef.current(updated);
-    setStatusMsg({ text: 'Tüm dillere kopyalandı', type: 'success' });
-    setTimeout(() => setStatusMsg(null), 2000);
-  }, [getCurrentText, merchantInfo]);
+    const res = fillLanguages(valuesRef.current, merchantInfo.languages, activeTab, {
+      isEmpty: isEmptyText,
+    });
+    if (!res) return; // kaynak boş — düğme zaten pasif
+    onChangeRef.current(res.values);
+    flash({ text: LANGUAGE_TOOL_MESSAGES.filledAll, type: 'success' }, 2000);
+  }, [merchantInfo, activeTab, flash]);
 
-  // ── Translate: translate active text to ALL other languages ──
+  // ── Çevir: aktif metni diğer dillere çevir ──
   const handleTranslate = useCallback(async () => {
-    const text = getCurrentText();
-    if (!text || !merchantInfo) return;
-
-    const otherLocales = merchantInfo.languages.filter(l => l !== activeTab);
-    if (otherLocales.length === 0) return;
-
+    if (!merchantInfo) return;
     setTranslating(true);
-    setStatusMsg(null);
-
     try {
-      const res = await apiClient.translate(text, activeTab, otherLocales, isHtml);
-      if (res.success && Array.isArray(res.data)) {
-        const updated = [...valuesRef.current];
-        for (const t of res.data) {
-          const idx = updated.findIndex(v => v.code === t.code);
-          if (idx >= 0) {
-            updated[idx] = { ...updated[idx], value: t.value };
-          } else {
-            updated.push({ code: t.code, value: t.value });
-          }
-        }
-        onChangeRef.current(updated);
-        setStatusMsg({ text: 'Çeviri tamamlandı', type: 'success' });
+      // valuesRef getter: cevap gelene kadar yazılan tuşlar merge'de korunur.
+      const outcome = await translateLanguages({
+        values: () => valuesRef.current,
+        languages: merchantInfo.languages,
+        sourceCode: activeTab,
+        translate: apiClient.translate.bind(apiClient),
+        isHtml,
+        isEmpty: isEmptyText,
+      });
+      if (outcome.ok) {
+        onChangeRef.current(outcome.values);
+        flash({ text: LANGUAGE_TOOL_MESSAGES.translated, type: 'success' }, 3000);
       } else {
-        setStatusMsg({ text: res.message || 'Çeviri hatası', type: 'error' });
+        flash({ text: outcome.message, type: 'error' }, 3000);
       }
-    } catch (err: any) {
-      setStatusMsg({ text: err.message || 'Çeviri hatası', type: 'error' });
     } finally {
       setTranslating(false);
-      setTimeout(() => setStatusMsg(null), 3000);
     }
-  }, [getCurrentText, merchantInfo, activeTab, apiClient, isHtml]);
+  }, [merchantInfo, activeTab, apiClient, isHtml, flash, setTranslating]);
 
   if (loading) return <FieldLoading />;
   if (error && !merchantInfo) return <div className="tecof-lang-error">{error}</div>;
@@ -341,39 +329,16 @@ export const LanguageField = ({
         );
       })}
 
-      {/* Action Bar: Fast Fill + Translate */}
+      {/* Araç çubuğu: Hızlı Doldur + Çevir (ortak bileşen) */}
       {!readOnly && hasMultipleLanguages && (
-        <div className="tecof-lang-action-bar">
-          <button
-            type="button"
-            className="tecof-lang-action-btn"
-            onClick={handleFastFill}
-            disabled={!hasText}
-            title="Aktif sekmedeki metni tüm dillere kopyala"
-          >
-            <Copy size={12} /> Hızlı Doldur
-          </button>
-          <button
-            type="button"
-            className="tecof-lang-action-btn"
-            onClick={handleTranslate}
-            disabled={!hasText || translating}
-            title="Aktif sekmedeki metni diğer dillere çevir"
-          >
-            {translating ? (
-              <Loader2 size={12} className="tecof-spin" />
-            ) : (
-              <Languages size={12} />
-            )}
-            {translating ? 'Çevriliyor...' : 'Çevir'}
-          </button>
-
-          {statusMsg && (
-            <span className={`tecof-lang-status-msg ${statusMsg.type === 'success' ? 'success' : 'error'}`}>
-              {statusMsg.text}
-            </span>
-          )}
-        </div>
+        <LanguageToolsBar
+          onFill={handleFastFill}
+          fillDisabled={!hasText}
+          onTranslate={handleTranslate}
+          translateDisabled={!hasText}
+          translating={translating}
+          status={status}
+        />
       )}
     </div>
   );

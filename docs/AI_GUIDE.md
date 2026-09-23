@@ -156,14 +156,20 @@ Yerleşik alan tipleri:
 Gelişmiş alan factory'leri:
 
 - `createLanguageField`: Merchant dilleri ve çeviri
-- `createEditorField`: TipTap zengin metin editörü
+- `createEditorField`: TipTap zengin metin editörü; çok dilli — Hızlı Doldur / Çevir araçları (aktif dilin imleci korunur)
 - `createUploadField`: Medya kütüphanesi, FilePond, sıkıştırma, Doka ve
   **odak noktası** (görsel tile'ında nişangâh düğmesi → `focalPoint` `{x,y}`
   yüzde olarak dosyanın içine yazılır; `TecofPicture` bunu `object-position`
   olarak uygular, yani `object-fit: cover` kırpmalarında o nokta kadrajda
   kalır. Odak yoksa/merkezdeyse DOM çıktısı değişmez.)
-- `createLinkField`: Merchant sayfası veya manuel URL seçimi
-- `createColorField`: HEX, alpha, swatch ve EyeDropper
+- `createLocalizedUploadField`: Dil sekmeli medya alanı; değer `[{code, value: UploadedFile[]}]`,
+  boş dil yayında varsayılan dile düşer (`resolveLocalizedUpload` / `resolveLocalizedUploadFile`).
+  Seçenekleri `createUploadField` ile aynı; "Hızlı Doldur" yalnız boş dillere kopyalar, Çevir yok.
+- `createLinkField`: Merchant sayfası veya manuel URL seçimi; Hızlı Doldur aktif sekmedeki bağlantıyı yalnız boş dillere kopyalar
+- `createColorField`: HEX/RGB/HSL, alpha, tema paleti (var() bağlama seçeneği), Tailwind paleti, son kullanılan, kontrast, EyeDropper.
+  **Değer sözleşmesi:** `''` | `#rrggbb` | `#rrggbbaa` (yalnız `showOpacity: true`) | `var(--theme-color-<kebab>)` (yalnız `themeVars: true`).
+  Varsayılan `themeVars: false` → tema noktası hex KOPYALAR (açık palet değeri); hex matematiği yapan
+  tema kodu `var()` beklememeli, `var()` bekleyen tema `themeVars: true` vermeli. Tanınmayan değer korunur.
 - `createCodeEditorField`: Monaco kod editörü
 - `createRepeaterField`: Tekrarlanan satırlar
 - `createCmsCollectionField`: CMS koleksiyon ve alan eşleme
@@ -212,6 +218,24 @@ seçicideki **Yenile** ile listeyi tazeler. Arama kutusu doluyken bu bağlantı
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render
 sırasında ham kayıt `cmsData` prop'u ile verilmelidir.
+
+## Powered by bandı
+
+Admin'in "Powered by Tecof" bandı tema kodunda ELLE yazılmaz; paket bileşeni kullanılır:
+
+```tsx
+import { PoweredBy } from "@tecof/theme-editor";
+
+// Layout (SSR): sunucudaki merchant-info ile ilk boyama, istemci fetch'i yok
+<PoweredBy initialData={merchantInfo.poweredBy} defaultLanguage={merchantInfo.defaultLanguage} locale={locale} />
+// <TecofProvider> içinde: kendisi çeker (SWR, 10 dk tekilleştirme)
+<PoweredBy />
+```
+
+Kurallar: `initialData` verildiğinde `defaultLanguage` (ya da `locale`) da verilir — aksi halde
+sunucu ilk dile düşer ve dil flaşı olur. `showPoweredBy=false`, askı ve yapım aşamasında
+bileşen hiçbir şey basmaz; band CSS/JS'i bileşen yönetir (`[data-powered-by]` sabit rozetini
+bandın kendi stili gizler). Kendi işaretlemesi gereken tema `usePoweredBy()` kancasını kullanır.
 
 ## Repeat zone (öğe şablonu)
 

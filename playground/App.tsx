@@ -268,6 +268,7 @@ fields: {
   }),
   link: createLinkField({ label: "Bağlantı", showTarget: true }),
   color: createColorField({ label: "Vurgu", showOpacity: true }),
+  accent: createColorField({ label: "Tema vurgu", themeVars: true }),
   code: createCodeEditorField({
     label: "Özel kod",
     defaultLanguage: "html",
@@ -1026,7 +1027,7 @@ NEXT_PUBLIC_TECOF_CDN_URL=https://cdn.example.com`}
               ['EditorField', 'rich text', 'TipTap tabanlı WYSIWYG editör'],
               ['UploadField', 'UploadedFile[]', 'Kütüphane, upload, referans ve görsel düzenleme'],
               ['LinkField', 'LinkFieldValue', 'Sayfa seçici veya manuel URL'],
-              ['ColorField', 'hex', 'Hue, alpha, swatch, eyedropper ve geçmiş'],
+              ['ColorField', 'hex', 'HEX/RGB/HSL, alpha, tema + Tailwind paleti, kontrast, EyeDropper'],
               ['CodeEditorField', 'string', 'Monaco tabanlı kod editörü'],
               ['RepeaterField', 'array', 'Tekrarlanan veri satırları'],
               ['IconField', 'string/object', 'İkon seçimi'],

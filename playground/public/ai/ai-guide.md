@@ -110,6 +110,7 @@ const config = {
     },
   },
   templates: [],
+  pageTemplates: [],
   permissions: {
     drag: true,
     delete: true,
@@ -126,6 +127,15 @@ Component config; `fields`, `defaultProps`, `render`, `inline`,
 `acceptsChildren`, `maxItems`, `allowedParents`, `permissions`,
 `resolvePermissions`, `resolveFields` ve `resolveData` seçeneklerini
 destekler.
+
+`templates` TEK bölüm ekler (`SectionTemplate`); `pageTemplates` TÜM sayfayı
+kurar (`PageTemplate`: `id`, `label`, `description?`, `thumbnail?`,
+`keywords?`, `sections[]`, `previewUrl?`). Sayfa şablonuna tıklamak bölümleri
+doğrudan eklemez: önce onay drawer'ı açılır. `previewUrl` verilmişse drawer o
+adresi iframe'de GERÇEK çıktı olarak gösterir (göreli olabilir:
+`/preview-template/<id>` — editörün çalıştığı origin'e göre çözülür); yoksa
+bölümlerin canlı önizlemesi üst üste dizilir. Onaydan sonra tüm id'ler taze
+üretilir; ekleme tek commit ve tek "Geri Al"dır.
 
 ## Alanlar
 
@@ -146,10 +156,20 @@ Yerleşik alan tipleri:
 Gelişmiş alan factory'leri:
 
 - `createLanguageField`: Merchant dilleri ve çeviri
-- `createEditorField`: TipTap zengin metin editörü
-- `createUploadField`: Medya kütüphanesi, FilePond, sıkıştırma ve Doka
-- `createLinkField`: Merchant sayfası veya manuel URL seçimi
-- `createColorField`: HEX, alpha, swatch ve EyeDropper
+- `createEditorField`: TipTap zengin metin editörü; çok dilli — Hızlı Doldur / Çevir araçları (aktif dilin imleci korunur)
+- `createUploadField`: Medya kütüphanesi, FilePond, sıkıştırma, Doka ve
+  **odak noktası** (görsel tile'ında nişangâh düğmesi → `focalPoint` `{x,y}`
+  yüzde olarak dosyanın içine yazılır; `TecofPicture` bunu `object-position`
+  olarak uygular, yani `object-fit: cover` kırpmalarında o nokta kadrajda
+  kalır. Odak yoksa/merkezdeyse DOM çıktısı değişmez.)
+- `createLocalizedUploadField`: Dil sekmeli medya alanı; değer `[{code, value: UploadedFile[]}]`,
+  boş dil yayında varsayılan dile düşer (`resolveLocalizedUpload` / `resolveLocalizedUploadFile`).
+  Seçenekleri `createUploadField` ile aynı; "Hızlı Doldur" yalnız boş dillere kopyalar, Çevir yok.
+- `createLinkField`: Merchant sayfası veya manuel URL seçimi; Hızlı Doldur aktif sekmedeki bağlantıyı yalnız boş dillere kopyalar
+- `createColorField`: HEX/RGB/HSL, alpha, tema paleti (var() bağlama seçeneği), Tailwind paleti, son kullanılan, kontrast, EyeDropper.
+  **Değer sözleşmesi:** `''` | `#rrggbb` | `#rrggbbaa` (yalnız `showOpacity: true`) | `var(--theme-color-<kebab>)` (yalnız `themeVars: true`).
+  Varsayılan `themeVars: false` → tema noktası hex KOPYALAR (açık palet değeri); hex matematiği yapan
+  tema kodu `var()` beklememeli, `var()` bekleyen tema `themeVars: true` vermeli. Tanınmayan değer korunur.
 - `createCodeEditorField`: Monaco kod editörü
 - `createRepeaterField`: Tekrarlanan satırlar
 - `createCmsCollectionField`: CMS koleksiyon ve alan eşleme
@@ -186,9 +206,36 @@ Snapshot **seçim anında donar**: panelde kampanyanın tarihi ya da markanın a
 sonradan değişirse sayfa eski değeri göstermeye devam eder; merchant alanı
 yeniden seçmelidir.
 
+Bu seçicilerin **boş durumları panele bağlıdır**: liste boşsa "Panelde ürün
+ekle / marka ekle / koleksiyon oluştur" düğmesi, liste doluyken de başlık
+satırında küçük bir "Panelde yönet" bağlantısı çizilir (aynısı
+`LinkField` seçicisinin ve `createCmsCollectionField` açılırının boş
+durumlarında da vardır). Adresler `panelUrl` + `PANEL_PATHS` üzerinden
+kurulur ve **yeni sekmede** açılır; kullanıcı panelde kaydı ekledikten sonra
+seçicideki **Yenile** ile listeyi tazeler. Arama kutusu doluyken bu bağlantı
+çizilmez — "sonuç yok" ile "kayıt yok" karışmasın.
+
 `text` ve `textarea` alanlarında CMS bağlama varsayılan olarak açıktır.
 Kaydedilen token formatı `{{ data.shortcode }}` şeklindedir. Public render
 sırasında ham kayıt `cmsData` prop'u ile verilmelidir.
+
+## Powered by bandı
+
+Admin'in "Powered by Tecof" bandı tema kodunda ELLE yazılmaz; paket bileşeni kullanılır:
+
+```tsx
+import { PoweredBy } from "@tecof/theme-editor";
+
+// Layout (SSR): sunucudaki merchant-info ile ilk boyama, istemci fetch'i yok
+<PoweredBy initialData={merchantInfo.poweredBy} defaultLanguage={merchantInfo.defaultLanguage} locale={locale} />
+// <TecofProvider> içinde: kendisi çeker (SWR, 10 dk tekilleştirme)
+<PoweredBy />
+```
+
+Kurallar: `initialData` verildiğinde `defaultLanguage` (ya da `locale`) da verilir — aksi halde
+sunucu ilk dile düşer ve dil flaşı olur. `showPoweredBy=false`, askı ve yapım aşamasında
+bileşen hiçbir şey basmaz; band CSS/JS'i bileşen yönetir (`[data-powered-by]` sabit rozetini
+bandın kendi stili gizler). Kendi işaretlemesi gereken tema `usePoweredBy()` kancasını kullanır.
 
 ## Repeat zone (öğe şablonu)
 
@@ -235,6 +282,30 @@ Kurallar:
 7. Canvas'ta bağlı bir metne çift tıklayıp satır içi düzenleme yapmak token'ı
    literal değerle ezer; bağlı alanlar Inspector'dan düzenlenmelidir.
 
+## Array kartı işaretleri (`data-tecof-item`)
+
+Repeat zone'dan AYRI mekanizma: bileşen `type:'array'` prop'unu KENDİ render'ında
+map'liyorsa (slot yok), kartları editöre şu attr'larla tanıtabilir:
+
+```tsx
+{services.map((s, i) => (
+  <li key={i} data-tecof-item={`services:${i}`}>
+    <h3 data-tecof-item-prop="title">{getL(s.title, locale)}</h3>
+    <p  data-tecof-item-prop="description">{getL(s.description, locale)}</p>
+  </li>
+))}
+```
+
+- Kart edit modunda hover çerçevesi alır; tıklama Inspector'da `services`
+  alanının o satırını açıp kaydırır; çift tıklama satır alanını yerinde
+  düzenler (`{ ...row, [alan]: değer }` immutable satır yazımı, tek undo adımı).
+- Çok dilli satır alanları desteklenir (`[{code,value}]` merge + `data-tecof-lang`).
+- `data-tecof-item-prop` BİLİNÇLİ olarak `data-tecof-prop`'tan ayrıdır: eski
+  editör sürümleri satır işaretini top-level prop sanıp temaya çöp prop
+  yazabilirdi — yeni attr'ı eski sürüm hiç görmez (ileri-uyumlu, zararsız).
+- Satır, commit anında silinmiş/taşınmışsa yazım sessizce vazgeçer (bayat
+  index guard'ı) — yanlış satıra asla yazılmaz.
+
 ## TecofEditor önemli prop'ları
 
 | Prop | Anlamı | Varsayılan |
@@ -245,9 +316,20 @@ Kurallar:
 | `hostOrigin` | Güvenli postMessage origin'i | `*` |
 | `autoSave` | Debounce'lu otomatik draft kaydı | `false` |
 | `autoSaveDelay` | Autosave gecikmesi | `2000` ms |
-| `warnOnUnsavedChanges` | Sekme kapanış uyarısı | `true` |
+| `warnOnUnsavedChanges` | Sekme kapanış uyarısı (tarayıcının yerel `beforeunload` penceresi; özel UI'ya izin verilmez — editör içi onaylar `studioDialog` drawer'ıdır) | `true` |
 | `onChange` | Yaklaşık 300 ms debounce'lu değişiklik callback'i | yok |
 | `onSave` | Başarılı kayıt callback'i | yok |
+| `onLanguageChange` | Aktif düzenleme dili callback'i — `(code: string) => void` | yok |
+| `panelUrl` | Panelin taban adresi — alanlardaki "Panelde yönet" bağlantıları (yeni sekme) bunun üzerine kurulur | `https://app.tecof.com` |
+
+`onLanguageChange` sözleşmesi: aktif dil ilk kez çözüldüğünde (merchant
+varsayılan dili) bir kez, sonra her değişimde çağrılır. Boş dil (`""` —
+merchant-info henüz gelmedi) ASLA gönderilmez, aynı kod ardışık olarak iki
+kez gönderilmez ve host inline fonksiyon verse (her render yeni referans)
+bile ek çağrı doğmaz. Host bunu kendi i18n sağlayıcısına bağlayarak TUVAL
+içeriğini de o dilde gösterir; editör kroması (TopBar/Inspector) Türkçe
+sabittir. Tuvalin içindeki host bileşenleri aynı dili `useActiveLanguage()`
+ile doğrudan okuyabilir (provider yoksa `null` döner).
 
 ## API Client
 

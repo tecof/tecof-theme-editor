@@ -7,6 +7,13 @@ import { LanguageTabBar, FieldLoading } from './LanguageField';
 import { useLanguages } from './useLanguages';
 import { useActiveLanguage } from '../../studio/language/LanguageContext';
 import { LinkPickerDrawer } from './LinkPickerDrawer';
+import { LanguageToolsBar, useLanguageToolsStatus } from './LanguageToolsBar';
+import {
+  fillLanguages,
+  normalizeLocalizedValues,
+  isEmptyLink,
+  LANGUAGE_TOOL_MESSAGES,
+} from './languageTools';
 
 import {
   Link as LinkIcon,
@@ -88,12 +95,8 @@ export const LinkField = ({
 
   const values = useMemo<LocalizedLinkFieldValue[]>(() => {
     // AI-written data can leave a bare string here — never let .find crash the field
-    const current = Array.isArray(value) ? value : [];
-    if (!merchantInfo) return current;
-    return merchantInfo.languages.map(code => {
-      const existing = current.find(v => v.code === code);
-      return existing || { code, value: { url: '' } };
-    });
+    if (!merchantInfo) return Array.isArray(value) ? value : [];
+    return normalizeLocalizedValues<LinkFieldValue>(value, merchantInfo.languages, () => ({ url: '' }));
   }, [value, merchantInfo]);
 
   // Stable refs to prevent cursor jump — Puck re-creates onChange on every render
@@ -102,8 +105,33 @@ export const LinkField = ({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  /* ── Hızlı Doldur: AKTİF sekmedeki bağlantıyı yalnız BOŞ dillere kopyala.
+     Kaynak diğer dil alanlarıyla (LanguageField/EditorField/LocalizedUpload)
+     aynı: aktif sekme — varsayılan dil boşken EN'de seçilen bağlantı da
+     kopyalanabilsin. Dolu diller asla ezilmez — URL'ler dile göre bilinçli
+     farklı olabilir (/hakkimizda ↔ /about). Çevir yok: LinkFieldValue.label
+     vitrinde render edilmiyor, görünen metin ayrı LanguageField'dan geliyor. ── */
+  const { status, flash } = useLanguageToolsStatus();
+
+  const handleFastFill = useCallback(() => {
+    if (!merchantInfo) return;
+    const res = fillLanguages(valuesRef.current, merchantInfo.languages, activeTab, {
+      onlyEmpty: true,
+      isEmpty: isEmptyLink,
+    });
+    if (!res) return; // kaynak boş ya da doldurulacak dil yok — düğme zaten pasif
+    onChangeRef.current(res.values);
+    flash({ text: LANGUAGE_TOOL_MESSAGES.filledEmpty(res.filled), type: 'success' }, 2000);
+  }, [merchantInfo, activeTab, flash]);
+
   const activeValueItem = values.find(v => v.code === activeTab);
-  const activeValue = activeValueItem?.value || { url: '' };
+  // useMemo: aşağıdaki useCallback bağımlılığı — `|| { url: '' }` her render'da
+  // yeni nesne üretip callback'i boşa yenilerdi.
+  const activeValue = useMemo<LinkFieldValue>(() => activeValueItem?.value || { url: '' }, [activeValueItem]);
+
+  const fillDisabled =
+    isEmptyLink(activeValue) ||
+    !values.some(v => v.code !== activeTab && isEmptyLink(v.value));
 
   const updateActiveValue = useCallback((newLinkVal: LinkFieldValue | null) => {
     const updated = [...valuesRef.current];
@@ -264,6 +292,16 @@ export const LinkField = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Dil araçları: yalnız Hızlı Doldur; manuel form açıkken gizli (formla karışmasın) */}
+      {!readOnly && merchantInfo && merchantInfo.languages.length > 1 && !showManual && (
+        <LanguageToolsBar
+          onFill={handleFastFill}
+          fillDisabled={fillDisabled}
+          fillTitle="Aktif sekmedeki bağlantıyı boş dillere kopyala"
+          status={status}
+        />
       )}
 
       {/* Bağlantı seçici — MediaDrawer diliyle ortalanmış, sekmeli */}

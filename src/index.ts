@@ -13,19 +13,69 @@ export type { TecofRootProps } from './components/TecofRoot';
 export { defineSection, defineElement } from './components/defineComponent';
 export type { SectionDefinition, ElementDefinition } from './components/defineComponent';
 export { UnderConstruction } from './components/UnderConstruction';
+export { PoweredBy, usePoweredBy } from './components/poweredBy';
+export type { PoweredByProps, UsePoweredByOptions, UsePoweredByResult, PoweredByMode } from './components/poweredBy';
 
 /* ─── Custom Puck Fields ─── */
 export { LanguageField, createLanguageField } from './components/fields';
 export { EditorField, createEditorField } from './components/fields';
 export { UploadField, createUploadField } from './components/fields';
+export { LocalizedUploadField, createLocalizedUploadField } from './components/fields';
 export { CodeEditorField, createCodeEditorField } from './components/fields';
 export { LinkField, createLinkField } from './components/fields';
 export { ColorField, createColorField } from './components/fields';
+/* ColorField v2 — popover, tema paleti, saf renk yardımcıları, tema anahtarları */
+export {
+  ColorPickerPopover,
+  useThemePalette,
+  parseColor,
+  formatHex,
+  normalizeColorValue,
+  classifyColorValue,
+  contrastRatio,
+  wcagLevel,
+  themeColorVar,
+  parseThemeColorVar,
+} from './components/fields';
+export type {
+  ColorFieldProps,
+  ColorFieldOptions,
+  ColorPickerPopoverProps,
+  ThemePaletteEntry,
+  ParsedColor,
+  ColorFormat,
+  ClassifiedColorValue,
+} from './components/fields';
+export { THEME_COLOR_KEYS, toThemeCssKey } from './studio/theme/colorKeys';
+export type { ThemeColorKey } from './studio/theme/colorKeys';
 export { RepeaterField, createRepeaterField } from './components/fields';
 export { CmsCollectionField, createCmsCollectionField } from './components/fields';
 export { IconField, createIconField } from './components/fields';
 export { ExternalField, createExternalField } from './components/fields';
 export { FieldErrorBoundary } from './components/fields';
+
+/* Dil araçları — çok dilli alanlar için ortak Hızlı Doldur / Çevir yardımcıları */
+export { LanguageToolsBar, useLanguageToolsStatus } from './components/fields';
+export type { LanguageToolsBarProps, LanguageToolsStatus } from './components/fields';
+export {
+  fillLanguages,
+  mergeTranslations,
+  translateLanguages,
+  targetLocales,
+  normalizeLocalizedValues,
+  isEmptyText,
+  isEmptyHtml,
+  isEmptyLink,
+  LANGUAGE_TOOL_MESSAGES,
+} from './components/fields';
+export type {
+  LocalizedEntry,
+  FillOptions,
+  FillResult,
+  TranslateFn,
+  TranslateOutcome,
+  TranslateLanguagesArgs,
+} from './components/fields';
 
 /* ─── E-ticaret Seçicileri ───
    Merchant'ın panelindeki gerçek kayıtlardan seçim yaptırır; slug/id elle
@@ -225,9 +275,11 @@ export type {
   TecofEditorProps,
   TecofRenderProps,
   MerchantInfoData,
+  PoweredByBandData,
   LanguageFieldValue,
   UploadedFile,
   LinkFieldValue,
+  LocalizedLinkFieldValue,
   Permissions,
   ResolveContext,
   ResolveFieldsContext,
@@ -252,6 +304,18 @@ export {
 export type { FocalPoint } from './types';
 export { FocalPointDrawer } from './components/fields/FocalPointDrawer';
 export type { FocalPointDrawerProps } from './components/fields/FocalPointDrawer';
+
+/* ─── Çok dilli medya ───
+   createLocalizedUploadField değeri [{code, value: UploadedFile[]}]; tema
+   render'ı dile göre dosyayı bu yardımcılarla çözer (boş dil → varsayılan dil
+   → ilk dolu dil). Core getL boş diziyi dolu saydığı için burada ayrı çözümleyici. */
+export {
+  resolveLocalizedUpload,
+  resolveLocalizedUploadFile,
+  normalizeLocalizedUpload,
+  isLocalizedUploadValue,
+} from './utils/localizedUpload';
+export type { LocalizedUploadFieldValue, LocalizedUploadLanguages } from './utils/localizedUpload';
 
 export { normalizeSearch, matchesSearch, matchesAllTerms } from './utils/search';
 

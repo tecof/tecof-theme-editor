@@ -130,6 +130,8 @@ describe('defineSection — SlotSpec.className fonksiyonu + hideIfEmpty', () => 
 
   it('hideIfEmpty spec\'ten <Slot>\'a geçer (yayın isEmpty sinyaliyle gizlenir)', () => {
     const html = renderToStaticMarkup(
+      // isEmpty DOM özniteliği değil, Slot'un yayın sinyalini taklit eden prop — kural burada geçerli değil
+      // eslint-disable-next-line react/no-unknown-property
       (Cfg2.render as any)({ id: 'x', contentSlot: <div data-injected isEmpty={true} /> })
     );
     expect(html).not.toContain('data-injected');
