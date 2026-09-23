@@ -83,7 +83,7 @@
   },
   "dependencies": {
     "@tecof/analytics": "^0.0.3",
-    "@tecof/theme-editor": "^0.0.77",
+    "@tecof/theme-editor": "0.0.96",
     "clsx": "^2.1.1",
     "immer": "^11.1.8",
     "socket.io-client": "^4.8.3",
@@ -92,9 +92,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@radix-ui/react-dialog": "^1.1.15",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.7.0",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@storybook/react-vite": "^8.0.0",
     "@tiptap/core": "^3.27.1",
     "@tiptap/extension-blockquote": "^3.27.1",
