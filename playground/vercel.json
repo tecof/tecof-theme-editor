@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/mcp.mjs": {
-      "includeFiles": "{public/**,../dist/index.d.ts}"
-    }
-  }
-}

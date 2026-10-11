@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "tecof-theme-editor-docs": {
-      "command": "node",
-      "args": ["mcp/server.mjs"]
+    "tecof-docs": {
+      "type": "http",
+      "url": "https://tecof-app-dev.vercel.app/api/mcp"
     }
   }
 }

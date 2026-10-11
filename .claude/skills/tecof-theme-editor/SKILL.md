@@ -10,10 +10,12 @@ yazılmış in-house editör motoru: zustand+immer headless engine + iframe canv
 Tüketiciler: tema paketleri (theme-core ve türevleri) + panel. **npm paketi** —
 değişiklik publish + tüketicide sürüm yükseltmesi olmadan yayına ulaşmaz.
 
-**Otorite dokümanlar**: `docs/AI_GUIDE.md` (normatif — sürüm satırı bayat
-olabilir ama davranış anlatımı geçerli), `ARCHITECTURE.md` (modül haritası),
-`docs/PERMISSIONS.md`, `docs/TAILWIND.md`. Public yüzeyin tek kaynağı
-`src/index.ts`; tipler `src/types/index.ts`.
+**Otorite dokümanlar**: kullanıcıya dönük belgeler artık `tecof-app-dev`
+deposunda (`src/content/theme-editor.md` ve `editor-*.md`; yayın:
+https://tecof-app-dev.vercel.app/theme-editor, doküman MCP: `/api/mcp`).
+Bu depoda yalnız `ARCHITECTURE.md` (modül haritası) ve `docs/RENDERSLOT_PROPOSAL.md`
+(slot kararları) kalır. Public yüzeyin tek kaynağı `src/index.ts`; tipler
+`src/types/index.ts`. Davranış değişince ilgili `tecof-app-dev` sayfasını da güncelle.
 
 ## Veri modeli (değişmez)
 
@@ -94,12 +96,16 @@ delete izni yoksa plain copy'ye düşer — bug değil.
 ## Stil + tema
 
 Node stilleri `props._tecofStyles` token modeli (base/sm/md/lg/xl +
-hover/focus/active); `compileStyles()` derler; üretimde preset'ler
-`getSafelist()`, arbitrary'ler `collectDocumentClasses()` ister. Tema
-`root.props._tecofTheme`; merge: built-in ← config.theme ← sayfa override;
-yayında `generateCSSVariables` şart; dark mode opt-in (`:root.dark` değişken
-swap — safelist'e dark ekleme yok). Detay: `tecof-design-system` skill'i +
-`docs/TAILWIND.md`.
+hover/focus/active); `compileStyles()` `!` sonekli sınıflara derler,
+`cssGenerator` bunların CSS'ini masaüstü-öncelikli (`max-width`) üretir ve
+hem kanvas hem `TecofRender` basar — Studio sınıfları host Tailwind
+safelist'ine EKLENMEZ (mobil-öncelikli kurallar çakışır). `primary-*`
+token'ları `var(--color-primary-N, var(--tecof-brand-N))` → yayında temanın
+`--color-primary-*` değişkenleri şart. Tema `root.props._tecofTheme`; merge:
+built-in ← config.theme ← sayfa override; `TecofRender` tema değişkenlerini ve
+fontları kendisi basar (kendi render'ında `generateCSSVariables`); dark mode
+opt-in (`:root.dark` değişken swap — safelist'e dark ekleme yok). Detay: `tecof-design-system` skill'i +
+`tecof-app-dev/src/content/editor-styles.md`.
 
 ## Build / test / publish
 

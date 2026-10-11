@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/tecof/tecof-theme-editor/issues"
   },
-  "homepage": "https://github.com/tecof/tecof-theme-editor#readme",
+  "homepage": "https://tecof-app-dev.vercel.app/theme-editor",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -61,9 +61,6 @@
   ],
   "scripts": {
     "dev": "tsup --watch",
-    "dev:preview": "npm run docs:ai && vite --config playground/vite.config.ts",
-    "docs:ai": "node scripts/generate-ai-docs.mjs",
-    "mcp:docs": "npm run docs:ai --silent && node mcp/server.mjs",
     "build": "tsup && tsup --config tsup.email.config.ts && cat node_modules/filepond/dist/filepond.min.css node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css node_modules/filepond-plugin-image-edit/dist/filepond-plugin-image-edit.css src/doka.min.css src/styles.css > dist/styles.css",
     "prepublishOnly": "npm run build",
     "lint": "eslint .",

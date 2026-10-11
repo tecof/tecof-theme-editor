@@ -119,12 +119,13 @@ export type {
 export { TecofApiClient } from './api';
 
 /* ─── Visual Style Editor / Tailwind ─── */
-// `getSafelist()` returns every Tailwind class the editor's *preset* options can
-// emit — feed it into the host Tailwind config so production CSS always contains
-// those classes. For *arbitrary* values (e.g. `p-[10px]`, `bg-[#ff0000]`) — which
-// live in saved JSON and are invisible to Tailwind's content scanner — run
-// `collectDocumentClasses(pageData)` over your saved pages at build time and add
-// the result to the safelist as well. See docs/TAILWIND.md.
+// TecofRender (and the canvas) generate the CSS for `_tecofStyles` classes
+// themselves (studio/style/cssGenerator.ts, desktop-first `max-width`
+// breakpoints), so hosts rendering with TecofRender need NO Tailwind safelist —
+// adding these classes to a host Tailwind build would emit conflicting
+// mobile-first rules. `getSafelist()` (every preset class) and
+// `collectDocumentClasses(pageData)` (classes a saved page uses) remain for
+// analysis and custom renderers. Docs: https://tecof-app-dev.vercel.app/editor-styles
 export { getSafelist, STYLE_CONTROLS } from './studio/style/tokens';
 export { TAILWIND_PALETTE, TAILWIND_SHADES } from './studio/style/palette';
 export type { PaletteHue, TailwindShade } from './studio/style/palette';
