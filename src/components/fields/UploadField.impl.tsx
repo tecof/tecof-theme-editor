@@ -1,10 +1,12 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MediaDrawer, type MediaDrawerTab } from './MediaDrawer';
 import { FocalPointDrawer } from './FocalPointDrawer';
 import { useTecof } from '../TecofProvider';
 import { TecofPicture } from '../TecofPicture';
 import { isDefaultFocalPoint } from '../../utils/focalPoint';
 import type { FocalPoint, UploadedFile } from '../../types';
+import type { UploadLimitsData } from '../../api';
+import { resolveMaxFileSize } from '../../utils/uploadLimits';
 import type { UploadFieldProps, UploadFieldOptions } from './UploadField';
 
 // FilePond Imports
@@ -284,8 +286,8 @@ const UploadFieldImpl = ({
   allowMultiple = true,
   maxFiles = 100,
   acceptedTypes = DEFAULT_ACCEPTED_TYPES,
-  maxFileSize = '100MB',
-  maxTotalFileSize = '200MB',
+  maxFileSize,
+  maxTotalFileSize,
   folder = '/',
   readOnly,
   imagePreviewHeight = 256,
@@ -305,6 +307,15 @@ const UploadFieldImpl = ({
   }
 
   const { apiUrl, secretKey, apiClient } = useTecof();
+
+  /* Etkin yükleme sınırı sunucudan (GET /api/store/upload-limits, istemci başına önbellekli) */
+  const [uploadLimits, setUploadLimits] = useState<UploadLimitsData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    apiClient?.getUploadLimits?.().then((data) => { if (alive) setUploadLimits(data); });
+    return () => { alive = false; };
+  }, [apiClient]);
+  const effectiveMaxFileSize = resolveMaxFileSize(uploadLimits, folder, maxFileSize);
 
   const [filesForPond, setFilesForPond] = useState<any[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -441,8 +452,11 @@ const UploadFieldImpl = ({
             signal: controller.signal,
           });
 
-          const json = await res.json();
-          if (!json.success) throw new Error(json.message || 'Upload failed');
+          /* Proxy'nin 413 sayfası JSON değildir — "Unexpected token" yerine anlaşılır metin */
+          const json = await res.json().catch(() => null);
+          if (!json) throw new Error(res.status === 413 ? 'Dosya çok büyük' : 'Yükleme hatası');
+          /* Sunucu nedeni (ör. "Tema varlığı: dosya 20 MB sınırını aşıyor") kartta gösterilir */
+          if (!json.success) throw new Error(json.message || 'Yükleme hatası');
 
           const fileData = json.data?.[0];
           if (!fileData?._id) throw new Error('Sunucu yanıtında dosya bilgisi bulunamadı');
@@ -462,7 +476,7 @@ const UploadFieldImpl = ({
         } catch (err: any) {
           if (err.name !== 'AbortError') {
             console.error('Upload error:', err);
-            error('Yükleme hatası');
+            error(err?.message || 'Yükleme hatası');
           }
         }
       })();
@@ -507,8 +521,9 @@ const UploadFieldImpl = ({
           onprocessfile={handlePondProcess}
           allowMultiple={allowMultiple}
           maxFiles={maxFiles - value.length}
-          maxFileSize={maxFileSize}
-          maxTotalFileSize={maxTotalFileSize}
+          maxFileSize={effectiveMaxFileSize}
+          /* Her dosya ayrı istekle gider; toplam sınır yalnız tema açıkça verirse */
+          maxTotalFileSize={maxTotalFileSize ?? null}
           acceptedFileTypes={acceptedTypes}
           allowReorder={allowReorder}
           imagePreviewHeight={imagePreviewHeight}

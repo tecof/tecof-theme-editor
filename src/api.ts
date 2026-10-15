@@ -58,6 +58,16 @@ export interface ApplyStylesResult {
   conflicts: ApplyStylesConflict[];
 }
 
+/** GET /api/store/upload-limits yanıtı (backend app/modules/uploadLimits.ts → getStorefront) */
+export interface UploadLimitsData {
+  /** Kapsam → etkin tek dosya sınırı */
+  scopes: Record<string, { maxBytes: number; maxMB: number }>;
+  /** `?folder=`/`?scope=` tanınmazsa yüklemenin yazıldığı kapsam (theme.asset) */
+  defaultScope: string;
+  /** İstek başına en çok dosya */
+  maxFiles: number;
+}
+
 /**
  * Tecof API Client — handles communication with the Tecof backend
  * for page CRUD operations using merchant secret key.
@@ -257,6 +267,29 @@ export class TecofApiClient {
         success: false,
       };
     }
+  }
+
+  private uploadLimitsPromise: Promise<UploadLimitsData | null> | null = null;
+  private uploadLimitsAt = 0;
+
+  /**
+   * Yükleme sınırları (GET /api/store/upload-limits) — mağazanın ETKİN tek dosya sınırı, kapsam
+   * başına (yönetici ayarı + işletme ezmesi; backend docs/UPLOAD_PATHS.md §3a). İstemci başına 60 sn
+   * önbelleklenir; uç yoksa (eski backend) ya da hata verirse null — alan kendi varsayılanına düşer.
+   */
+  getUploadLimits(): Promise<UploadLimitsData | null> {
+    if (this.uploadLimitsPromise && Date.now() - this.uploadLimitsAt < 60_000) return this.uploadLimitsPromise;
+    this.uploadLimitsAt = Date.now();
+    this.uploadLimitsPromise = fetch(`${this.apiUrl}/api/store/upload-limits`, { method: 'GET', headers: this.headers })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => (json?.success && json.data?.scopes ? (json.data as UploadLimitsData) : null))
+      .catch(() => null)
+      .then((data) => {
+        /* Başarısız okuma önbellekte kalmasın: sonraki alan yeniden denesin */
+        if (!data) this.uploadLimitsPromise = null;
+        return data;
+      });
+    return this.uploadLimitsPromise;
   }
 
   /**
