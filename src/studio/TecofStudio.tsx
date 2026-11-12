@@ -23,7 +23,7 @@ import { Inspector } from './panels/Inspector';
 import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
-import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost } from './bridge';
+import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost, setBridgePageId } from './bridge';
 import { flushPendingEdits } from './pendingEdits';
 import { DEFAULT_PANEL_URL } from '../utils/panelLinks';
 import type { TecofEditorProps } from '../types';
@@ -127,6 +127,16 @@ export const TecofStudio = ({
   useEffect(() => {
     configureBridge(hostOrigin);
   }, [hostOrigin]);
+
+  // Announce which page this instance edits in every host message, so the host
+  // can tell a frame that shows a different page from the one it believes is
+  // open (see bridge.setBridgePageId). Set during render as well: child effects
+  // (selection sync) run before this component's effects on mount.
+  setBridgePageId(pageId);
+  useEffect(() => {
+    setBridgePageId(pageId);
+    return () => setBridgePageId(undefined);
+  }, [pageId]);
 
   // 1. Fetch Page and Load into Store
   useEffect(() => {

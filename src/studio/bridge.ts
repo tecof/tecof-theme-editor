@@ -31,6 +31,28 @@ export const configureBridge = (origin?: string): void => {
 export const getHostOrigin = (): string | undefined => configuredOrigin;
 
 /**
+ * Identity of the page this editor instance is editing. When set, it is merged
+ * into EVERY host message as `pageId`.
+ *
+ * Why: the host panel embeds the editor cross-origin, so it cannot read which
+ * document the iframe is showing. If the frame and the host ever disagree (the
+ * frame went back in history, an in-frame navigation, a stale frame after a
+ * page switch) the host would mark the WRONG page as saved / publish a page
+ * that was not the one edited. With the id in every message the host can
+ * detect the mismatch and re-mount the frame instead. Hosts that ignore the
+ * field keep working unchanged.
+ */
+let hostPageId: string | undefined;
+
+/** Set (or clear with `undefined`) the page id announced to the host. */
+export const setBridgePageId = (pageId?: string | null): void => {
+  hostPageId = pageId ? String(pageId) : undefined;
+};
+
+/** Read the page id currently announced to the host (`undefined` => none). */
+export const getBridgePageId = (): string | undefined => hostPageId;
+
+/**
  * Validate the origin of an INCOMING host message against the configured
  * origin. Returns `true` when no origin is configured (or it's the wildcard
  * `'*'`), preserving backward-compatible "accept anything" behavior, and
@@ -68,5 +90,8 @@ export const postToHost = (
 ): void => {
   if (!isEmbedded()) return;
   const targetOrigin = origin ?? configuredOrigin ?? '*';
-  window.parent.postMessage({ type, ...(payload ?? {}) }, targetOrigin);
+  window.parent.postMessage(
+    { type, ...(hostPageId ? { pageId: hostPageId } : {}), ...(payload ?? {}) },
+    targetOrigin
+  );
 };
