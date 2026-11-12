@@ -186,13 +186,18 @@ export const Frame = ({
       };
 
       handleIframeKeyDown = (e: KeyboardEvent) => {
-        // Never forward keystrokes typed into an editable element (inputs or
-        // inline contentEditable editing). Re-dispatching them on the parent
+        // ⌘/Ctrl+S is the one chord that must reach the studio even while the
+        // user is typing (inline edit): its save handler flushes the pending
+        // draft first, so "type → ⌘S" saves the typed text. It never edits text.
+        const isSave =
+          (e.metaKey || e.ctrlKey) && typeof e.key === 'string' && e.key.toLowerCase() === 's';
+        // Never forward other keystrokes typed into an editable element (inputs
+        // or inline contentEditable editing). Re-dispatching them on the parent
         // window would bypass the host's input guards — the synthetic event's
         // target is `window`, so e.g. Delete would remove the selected node
         // while the user is just deleting text.
         const target = e.target as HTMLElement | null;
-        if (target) {
+        if (target && !isSave) {
           const tag = target.tagName?.toLowerCase();
           if (tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable) {
             return;
@@ -216,9 +221,14 @@ export const Frame = ({
           metaKey: e.metaKey,
           shiftKey: e.shiftKey,
           altKey: e.altKey,
-          bubbles: true
+          bubbles: true,
+          cancelable: true
         });
         window.dispatchEvent(event);
+        // The studio preventDefault()s the synthetic copy when it handles save;
+        // mirror that on the original so the browser's own "Save page as"
+        // dialog doesn't open on top of the editor's save.
+        if (isSave && event.defaultPrevented) e.preventDefault();
       };
 
       const onScroll = () => {

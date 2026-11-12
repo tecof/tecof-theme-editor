@@ -3,8 +3,26 @@ import { useEditorStore } from '../../engine/store';
 import { useUiStore } from '../uiStore';
 import { findNodeById } from '../../engine/zones';
 import { useActiveLanguage } from '../language/LanguageContext';
-import type { TecofNode } from '../../types';
+import { useStudioOptional } from '../context';
+import type { StudioConfig, TecofNode } from '../../types';
 import { isInsideOverlayPortal } from './overlayPortal';
+import { postToHost } from '../bridge';
+import { registerPendingEdit } from '../pendingEdits';
+import {
+  findInlineFieldDef,
+  preservesLineBreaks,
+  readMatchedValue,
+  resolveInlineEditBehavior,
+  serializePlainText,
+  snapshotSubtree,
+  type DomLikeNode,
+  type InlineEditBehavior,
+  type LocalizedEntry,
+  type MatchResult,
+  type RestorableNode,
+} from './inlineEditModel';
+
+export type { MatchResult } from './inlineEditModel';
 
 /**
  * Robust double-click inline text editing for a single node.
@@ -12,10 +30,30 @@ import { isInsideOverlayPortal } from './overlayPortal';
  * Returns an `onDoubleClick` handler to spread onto the node wrapper. When the
  * user double-clicks an editable element we make it `contentEditable`, select
  * its contents, and commit the edited text back into the node's props via
- * `updateProps`. Enter commits, Shift+Enter inserts a newline, Escape cancels.
- * Clicking anywhere outside the editable — including parent-document UI
- * (panels, TopBar, overlays) — or moving focus out of the canvas iframe also
- * commits, so Enter is never *required* to save.
+ * `updateProps` — ONE commit (= one undo step) per editing session.
+ *
+ * Enter rule (see `resolveInlineEditBehavior`):
+ *   - Multi-line content — rich text (`createEditorField`, HTML values) and
+ *     plain multi-line text (`type: 'textarea'`,
+ *     `createLanguageField({ isTextarea: true })`): Enter inserts a new line
+ *     (a new paragraph inside a rich-text container, a line break elsewhere).
+ *   - Single-line content (headings, buttons, labels, text inputs): Enter
+ *     commits. Shift+Enter adds a line break only where the element can show
+ *     one (`white-space: pre-line` & co.); otherwise it does nothing — it used
+ *     to insert a `<br>` that was silently dropped on save.
+ *   - ⌘/Ctrl+Enter always commits, Escape cancels.
+ *
+ * Enter is never REQUIRED to save: clicking/tapping anywhere outside the
+ * editable (canvas or editor chrome), focus leaving the element or the canvas
+ * iframe, a selection change, or the edited node changing underneath all
+ * commit. Paths that read or replace the document (save/publish, undo/redo,
+ * refetch, tab close, canvas unmount) flush the pending draft first through
+ * `flushPendingEdits()`. The first keystroke posts `puck:changed`, so the host
+ * knows about the unsaved draft before it is committed.
+ *
+ * On finish the edited DOM is restored to what React last rendered and only
+ * then is the store updated, so React renders the new value itself and the
+ * canvas never keeps showing (and later re-commits) stale text.
  *
  * Prop matching (which prop the edited text belongs to) is resolved in two ways:
  *
@@ -37,28 +75,6 @@ import { isInsideOverlayPortal } from './overlayPortal';
  */
 
 const VALID_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'a', 'div'];
-
-/** One entry of a multilingual prop array: `{ code: 'tr', value: '...' }`. */
-interface LocalizedEntry {
-  code?: string;
-  value?: unknown;
-}
-
-export interface MatchResult {
-  propName: string;
-  isMultilingual: boolean;
-  langCode: string;
-  /**
-   * Repeater/array satırı hedefleniyorsa dolu: `data-tecof-item="<field>:<index>"`
-   * işaretli kart içindeki `data-tecof-item-prop="<alan>"` metinleri. Bu durumda
-   * `propName` SATIR-İÇİ alan adıdır (`title`), commit `props[itemField][itemIndex]`
-   * satırına immutably yazılır. (Bilinçli olarak `data-tecof-prop`'tan AYRI attr:
-   * eski paket sürümleri `data-tecof-prop`'u top-level prop sanıp temaya çöp
-   * `"title"` prop'u yazardı — yeni attr'ı eski sürüm hiç görmez.)
-   */
-  itemField?: string;
-  itemIndex?: number;
-}
 
 /** `data-tecof-item="<field>:<index>"` değerini çözer; bozuk değerde null.
  *  canvasInteractions de AYNI parser'ı kullanır — sözleşme tek yerde yaşar. */
@@ -211,12 +227,17 @@ const resolveMatch = (
  * (`data-tecof-prop` / text match), makes it contentEditable, and commits back
  * via the store. Used by the delegated canvas edit listener (canvasEdit) — and,
  * as a thin wrapper, the legacy per-node hook below.
+ *
+ * `config` (optional) lets the editor look up the prop's field definition to
+ * pick the single-line / multi-line / rich-text behaviour; without it the
+ * behaviour is derived from the stored value alone.
  */
 export function runInlineEditFromEvent(
   e: React.MouseEvent | MouseEvent,
   node: TecofNode,
   activeLanguage: string | null,
-  locked: boolean
+  locked: boolean,
+  config?: StudioConfig | null
 ): void {
       if (locked) return;
       // Overlay portals keep their own interaction in edit mode; never start
@@ -248,21 +269,86 @@ export function runInlineEditFromEvent(
       if (!text) return;
 
       const ownerDoc = editTarget.ownerDocument;
-      const ownerWin = ownerDoc.defaultView;
       const defaultLang = activeLanguage || ownerDoc.documentElement.lang || 'tr';
 
       const match = resolveMatch(editTarget, wrapper, node, text, defaultLang);
       if (!match) return;
 
-      e.stopPropagation();
+      // Tek satır / çok satır / zengin metin kararı alan tanımından (yoksa
+      // değerden). null = bu metin kanvasta düzenlenmez (bağlama token'ı ya da
+      // HTML değerin düz metin yansıması) — Inspector'daki alan kullanılır.
+      const behavior = resolveInlineEditBehavior({
+        fieldDef: findInlineFieldDef(config, node.type, match),
+        value: readMatchedValue(node.props, match),
+        hasElementChildren: editTarget.children.length > 0,
+      });
+      if (!behavior) return;
 
-      const originalText = editTarget.textContent || '';
+      e.stopPropagation();
+      startInlineSession(editTarget, node.props.id, match, behavior, tag);
+}
+
+/** Bir inline düzenleme oturumunu kurar; bitişi (commit/iptal) tek noktadan yönetir. */
+function startInlineSession(
+  editTarget: HTMLElement,
+  nodeId: string,
+  match: MatchResult,
+  behavior: InlineEditBehavior,
+  tag: string
+): void {
+      const ownerDoc = editTarget.ownerDocument;
+      const ownerWin = ownerDoc.defaultView;
+
+      // Çok satırlı zengin metin KABINDA (div) Enter tarayıcının kendi yeni
+      // paragrafını açar; diğer çok satırlı hedeflerde satır sonu eklenir.
+      const paragraphs = behavior.html && behavior.multiline && tag === 'div';
+      // Tek satırlıda Shift+Enter yalnız satır sonu kaydedildikten sonra da
+      // GÖRÜNECEKSE eklenir (HTML'de <br>, düz metinde white-space: pre-line).
+      let lineBreaksVisible = behavior.html;
+      if (!lineBreaksVisible && !behavior.multiline) {
+        try {
+          lineBreaksVisible = preservesLineBreaks(ownerWin?.getComputedStyle(editTarget));
+        } catch {
+          lineBreaksVisible = false;
+        }
+      }
+
+      const serialize = (): string =>
+        behavior.html
+          ? editTarget.innerHTML.trim()
+          : serializePlainText(editTarget as unknown as DomLikeNode);
+
+      // DOM'un React'in son render ettiği hâli: oturum biterken (kaydet de iptal
+      // de) önce buna dönülür, sonra store güncellenir → React yeni değeri
+      // kendisi basar; kanvas ile veri bir daha ayrışmaz.
+      const restoreDom = snapshotSubtree(editTarget as unknown as RestorableNode);
+      const originalValue = serialize();
+      const originalEditable = editTarget.getAttribute('contenteditable');
+
+      // Sürüklenebilir (draggable) bir kök/ata içinde fareyle metin seçmek
+      // tarayıcıda düğüm SÜRÜKLEMEYE dönüşür (yanlışlıkla taşıma yazılanı da
+      // söker). Oturum boyunca kapatılır, teardown geri açar.
+      const draggables: HTMLElement[] = [];
+      for (let el: HTMLElement | null = editTarget; el && el !== ownerDoc.body; el = el.parentElement) {
+        if (el.getAttribute('draggable') === 'true') {
+          draggables.push(el);
+          el.setAttribute('draggable', 'false');
+        }
+      }
 
       editTarget.contentEditable = 'true';
       editTarget.setAttribute('data-tecof-inline-editing', 'true');
       // Overlay chrome'u (outline + toolbar + durum çubuğu) yazım boyunca
       // gizlensin diye düzenlemeyi uiStore'a bildir — teardown temizler.
-      useUiStore.getState().setInlineEditingNodeId(node.props.id);
+      useUiStore.getState().setInlineEditingNodeId(nodeId);
+      if (paragraphs) {
+        // Enter'ın açtığı blok <div> değil <p> olsun (TipTap/yayın ile aynı yapı).
+        try {
+          ownerDoc.execCommand('defaultParagraphSeparator', false, 'p');
+        } catch {
+          /* desteklenmiyor — tarayıcı varsayılanı kalır */
+        }
+      }
       editTarget.focus();
 
       // Range select the whole contents.
@@ -272,27 +358,50 @@ export function runInlineEditFromEvent(
       sel?.removeAllRanges();
       sel?.addRange(range);
 
+      let finished = false;
+      let announced = false;
+      // Atamaları aşağıda (dinleyiciler bağlanırken); teardown yalnız oturum
+      // kurulduktan SONRA çağrılabildiği için ikisi de o anda doludur.
+      let unregisterPending: () => void = () => {};
+      let unsubscribeStore: () => void = () => {};
+
       const teardown = () => {
-        editTarget.contentEditable = 'false';
-        editTarget.removeAttribute('data-tecof-inline-editing');
-        useUiStore.getState().setInlineEditingNodeId(null);
+        unregisterPending();
+        unsubscribeStore();
         editTarget.removeEventListener('blur', handleBlur);
         editTarget.removeEventListener('keydown', handleKeyDown);
-        ownerDoc.removeEventListener('mousedown', handleOutsideMouseDown, true);
-        document.removeEventListener('mousedown', handleOutsideMouseDown, true);
+        editTarget.removeEventListener('input', handleInput);
+        editTarget.removeEventListener('paste', handlePaste);
+        for (const d of [ownerDoc, document]) {
+          d.removeEventListener('pointerdown', handleOutsidePointer, true);
+          d.removeEventListener('mousedown', handleOutsidePointer, true);
+        }
         ownerWin?.removeEventListener('blur', handleWindowBlur);
+        // Eski kod `contentEditable = 'false'` bırakıyordu (kalıcı nitelik);
+        // orijinal hâl geri yüklenir.
+        if (originalEditable == null) editTarget.removeAttribute('contenteditable');
+        else editTarget.setAttribute('contenteditable', originalEditable);
+        editTarget.removeAttribute('data-tecof-inline-editing');
+        for (const el of draggables) el.setAttribute('draggable', 'true');
+        useUiStore.getState().setInlineEditingNodeId(null);
+        if (ownerDoc.activeElement === editTarget) editTarget.blur();
         ownerWin?.getSelection()?.removeAllRanges();
       };
 
-      const commitInlineEdit = () => {
+      /**
+       * Oturumun TEK çıkışı. `commit=false` (Esc) taslağı atar. Taslak DOM'dan
+       * teardown/restore'dan ÖNCE okunur. Element bu arada DOM'dan sökülmüş
+       * olsa bile metin yazılır: belgeyi değiştiren bilinen yollar (refetch,
+       * geri al, kaydet) önce flush eder; başka bir yeniden mount (görünüm
+       * değişimi, taşıma) kullanıcının yazdığını sessizce yutmamalı.
+       */
+      const finish = (commit: boolean) => {
+        if (finished) return;
+        finished = true;
+        const nextValue = serialize();
         teardown();
-
-        // Element DOM'dan söküldüyse (host `reloadDocument`, MCP/AI kaynaklı
-        // doküman değişimi) yazılan metin ARTIK geçerli bir hedefe ait değildir:
-        // commit sessizce iptal edilir — teardown bayrağı zaten temizledi.
-        if (!editTarget.isConnected) return;
-
-        const newText = editTarget.textContent?.trim() || '';
+        restoreDom();
+        if (!commit || nextValue === originalValue) return;
 
         // Commit against the CURRENT props from the store — the document may
         // have changed since double-click (undo, another field edit), and the
@@ -300,33 +409,98 @@ export function runInlineEditFromEvent(
         // saf çekirdekte (computeInlineCommitPatch); satır hedefli edit'te satır
         // bu arada silindiyse patch null döner ve commit sessizce atlanır.
         const store = useEditorStore.getState();
-        const currentProps =
-          findNodeById(store.document, node.props.id)?.node.props ?? node.props;
-
-        const patch = computeInlineCommitPatch(currentProps, match, newText);
-        if (patch) store.updateProps(node.props.id, patch);
+        const currentProps = findNodeById(store.document, nodeId)?.node.props;
+        if (!currentProps) return; // node silinmiş — yazılacak yer yok
+        const patch = computeInlineCommitPatch(currentProps, match, nextValue);
+        if (patch) store.updateProps(nodeId, patch);
       };
 
-      const cancelInlineEdit = () => {
-        // Sıra önemli: teardown blur handler'ını söker, textContent geri alınır.
-        teardown();
-        editTarget.textContent = originalText;
+      const insertLineBreak = () => {
+        try {
+          if (ownerDoc.execCommand('insertLineBreak')) return;
+        } catch {
+          /* aşağıdaki elle ekleme */
+        }
+        const selection = ownerWin?.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+        const r = selection.getRangeAt(0);
+        r.deleteContents();
+        const br = ownerDoc.createElement('br');
+        r.insertNode(br);
+        r.setStartAfter(br);
+        r.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(r);
       };
 
       const handleBlur = () => {
-        commitInlineEdit();
+        finish(true);
       };
 
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === 'Escape') {
           event.preventDefault();
-          cancelInlineEdit();
+          // Frame'in tuş yönlendiricisi Esc'i stüdyoya iletip seçimi bir üst
+          // öğeye taşımasın: Esc yalnız düzenlemeyi iptal eder.
+          event.stopPropagation();
+          finish(false);
           return;
         }
 
-        if (event.key === 'Enter' && !event.shiftKey) {
+        if (event.key === 'Enter') {
+          if (event.isComposing) return; // IME onayı — tarayıcıya bırak
+          if (event.metaKey || event.ctrlKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            finish(true);
+            return;
+          }
+          if (behavior.multiline) {
+            if (paragraphs) return; // tarayıcı: Enter yeni <p>, Shift+Enter <br>
+            event.preventDefault();
+            insertLineBreak();
+            return;
+          }
+          if (event.shiftKey) {
+            event.preventDefault();
+            if (lineBreaksVisible) insertLineBreak();
+            return;
+          }
           event.preventDefault();
-          editTarget.blur();
+          event.stopPropagation();
+          finish(true);
+          return;
+        }
+
+        // Düz metinde ⌘B/I/U DOM'a <b>/<i>/<u> sokar ama kayda geçmez (değer düz
+        // metin) — kaydedince biçim "geri alınmış" görünürdü.
+        if (!behavior.html && (event.metaKey || event.ctrlKey) && !event.altKey && typeof event.key === 'string') {
+          const key = event.key.toLowerCase();
+          if (key === 'b' || key === 'i' || key === 'u') event.preventDefault();
+        }
+      };
+
+      const handleInput = () => {
+        if (announced) return;
+        announced = true;
+        // Taslak henüz store'da değil; host'un "kaydedilmemiş değişiklik" durumu
+        // (yayından önce kaydet, ayrılma uyarısı, puck:refetch ertelemesi) ilk
+        // tuşta bilsin. Gömülü değilken no-op.
+        postToHost('puck:changed');
+      };
+
+      const handlePaste = (ev: ClipboardEvent) => {
+        const data = ev.clipboardData?.getData('text/plain');
+        if (data == null) return;
+        // Dış kaynağın biçimli HTML'i (stil, sınıf, görsel) kanvasa ve veriye
+        // girmesin: her zaman düz metin yapıştırılır; tek satırlıda satır sonları
+        // boşluğa döner.
+        ev.preventDefault();
+        const textToInsert = behavior.multiline ? data : data.replace(/\s*\r?\n\s*/g, ' ');
+        try {
+          ownerDoc.execCommand('insertText', false, textToInsert);
+        } catch {
+          /* desteklenmiyor */
         }
       };
 
@@ -335,21 +509,43 @@ export function runInlineEditFromEvent(
       // can take the pointer without ever blurring it — the edit would then be
       // silently lost on the next re-render. So also commit on any pointer-down
       // outside the editable (both documents, capture phase so an overlay's
-      // preventDefault() can't swallow it) and when the iframe window itself
-      // loses focus.
-      const handleOutsideMouseDown = (ev: MouseEvent) => {
+      // preventDefault() can't swallow it; `pointerdown` too, because a
+      // prevented pointerdown suppresses the compat `mousedown`) and when the
+      // iframe window itself loses focus.
+      const handleOutsidePointer = (ev: Event) => {
         const clicked = ev.target as Node | null;
         if (clicked && editTarget.contains(clicked)) return;
-        commitInlineEdit();
+        finish(true);
       };
       const handleWindowBlur = () => {
-        commitInlineEdit();
+        finish(true);
       };
+
+      // Kaydet/yayınla/geri al/refetch/beforeunload/unmount önce flush eder.
+      unregisterPending = registerPendingEdit(() => finish(true));
+      // Seçim başka yere geçerse (host vurgusu, programatik seçim) ya da
+      // düzenlenen node'un props'u DIŞARIDAN değişirse (geri al, AI, senkron)
+      // React yeniden render etmeden ÖNCE taslak yazılıp oturum kapanır.
+      unsubscribeStore = useEditorStore.subscribe((state, prev) => {
+        if (state.selection.selectedId !== prev.selection.selectedId) {
+          finish(true);
+          return;
+        }
+        if (state.document !== prev.document) {
+          const before = findNodeById(prev.document, nodeId)?.node.props;
+          const after = findNodeById(state.document, nodeId)?.node.props;
+          if (before !== after) finish(true);
+        }
+      });
 
       editTarget.addEventListener('blur', handleBlur);
       editTarget.addEventListener('keydown', handleKeyDown);
-      ownerDoc.addEventListener('mousedown', handleOutsideMouseDown, true);
-      document.addEventListener('mousedown', handleOutsideMouseDown, true);
+      editTarget.addEventListener('input', handleInput);
+      editTarget.addEventListener('paste', handlePaste);
+      for (const d of [ownerDoc, document]) {
+        d.addEventListener('pointerdown', handleOutsidePointer, true);
+        d.addEventListener('mousedown', handleOutsidePointer, true);
+      }
       ownerWin?.addEventListener('blur', handleWindowBlur);
 }
 
@@ -357,9 +553,11 @@ export function runInlineEditFromEvent(
 export const useInlineEdit = (node: TecofNode, locked: boolean) => {
   // Studio'nun global "düzenlenen dil" seçimi (TopBar); provider dışında null.
   const activeLanguage = useActiveLanguage()?.activeLanguage ?? null;
+  const config = useStudioOptional()?.config ?? null;
   const onDoubleClick = useCallback(
-    (e: React.MouseEvent | MouseEvent) => runInlineEditFromEvent(e, node, activeLanguage, locked),
-    [node, locked, activeLanguage]
+    (e: React.MouseEvent | MouseEvent) =>
+      runInlineEditFromEvent(e, node, activeLanguage, locked, config),
+    [node, locked, activeLanguage, config]
   );
   return { onDoubleClick };
 };

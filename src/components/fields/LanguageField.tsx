@@ -357,6 +357,8 @@ export const createLanguageField = (
     label,
     labelIcon,
     visible,
+    /** Çok satırlı (textarea) alan — kanvas içi düzenleme Enter'da yeni satır açar. */
+    isTextarea: fieldOptions.isTextarea === true,
     render: ({ value, onChange, readOnly, field, name, id }: LanguageFieldProps) => (
       <FieldLabel label={label || ''} icon={labelIcon} readOnly={readOnly}>
         <FieldErrorBoundary fieldName={name}>

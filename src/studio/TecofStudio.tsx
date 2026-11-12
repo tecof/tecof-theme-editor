@@ -24,6 +24,7 @@ import { TopBar } from './topbar/TopBar';
 import { LeftPanel } from './panels/LeftPanel';
 import { useTecof } from '../components/TecofProvider';
 import { configureBridge, isEmbedded as isEmbeddedHost, isAllowedOrigin, postToHost } from './bridge';
+import { flushPendingEdits } from './pendingEdits';
 import { DEFAULT_PANEL_URL } from '../utils/panelLinks';
 import type { TecofEditorProps } from '../types';
 
@@ -85,6 +86,11 @@ export const TecofStudio = ({
   // baseline; `dirtyRef` mirrors the boolean for the synchronous unload guard.
   const savedDocRef = useRef(documentState);
   const dirtyRef = useRef(false);
+  // Has the host been told (`puck:changed`) that the document is dirty since the
+  // last clean point (load / reload / successful save)? The host gates
+  // "save before publish", its leave guard and refetch deferral on that signal,
+  // so the FIRST change is announced immediately instead of after the debounce.
+  const dirtyAnnouncedRef = useRef(false);
   const savingRef = useRef(false);
   savingRef.current = saving;
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -150,6 +156,7 @@ export const TecofStudio = ({
         // (cloned/parsed) document reference so the dirty check starts false.
         savedDocRef.current = useEditorStore.getState().document;
         dirtyRef.current = false;
+        dirtyAnnouncedRef.current = false;
         setDirty(false);
       } catch (err) {
         // Aborted loads (newer pageId, unmount, or timeout) must NOT mutate
@@ -207,9 +214,16 @@ export const TecofStudio = ({
       const rawData = res.success && res.data?.draftData ? res.data.draftData : null;
       if (!rawData) return;
       const parsedDoc = migrateDocument(parseDocument(rawData), config.migrations);
+      // An open inline-edit session is closed (DOM restored, draft committed
+      // into the outgoing document) BEFORE the server copy replaces it — the
+      // host already decided to load it (it defers the refetch while it knows
+      // about unsaved changes) — so no orphaned contentEditable or stale text
+      // survives the swap.
+      flushPendingEdits();
       setDocument(parsedDoc);
       savedDocRef.current = useEditorStore.getState().document;
       dirtyRef.current = false;
+      dirtyAnnouncedRef.current = false;
       setDirty(false);
 
       if (highlightType) {
@@ -224,6 +238,15 @@ export const TecofStudio = ({
   // Debounced (~300ms, trailing) so a burst of keystrokes coalesces into a
   // single onChange / `puck:changed`. The latest document is read from the ref
   // at flush time (not captured at schedule time), so we never emit a stale doc.
+  //
+  // `puck:changed` additionally has a LEADING edge: the first change after a
+  // clean point is announced at once. The host decides "save before publish",
+  // "warn before leaving" and "defer refetch" from this signal; with only the
+  // trailing debounce, an edit committed by the very click on the host's
+  // Publish/Back button (inline text commits on that mousedown) reached the
+  // host ~300ms AFTER the click — the stale draft was published / the page was
+  // left without a warning. `puck:changed` is only posted while the document
+  // is actually dirty (a reload/refetch is not an edit).
   const isFirstRender = useRef(true);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -236,13 +259,23 @@ export const TecofStudio = ({
       return;
     }
 
+    if (
+      isEmbedded &&
+      !dirtyAnnouncedRef.current &&
+      documentStateRef.current !== savedDocRef.current
+    ) {
+      dirtyAnnouncedRef.current = true;
+      postToHost('puck:changed');
+    }
+
     if (changeTimerRef.current) clearTimeout(changeTimerRef.current);
     changeTimerRef.current = setTimeout(() => {
       changeTimerRef.current = null;
       const serialized = serializeDocument(documentStateRef.current);
       onChangeRef.current?.(serialized);
 
-      if (isEmbedded) {
+      if (isEmbedded && documentStateRef.current !== savedDocRef.current) {
+        dirtyAnnouncedRef.current = true;
         postToHost('puck:changed');
       }
     }, 300);
@@ -266,7 +299,12 @@ export const TecofStudio = ({
       return;
     }
 
-    const currentDoc = documentStateRef.current;
+    // Commit a still-open inline text edit FIRST, then read the store itself:
+    // `documentStateRef` is only refreshed on the next render, so right after a
+    // synchronous flush it would still hold the pre-edit document and the typed
+    // text would be missing from the save (it "only saved after Enter").
+    flushPendingEdits();
+    const currentDoc = useEditorStore.getState().document;
     const serialized = serializeDocument(currentDoc);
 
     setSaving(true);
@@ -281,12 +319,16 @@ export const TecofStudio = ({
         // user kept editing during the request, the live doc differs from this
         // snapshot and stays dirty (so autosave will fire again).
         savedDocRef.current = currentDoc;
-        dirtyRef.current = documentStateRef.current !== currentDoc;
+        dirtyRef.current = useEditorStore.getState().document !== currentDoc;
         setDirty(dirtyRef.current);
         onSave?.(serialized);
         if (isEmbedded) {
           postToHost('puck:saved', { data: serialized });
+          // Edits made while the request was in flight are NOT in this save; the
+          // host clears its "unsaved" flag on `puck:saved`, so re-raise it.
+          if (dirtyRef.current) postToHost('puck:changed');
         }
+        dirtyAnnouncedRef.current = dirtyRef.current;
       } else {
         setSaveStatus('error');
         if (isEmbedded) {
@@ -412,7 +454,11 @@ export const TecofStudio = ({
   useEffect(() => {
     if (!warnOnUnsavedChanges) return;
     const handler = (e: BeforeUnloadEvent) => {
-      if (!dirtyRef.current) return;
+      // A tab closed (⌘W) / reloaded mid-typing never blurs the inline editor:
+      // commit the draft, then decide from the store (dirtyRef is only updated
+      // by an effect after the next render).
+      flushPendingEdits();
+      if (useEditorStore.getState().document === savedDocRef.current) return;
       // The spec requires both for cross-browser support; the message text is
       // ignored by modern browsers (they show a generic prompt).
       e.preventDefault();
@@ -437,9 +483,14 @@ export const TecofStudio = ({
           handleSaveDraft();
           break;
         case 'puck:undo':
+          // Undo/redo act on committed history: close an open inline edit first
+          // so it becomes the step being undone instead of being re-committed
+          // later on top of the undone document.
+          flushPendingEdits();
           undo();
           break;
         case 'puck:redo':
+          flushPendingEdits();
           redo();
           break;
         case 'puck:refetch':
@@ -581,6 +632,7 @@ export const TecofStudio = ({
 
       if (isCmdOrCtrl && e.key.toLowerCase() === 'z') {
         e.preventDefault();
+        flushPendingEdits();
         if (e.shiftKey) {
           redo();
         } else {
@@ -590,6 +642,7 @@ export const TecofStudio = ({
       }
       if (isCmdOrCtrl && e.key.toLowerCase() === 'y') {
         e.preventDefault();
+        flushPendingEdits();
         redo();
         return;
       }

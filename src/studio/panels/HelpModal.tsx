@@ -43,7 +43,7 @@ const SECTIONS: Array<{
     icon: <Type size={15} />,
     title: 'Metin düzenleme',
     items: [
-      'Metne çift tıklayın, yerinde yazın — Enter kaydeder, Esc iptal eder, dışarı tıklamak da kaydeder.',
+      'Metne çift tıklayın, yerinde yazın. Başlık ve buton gibi tek satırlık metinlerde Enter kaydeder; paragraflarda ve çok satırlı alanlarda Enter yeni satır açar (bitirmek için ⌘/Ctrl+Enter). Dışarı tıklamak ve Kaydet de yazılanı kaydeder; Esc iptal eder.',
       'Tekrarlı kartlarda (ör. hizmet listesi) karta tıklamak sağ panelde ilgili satırı açar; kart metnine çift tıklayıp o satırı yerinde düzenleyebilirsiniz.',
       'Zengin metinler (paragraflar) sağ paneldeki alanından biçimlendirilir.',
     ],

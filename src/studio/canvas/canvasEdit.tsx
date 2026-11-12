@@ -5,6 +5,9 @@ import { findNodeById } from '../../engine/zones';
 import { isInsideOverlayPortal } from './overlayPortal';
 import { runInlineEditFromEvent } from './useInlineEdit';
 import { useActiveLanguage } from '../language/LanguageContext';
+import { useStudio } from '../context';
+import { flushPendingEdits } from '../pendingEdits';
+import type { StudioConfig } from '../../types';
 
 /**
  * Delegated double-click (inline text edit) + right-click (context menu) for the
@@ -18,7 +21,11 @@ import { useActiveLanguage } from '../language/LanguageContext';
 const nodeIdOf = (target: EventTarget | null): string | null =>
   (target as Element | null)?.closest?.('[data-tecof-id]')?.getAttribute('data-tecof-id') ?? null;
 
-function installCanvasEdit(doc: Document, getActiveLanguage: () => string | null): () => void {
+function installCanvasEdit(
+  doc: Document,
+  getActiveLanguage: () => string | null,
+  getConfig: () => StudioConfig | null
+): () => void {
   const isEdit = () => useUiStore.getState().mode === 'edit';
 
   const onDblClick = (e: MouseEvent) => {
@@ -26,7 +33,7 @@ function installCanvasEdit(doc: Document, getActiveLanguage: () => string | null
     const id = nodeIdOf(e.target);
     if (!id) return;
     const node = findNodeById(useEditorStore.getState().document, id)?.node;
-    if (node) runInlineEditFromEvent(e, node, getActiveLanguage(), false);
+    if (node) runInlineEditFromEvent(e, node, getActiveLanguage(), false, getConfig());
   };
 
   const onContextMenu = (e: MouseEvent) => {
@@ -61,6 +68,10 @@ export const CanvasEditDelegation: React.FC = () => {
   const activeLanguage = useActiveLanguage()?.activeLanguage ?? null;
   const langRef = useRef(activeLanguage);
   langRef.current = activeLanguage;
+  // Alan tanımı (tek satır / çok satır / zengin metin) inline edit'te config'ten okunur.
+  const { config } = useStudio();
+  const configRef = useRef<StudioConfig | null>(config);
+  configRef.current = config;
   const anchorRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const doc = anchorRef.current?.ownerDocument;
@@ -70,8 +81,11 @@ export const CanvasEditDelegation: React.FC = () => {
     // affordance'larını açar (ör. `[data-tecof-item]` repeater kart hover
     // çerçevesi) — önizleme/yayında sınıf hiç var olmaz.
     doc.body?.classList.add('tecof-canvas-edit');
-    const uninstall = installCanvasEdit(doc, () => langRef.current);
+    const uninstall = installCanvasEdit(doc, () => langRef.current, () => configRef.current);
     return () => {
+      // Kanvas düzenleme katmanı kalkıyor (önizleme modu, salt okunur, sayfa
+      // değişimi, kanvas yeniden kurulumu): yarım kalan inline taslak kaybolmasın.
+      flushPendingEdits();
       doc.body?.classList.remove('tecof-canvas-edit');
       uninstall();
     };
